@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>S-Tool Projector</title>
+<script src="https://cdn.jsdelivr.net/npm/apexcharts@3.46.0/dist/apexcharts.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+    --bg-primary: #0a1410;
+    --bg-secondary: #0f1e16;
+    --bg-card: #142419;
+    --bg-card-alt: #1a2e21;
+    --border: #2a4434;
+    --border-hover: #3d8b5e;
+    --text-primary: #e8f0eb;
+    --text-secondary: #9cb3a4;
+    --text-muted: #5f7d6a;
+    --accent: #3d8b5e;
+    --accent-soft: rgba(61, 139, 94, 0.15);
+    --green: #4ade80;
+    --green-soft: rgba(74, 222, 128, 0.12);
+    --red: #f87171;
+    --red-soft: rgba(248, 113, 113, 0.12);
+    --amber: #fbbf24;
+    --teal: #2dd4bf;
+    --cream: #fde68a;
+    --radius: 16px;
+    --radius-sm: 10px;
+    --shadow: 0 4px 24px rgba(0,0,0,0.35);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.6;
+    min-height: 100vh;
+}
+.container { max-width: 1320px; margin: 0 auto; padding: 24px; }
+
+/* Header */
+.header {
+    background: linear-gradient(135deg, var(--bg-card) 0%, #1a3325 50%, #122a1c 100%);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 32px 36px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: var(--shadow);
+}
+.header h1 {
+    font-size: 26px; font-weight: 700;
+    background: linear-gradient(135deg, #4ade80 0%, #2dd4bf 50%, #a3e635 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    letter-spacing: -0.5px;
+}
+.header .subtitle { font-size: 13px; color: var(--text-muted); margin-top: 4px; font-weight: 500; }
+.header .meta { text-align: right; color: var(--text-secondary); font-size: 13px; font-weight: 500; }
+
+/* Cards */
+.card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px 28px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow);
+}
+.card:hover { border-color: rgba(61,139,94,0.4); }
+.card h3 {
+    font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px;
+    color: var(--text-muted); margin-bottom: 20px; font-weight: 600;
+}
+
+/* Stat Grid */
+.stat-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 12px; margin-bottom: 16px; }
+.stat-box {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 20px 16px; text-align: center;
+    box-shadow: var(--shadow);
+}
+.stat-box .label {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 1.2px;
+    color: var(--text-muted); margin-bottom: 8px; font-weight: 600;
+}
+.stat-box .value { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+.stat-box .value.green { color: var(--green); }
+.stat-box .value.red { color: var(--red); }
+.stat-box .value.blue { color: var(--teal); }
+.stat-box .value.yellow { color: var(--amber); }
+.stat-box .value.cyan { color: var(--cream); }
+
+/* Controls */
+.controls-row { display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap; }
+.control-group { display: flex; flex-direction: column; gap: 6px; }
+.control-group label {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 1.2px;
+    color: var(--text-muted); font-weight: 600;
+}
+.control-group input, .control-group select {
+    background: var(--bg-secondary); border: 1px solid var(--border);
+    color: var(--text-primary); font-family: inherit; font-size: 14px;
+    padding: 11px 16px; border-radius: var(--radius-sm); outline: none;
+    transition: border-color 0.3s; font-weight: 500;
+}
+.control-group input:focus, .control-group select:focus {
+    border-color: var(--accent); box-shadow: 0 0 0 3px rgba(61,139,94,0.2);
+}
+#symbolInput {
+    width: 130px; text-transform: uppercase; font-weight: 700;
+    font-size: 16px; letter-spacing: 1px;
+}
+.btn-run {
+    background: linear-gradient(135deg, #3d8b5e 0%, #2a7d50 50%, #1d6b40 100%);
+    color: white; border: none; font-family: inherit; font-size: 13px;
+    font-weight: 700; padding: 11px 32px; border-radius: var(--radius-sm);
+    cursor: pointer; text-transform: uppercase; letter-spacing: 1px;
+    transition: transform 0.2s, box-shadow 0.3s;
+}
+.btn-run:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(61,139,94,0.3); }
+.btn-run:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+/* Chart */
+#chartWrap { min-height: 420px; }
+
+/* Milestone Table */
+.milestone-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.milestone-table {
+    width: 100%; border-collapse: collapse; font-size: 13px; min-width: 580px;
+}
+.milestone-table th {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 1.2px;
+    color: var(--text-muted); font-weight: 600; padding: 10px 12px;
+    border-bottom: 1px solid var(--border); text-align: right;
+}
+.milestone-table th:first-child { text-align: left; }
+.milestone-table td {
+    padding: 10px 12px; border-bottom: 1px solid rgba(42,68,52,0.4);
+    text-align: right; font-weight: 500; font-variant-numeric: tabular-nums;
+}
+.milestone-table td:first-child {
+    text-align: left; color: var(--text-secondary); font-weight: 600;
+}
+.milestone-table tr:hover td { background: rgba(61,139,94,0.05); }
+
+/* Sentiment */
+.sent-panel { margin-top: 16px; }
+.sent-bar-wrap {
+    background: var(--bg-secondary); border-radius: 6px; height: 8px;
+    overflow: hidden; margin: 12px 0;
+}
+.sent-bar-fill {
+    height: 100%; border-radius: 6px;
+    background: linear-gradient(90deg, var(--green), var(--teal));
+}
+.sent-stats { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-secondary); }
+.sent-footer { font-size: 11px; color: var(--text-muted); margin-top: 8px; }
+
+/* Loading */
+.loading {
+    display: flex; align-items: center; justify-content: center;
+    padding: 60px 20px; color: var(--text-muted); font-size: 14px;
+}
+.spinner {
+    width: 20px; height: 20px; border: 2px solid var(--border);
+    border-top-color: var(--accent); border-radius: 50%;
+    animation: spin 0.8s linear infinite; margin-right: 12px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Status */
+.status-bar {
+    font-size: 12px; color: var(--text-muted); margin-top: 8px;
+    min-height: 18px;
+}
+
+/* Diagnostics */
+.diag-toggle {
+    background: none; border: 1px solid var(--border); color: var(--text-muted);
+    font-family: inherit; font-size: 11px; padding: 6px 14px;
+    border-radius: var(--radius-sm); cursor: pointer; margin-top: 12px;
+    text-transform: uppercase; letter-spacing: 1px;
+}
+.diag-toggle:hover { border-color: var(--accent); color: var(--text-secondary); }
+.diag-body { display: none; margin-top: 16px; }
+.diag-body.open { display: block; }
+.diag-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+}
+.diag-item {
+    background: var(--bg-secondary); border-radius: 8px; padding: 10px 14px;
+}
+.diag-item .dl { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+.diag-item .dv { font-size: 15px; font-weight: 600; margin-top: 4px; font-variant-numeric: tabular-nums; }
+
+/* Honesty */
+.honesty {
+    background: var(--bg-secondary); border: 1px solid rgba(251,191,36,0.2);
+    border-radius: var(--radius-sm); padding: 16px 20px;
+    margin-top: 16px; font-size: 12px; color: var(--text-muted); line-height: 1.7;
+}
+.honesty strong { color: var(--amber); font-weight: 600; }
+
+/* Responsive */
+@media (max-width: 900px) {
+    .stat-grid { grid-template-columns: repeat(3, 1fr); }
+    .header { flex-direction: column; text-align: center; gap: 12px; }
+    .header .meta { text-align: center; }
+    .diag-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 600px) {
+    .stat-grid { grid-template-columns: repeat(2, 1fr); }
+    .container { padding: 12px; }
+    .diag-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+    <!-- Header -->
+    <div class="header">
+        <div>
+            <h1>S-TOOL PROJECTOR</h1>
+            <div class="subtitle">Monte Carlo + Mean Reversion Projection Engine</div>
+        </div>
+        <div class="meta">
+            <div id="metaDate"></div>
+            <div id="metaVix"></div>
+        </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="card">
+        <div class="controls-row">
+            <div class="control-group">
+                <label>Symbol</label>
+                <input id="symbolInput" type="text" placeholder="QQQ" maxlength="6" value="QQQ">
+            </div>
+            <div class="control-group">
+                <label>Horizon</label>
+                <select id="horizonSelect">
+                    <option value="63">3 Months</option>
+                    <option value="126">6 Months</option>
+                    <option value="252" selected>1 Year</option>
+                    <option value="504">2 Years</option>
+                </select>
+            </div>
+            <button class="btn-run" id="btnRun" onclick="runProjection()">Run Projection</button>
+        </div>
+        <div class="status-bar" id="statusBar"></div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stat-grid" id="statsGrid" style="display:none">
+        <div class="stat-box"><div class="label">Current Price</div><div class="value" id="stPrice">—</div></div>
+        <div class="stat-box"><div class="label">Median Target</div><div class="value green" id="stMedian">—</div></div>
+        <div class="stat-box"><div class="label">Expected Return</div><div class="value green" id="stReturn">—</div></div>
+        <div class="stat-box"><div class="label">Upside Prob</div><div class="value blue" id="stUpside">—</div></div>
+        <div class="stat-box"><div class="label">Volatility (ann)</div><div class="value yellow" id="stVol">—</div></div>
+        <div class="stat-box"><div class="label">MR Target</div><div class="value cyan" id="stMR">—</div></div>
+        <div class="stat-box"><div class="label">VIX Regime</div><div class="value" id="stVix">—</div></div>
+    </div>
+
+    <!-- Chart -->
+    <div class="card" id="chartCard" style="display:none">
+        <h3>Price Projection</h3>
+        <div id="chartWrap"></div>
+    </div>
+
+    <!-- Milestones -->
+    <div class="card" id="milestoneCard" style="display:none">
+        <h3>Price Milestones</h3>
+        <div class="milestone-wrap">
+        <table class="milestone-table">
+            <thead>
+                <tr><th>Horizon</th><th>Date</th><th>Bear (P10)</th><th>P25</th><th>Median</th><th>P75</th><th>Bull (P90)</th><th>Ret %</th></tr>
+            </thead>
+            <tbody id="milestoneBody"></tbody>
+        </table>
+        </div>
+    </div>
+
+    <!-- Sentiment -->
+    <div class="card" id="sentCard" style="display:none">
+        <h3>Retail Sentiment</h3>
+        <div class="sent-panel" id="sentPanel"></div>
+    </div>
+
+    <!-- Diagnostics -->
+    <div class="card" id="diagCard" style="display:none">
+        <button class="diag-toggle" onclick="toggleDiag()">Model Diagnostics</button>
+        <div class="diag-body" id="diagBody">
+            <div class="diag-grid" id="diagGrid"></div>
+        </div>
+    </div>
+
+    <!-- Honesty Callout -->
+    <div class="honesty">
+        <strong>Honest disclaimer:</strong> These projections show the range of plausible outcomes based on
+        historical price dynamics — they are not predictions or investment advice. The median forecast is
+        statistically indistinguishable from "price stays flat." Use the bands to understand uncertainty,
+        not to set price targets. Past volatility does not predict future returns.
+    </div>
+</div>
+
+<script>
+const API = window.location.origin;
+const $ = id => document.getElementById(id);
+const fmtPrice = v => v >= 1000 ? `$${(v/1000).toFixed(1)}k` : `$${v.toFixed(2)}`;
+const fmtPct = v => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`;
+
+let chart = null;
+
+function status(msg) { $('statusBar').textContent = msg; }
+
+async function runProjection() {
+    const symbol = $('symbolInput').value.trim().toUpperCase();
+    const horizon = parseInt($('horizonSelect').value);
+    if (!symbol) return;
+
+    $('btnRun').disabled = true;
+    status(`Fetching projection for ${symbol}...`);
+
+    try {
+        const res = await fetch(`${API}/api/project?symbol=${symbol}&horizon=${horizon}`);
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({ detail: res.statusText }));
+            throw new Error(err.detail || `HTTP ${res.status}`);
+        }
+        const data = await res.json();
+        render(data);
+        status(`${symbol} — computed ${data.compute_secs}s, cached ${data.computed_at?.slice(0, 16) || ''}`);
+    } catch (e) {
+        status(`Error: ${e.message}`);
+        console.error(e);
+    } finally {
+        $('btnRun').disabled = false;
+    }
+}
+
+function render(d) {
+    // Stats
+    $('statsGrid').style.display = '';
+    $('stPrice').textContent = fmtPrice(d.current_price);
+    $('stMedian').textContent = fmtPrice(d.p50);
+    const ret = ((d.p50 - d.current_price) / d.current_price * 100);
+    $('stReturn').textContent = fmtPct(ret);
+    $('stReturn').className = `value ${ret >= 0 ? 'green' : 'red'}`;
+    $('stUpside').textContent = `${(d.upside_prob * 100).toFixed(0)}%`;
+    $('stVol').textContent = `${(d.sigma * 100).toFixed(1)}%`;
+    $('stMR').textContent = fmtPrice(d.mr_target);
+    $('stVix').textContent = d.vix_regime ? `${d.vix_value} (${d.vix_regime})` : 'N/A';
+
+    $('metaDate').textContent = `Run: ${d.run_date}`;
+    $('metaVix').textContent = d.vix_regime ? `VIX: ${d.vix_value} ${d.vix_regime}` : '';
+
+    // Chart
+    renderChart(d);
+
+    // Milestones
+    renderMilestones(d);
+
+    // Sentiment
+    renderSentiment(d);
+
+    // Diagnostics
+    renderDiag(d);
+}
+
+function renderChart(d) {
+    $('chartCard').style.display = '';
+
+    // Parse data
+    const curves = typeof d.curves_json === 'string' ? JSON.parse(d.curves_json) : d.curves_json;
+    const hist = typeof d.hist_json === 'string' ? JSON.parse(d.hist_json) : d.hist_json;
+    const projDates = typeof d.proj_dates_json === 'string' ? JSON.parse(d.proj_dates_json) : d.proj_dates_json;
+    const mrEq = typeof d.mr_eq_json === 'string' ? JSON.parse(d.mr_eq_json) : d.mr_eq_json;
+
+    // Colours
+    const C = {
+        p90: '#4ade80', p75: '#2dd4bf', median: '#fbbf24',
+        p25: '#f97316', p10: '#f87171', mr: '#a78bfa',
+    };
+
+    // Build series
+    const histSeries = hist.dates.map((dt, i) => [new Date(dt).getTime(), hist.closes[i]]);
+    const lastHistDate = new Date(hist.dates[hist.dates.length - 1]).getTime();
+
+    const makeSeries = (arr, dates) =>
+        [[lastHistDate, d.current_price], ...dates.map((dt, i) => [new Date(dt).getTime(), arr[i]])];
+
+    const series = [
+        { name: 'Historical', type: 'line', data: histSeries },
+        { name: 'P90 (Bull)', type: 'line', data: makeSeries(curves.p90, projDates) },
+        { name: 'P75', type: 'line', data: makeSeries(curves.p75, projDates) },
+        { name: 'Median', type: 'line', data: makeSeries(curves.p50, projDates) },
+        { name: 'P25', type: 'line', data: makeSeries(curves.p25, projDates) },
+        { name: 'P10 (Bear)', type: 'line', data: makeSeries(curves.p10, projDates) },
+    ];
+    if (mrEq) {
+        series.push({ name: 'MR Equilibrium', type: 'line', data: makeSeries(mrEq, projDates) });
+    }
+
+    const colors = ['#9cb3a4', C.p90, C.p75, C.median, C.p25, C.p10];
+    const dashes = [0, 3, 3, 0, 3, 3];
+    const widths = [1.5, 1.5, 1.5, 2.5, 1.5, 1.5];
+    if (mrEq) {
+        colors.push(C.mr);
+        dashes.push(5);
+        widths.push(1.5);
+    }
+
+    // End-of-line labels
+    const endLabels = [];
+    const lastIdx = curves.p50.length - 1;
+    const endDate = new Date(projDates[lastIdx]).getTime();
+    const labelPairs = [
+        ['p90', C.p90, curves.p90], ['p75', C.p75, curves.p75],
+        ['p50', C.median, curves.p50], ['p25', C.p25, curves.p25],
+        ['p10', C.p10, curves.p10],
+    ];
+    for (const [lbl, clr, arr] of labelPairs) {
+        endLabels.push({
+            x: endDate, y: arr[lastIdx],
+            marker: { size: 4, fillColor: clr, strokeColor: '#0a1410', strokeWidth: 2 },
+            label: {
+                borderColor: clr, borderWidth: 1, offsetY: -10,
+                style: { background: '#0f1d14', color: clr, fontSize: '10px', fontWeight: 700, padding: { left: 6, right: 6, top: 3, bottom: 3 } },
+                text: fmtPrice(arr[lastIdx])
+            }
+        });
+    }
+
+    // Mid-line milestone labels
+    const milestoneIndices = [{ days: 21 }, { days: 63 }, { days: 126 }];
+    for (const m of milestoneIndices) {
+        const idx = m.days - 1;
+        if (idx < 0 || idx > lastIdx - 10) continue;
+        endLabels.push({
+            x: new Date(projDates[idx]).getTime(), y: curves.p50[idx],
+            marker: { size: 5, fillColor: C.median, strokeColor: '#0a1410', strokeWidth: 2 },
+            label: {
+                borderColor: C.median, borderWidth: 1, offsetY: -14,
+                style: { background: '#0f1d14', color: C.median, fontSize: '10px', fontWeight: 700, padding: { left: 6, right: 6, top: 3, bottom: 3 } },
+                text: fmtPrice(curves.p50[idx])
+            }
+        });
+    }
+
+    const opts = {
+        chart: {
+            type: 'line', height: 420, background: 'transparent',
+            toolbar: { show: false }, zoom: { enabled: false },
+            animations: { enabled: true, easing: 'easeinout', speed: 600 },
+            fontFamily: 'Inter, sans-serif',
+        },
+        series,
+        colors,
+        stroke: { width: widths, dashArray: dashes, curve: 'smooth' },
+        annotations: {
+            xaxis: [{ x: lastHistDate, borderColor: '#3d8b5e', strokeDashArray: 4, label: { text: 'Today', style: { color: '#e8f0eb', background: '#3d8b5e', fontSize: '11px', padding: { left: 8, right: 8, top: 4, bottom: 4 } } } }],
+            points: endLabels,
+        },
+        xaxis: {
+            type: 'datetime',
+            labels: { style: { colors: '#5f7d6a', fontSize: '11px' }, datetimeFormatter: { month: "MMM 'yy" } },
+            axisBorder: { color: '#2a4434' }, axisTicks: { color: '#2a4434' },
+        },
+        yaxis: {
+            labels: { style: { colors: '#5f7d6a', fontSize: '11px' }, formatter: v => fmtPrice(v) },
+        },
+        grid: { borderColor: 'rgba(42,68,52,0.3)', strokeDashArray: 3 },
+        tooltip: {
+            theme: 'dark', x: { format: 'MMM dd, yyyy' },
+            y: { formatter: v => v != null ? fmtPrice(v) : '' },
+        },
+        legend: {
+            position: 'top', horizontalAlign: 'left',
+            labels: { colors: '#9cb3a4' }, fontSize: '11px',
+            markers: { size: 6, strokeWidth: 0 },
+        },
+        fill: { type: 'solid', opacity: 1 },
+    };
+
+    if (chart) chart.destroy();
+    chart = new ApexCharts($('chartWrap'), opts);
+    chart.render();
+}
+
+function renderMilestones(d) {
+    $('milestoneCard').style.display = '';
+    const milestones = typeof d.milestones_json === 'string' ? JSON.parse(d.milestones_json) : d.milestones_json;
+    const body = $('milestoneBody');
+    body.innerHTML = '';
+    for (const m of milestones) {
+        const retColor = m.ret_pct >= 0 ? 'color:var(--green)' : 'color:var(--red)';
+        body.innerHTML += `<tr>
+            <td>${m.label}</td><td>${m.date}</td>
+            <td style="color:var(--red)">${fmtPrice(m.p10)}</td>
+            <td style="color:var(--p25)">${fmtPrice(m.p25)}</td>
+            <td style="color:var(--amber);font-weight:700">${fmtPrice(m.p50)}</td>
+            <td>${fmtPrice(m.p75)}</td>
+            <td style="color:var(--green)">${fmtPrice(m.p90)}</td>
+            <td style="${retColor};font-weight:600">${fmtPct(m.ret_pct)}</td>
+        </tr>`;
+    }
+}
+
+function renderSentiment(d) {
+    if (!d.sent_tagged || d.sent_tagged === 0) {
+        $('sentCard').style.display = 'none';
+        return;
+    }
+    $('sentCard').style.display = '';
+    const bull = d.sent_bull || 0;
+    const bear = d.sent_bear || 0;
+    const tagged = d.sent_tagged || 1;
+    const bullPct = (bull / tagged * 100).toFixed(0);
+    const bearPct = (bear / tagged * 100).toFixed(0);
+    const net = d.sent_net;
+    const netColor = net > 0.1 ? 'var(--green)' : net < -0.1 ? 'var(--red)' : 'var(--amber)';
+    const netLabel = net > 0.1 ? 'Bullish' : net < -0.1 ? 'Bearish' : 'Mixed';
+
+    $('sentPanel').innerHTML = `
+        <div class="sent-bar-wrap"><div class="sent-bar-fill" style="width:${bullPct}%"></div></div>
+        <div class="sent-stats">
+            <span style="color:var(--green)">${bullPct}% bull (${bull})</span>
+            <span style="color:${netColor};font-weight:600">${netLabel}</span>
+            <span style="color:var(--red)">${bearPct}% bear (${bear})</span>
+        </div>
+        <div class="sent-footer">${tagged} tagged of recent StockTwits messages &middot; Net score: ${net?.toFixed(2) ?? 'N/A'}</div>
+    `;
+}
+
+function renderDiag(d) {
+    $('diagCard').style.display = '';
+    const items = [
+        ['Drift (mu)', `${(d.mu * 100).toFixed(2)}%`],
+        ['Volatility (sigma)', `${(d.sigma * 100).toFixed(1)}%`],
+        ['Hist Volatility', `${(d.sigma_hist * 100).toFixed(1)}%`],
+        ['VIX Multiplier', `${d.sigma_mult?.toFixed(2) ?? 'N/A'}`],
+        ['MR Kappa', d.mr_kappa?.toFixed(4) ?? 'N/A'],
+        ['MR Target', d.mr_target ? fmtPrice(d.mr_target) : 'N/A'],
+        ['Blend (MC %)', `${((d.blend_mc || 0.3) * 100).toFixed(0)}%`],
+        ['Paths', d.num_paths?.toLocaleString() ?? 'N/A'],
+        ['Compute Time', `${d.compute_secs}s`],
+    ];
+    $('diagGrid').innerHTML = items.map(([lbl, val]) =>
+        `<div class="diag-item"><div class="dl">${lbl}</div><div class="dv">${val}</div></div>`
+    ).join('');
+}
+
+function toggleDiag() {
+    $('diagBody').classList.toggle('open');
+}
+
+// Auto-run on Enter
+$('symbolInput').addEventListener('keydown', e => { if (e.key === 'Enter') runProjection(); });
+
+// Show today's date
+$('metaDate').textContent = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+</script>
+</body>
+</html>
