@@ -143,6 +143,60 @@ def fetch_fundamentals(symbol: str) -> dict | None:
         return None
 
 
+def compute_momentum(closes: np.ndarray) -> dict:
+    """Compute price momentum indicators from historical closes."""
+    S0 = float(closes[-1])
+    n = len(closes)
+    mom = {}
+
+    # Price change over 30/60/90 trading days
+    for label, days in [("30d", 21), ("60d", 42), ("90d", 63)]:
+        if n > days:
+            prev = float(closes[-1 - days])
+            mom[f"chg_{label}"] = round((S0 - prev) / prev * 100, 2)
+        else:
+            mom[f"chg_{label}"] = None
+
+    # Distance from 52-week high/low (using available history)
+    lookback = min(252, n)
+    high_252 = float(np.max(closes[-lookback:]))
+    low_252 = float(np.min(closes[-lookback:]))
+    mom["off_high_pct"] = round((S0 - high_252) / high_252 * 100, 2)
+    mom["off_low_pct"] = round((S0 - low_252) / low_252 * 100, 2)
+
+    # Simple RSI (14-day)
+    if n > 15:
+        deltas = np.diff(closes[-15:])
+        gains = np.where(deltas > 0, deltas, 0)
+        losses = np.where(deltas < 0, -deltas, 0)
+        avg_gain = float(np.mean(gains))
+        avg_loss = float(np.mean(losses))
+        if avg_loss > 0:
+            rs = avg_gain / avg_loss
+            mom["rsi_14"] = round(100 - (100 / (1 + rs)), 1)
+        else:
+            mom["rsi_14"] = 100.0
+    else:
+        mom["rsi_14"] = None
+
+    # Trend score: simple composite (-1 to +1)
+    # Positive if above 50/200 SMA, price rising, RSI not extreme
+    signals = []
+    if n >= 50:
+        sma50 = float(np.mean(closes[-50:]))
+        signals.append(1 if S0 > sma50 else -1)
+    if n >= 200:
+        sma200 = float(np.mean(closes[-200:]))
+        signals.append(1 if S0 > sma200 else -1)
+    if mom.get("chg_30d") is not None:
+        signals.append(1 if mom["chg_30d"] > 0 else -1)
+    if mom.get("chg_90d") is not None:
+        signals.append(1 if mom["chg_90d"] > 0 else -1)
+    mom["trend_score"] = round(sum(signals) / max(len(signals), 1), 2) if signals else None
+
+    return mom
+
+
 # ── Simulation Engines ──
 
 def run_monte_carlo(
@@ -343,6 +397,13 @@ def run_projection(
 
     closes = hist["closes"]
     S0 = float(closes[-1])
+    momentum = compute_momentum(closes)
+
+    # Merge momentum into fundamentals
+    if fundamentals:
+        fundamentals.update(momentum)
+    else:
+        fundamentals = momentum
 
     # Run engines
     mc = run_monte_carlo(closes, num_paths, horizon_days, sigma_mult, rng)

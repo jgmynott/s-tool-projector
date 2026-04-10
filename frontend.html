@@ -93,6 +93,37 @@ body {
 .stat-box .value.blue { color: var(--teal); }
 .stat-box .value.yellow { color: var(--amber); }
 .stat-box .value.cyan { color: var(--cream); }
+.stat-box .trend {
+    font-size: 11px; font-weight: 600; margin-top: 6px;
+    display: flex; align-items: center; justify-content: center; gap: 4px;
+}
+.stat-box .trend.up { color: var(--green); }
+.stat-box .trend.down { color: var(--red); }
+.stat-box .trend.flat { color: var(--text-muted); }
+
+/* Momentum Row */
+.momentum-row {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px;
+}
+.mom-box {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 16px; text-align: center;
+    box-shadow: var(--shadow);
+}
+.mom-box .label {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 1.2px;
+    color: var(--text-muted); margin-bottom: 6px; font-weight: 600;
+}
+.mom-box .value { font-size: 18px; font-weight: 700; }
+.mom-box .sub { font-size: 10px; color: var(--text-muted); margin-top: 4px; }
+.trend-bar {
+    height: 4px; border-radius: 2px; margin-top: 8px;
+    background: var(--bg-secondary); overflow: hidden; position: relative;
+}
+.trend-bar .fill {
+    height: 100%; border-radius: 2px; transition: width 0.5s;
+}
+@media (max-width: 600px) { .momentum-row { grid-template-columns: repeat(2, 1fr); } }
 
 /* Controls */
 .controls-row { display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap; }
@@ -256,13 +287,21 @@ body {
 
     <!-- Stats -->
     <div class="stat-grid" id="statsGrid" style="display:none">
-        <div class="stat-box"><div class="label">Current Price</div><div class="value" id="stPrice">—</div></div>
+        <div class="stat-box"><div class="label">Current Price</div><div class="value" id="stPrice">—</div><div class="trend" id="stPriceTrend"></div></div>
         <div class="stat-box"><div class="label">Median Target</div><div class="value green" id="stMedian">—</div></div>
         <div class="stat-box"><div class="label">Expected Return</div><div class="value green" id="stReturn">—</div></div>
         <div class="stat-box"><div class="label">Upside Prob</div><div class="value blue" id="stUpside">—</div></div>
-        <div class="stat-box"><div class="label">P/E Ratio</div><div class="value yellow" id="stPE">—</div></div>
-        <div class="stat-box"><div class="label">Market Cap</div><div class="value cyan" id="stMcap">—</div></div>
+        <div class="stat-box"><div class="label">P/E Ratio</div><div class="value yellow" id="stPE">—</div><div class="trend" id="stPETrend"></div></div>
+        <div class="stat-box"><div class="label">Market Cap</div><div class="value cyan" id="stMcap">—</div><div class="trend" id="stMcapTrend"></div></div>
         <div class="stat-box"><div class="label">EPS</div><div class="value" id="stEPS">—</div></div>
+    </div>
+
+    <!-- Momentum -->
+    <div class="momentum-row" id="momentumRow" style="display:none">
+        <div class="mom-box" id="mom30"></div>
+        <div class="mom-box" id="mom60"></div>
+        <div class="mom-box" id="mom90"></div>
+        <div class="mom-box" id="momSignal"></div>
     </div>
 
     <!-- Chart -->
@@ -366,6 +405,9 @@ function render(d) {
     if (d.vix_regime) metaParts.push(`VIX: ${d.vix_value} ${d.vix_regime}`);
     if (f.sector) metaParts.push(f.sector);
     $('metaVix').textContent = metaParts.join(' · ');
+
+    // Momentum indicators
+    renderMomentum(f);
 
     // Chart
     renderChart(d);
@@ -517,6 +559,71 @@ function renderMilestones(d) {
             <td style="${retColor};font-weight:600">${fmtPct(m.ret_pct)}</td>
         </tr>`;
     }
+}
+
+function renderMomentum(f) {
+    const hasMom = f.chg_30d != null;
+    $('momentumRow').style.display = hasMom ? '' : 'none';
+    if (!hasMom) return;
+
+    const arrow = v => v > 0 ? '\u25B2' : v < 0 ? '\u25BC' : '\u25CF';
+    const cls = v => v > 0 ? 'up' : v < 0 ? 'down' : 'flat';
+    const fmtChg = v => v != null ? `${v >= 0 ? '+' : ''}${v.toFixed(1)}%` : 'N/A';
+
+    // Trend sub-indicators on stat boxes
+    const chg30 = f.chg_30d;
+    $('stPriceTrend').className = `trend ${cls(chg30)}`;
+    $('stPriceTrend').innerHTML = `${arrow(chg30)} ${fmtChg(chg30)} <span style="color:var(--text-muted)">(30d)</span>`;
+
+    // P/E trend approximated from price change (EPS is quarterly)
+    $('stPETrend').className = `trend ${cls(chg30)}`;
+    $('stPETrend').innerHTML = `${arrow(chg30)} ${fmtChg(chg30)} <span style="color:var(--text-muted)">(30d)</span>`;
+
+    // Market cap trend = price trend
+    $('stMcapTrend').className = `trend ${cls(chg30)}`;
+    $('stMcapTrend').innerHTML = `${arrow(chg30)} ${fmtChg(chg30)} <span style="color:var(--text-muted)">(30d)</span>`;
+
+    // Momentum boxes
+    const momBox = (el, label, val, sub) => {
+        const c = cls(val);
+        const barPct = Math.min(100, Math.abs(val || 0) * 2);
+        const barColor = c === 'up' ? 'var(--green)' : c === 'down' ? 'var(--red)' : 'var(--text-muted)';
+        el.innerHTML = `
+            <div class="label">${label}</div>
+            <div class="value" style="color:${barColor}">${arrow(val)} ${fmtChg(val)}</div>
+            <div class="trend-bar"><div class="fill" style="width:${barPct}%;background:${barColor}"></div></div>
+            <div class="sub">${sub}</div>`;
+    };
+
+    momBox($('mom30'), '30-Day', f.chg_30d, 'Short-term');
+    momBox($('mom60'), '60-Day', f.chg_60d, 'Medium-term');
+    momBox($('mom90'), '90-Day', f.chg_90d, 'Quarterly');
+
+    // Signal box — overall assessment
+    const ts = f.trend_score;
+    const rsi = f.rsi_14;
+    const offHigh = f.off_high_pct;
+    let signalLabel, signalColor;
+    if (ts >= 0.5) { signalLabel = 'Strong Uptrend'; signalColor = 'var(--green)'; }
+    else if (ts > 0) { signalLabel = 'Mild Uptrend'; signalColor = 'var(--green)'; }
+    else if (ts === 0) { signalLabel = 'Neutral'; signalColor = 'var(--amber)'; }
+    else if (ts > -0.5) { signalLabel = 'Mild Downtrend'; signalColor = 'var(--red)'; }
+    else { signalLabel = 'Strong Downtrend'; signalColor = 'var(--red)'; }
+
+    const rsiLabel = rsi != null ? (rsi > 70 ? 'Overbought' : rsi < 30 ? 'Oversold' : 'Neutral') : '';
+    const rsiColor = rsi > 70 ? 'var(--red)' : rsi < 30 ? 'var(--green)' : 'var(--text-muted)';
+
+    $('momSignal').innerHTML = `
+        <div class="label">Trend Signal</div>
+        <div class="value" style="color:${signalColor};font-size:15px">${signalLabel}</div>
+        <div style="margin-top:8px;font-size:11px">
+            <span style="color:var(--text-muted)">RSI(14):</span>
+            <span style="color:${rsiColor};font-weight:600">${rsi?.toFixed(0) ?? 'N/A'} ${rsiLabel}</span>
+        </div>
+        <div style="margin-top:4px;font-size:11px">
+            <span style="color:var(--text-muted)">Off 52w High:</span>
+            <span style="color:${offHigh > -5 ? 'var(--green)' : offHigh > -20 ? 'var(--amber)' : 'var(--red)'};font-weight:600">${offHigh?.toFixed(1)}%</span>
+        </div>`;
 }
 
 function renderSentiment(d) {
