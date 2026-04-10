@@ -40,8 +40,40 @@ from typing import Iterable
 
 import requests
 
-# Universe — match projector_backtest.DEFAULT_SYMBOLS so we can join later.
+# Broad universe — top WSB-mentioned tickers + major ETFs + sectors.
+# The dashboard can project ANY symbol, so we want sentiment coverage
+# well beyond the original 15-symbol backtest set.
 DEFAULT_SYMBOLS = [
+    # ── Mega-cap tech ──
+    "AAPL", "MSFT", "GOOGL", "GOOG", "NVDA", "AMZN", "META", "NFLX", "TSLA",
+    # ── WSB favorites / high-retail-interest ──
+    "GME", "AMC", "PLTR", "SOFI", "BBBY", "BB", "WISH", "CLOV", "CLNE",
+    "MVIS", "SPCE", "RIVN", "LCID", "NIO", "XPEV", "LI",
+    # ── Semis ──
+    "AMD", "INTC", "MU", "QCOM", "AVGO", "TSM", "MRVL", "ARM", "SMCI",
+    # ── Software / Cloud ──
+    "CRM", "SNOW", "CRWD", "NET", "DDOG", "ZS", "PANW", "SHOP", "SQ",
+    "COIN", "HOOD", "RBLX", "ROKU", "SNAP", "PINS", "UBER", "LYFT",
+    # ── Financials ──
+    "JPM", "GS", "MS", "BAC", "WFC", "C", "SCHW", "V", "MA", "PYPL",
+    # ── Healthcare / Pharma ──
+    "JNJ", "PFE", "MRNA", "BNTX", "LLY", "UNH", "ABBV",
+    # ── Energy / Commodities ──
+    "XOM", "CVX", "OXY", "SLB", "FSLR",
+    # ── Consumer / Retail ──
+    "PG", "KO", "COST", "WMT", "TGT", "DIS", "SBUX", "MCD", "NKE",
+    # ── Industrial / Defense ──
+    "BA", "CAT", "LMT", "RTX", "GE",
+    # ── Broad-market ETFs ──
+    "SPY", "QQQ", "IWM", "DIA", "VOO", "VTI", "ARKK",
+    # ── Sector ETFs ──
+    "XLF", "XLE", "XLV", "XLK", "XLI", "XLRE", "XLP",
+    # ── Leveraged / Inverse (WSB loves these) ──
+    "TQQQ", "SQQQ", "SPXS", "UVXY", "SOXL", "SOXS",
+]
+
+# Subset for quick backtests (the original 15).
+BACKTEST_SYMBOLS = [
     "AAPL", "MSFT", "GOOGL", "NVDA", "AMZN",
     "SPY", "QQQ", "IWM",
     "XLF", "XLE", "XLV",
@@ -224,102 +256,145 @@ def score_batch(texts: list[str]) -> list[dict]:
 # Pipeline
 # ─────────────────────────────────────────────────────────────────────
 
-@dataclass
-class DayBucket:
-    date: str
-    by_ticker: dict[str, list[str]] = field(default_factory=lambda: defaultdict(list))
+FIELDNAMES = ["date", "ticker", "mentions", "positive", "negative", "neutral",
+              "score_signed_mean", "bullish_ratio"]
 
 
-def collect(symbols: list[str], start: datetime, end: datetime, dry_run: bool = False) -> dict:
-    pattern = build_ticker_pattern(symbols)
-    stats = FetchStats()
-
-    # day_iso -> ticker -> list[text]
-    day_buckets: dict[str, DayBucket] = {}
-
-    print(f"Collecting WSB {start.date()} → {end.date()} for {len(symbols)} symbols", file=sys.stderr)
-    for ds, de in _date_chunks(start, end):
-        day_iso = ds.date().isoformat()
-        posts, comments = fetch_day(ds, de, stats)
-
-        bucket = day_buckets.setdefault(day_iso, DayBucket(date=day_iso))
-        # Submissions: title + selftext together
-        for p in posts:
-            text = f"{p.get('title','')}\n{p.get('selftext','') or ''}".strip()
-            tags = tag_text(text, pattern)
-            for tk in tags:
-                bucket.by_ticker[tk].append(text[:1200])
-        # Comments
-        for c in comments:
-            text = (c.get("body") or "").strip()
-            tags = tag_text(text, pattern)
-            for tk in tags:
-                bucket.by_ticker[tk].append(text[:1200])
-
-        n_tags = sum(len(v) for v in bucket.by_ticker.values())
-        print(f"  {day_iso}: {len(posts)} posts, {len(comments)} comments → {n_tags} ticker tags",
-              file=sys.stderr)
-
-    # Score
-    print(f"\nFetched: {stats.posts} posts, {stats.comments} comments, "
-          f"{stats.api_calls} API calls, {stats.failures} failures", file=sys.stderr)
-
-    if dry_run:
-        return {"stats": stats, "day_buckets": day_buckets, "rows": []}
-
+def _score_day(by_ticker: dict[str, list[str]]) -> list[dict]:
+    """Score one day's tagged texts with FinBERT. Returns rows for that day."""
     rows = []
-    total_to_score = sum(len(v) for b in day_buckets.values() for v in b.by_ticker.values())
-    print(f"Scoring {total_to_score} tagged texts with FinBERT...", file=sys.stderr)
-    scored = 0
-    for day_iso, bucket in sorted(day_buckets.items()):
-        for ticker, texts in bucket.by_ticker.items():
-            if not texts:
-                continue
-            scores = score_batch(texts)
-            scored += len(texts)
-            pos = sum(1 for s in scores if s["label"] == "positive")
-            neg = sum(1 for s in scores if s["label"] == "negative")
-            neu = sum(1 for s in scores if s["label"] == "neutral")
-            mean_signed = sum(s["score_signed"] for s in scores) / len(scores)
-            rows.append({
-                "date": day_iso,
-                "ticker": ticker,
-                "mentions": len(texts),
-                "positive": pos,
-                "negative": neg,
-                "neutral": neu,
-                "score_signed_mean": round(mean_signed, 4),
-                "bullish_ratio": round(pos / (pos + neg), 4) if (pos + neg) > 0 else None,
-            })
-            if scored % 200 == 0:
-                print(f"  scored {scored}/{total_to_score}", file=sys.stderr)
-    return {"stats": stats, "day_buckets": day_buckets, "rows": rows}
+    for ticker, texts in by_ticker.items():
+        if not texts:
+            continue
+        scores = score_batch(texts)
+        pos = sum(1 for s in scores if s["label"] == "positive")
+        neg = sum(1 for s in scores if s["label"] == "negative")
+        neu = sum(1 for s in scores if s["label"] == "neutral")
+        mean_signed = sum(s["score_signed"] for s in scores) / len(scores)
+        rows.append({
+            "date": None,  # caller fills in
+            "ticker": ticker,
+            "mentions": len(texts),
+            "positive": pos,
+            "negative": neg,
+            "neutral": neu,
+            "score_signed_mean": round(mean_signed, 4),
+            "bullish_ratio": round(pos / (pos + neg), 4) if (pos + neg) > 0 else None,
+        })
+    return rows
 
 
-def write_outputs(result: dict, out_dir: Path, start: datetime, end: datetime):
-    rows = result["rows"]
-    if not rows:
-        print("No rows to write.", file=sys.stderr)
-        return
-    out_dir.mkdir(parents=True, exist_ok=True)
-    tag = f"{start.date()}_{end.date()}"
-    combined = out_dir / f"sentiment_combined_{tag}.csv"
-    with open(combined, "w", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
-        w.writeheader()
-        w.writerows(rows)
-    print(f"Wrote {len(rows)} rows → {combined}", file=sys.stderr)
+def _load_done_days(out_path: Path) -> set[str]:
+    """Read already-completed dates from an existing combined CSV (for --resume)."""
+    if not out_path.exists():
+        return set()
+    done = set()
+    with open(out_path) as f:
+        for row in csv.DictReader(f):
+            done.add(row["date"])
+    return done
 
-    # Per-ticker pivots
-    by_ticker = defaultdict(list)
-    for r in rows:
-        by_ticker[r["ticker"]].append(r)
-    for ticker, tr in by_ticker.items():
+
+def _write_per_ticker(combined_path: Path, out_dir: Path):
+    """Split the combined CSV into per-ticker files."""
+    by_ticker: dict[str, list[dict]] = defaultdict(list)
+    with open(combined_path) as f:
+        for row in csv.DictReader(f):
+            by_ticker[row["ticker"]].append(row)
+    tag = combined_path.stem.replace("sentiment_combined_", "")
+    for ticker, rows in by_ticker.items():
         per = out_dir / f"sentiment_{ticker}_{tag}.csv"
         with open(per, "w", newline="") as f:
-            w = csv.DictWriter(f, fieldnames=list(tr[0].keys()))
+            w = csv.DictWriter(f, fieldnames=FIELDNAMES)
             w.writeheader()
-            w.writerows(sorted(tr, key=lambda r: r["date"]))
+            w.writerows(sorted(rows, key=lambda r: r["date"]))
+    print(f"Wrote per-ticker files for {len(by_ticker)} symbols → {out_dir}/", file=sys.stderr)
+
+
+def collect_streaming(
+    symbols: list[str],
+    start: datetime,
+    end: datetime,
+    out_dir: Path,
+    dry_run: bool = False,
+    resume: bool = False,
+):
+    """Fetch → tag → score → write one day at a time. Crash-safe: completed days
+    are flushed to disk immediately and skipped on --resume."""
+    pattern = build_ticker_pattern(symbols)
+    stats = FetchStats()
+    out_dir.mkdir(parents=True, exist_ok=True)
+    tag = f"{start.date()}_{end.date()}"
+    combined_path = out_dir / f"sentiment_combined_{tag}.csv"
+
+    done_days: set[str] = set()
+    if resume:
+        done_days = _load_done_days(combined_path)
+        if done_days:
+            print(f"Resuming: {len(done_days)} days already completed, skipping.",
+                  file=sys.stderr)
+
+    fresh = not combined_path.exists() or not resume
+    combined_f = open(combined_path, "w" if fresh else "a", newline="")
+    writer = csv.DictWriter(combined_f, fieldnames=FIELDNAMES)
+    if fresh:
+        writer.writeheader()
+
+    total_rows = 0
+    total_scored = 0
+
+    print(f"Collecting WSB {start.date()} → {end.date()} for {len(symbols)} symbols "
+          f"({'DRY RUN' if dry_run else 'with FinBERT scoring'})", file=sys.stderr)
+
+    try:
+        for ds, de in _date_chunks(start, end):
+            day_iso = ds.date().isoformat()
+            if day_iso in done_days:
+                continue
+
+            posts, comments = fetch_day(ds, de, stats)
+
+            by_ticker: dict[str, list[str]] = defaultdict(list)
+            for p in posts:
+                text = f"{p.get('title','')}\n{p.get('selftext','') or ''}".strip()
+                for tk in tag_text(text, pattern):
+                    by_ticker[tk].append(text[:1200])
+            for c in comments:
+                text = (c.get("body") or "").strip()
+                for tk in tag_text(text, pattern):
+                    by_ticker[tk].append(text[:1200])
+
+            n_tags = sum(len(v) for v in by_ticker.values())
+            print(f"  {day_iso}: {len(posts):,} posts, {len(comments):,} comments → "
+                  f"{n_tags:,} tags across {len(by_ticker)} symbols",
+                  file=sys.stderr)
+
+            if dry_run:
+                continue
+
+            day_rows = _score_day(by_ticker)
+            for row in day_rows:
+                row["date"] = day_iso
+                writer.writerow(row)
+            combined_f.flush()
+            total_rows += len(day_rows)
+            total_scored += n_tags
+
+            if day_rows:
+                top = sorted(day_rows, key=lambda r: r["mentions"], reverse=True)[:3]
+                top_str = ", ".join(f"{r['ticker']}({r['mentions']})" for r in top)
+                print(f"    scored {n_tags} texts → {len(day_rows)} ticker-days "
+                      f"(top: {top_str})", file=sys.stderr)
+    finally:
+        combined_f.close()
+
+    print(f"\nDone: {stats.posts:,} posts, {stats.comments:,} comments, "
+          f"{stats.api_calls:,} API calls, {stats.failures} failures", file=sys.stderr)
+    if not dry_run:
+        print(f"Scored {total_scored:,} texts → {total_rows:,} ticker-day rows → {combined_path}",
+              file=sys.stderr)
+        if combined_path.exists():
+            _write_per_ticker(combined_path, out_dir)
 
 
 def parse_date(s: str) -> datetime:
@@ -327,23 +402,42 @@ def parse_date(s: str) -> datetime:
 
 
 def main():
-    p = argparse.ArgumentParser()
-    p.add_argument("--symbols", nargs="+", default=None,
-                   help="Override symbol list. Default uses DEFAULT_SYMBOLS.")
-    p.add_argument("--all", action="store_true", help="Use the full DEFAULT_SYMBOLS universe.")
+    p = argparse.ArgumentParser(
+        description="Collect WSB sentiment from arctic-shift and score with FinBERT.",
+        epilog="Examples:\n"
+               "  python sentiment_collector.py --all --start 2023-01-01 --end 2024-01-01\n"
+               "  python sentiment_collector.py --backtest --start 2023-01-01 --end 2024-01-01\n"
+               "  python sentiment_collector.py --symbols TSLA NVDA --start 2024-01-01 --end 2024-02-01 --dry-run\n",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    group = p.add_mutually_exclusive_group()
+    group.add_argument("--symbols", nargs="+", default=None,
+                       help="Specific symbols to collect.")
+    group.add_argument("--all", action="store_true",
+                       help=f"Full {len(DEFAULT_SYMBOLS)}-symbol universe (WSB favorites + ETFs + sectors).")
+    group.add_argument("--backtest", action="store_true",
+                       help=f"Original {len(BACKTEST_SYMBOLS)}-symbol backtest set only.")
     p.add_argument("--start", required=True, type=parse_date)
     p.add_argument("--end", required=True, type=parse_date)
     p.add_argument("--out", default="sentiment_data", help="Output directory.")
     p.add_argument("--dry-run", action="store_true",
                    help="Fetch + tag only, skip FinBERT (useful to size the workload).")
+    p.add_argument("--resume", action="store_true",
+                   help="Skip days already in the output CSV. Use after a crash or interrupt.")
     args = p.parse_args()
 
-    syms = DEFAULT_SYMBOLS if args.all or not args.symbols else [s.upper() for s in args.symbols]
+    if args.backtest:
+        syms = BACKTEST_SYMBOLS
+    elif args.symbols:
+        syms = [s.upper() for s in args.symbols]
+    else:
+        syms = DEFAULT_SYMBOLS  # --all or default
     if args.end <= args.start:
         sys.exit("--end must be after --start")
 
-    result = collect(syms, args.start, args.end, dry_run=args.dry_run)
-    write_outputs(result, Path(args.out), args.start, args.end)
+    print(f"Universe: {len(syms)} symbols", file=sys.stderr)
+    collect_streaming(syms, args.start, args.end, Path(args.out),
+                      dry_run=args.dry_run, resume=args.resume)
 
 
 if __name__ == "__main__":
