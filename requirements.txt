@@ -1,0 +1,8 @@
+yfinance>=0.2.31
+pandas>=2.0
+numpy>=1.24
+requests>=2.28
+
+# Sentiment collector (Phase B) — large downloads, optional for dashboard-only use
+transformers>=4.36
+torch>=2.1
