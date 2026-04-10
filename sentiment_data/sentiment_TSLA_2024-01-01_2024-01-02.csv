@@ -1,0 +1,2 @@
+date,ticker,mentions,positive,negative,neutral,score_signed_mean,bullish_ratio
+2024-01-01,TSLA,30,0,3,27,-0.0542,0.0

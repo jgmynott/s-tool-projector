@@ -1,0 +1,2 @@
+date,ticker,mentions,positive,negative,neutral,score_signed_mean,bullish_ratio
+2024-01-01,NVDA,12,0,2,10,-0.1268,0.0

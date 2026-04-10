@@ -1,0 +1,19 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "projector",
+      "runtimeExecutable": "ruby",
+      "runtimeArgs": [
+        "-run",
+        "-e",
+        "httpd",
+        "/tmp/s2tool_preview",
+        "-p",
+        "8765"
+      ],
+      "port": 8765,
+      "autoPort": true
+    }
+  ]
+}
