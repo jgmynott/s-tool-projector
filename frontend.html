@@ -260,9 +260,9 @@ body {
         <div class="stat-box"><div class="label">Median Target</div><div class="value green" id="stMedian">—</div></div>
         <div class="stat-box"><div class="label">Expected Return</div><div class="value green" id="stReturn">—</div></div>
         <div class="stat-box"><div class="label">Upside Prob</div><div class="value blue" id="stUpside">—</div></div>
-        <div class="stat-box"><div class="label">Volatility (ann)</div><div class="value yellow" id="stVol">—</div></div>
-        <div class="stat-box"><div class="label">MR Target</div><div class="value cyan" id="stMR">—</div></div>
-        <div class="stat-box"><div class="label">VIX Regime</div><div class="value" id="stVix">—</div></div>
+        <div class="stat-box"><div class="label">P/E Ratio</div><div class="value yellow" id="stPE">—</div></div>
+        <div class="stat-box"><div class="label">Market Cap</div><div class="value cyan" id="stMcap">—</div></div>
+        <div class="stat-box"><div class="label">EPS</div><div class="value" id="stEPS">—</div></div>
     </div>
 
     <!-- Chart -->
@@ -351,12 +351,21 @@ function render(d) {
     $('stReturn').textContent = fmtPct(ret);
     $('stReturn').className = `value ${ret >= 0 ? 'green' : 'red'}`;
     $('stUpside').textContent = `${(d.upside_prob * 100).toFixed(0)}%`;
-    $('stVol').textContent = `${(d.sigma * 100).toFixed(1)}%`;
-    $('stMR').textContent = fmtPrice(d.mr_target);
-    $('stVix').textContent = d.vix_regime ? `${d.vix_value} (${d.vix_regime})` : 'N/A';
+
+    // Fundamentals
+    const f = typeof d.fundamentals_json === 'string' ? JSON.parse(d.fundamentals_json) : (d.fundamentals_json || {});
+    const pe = f.pe_trailing ?? f.pe_forward;
+    $('stPE').textContent = pe != null ? pe.toFixed(1) : 'N/A';
+    const mcap = f.market_cap;
+    $('stMcap').textContent = mcap != null ? (mcap >= 1e12 ? `$${(mcap/1e12).toFixed(2)}T` : mcap >= 1e9 ? `$${(mcap/1e9).toFixed(1)}B` : mcap >= 1e6 ? `$${(mcap/1e6).toFixed(0)}M` : 'N/A') : 'N/A';
+    const eps = f.eps_trailing ?? f.eps_forward;
+    $('stEPS').textContent = eps != null ? `$${eps.toFixed(2)}` : 'N/A';
 
     $('metaDate').textContent = `Run: ${d.run_date}`;
-    $('metaVix').textContent = d.vix_regime ? `VIX: ${d.vix_value} ${d.vix_regime}` : '';
+    const metaParts = [];
+    if (d.vix_regime) metaParts.push(`VIX: ${d.vix_value} ${d.vix_regime}`);
+    if (f.sector) metaParts.push(f.sector);
+    $('metaVix').textContent = metaParts.join(' · ');
 
     // Chart
     renderChart(d);
@@ -538,13 +547,19 @@ function renderSentiment(d) {
 
 function renderDiag(d) {
     $('diagCard').style.display = '';
+    const fn = typeof d.fundamentals_json === 'string' ? JSON.parse(d.fundamentals_json) : (d.fundamentals_json || {});
     const items = [
-        ['Drift (mu)', `${(d.mu * 100).toFixed(2)}%`],
-        ['Volatility (sigma)', `${(d.sigma * 100).toFixed(1)}%`],
-        ['Hist Volatility', `${(d.sigma_hist * 100).toFixed(1)}%`],
+        ['VIX Regime', d.vix_regime ? `${d.vix_value} (${d.vix_regime})` : 'N/A'],
         ['VIX Multiplier', `${d.sigma_mult?.toFixed(2) ?? 'N/A'}`],
-        ['MR Kappa', d.mr_kappa?.toFixed(4) ?? 'N/A'],
+        ['Volatility (ann)', `${(d.sigma * 100).toFixed(1)}%`],
+        ['Hist Volatility', `${(d.sigma_hist * 100).toFixed(1)}%`],
+        ['Drift (mu)', `${(d.mu * 100).toFixed(2)}%`],
         ['MR Target', d.mr_target ? fmtPrice(d.mr_target) : 'N/A'],
+        ['MR Kappa', d.mr_kappa?.toFixed(4) ?? 'N/A'],
+        ['Beta', fn.beta?.toFixed(2) ?? 'N/A'],
+        ['52w Range', fn.week52_low && fn.week52_high ? `${fmtPrice(fn.week52_low)} – ${fmtPrice(fn.week52_high)}` : 'N/A'],
+        ['Fwd P/E', fn.pe_forward?.toFixed(1) ?? 'N/A'],
+        ['Div Yield', fn.dividend_yield ? `${(fn.dividend_yield * 100).toFixed(2)}%` : 'N/A'],
         ['Blend (MC %)', `${((d.blend_mc || 0.3) * 100).toFixed(0)}%`],
         ['Paths', d.num_paths?.toLocaleString() ?? 'N/A'],
         ['Compute Time', `${d.compute_secs}s`],

@@ -119,6 +119,30 @@ def fetch_stocktwits(symbol: str) -> dict | None:
         return None
 
 
+def fetch_fundamentals(symbol: str) -> dict | None:
+    """Fetch key fundamentals from yfinance Ticker.info."""
+    try:
+        info = yf.Ticker(symbol).info
+        if not info or info.get("regularMarketPrice") is None:
+            return None
+        return {
+            "pe_trailing": info.get("trailingPE"),
+            "pe_forward": info.get("forwardPE"),
+            "market_cap": info.get("marketCap"),
+            "eps_trailing": info.get("trailingEps"),
+            "eps_forward": info.get("forwardEps"),
+            "dividend_yield": info.get("trailingAnnualDividendYield"),
+            "beta": info.get("beta"),
+            "week52_high": info.get("fiftyTwoWeekHigh"),
+            "week52_low": info.get("fiftyTwoWeekLow"),
+            "sector": info.get("sector"),
+            "industry": info.get("industry"),
+            "short_name": info.get("shortName"),
+        }
+    except Exception:
+        return None
+
+
 # ── Simulation Engines ──
 
 def run_monte_carlo(
@@ -315,6 +339,7 @@ def run_projection(
     sigma_mult = vix_info["sigma_mult"] if vix_info else 1.0
 
     sent_info = fetch_stocktwits(symbol)
+    fundamentals = fetch_fundamentals(symbol)
 
     closes = hist["closes"]
     S0 = float(closes[-1])
@@ -402,6 +427,8 @@ def run_projection(
         "mr_eq_json": json.dumps(_round_list(mr_eq)),
         "hist_json": json.dumps(hist_chart),
         "proj_dates_json": json.dumps(proj_dates),
+        # Fundamentals (JSON blob — changes more often than projections)
+        "fundamentals_json": json.dumps(fundamentals) if fundamentals else None,
         # Meta
         "num_paths": num_paths,
         "blend_mc": blend_mc,

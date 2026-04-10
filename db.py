@@ -55,6 +55,8 @@ CREATE TABLE IF NOT EXISTS projections (
     hist_json     TEXT,
     -- Projection dates (JSON array of ISO dates)
     proj_dates_json TEXT,
+    -- Fundamentals (JSON: {pe_trailing, market_cap, eps, sector, ...})
+    fundamentals_json TEXT,
     -- Metadata
     num_paths     INTEGER,
     blend_mc      REAL    DEFAULT 0.30,
@@ -119,6 +121,7 @@ def save_projection(conn: sqlite3.Connection, data: dict):
         "vix_value", "vix_regime",
         "sent_bull", "sent_bear", "sent_tagged", "sent_net",
         "milestones_json", "mr_eq_json", "hist_json", "proj_dates_json",
+        "fundamentals_json",
         "num_paths", "blend_mc", "computed_at", "compute_secs",
     ]
     placeholders = ", ".join("?" for _ in cols)
@@ -152,7 +155,7 @@ def get_projection(
         return None
     d = dict(row)
     # Parse JSON fields
-    for jf in ("curves_json", "milestones_json", "mr_eq_json", "hist_json", "proj_dates_json"):
+    for jf in ("curves_json", "milestones_json", "mr_eq_json", "hist_json", "proj_dates_json", "fundamentals_json"):
         if d.get(jf):
             d[jf] = json.loads(d[jf])
     return d
