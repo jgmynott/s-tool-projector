@@ -104,7 +104,201 @@ DEFAULT_HORIZON = 252  # 1 year
 # Best config: L21_S0.005 → -12.6% MAPE improvement at 1yr, +5.2% hit rate
 SENTIMENT_LOOKBACK_DAYS = 21
 SENTIMENT_TILT_STRENGTH = 0.005
-SENTIMENT_CSV = "sentiment_data/sentiment_combined_2023-01-01_2025-01-01.csv"
+SENTIMENT_CSV = "sentiment_data/sentiment_combined_2023-01-01_2026-04-15.csv"
+
+# Fundamental tilt weights — how much each signal adjusts annualized drift
+# Weights do not need to sum to 1.0; MAX_FUNDAMENTAL_TILT caps the combined tilt.
+TILT_WEIGHTS = {
+    "analyst_target":    0.35,  # FMP analyst consensus price target vs current
+    "eps_growth":        0.22,  # FMP EPS growth estimate
+    "insider":           0.12,  # FMP insider buy/sell net ratio
+    "macro":             0.18,  # FRED macro regime (yield curve, rates, unemployment)
+    "recommendation":    0.08,  # Finnhub buy/hold/sell consensus (fresher than FMP target)
+    "put_call_contra":   0.05,  # yfinance put/call — CONTRARIAN (high P/C → bullish tilt)
+}
+MAX_FUNDAMENTAL_TILT = 0.06  # ±6% max annual drift from all fundamentals combined
+
+# Earnings proximity — sigma boost when earnings are near (known vol event)
+EARNINGS_SIGMA_MAX = 1.25   # max sigma multiplier when earnings = 0 days away
+EARNINGS_SIGMA_WINDOW = 30  # days before earnings to start boosting
+
+def compute_fundamental_tilt(
+    symbol: str,
+    current_price: float,
+    horizon_days: int = DEFAULT_HORIZON,
+) -> dict:
+    """Compute drift adjustment from fundamental signals.
+
+    Combines:
+      1. Analyst price target gap (target vs current price)
+      2. EPS growth estimates
+      3. Insider trading net buy/sell
+      4. Macro regime (yield curve, Fed funds, unemployment)
+
+    Returns dict with:
+        mu_tilt:     float — annual drift adjustment (add to MC mu)
+        components:  dict  — breakdown of each signal's contribution
+        active:      bool  — whether any signal contributed
+        data:        dict  — raw data from providers
+    """
+    components = {}
+    raw_data = {}
+    total_tilt = 0.0
+
+    # ── 1. Analyst Price Target ──
+    target_data = _dm.get_price_target(symbol)
+    if target_data and target_data.get("target_mean"):
+        target = target_data["target_mean"]
+        raw_data["price_target"] = target_data
+        # Compute implied return from current price to target
+        # Annualize: targets are typically 12-month
+        implied_return = (target - current_price) / current_price
+        # Cap at ±30% to avoid outlier targets dominating
+        implied_return = max(-0.30, min(0.30, implied_return))
+        tilt = implied_return * TILT_WEIGHTS["analyst_target"]
+        components["analyst_target"] = {
+            "target_mean": round(target, 2),
+            "implied_return_pct": round(implied_return * 100, 1),
+            "tilt": round(tilt, 5),
+        }
+        total_tilt += tilt
+
+    # ── 2. EPS Growth ──
+    eps_data = _dm.get_analyst_estimates(symbol)
+    if eps_data and eps_data.get("eps_growth_pct") is not None:
+        raw_data["eps_estimates"] = eps_data
+        growth = eps_data["eps_growth_pct"] / 100  # convert to decimal
+        # EPS growth maps roughly to price appreciation
+        # Cap at ±50% growth
+        growth = max(-0.50, min(0.50, growth))
+        tilt = growth * TILT_WEIGHTS["eps_growth"]
+        components["eps_growth"] = {
+            "growth_pct": round(growth * 100, 1),
+            "tilt": round(tilt, 5),
+        }
+        total_tilt += tilt
+
+    # ── 3. Insider Trading ──
+    insider_data = _dm.get_insider_signal(symbol)
+    if insider_data and insider_data.get("net_ratio") is not None:
+        raw_data["insider"] = insider_data
+        # net_ratio: -1 (all sells) to +1 (all buys)
+        net = insider_data["net_ratio"]
+        # Scale: strong insider buying (+1) → +3% drift; strong selling (-1) → -3%
+        tilt = net * 0.03 * TILT_WEIGHTS["insider"]
+        components["insider"] = {
+            "net_ratio": net,
+            "signal": insider_data["signal"],
+            "tilt": round(tilt, 5),
+        }
+        total_tilt += tilt
+
+    # ── 4. Macro Regime ──
+    macro = _dm.get_macro_regime()
+    if macro and macro.get("drift_adj") is not None:
+        raw_data["macro"] = macro
+        tilt = macro["drift_adj"] * TILT_WEIGHTS["macro"]
+        components["macro"] = {
+            "regime": macro["regime"],
+            "score": macro.get("score", 0),
+            "tilt": round(tilt, 5),
+        }
+        total_tilt += tilt
+
+    # ── 5. Finnhub Recommendation Trends (fresher than FMP target) ──
+    recs = _dm.get_recommendation_trends(symbol)
+    if recs and recs.get("total", 0) >= 5:  # need a real consensus
+        raw_data["recommendations"] = recs
+        buy, hold, sell, total = recs["buy"], recs["hold"], recs["sell"], recs["total"]
+        # Signed score in [-1, +1]: (buy - sell) / total
+        # Pure buys → +1 → maps to +6% implied annual return (strong bullish call)
+        # Pure sells → -1 → -6%
+        rec_score = (buy - sell) / total
+        implied = rec_score * 0.06
+        tilt = implied * TILT_WEIGHTS["recommendation"]
+        components["recommendation"] = {
+            "buy": buy, "hold": hold, "sell": sell, "total": total,
+            "consensus": recs.get("consensus"),
+            "score": round(rec_score, 3),
+            "tilt": round(tilt, 5),
+        }
+        total_tilt += tilt
+
+    # ── 6. Put/Call Ratio (CONTRARIAN) ──
+    # Academic lit: high retail put/call = excessive hedging/fear → contrarian bullish.
+    # Neutral ~0.85; >1.0 = fearful (bullish tilt); <0.7 = complacent (bearish tilt).
+    pc = _dm.get_put_call_ratio(symbol)
+    if pc and pc.get("put_call_ratio") is not None:
+        raw_data["put_call"] = pc
+        ratio = pc["put_call_ratio"]
+        # Signed z-ish score around 0.85, clamped to [-1, +1]
+        # 1.35 → +1 (very bearish crowd → bullish contrarian)
+        # 0.35 → -1 (very bullish crowd → bearish contrarian)
+        deviation = (ratio - 0.85) / 0.50
+        deviation = max(-1.0, min(1.0, deviation))
+        implied = deviation * 0.05  # ±5% implied annual return from sentiment extremes
+        tilt = implied * TILT_WEIGHTS["put_call_contra"]
+        components["put_call_contra"] = {
+            "ratio": round(ratio, 3),
+            "deviation_from_neutral": round(deviation, 3),
+            "tilt": round(tilt, 5),
+        }
+        total_tilt += tilt
+
+    # Clamp total
+    total_tilt = max(-MAX_FUNDAMENTAL_TILT, min(MAX_FUNDAMENTAL_TILT, total_tilt))
+
+    active = len(components) > 0 and abs(total_tilt) > 0.0001
+
+    return {
+        "mu_tilt": round(total_tilt, 6),
+        "components": components,
+        "active": active,
+        "n_signals": len(components),
+        "data": raw_data,
+    }
+
+
+def compute_earnings_proximity_sigma(symbol: str) -> dict:
+    """Return a sigma multiplier that widens bands as earnings approach.
+
+    Earnings are known vol events. When earnings are within EARNINGS_SIGMA_WINDOW
+    days, boost sigma linearly up to EARNINGS_SIGMA_MAX at 0 days.
+
+    Returns dict with:
+        sigma_mult:      float — multiplier (1.0 = no boost)
+        days_to_earnings: int | None
+        earnings_date:    str | None
+        active:           bool
+    """
+    try:
+        earn = _dm.get_earnings_date(symbol)
+        if not earn or not earn.get("earnings_date"):
+            return {"sigma_mult": 1.0, "active": False}
+        # Parse date — Finnhub gives "2026-04-30"; yfinance may give a timestamp
+        date_str = str(earn["earnings_date"]).split(" ")[0][:10]
+        edate = datetime.strptime(date_str, "%Y-%m-%d")
+        days = (edate - datetime.now()).days
+        # Only boost for future earnings within window
+        if days < 0 or days > EARNINGS_SIGMA_WINDOW:
+            return {
+                "sigma_mult": 1.0,
+                "active": False,
+                "days_to_earnings": days,
+                "earnings_date": date_str,
+            }
+        # Linear boost: 30 days out → 1.00, 0 days → EARNINGS_SIGMA_MAX
+        frac = (EARNINGS_SIGMA_WINDOW - days) / EARNINGS_SIGMA_WINDOW
+        mult = 1.0 + frac * (EARNINGS_SIGMA_MAX - 1.0)
+        return {
+            "sigma_mult":       round(mult, 4),
+            "days_to_earnings": days,
+            "earnings_date":    date_str,
+            "active":           True,
+        }
+    except Exception:
+        return {"sigma_mult": 1.0, "active": False}
+
 
 MILESTONES = [
     ("1 Week", 5),
@@ -594,23 +788,49 @@ def run_projection(
 
     # Sentiment tilt — from Phase C backtest (L21, 0.5% strength)
     sentiment_info = get_sentiment_tilt(symbol)
-    mu_tilt = sentiment_info["mu_tilt"]
+    sentiment_tilt = sentiment_info["mu_tilt"]
     fundamentals["sentiment_tilt"] = sentiment_info
+
+    # Fundamental tilt — analyst targets, EPS growth, insider trading, macro regime
+    fundamental_info = compute_fundamental_tilt(symbol, S0, horizon_days)
+    fundamental_tilt = fundamental_info["mu_tilt"]
+    fundamentals["fundamental_tilt"] = fundamental_info
+
+    # Combined tilt = sentiment + fundamentals (capped at ±10% annual drift)
+    mu_tilt = max(-0.10, min(0.10, sentiment_tilt + fundamental_tilt))
+
+    # Macro regime sigma overlay — multiplies on top of VIX sigma_mult
+    macro = _dm.get_macro_regime()
+    macro_sigma = macro.get("sigma_mult", 1.0) if macro else 1.0
+
+    # Earnings proximity sigma overlay — widens bands near known earnings events
+    earnings_sigma_info = compute_earnings_proximity_sigma(symbol)
+    earnings_sigma = earnings_sigma_info.get("sigma_mult", 1.0)
+    fundamentals["earnings_proximity"] = earnings_sigma_info
+
+    combined_sigma_mult = sigma_mult * macro_sigma * earnings_sigma
 
     # Track data sources used
     fundamentals["data_sources"] = {
         "price": hist.get("source", "yfinance"),
         "fundamentals": fundamentals.get("source", "yfinance"),
         "sentiment_tilt_active": sentiment_info["active"],
+        "fundamental_tilt_active": fundamental_info["active"],
+        "total_mu_tilt": round(mu_tilt, 6),
+        "total_mu_tilt_bps": round(mu_tilt * 10000, 1),
+        "macro_regime": macro.get("regime") if macro else None,
+        "macro_sigma_mult": round(macro_sigma, 3),
+        "earnings_sigma_mult": round(earnings_sigma, 3),
+        "earnings_proximity_active": earnings_sigma_info.get("active", False),
         "providers_active": {
             k: v.get("key_configured", v.get("available", False))
             for k, v in _dm.provider_status().items()
         },
     }
 
-    # Run engines (MC gets sentiment tilt; MR is untilted — it has its own equilibrium)
-    mc = run_monte_carlo(closes, num_paths, horizon_days, sigma_mult, rng, mu_tilt=mu_tilt)
-    mr = run_mean_reversion(closes, num_paths, horizon_days, sigma_mult, rng)
+    # Run engines (MC gets combined tilt; MR uses combined sigma; MR is untilted — it has its own equilibrium)
+    mc = run_monte_carlo(closes, num_paths, horizon_days, combined_sigma_mult, rng, mu_tilt=mu_tilt)
+    mr = run_mean_reversion(closes, num_paths, horizon_days, combined_sigma_mult, rng)
     pctiles = blend_and_percentile(mc["paths"], mr["paths"], horizon_days, blend_mc)
 
     # Upside prob (recalculate properly)
