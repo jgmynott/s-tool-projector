@@ -27,12 +27,84 @@ from data_providers import DataManager
 # Module-level DataManager — singleton, lazy-inits providers
 _dm = DataManager()
 
+# Lazy-loaded sentiment DataFrame (loaded once, cached)
+_sentiment_df: pd.DataFrame | None = None
+
+
+def _load_sentiment() -> pd.DataFrame | None:
+    """Load the sentiment CSV into a DataFrame (cached after first call)."""
+    global _sentiment_df
+    if _sentiment_df is not None:
+        return _sentiment_df
+    from pathlib import Path
+    csv_path = Path(__file__).parent / SENTIMENT_CSV
+    if not csv_path.exists():
+        return None
+    try:
+        df = pd.read_csv(csv_path, parse_dates=["date"])
+        df["ticker"] = df["ticker"].str.upper()
+        df = df.sort_values(["ticker", "date"]).reset_index(drop=True)
+        _sentiment_df = df
+        return df
+    except Exception:
+        return None
+
+
+def get_sentiment_tilt(symbol: str, as_of_date: datetime | None = None) -> dict:
+    """Compute the sentiment-based drift tilt for a symbol.
+
+    Returns dict with:
+        mu_tilt:    float — annual drift adjustment (add to MC mu)
+        avg_score:  float | None — trailing mean sentiment score
+        lookback:   int — days of sentiment used
+        n_days:     int — number of days with data in the window
+        active:     bool — whether tilt is being applied
+    """
+    sent_df = _load_sentiment()
+    if sent_df is None:
+        return {"mu_tilt": 0.0, "avg_score": None, "lookback": SENTIMENT_LOOKBACK_DAYS,
+                "n_days": 0, "active": False}
+
+    if as_of_date is None:
+        as_of_date = datetime.now(timezone.utc)
+    # Strip timezone — sentiment CSV dates are tz-naive
+    as_of_ts = pd.Timestamp(as_of_date).tz_localize(None) if pd.Timestamp(as_of_date).tzinfo else pd.Timestamp(as_of_date)
+
+    start = as_of_ts - pd.Timedelta(days=SENTIMENT_LOOKBACK_DAYS)
+    mask = (
+        (sent_df["ticker"] == symbol.upper())
+        & (sent_df["date"] >= start)
+        & (sent_df["date"] <= as_of_ts)
+    )
+    sub = sent_df.loc[mask, "score_signed_mean"]
+
+    if sub.empty or len(sub) < 3:  # require at least 3 days of data
+        return {"mu_tilt": 0.0, "avg_score": None, "lookback": SENTIMENT_LOOKBACK_DAYS,
+                "n_days": len(sub), "active": False}
+
+    avg_score = float(sub.mean())
+    mu_tilt = SENTIMENT_TILT_STRENGTH * avg_score
+
+    return {
+        "mu_tilt": round(mu_tilt, 6),
+        "avg_score": round(avg_score, 4),
+        "lookback": SENTIMENT_LOOKBACK_DAYS,
+        "n_days": len(sub),
+        "active": True,
+    }
+
 
 # ── Configuration ──
 
 BLEND_MC = 0.30  # 30% MC / 70% MR (from sweep_report.md)
 DEFAULT_PATHS = 2000
 DEFAULT_HORIZON = 252  # 1 year
+
+# Sentiment tilt — from Phase C full backtest (107 symbols, 27,800 forecasts)
+# Best config: L21_S0.005 → -12.6% MAPE improvement at 1yr, +5.2% hit rate
+SENTIMENT_LOOKBACK_DAYS = 21
+SENTIMENT_TILT_STRENGTH = 0.005
+SENTIMENT_CSV = "sentiment_data/sentiment_combined_2023-01-01_2025-01-01.csv"
 
 MILESTONES = [
     ("1 Week", 5),
@@ -299,11 +371,13 @@ def run_monte_carlo(
     horizon_days: int = DEFAULT_HORIZON,
     sigma_mult: float = 1.0,
     rng: np.random.Generator | None = None,
+    mu_tilt: float = 0.0,
 ) -> dict:
     if rng is None:
         rng = np.random.default_rng()
     log_returns = np.diff(np.log(closes))
-    mu = float(np.mean(log_returns) * 252)
+    mu_base = float(np.mean(log_returns) * 252)
+    mu = mu_base + mu_tilt  # Apply sentiment tilt to annualised drift
     sigma_hist = float(np.std(log_returns, ddof=1) * np.sqrt(252))
     sigma = sigma_hist * sigma_mult
     dt = 1.0 / 252
@@ -318,6 +392,8 @@ def run_monte_carlo(
         "paths": paths,
         "params": {
             "mu": mu,
+            "mu_base": mu_base,
+            "mu_tilt": mu_tilt,
             "sigma": sigma,
             "sigma_hist": sigma_hist,
             "sigma_mult": sigma_mult,
@@ -516,18 +592,24 @@ def run_projection(
             fundamentals["analyst_hold"] = analyst.get("hold")
             fundamentals["analyst_sell"] = analyst.get("sell")
 
+    # Sentiment tilt — from Phase C backtest (L21, 0.5% strength)
+    sentiment_info = get_sentiment_tilt(symbol)
+    mu_tilt = sentiment_info["mu_tilt"]
+    fundamentals["sentiment_tilt"] = sentiment_info
+
     # Track data sources used
     fundamentals["data_sources"] = {
         "price": hist.get("source", "yfinance"),
         "fundamentals": fundamentals.get("source", "yfinance"),
+        "sentiment_tilt_active": sentiment_info["active"],
         "providers_active": {
             k: v.get("key_configured", v.get("available", False))
             for k, v in _dm.provider_status().items()
         },
     }
 
-    # Run engines
-    mc = run_monte_carlo(closes, num_paths, horizon_days, sigma_mult, rng)
+    # Run engines (MC gets sentiment tilt; MR is untilted — it has its own equilibrium)
+    mc = run_monte_carlo(closes, num_paths, horizon_days, sigma_mult, rng, mu_tilt=mu_tilt)
     mr = run_mean_reversion(closes, num_paths, horizon_days, sigma_mult, rng)
     pctiles = blend_and_percentile(mc["paths"], mr["paths"], horizon_days, blend_mc)
 
