@@ -365,7 +365,11 @@ def compute_metrics(df: pd.DataFrame, horizon_label: str) -> dict:
     fc_ret = sub[med_col] / sub["current_price"] - 1
     act_ret = sub[real_col] / sub["current_price"] - 1
     if len(fc_ret) > 2:
-        ic = float(fc_ret.corr(act_ret, method="spearman"))
+        try:
+            ic = float(fc_ret.corr(act_ret, method="spearman"))
+        except (ImportError, ModuleNotFoundError):
+            # scipy not installed — fall back to Pearson
+            ic = float(fc_ret.corr(act_ret))
     else:
         ic = float("nan")
 
