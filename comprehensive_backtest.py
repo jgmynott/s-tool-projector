@@ -230,6 +230,10 @@ def summarize(df: pd.DataFrame) -> pd.DataFrame:
         hit = f"{horizon_lbl}_dir_hit"
         pct_err = f"{horizon_lbl}_pct_err"
 
+        # Skip horizons without data (e.g. --horizon shorter than this milestone)
+        if real not in df.columns or med not in df.columns:
+            continue
+
         # Baseline MAE for skill normalization
         b_sub = baseline.dropna(subset=[real, med])
         base_mae = (b_sub[med] - b_sub[real]).abs().mean() if len(b_sub) else float("nan")
