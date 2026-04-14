@@ -1159,6 +1159,31 @@ class DataManager:
             self.cache.set(key, result)
         return result
 
+    def get_public_pulse(self, symbol: str, fast: bool = True) -> Dict[str, Any] | None:
+        """US public-sentiment composite (Google Trends + Wikipedia + GDELT +
+        broad Reddit + Michigan CSI). Cached 6h because PP fetches are slow.
+
+        Set fast=True to skip BroadReddit (the slowest source, ~5s per ticker).
+        """
+        key = f"public_pulse:{symbol}:{'fast' if fast else 'full'}"
+        cached = self.cache.get(key, "sentiment")
+        if cached is not None:
+            return cached
+        try:
+            from public_pulse import PublicPulse
+        except ImportError:
+            return None
+        try:
+            pp = PublicPulse()
+            snap = pp.snapshot(symbol, fast=fast)
+            result = snap.as_dict()
+            # Custom TTL: PP values change slowly — 6h cache
+            self.cache.set(key, result)
+            return result
+        except Exception as exc:
+            logger.warning("Public Pulse failed for %s: %s", symbol, exc)
+            return None
+
     def get_put_call_ratio(self, symbol: str) -> Dict[str, Any] | None:
         """Put/call ratio from yfinance options chain (free).
 

@@ -109,12 +109,13 @@ SENTIMENT_CSV = "sentiment_data/sentiment_combined_2023-01-01_2026-04-15.csv"
 # Fundamental tilt weights — how much each signal adjusts annualized drift
 # Weights do not need to sum to 1.0; MAX_FUNDAMENTAL_TILT caps the combined tilt.
 TILT_WEIGHTS = {
-    "analyst_target":    0.35,  # FMP analyst consensus price target vs current
-    "eps_growth":        0.22,  # FMP EPS growth estimate
-    "insider":           0.12,  # FMP insider buy/sell net ratio
-    "macro":             0.18,  # FRED macro regime (yield curve, rates, unemployment)
-    "recommendation":    0.08,  # Finnhub buy/hold/sell consensus (fresher than FMP target)
+    "analyst_target":    0.30,  # FMP analyst consensus price target vs current
+    "eps_growth":        0.18,  # FMP EPS growth estimate
+    "insider":           0.10,  # FMP insider buy/sell net ratio
+    "macro":             0.15,  # FRED macro regime (yield curve, rates, unemployment)
+    "recommendation":    0.07,  # Finnhub buy/hold/sell consensus (fresher than FMP target)
     "put_call_contra":   0.05,  # yfinance put/call — CONTRARIAN (high P/C → bullish tilt)
+    "public_pulse":      0.15,  # US general-public sentiment (Google Trends, Wiki, GDELT, Reddit, CSI)
 }
 MAX_FUNDAMENTAL_TILT = 0.06  # ±6% max annual drift from all fundamentals combined
 
@@ -220,6 +221,22 @@ def compute_fundamental_tilt(
             "buy": buy, "hold": hold, "sell": sell, "total": total,
             "consensus": recs.get("consensus"),
             "score": round(rec_score, 3),
+            "tilt": round(tilt, 5),
+        }
+        total_tilt += tilt
+
+    # ── 7. Public Pulse (US general-public sentiment composite) ──
+    pp = _dm.get_public_pulse(symbol, fast=True)
+    if pp and pp.get("composite_score") is not None and pp.get("active_sources", 0) >= 2:
+        raw_data["public_pulse"] = pp
+        composite = pp["composite_score"]  # already in [-1, +1]
+        # Map composite to implied annual return: +1 → +6%, -1 → -6%
+        implied = composite * 0.06
+        tilt = implied * TILT_WEIGHTS["public_pulse"]
+        components["public_pulse"] = {
+            "composite_score": round(composite, 3),
+            "active_sources": pp["active_sources"],
+            "total_sources": pp["total_sources"],
             "tilt": round(tilt, 5),
         }
         total_tilt += tilt
