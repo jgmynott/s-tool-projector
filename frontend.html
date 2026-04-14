@@ -125,6 +125,37 @@ body {
 }
 @media (max-width: 600px) { .momentum-row { grid-template-columns: repeat(2, 1fr); } }
 
+/* Enriched Data Row */
+.enriched-row {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px;
+}
+.enrich-box {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 16px; box-shadow: var(--shadow);
+}
+.enrich-box .label {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 1.2px;
+    color: var(--text-muted); margin-bottom: 8px; font-weight: 600;
+}
+.enrich-box .value { font-size: 16px; font-weight: 700; }
+.enrich-box .sub { font-size: 10px; color: var(--text-muted); margin-top: 4px; }
+.analyst-bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; margin: 8px 0; }
+.analyst-bar .buy { background: var(--green); }
+.analyst-bar .hold { background: var(--amber); }
+.analyst-bar .sell { background: var(--red); }
+.analyst-counts { display: flex; justify-content: space-between; font-size: 10px; }
+.margin-row { display: flex; gap: 12px; margin-top: 6px; }
+.margin-item { font-size: 11px; }
+.margin-item .ml { color: var(--text-muted); }
+.margin-item .mv { font-weight: 600; }
+.source-tag {
+    display: inline-block; font-size: 9px; letter-spacing: 0.5px; padding: 2px 6px;
+    border-radius: 4px; background: rgba(61,139,94,0.15); color: var(--accent);
+    text-transform: uppercase; font-weight: 600; margin-top: 6px;
+}
+@media (max-width: 900px) { .enriched-row { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 600px) { .enriched-row { grid-template-columns: 1fr; } }
+
 /* Controls */
 .controls-row { display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap; }
 .control-group { display: flex; flex-direction: column; gap: 6px; }
@@ -304,6 +335,14 @@ body {
         <div class="mom-box" id="momSignal"></div>
     </div>
 
+    <!-- Enriched Data -->
+    <div class="enriched-row" id="enrichedRow" style="display:none">
+        <div class="enrich-box" id="enrichEarnings"></div>
+        <div class="enrich-box" id="enrichAnalyst"></div>
+        <div class="enrich-box" id="enrichMargins"></div>
+        <div class="enrich-box" id="enrichSignals"></div>
+    </div>
+
     <!-- Chart -->
     <div class="card" id="chartCard" style="display:none">
         <h3>Price Projection</h3>
@@ -409,6 +448,9 @@ function render(d) {
     // Momentum indicators
     renderMomentum(f);
 
+    // Enriched data (analyst, earnings, margins, signals)
+    renderEnriched(f);
+
     // Chart
     renderChart(d);
 
@@ -420,6 +462,84 @@ function render(d) {
 
     // Diagnostics
     renderDiag(d);
+}
+
+function renderEnriched(f) {
+    const hasAny = f.analyst_consensus || f.next_earnings_date || f.gross_margin != null || f.put_call_ratio != null;
+    $('enrichedRow').style.display = hasAny ? '' : 'none';
+    if (!hasAny) return;
+
+    // Earnings date
+    const ed = f.next_earnings_date;
+    const edStr = ed ? new Date(ed).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
+    const daysUntil = ed ? Math.ceil((new Date(ed) - new Date()) / 86400000) : null;
+    const edSub = daysUntil != null && daysUntil > 0 ? `${daysUntil} days away` : daysUntil === 0 ? 'Today' : '';
+    $('enrichEarnings').innerHTML = `
+        <div class="label">Next Earnings</div>
+        <div class="value" style="color:var(--amber)">${edStr}</div>
+        <div class="sub">${edSub}</div>
+        ${f.data_sources ? `<div class="source-tag">${f.data_sources.fundamentals || 'yfinance'}</div>` : ''}`;
+
+    // Analyst consensus
+    const buy = f.analyst_buy || 0, hold = f.analyst_hold || 0, sell = f.analyst_sell || 0;
+    const aTotal = buy + hold + sell;
+    if (aTotal > 0) {
+        const bPct = (buy / aTotal * 100).toFixed(0);
+        const hPct = (hold / aTotal * 100).toFixed(0);
+        const sPct = (sell / aTotal * 100).toFixed(0);
+        const consensus = f.analyst_consensus || 'N/A';
+        const cColor = consensus === 'buy' ? 'var(--green)' : consensus === 'sell' ? 'var(--red)' : 'var(--amber)';
+        $('enrichAnalyst').innerHTML = `
+            <div class="label">Analyst Consensus</div>
+            <div class="value" style="color:${cColor};text-transform:capitalize">${consensus}</div>
+            <div class="analyst-bar">
+                <div class="buy" style="width:${bPct}%"></div>
+                <div class="hold" style="width:${hPct}%"></div>
+                <div class="sell" style="width:${sPct}%"></div>
+            </div>
+            <div class="analyst-counts">
+                <span style="color:var(--green)">Buy ${buy}</span>
+                <span style="color:var(--amber)">Hold ${hold}</span>
+                <span style="color:var(--red)">Sell ${sell}</span>
+            </div>`;
+    } else {
+        $('enrichAnalyst').innerHTML = `
+            <div class="label">Analyst Consensus</div>
+            <div class="value" style="color:var(--text-muted)">N/A</div>
+            <div class="sub">No Finnhub key configured</div>`;
+    }
+
+    // Margins
+    const fmtM = v => v != null ? `${(v * 100).toFixed(1)}%` : 'N/A';
+    const mColor = v => v != null ? (v > 0.15 ? 'var(--green)' : v > 0 ? 'var(--amber)' : 'var(--red)') : 'var(--text-muted)';
+    $('enrichMargins').innerHTML = `
+        <div class="label">Profit Margins</div>
+        <div class="margin-row">
+            <div class="margin-item"><div class="ml">Gross</div><div class="mv" style="color:${mColor(f.gross_margin)}">${fmtM(f.gross_margin)}</div></div>
+            <div class="margin-item"><div class="ml">Operating</div><div class="mv" style="color:${mColor(f.operating_margin)}">${fmtM(f.operating_margin)}</div></div>
+            <div class="margin-item"><div class="ml">Net</div><div class="mv" style="color:${mColor(f.net_margin)}">${fmtM(f.net_margin)}</div></div>
+        </div>
+        ${f.return_on_equity != null ? `<div class="sub" style="margin-top:8px">ROE: ${(f.return_on_equity * 100).toFixed(1)}% · D/E: ${f.debt_to_equity?.toFixed(2) ?? 'N/A'}</div>` : ''}`;
+
+    // Signals (put/call + news)
+    const pcr = f.put_call_ratio;
+    const pcrLabel = pcr != null ? (pcr > 1.2 ? 'Bearish' : pcr < 0.7 ? 'Bullish' : 'Neutral') : 'N/A';
+    const pcrColor = pcr != null ? (pcr > 1.2 ? 'var(--red)' : pcr < 0.7 ? 'var(--green)' : 'var(--amber)') : 'var(--text-muted)';
+    const newsCount = f.news_article_count;
+    const newsSent = f.news_sentiment_score;
+    $('enrichSignals').innerHTML = `
+        <div class="label">Market Signals</div>
+        <div style="margin-bottom:6px">
+            <span style="font-size:10px;color:var(--text-muted)">Put/Call Ratio:</span>
+            <span style="font-size:15px;font-weight:700;color:${pcrColor}">${pcr != null ? pcr.toFixed(2) : 'N/A'}</span>
+            <span style="font-size:10px;color:${pcrColor}">${pcrLabel}</span>
+        </div>
+        <div>
+            <span style="font-size:10px;color:var(--text-muted)">News (7d):</span>
+            <span style="font-size:13px;font-weight:600">${newsCount != null ? `${newsCount} articles` : 'N/A'}</span>
+            ${newsSent != null ? `<span style="font-size:10px;color:${newsSent > 0.1 ? 'var(--green)' : newsSent < -0.1 ? 'var(--red)' : 'var(--amber)'}">${newsSent.toFixed(2)}</span>` : ''}
+        </div>
+        ${f.price_to_book != null ? `<div class="sub" style="margin-top:6px">P/B: ${f.price_to_book.toFixed(2)}</div>` : ''}`;
 }
 
 function renderChart(d) {
@@ -670,6 +790,8 @@ function renderDiag(d) {
         ['Blend (MC %)', `${((d.blend_mc || 0.3) * 100).toFixed(0)}%`],
         ['Paths', d.num_paths?.toLocaleString() ?? 'N/A'],
         ['Compute Time', `${d.compute_secs}s`],
+        ['Price Source', fn.data_sources?.price ?? 'yfinance'],
+        ['Fund. Source', fn.data_sources?.fundamentals ?? 'yfinance'],
     ];
     $('diagGrid').innerHTML = items.map(([lbl, val]) =>
         `<div class="diag-item"><div class="dl">${lbl}</div><div class="dv">${val}</div></div>`
