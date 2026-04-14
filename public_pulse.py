@@ -371,6 +371,7 @@ class GDELTCollector:
             "enddatetime":   end.replace("-", "") + "235959",
         }
         try:
+            self._throttle()   # respect 5s rate limit
             r = requests.get(self.DOC_API, params=params, timeout=30)
             r.raise_for_status()
             data = r.json()
