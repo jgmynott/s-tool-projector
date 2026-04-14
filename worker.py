@@ -16,10 +16,11 @@ from __future__ import annotations
 import argparse
 import logging
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 from db import init_db, save_projection, get_projection_age_hours
 from projector_engine import run_projection
+from hardening import retry_with_backoff, health_checker, AlertManager
 
 logging.basicConfig(
     level=logging.INFO,
@@ -118,12 +119,22 @@ STALE_HOURS = 18  # skip symbols computed within this window
 DEFAULT_HORIZONS = [252]
 
 
-def run_worker(symbols: list[str], horizons: list[int], force: bool = False):
+def _run_projection_with_retry(sym: str, horizon_days: int):
+    """Run a single projection with up to 2 retries and exponential backoff."""
+    @retry_with_backoff(max_retries=2, base_delay=2.0, max_delay=15.0)
+    def _inner():
+        return run_projection(sym, horizon_days=horizon_days)
+    return _inner()
+
+
+def run_worker(symbols: list[str], horizons: list[int], force: bool = False,
+               alert_manager: AlertManager | None = None):
     conn = init_db()
     total = len(symbols) * len(horizons)
     done = 0
     skipped = 0
     failed = 0
+    succeeded = 0
     t0 = time.time()
 
     log.info(f"Worker starting: {len(symbols)} symbols × {len(horizons)} horizons = {total} projections")
@@ -142,20 +153,67 @@ def run_worker(symbols: list[str], horizons: list[int], force: bool = False):
 
             log.info(f"[{done}/{total}] RUN  {sym} h={h}")
             try:
-                result = run_projection(sym, horizon_days=h)
+                result = _run_projection_with_retry(sym, h)
                 save_projection(conn, result)
+                succeeded += 1
+                health_checker.record_success("worker")
                 log.info(f"  → {sym} done in {result['compute_secs']:.1f}s  "
                          f"p50=${result['p50']}  upside={result['upside_prob']:.0%}")
             except Exception as e:
                 log.warning(f"  → {sym} FAILED: {e}")
                 failed += 1
+                health_checker.record_error("worker")
 
     elapsed = time.time() - t0
+    computed = total - skipped - failed
+    fail_rate = (failed / (computed + failed)) if (computed + failed) > 0 else 0.0
+
     log.info(
-        f"Worker done: {total} total, {total - skipped - failed} computed, "
+        f"Worker done: {total} total, {computed} computed, "
         f"{skipped} skipped, {failed} failed, {elapsed:.0f}s elapsed"
     )
+    log.info(
+        f"Success/failure summary: {succeeded} succeeded, {failed} failed "
+        f"({fail_rate:.1%} failure rate)"
+    )
+
+    # Fire alerts if enabled
+    if alert_manager:
+        worker_stats = {"total": computed + failed, "failed": failed}
+        health = health_checker.check_health()
+        alert_manager.check_and_alert(health, worker_stats=worker_stats)
+
     conn.close()
+
+
+def _wait_until_market_close():
+    """Sleep until 4:30 PM ET (16:30 US/Eastern), designed for daily cron trigger.
+
+    If it's already past 4:30 PM ET today, run immediately.
+    """
+    try:
+        import zoneinfo
+        et = zoneinfo.ZoneInfo("America/New_York")
+    except ImportError:
+        # Fallback: approximate ET as UTC-4 (EDT) or UTC-5 (EST)
+        # This is a rough heuristic; prefer zoneinfo when available
+        log.warning("zoneinfo unavailable, approximating ET as UTC-5")
+        et = timezone(timedelta(hours=-5))
+
+    now_et = datetime.now(et)
+    target = now_et.replace(hour=16, minute=30, second=0, microsecond=0)
+
+    if now_et >= target:
+        log.info("Already past 4:30 PM ET — running immediately.")
+        return
+
+    wait_secs = (target - now_et).total_seconds()
+    log.info(
+        "Daily cron: waiting %.0f minutes until 4:30 PM ET (%s)",
+        wait_secs / 60, target.strftime("%Y-%m-%d %H:%M %Z"),
+    )
+    time.sleep(wait_secs)
+    log.info("4:30 PM ET reached — starting worker run.")
 
 
 def main():
@@ -166,7 +224,15 @@ def main():
     parser.add_argument("--horizons", nargs="+", type=int, default=DEFAULT_HORIZONS,
                         help="Horizon days (default: 252)")
     parser.add_argument("--force", action="store_true", help="Recompute even if fresh")
+    parser.add_argument("--alert", action="store_true",
+                        help="Enable AlertManager for failure notifications")
+    parser.add_argument("--daily-cron", action="store_true",
+                        help="Sleep until 4:30 PM ET then run once and exit")
     args = parser.parse_args()
+
+    # Daily cron: wait for market close
+    if args.daily_cron:
+        _wait_until_market_close()
 
     if args.all:
         symbols = FULL_UNIVERSE
@@ -175,7 +241,9 @@ def main():
     else:
         symbols = DEFAULT_WATCHLIST
 
-    run_worker(symbols, args.horizons, args.force)
+    alert_manager = AlertManager() if args.alert else None
+
+    run_worker(symbols, args.horizons, args.force, alert_manager=alert_manager)
 
 
 if __name__ == "__main__":

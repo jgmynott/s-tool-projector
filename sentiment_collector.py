@@ -234,13 +234,14 @@ def score_batch(texts: list[str]) -> list[dict]:
         return []
     _, torch, tok, mdl, labels = _ensure_finbert()
     out = []
-    BATCH = 16
+    BATCH = 64  # larger batches = better CPU throughput
     for i in range(0, len(texts), BATCH):
         chunk = texts[i:i + BATCH]
-        # FinBERT input cap is 512 tokens; we hard-trim to 320 chars to save time.
-        chunk = [(t or "")[:1200] for t in chunk]
+        # Hard-trim to 400 chars — most Reddit comments are short,
+        # and FinBERT's tokenizer truncates to 128 tokens anyway.
+        chunk = [(t or "")[:400] for t in chunk]
         with torch.no_grad():
-            enc = tok(chunk, return_tensors="pt", truncation=True, max_length=256, padding=True)
+            enc = tok(chunk, return_tensors="pt", truncation=True, max_length=128, padding=True)
             logits = mdl(**enc).logits
             probs = torch.softmax(logits, dim=-1).cpu().numpy()
         for p in probs:
@@ -358,11 +359,13 @@ def collect_streaming(
             for p in posts:
                 text = f"{p.get('title','')}\n{p.get('selftext','') or ''}".strip()
                 for tk in tag_text(text, pattern):
-                    by_ticker[tk].append(text[:1200])
+                    by_ticker[tk].append(text[:400])
             for c in comments:
                 text = (c.get("body") or "").strip()
+                if len(text) < 10:  # skip tiny comments
+                    continue
                 for tk in tag_text(text, pattern):
-                    by_ticker[tk].append(text[:1200])
+                    by_ticker[tk].append(text[:400])
 
             n_tags = sum(len(v) for v in by_ticker.values())
             print(f"  {day_iso}: {len(posts):,} posts, {len(comments):,} comments → "

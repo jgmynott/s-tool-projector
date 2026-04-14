@@ -22,6 +22,11 @@ import pandas as pd
 import requests
 import yfinance as yf
 
+from data_providers import DataManager
+
+# Module-level DataManager — singleton, lazy-inits providers
+_dm = DataManager()
+
 
 # ── Configuration ──
 
@@ -49,24 +54,49 @@ VIX_REGIMES = [
 # ── Data Fetching ──
 
 def fetch_history(symbol: str, years: int = 3) -> dict | None:
-    """Fetch OHLC history from yfinance. Returns dict with arrays or None."""
-    end = pd.Timestamp.today()
-    start = end - pd.DateOffset(years=years)
-    df = yf.download(symbol, start=start, end=end, progress=False, auto_adjust=False)
-    if df is None or len(df) < 30:
-        return None
-    # Flatten multi-level columns if present
-    if isinstance(df.columns, pd.MultiIndex):
-        df.columns = df.columns.get_level_values(0)
-    dates = [d.to_pydatetime() for d in df.index]
-    return {
-        "dates": dates,
-        "opens": df["Open"].values.astype(float),
-        "highs": df["High"].values.astype(float),
-        "lows": df["Low"].values.astype(float),
-        "closes": df["Close"].values.astype(float),
-        "symbol": symbol.upper(),
-    }
+    """Fetch OHLC history with fallback chain: yfinance → FMP → Polygon.
+
+    Returns dict with numpy arrays {dates, opens, highs, lows, closes} or None.
+    """
+    # ── Primary: yfinance ──
+    try:
+        end = pd.Timestamp.today()
+        start = end - pd.DateOffset(years=years)
+        df = yf.download(symbol, start=start, end=end, progress=False, auto_adjust=False)
+        if df is not None and len(df) >= 30:
+            if isinstance(df.columns, pd.MultiIndex):
+                df.columns = df.columns.get_level_values(0)
+            dates = [d.to_pydatetime() for d in df.index]
+            return {
+                "dates": dates,
+                "opens": df["Open"].values.astype(float),
+                "highs": df["High"].values.astype(float),
+                "lows": df["Low"].values.astype(float),
+                "closes": df["Close"].values.astype(float),
+                "symbol": symbol.upper(),
+                "source": "yfinance",
+            }
+    except Exception:
+        pass
+
+    # ── Fallback: FMP / Polygon via DataManager ──
+    rows = _dm.get_historical(symbol, years=years)
+    if rows and len(rows) >= 30:
+        # DataManager returns list of dicts; convert to numpy arrays
+        # Rows may be newest-first (FMP) or oldest-first (Polygon)
+        rows_sorted = sorted(rows, key=lambda r: r["date"])
+        dates = [datetime.strptime(r["date"], "%Y-%m-%d") for r in rows_sorted]
+        return {
+            "dates": dates,
+            "opens": np.array([r.get("open") or 0 for r in rows_sorted], dtype=float),
+            "highs": np.array([r.get("high") or 0 for r in rows_sorted], dtype=float),
+            "lows": np.array([r.get("low") or 0 for r in rows_sorted], dtype=float),
+            "closes": np.array([r.get("close") or 0 for r in rows_sorted], dtype=float),
+            "symbol": symbol.upper(),
+            "source": "fmp_or_polygon",
+        }
+
+    return None
 
 
 def fetch_vix() -> dict | None:
@@ -120,27 +150,91 @@ def fetch_stocktwits(symbol: str) -> dict | None:
 
 
 def fetch_fundamentals(symbol: str) -> dict | None:
-    """Fetch key fundamentals from yfinance Ticker.info."""
+    """Fetch key fundamentals via DataManager fallback chain.
+
+    Priority: yfinance → FMP → Finnhub.
+    Enriches with FMP ratios and Finnhub analyst recs when available.
+    """
+    # Primary: yfinance (free, no key)
+    result = {}
     try:
         info = yf.Ticker(symbol).info
-        if not info or info.get("regularMarketPrice") is None:
-            return None
-        return {
-            "pe_trailing": info.get("trailingPE"),
-            "pe_forward": info.get("forwardPE"),
-            "market_cap": info.get("marketCap"),
-            "eps_trailing": info.get("trailingEps"),
-            "eps_forward": info.get("forwardEps"),
-            "dividend_yield": info.get("trailingAnnualDividendYield"),
-            "beta": info.get("beta"),
-            "week52_high": info.get("fiftyTwoWeekHigh"),
-            "week52_low": info.get("fiftyTwoWeekLow"),
-            "sector": info.get("sector"),
-            "industry": info.get("industry"),
-            "short_name": info.get("shortName"),
-        }
+        if info and info.get("regularMarketPrice") is not None:
+            result = {
+                "pe_trailing": info.get("trailingPE"),
+                "pe_forward": info.get("forwardPE"),
+                "market_cap": info.get("marketCap"),
+                "eps_trailing": info.get("trailingEps"),
+                "eps_forward": info.get("forwardEps"),
+                "dividend_yield": info.get("trailingAnnualDividendYield"),
+                "beta": info.get("beta"),
+                "week52_high": info.get("fiftyTwoWeekHigh"),
+                "week52_low": info.get("fiftyTwoWeekLow"),
+                "sector": info.get("sector"),
+                "industry": info.get("industry"),
+                "short_name": info.get("shortName"),
+                "source": "yfinance",
+            }
     except Exception:
-        return None
+        pass
+
+    # Fallback / enrichment: FMP fundamentals + ratios
+    if _dm.fmp.is_available():
+        if not result.get("pe_trailing"):
+            fmp_fund = _dm.fmp.fetch_fundamentals(symbol)
+            if fmp_fund:
+                for k, v in [
+                    ("pe_trailing", fmp_fund.get("pe_ratio")),
+                    ("market_cap", fmp_fund.get("market_cap")),
+                    ("eps_trailing", fmp_fund.get("eps")),
+                    ("beta", fmp_fund.get("beta")),
+                    ("dividend_yield", fmp_fund.get("dividend_yield")),
+                    ("sector", fmp_fund.get("sector")),
+                    ("industry", fmp_fund.get("industry")),
+                ]:
+                    if v is not None and not result.get(k):
+                        result[k] = v
+                if not result.get("source"):
+                    result["source"] = "fmp"
+
+        # FMP ratios — always try to enrich
+        fmp_ratios = _dm.fmp.fetch_ratios(symbol)
+        if fmp_ratios:
+            result["gross_margin"] = fmp_ratios.get("gross_margin")
+            result["operating_margin"] = fmp_ratios.get("operating_margin")
+            result["net_margin"] = fmp_ratios.get("net_margin")
+            result["return_on_equity"] = fmp_ratios.get("return_on_equity")
+            result["debt_to_equity"] = fmp_ratios.get("debt_to_equity")
+            result["price_to_book"] = fmp_ratios.get("price_to_book")
+
+    # Enrichment: Finnhub analyst consensus
+    if _dm.finnhub.is_available():
+        recs = _dm.finnhub.fetch_recommendation_trends(symbol)
+        if recs:
+            result["analyst_buy"] = recs.get("buy")
+            result["analyst_hold"] = recs.get("hold")
+            result["analyst_sell"] = recs.get("sell")
+            result["analyst_consensus"] = recs.get("consensus")
+
+    # Enrichment: Finnhub news sentiment
+    if _dm.finnhub.is_available():
+        news = _dm.finnhub.fetch_news_sentiment(symbol)
+        if news:
+            result["news_sentiment_score"] = news.get("sentiment_score")
+            result["news_article_count"] = news.get("article_count")
+
+    # Enrichment: Polygon put/call ratio
+    if _dm.polygon.is_available():
+        opts = _dm.polygon.fetch_options_chain(symbol)
+        if opts:
+            result["put_call_ratio"] = opts.get("put_call_ratio")
+
+    # Enrichment: next earnings date
+    earnings = _dm.get_earnings_date(symbol)
+    if earnings:
+        result["next_earnings_date"] = earnings.get("earnings_date")
+
+    return result if result else None
 
 
 def compute_momentum(closes: np.ndarray) -> dict:
@@ -395,15 +489,42 @@ def run_projection(
     sent_info = fetch_stocktwits(symbol)
     fundamentals = fetch_fundamentals(symbol)
 
+    # Enrich with alternative provider sentiment signals
+    alt_sentiment = _dm.get_sentiment_signals(symbol)
+
     closes = hist["closes"]
     S0 = float(closes[-1])
     momentum = compute_momentum(closes)
 
-    # Merge momentum into fundamentals
+    # Merge momentum + alt sentiment into fundamentals
     if fundamentals:
         fundamentals.update(momentum)
     else:
         fundamentals = momentum
+
+    if alt_sentiment:
+        if alt_sentiment.get("put_call_ratio") is not None:
+            fundamentals["put_call_ratio"] = round(alt_sentiment["put_call_ratio"], 3)
+        news = alt_sentiment.get("news_sentiment")
+        if news:
+            fundamentals["news_sentiment_score"] = news.get("sentiment_score")
+            fundamentals["news_article_count"] = news.get("article_count")
+        analyst = alt_sentiment.get("analyst_consensus")
+        if analyst:
+            fundamentals["analyst_consensus"] = analyst.get("consensus")
+            fundamentals["analyst_buy"] = analyst.get("buy")
+            fundamentals["analyst_hold"] = analyst.get("hold")
+            fundamentals["analyst_sell"] = analyst.get("sell")
+
+    # Track data sources used
+    fundamentals["data_sources"] = {
+        "price": hist.get("source", "yfinance"),
+        "fundamentals": fundamentals.get("source", "yfinance"),
+        "providers_active": {
+            k: v.get("key_configured", v.get("available", False))
+            for k, v in _dm.provider_status().items()
+        },
+    }
 
     # Run engines
     mc = run_monte_carlo(closes, num_paths, horizon_days, sigma_mult, rng)
