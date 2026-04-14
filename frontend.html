@@ -209,18 +209,175 @@ body {
 }
 .milestone-table tr:hover td { background: rgba(61,139,94,0.05); }
 
-/* Sentiment */
-.sent-panel { margin-top: 16px; }
-.sent-bar-wrap {
-    background: var(--bg-secondary); border-radius: 6px; height: 8px;
+/* Sentiment Intelligence */
+.sent-intel {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;
+}
+.sent-intel-box {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px 24px; box-shadow: var(--shadow);
+    position: relative; overflow: hidden;
+}
+.sent-intel-box:hover { border-color: rgba(61,139,94,0.4); }
+.sent-intel-box h3 {
+    font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px;
+    color: var(--text-muted); margin-bottom: 16px; font-weight: 600;
+}
+.sent-gauge {
+    display: flex; align-items: center; gap: 16px; margin-bottom: 12px;
+}
+.sent-score-ring {
+    width: 72px; height: 72px; border-radius: 50%; position: relative;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.sent-score-ring .ring-value {
+    font-size: 20px; font-weight: 700; z-index: 1;
+}
+.sent-score-ring svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+.sent-score-ring circle {
+    fill: none; cx: 36; cy: 36; r: 30;
+}
+.sent-score-ring .ring-bg { stroke: var(--bg-secondary); stroke-width: 5; }
+.sent-score-ring .ring-fg { stroke-width: 5; stroke-linecap: round; transition: stroke-dashoffset 0.8s ease; }
+.sent-gauge-detail { flex: 1; }
+.sent-gauge-detail .sent-label { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+.sent-gauge-detail .sent-sub { font-size: 11px; color: var(--text-muted); line-height: 1.5; }
+.sent-tilt-impact {
+    background: var(--bg-secondary); border-radius: var(--radius-sm); padding: 12px 16px;
+    margin-top: 12px;
+}
+.sent-tilt-impact .tilt-row {
+    display: flex; justify-content: space-between; align-items: center; font-size: 12px;
+    padding: 4px 0;
+}
+.sent-tilt-impact .tilt-row .tl { color: var(--text-muted); }
+.sent-tilt-impact .tilt-row .tv { font-weight: 600; font-variant-numeric: tabular-nums; }
+.sent-inactive-badge {
+    display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px;
+    background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.25);
+    border-radius: 6px; font-size: 11px; color: var(--amber); font-weight: 600;
+    margin-bottom: 8px;
+}
+.sent-inactive-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--amber); }
+.sent-active-badge {
+    display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px;
+    background: rgba(74,222,128,0.1); border: 1px solid rgba(74,222,128,0.25);
+    border-radius: 6px; font-size: 11px; color: var(--green); font-weight: 600;
+    margin-bottom: 8px;
+}
+.sent-active-badge .dot {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--green);
+    animation: pulse-dot 1.5s infinite;
+}
+@keyframes pulse-dot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(1.3); }
+}
+/* StockTwits bar */
+.st-bar-wrap {
+    background: var(--bg-secondary); border-radius: 6px; height: 10px;
     overflow: hidden; margin: 12px 0;
 }
-.sent-bar-fill {
+.st-bar-fill {
     height: 100%; border-radius: 6px;
     background: linear-gradient(90deg, var(--green), var(--teal));
+    transition: width 0.5s ease;
 }
-.sent-stats { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-secondary); }
-.sent-footer { font-size: 11px; color: var(--text-muted); margin-top: 8px; }
+.st-stats { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-secondary); }
+.st-footer { font-size: 11px; color: var(--text-muted); margin-top: 8px; }
+@media (max-width: 768px) { .sent-intel { grid-template-columns: 1fr; } }
+
+/* Signal Tilt Breakdown */
+.tilt-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;
+}
+.tilt-signal {
+    background: var(--bg-card-alt); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 14px 16px;
+}
+.tilt-signal .ts-name { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 6px; }
+.tilt-signal .ts-value { font-size: 20px; font-weight: 700; }
+.tilt-signal .ts-detail { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+.tilt-total {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--bg-card-alt); border: 1px solid var(--accent);
+    border-radius: var(--radius-sm); padding: 14px 20px; margin-top: 12px;
+}
+.tilt-total .tt-label { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-secondary); }
+.tilt-total .tt-value { font-size: 22px; font-weight: 700; }
+.tilt-total .tt-sub { font-size: 11px; color: var(--text-muted); }
+.tilt-providers {
+    display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px;
+}
+.tilt-providers .tp-badge {
+    font-size: 10px; padding: 3px 8px; border-radius: 6px;
+    font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+}
+.tp-active { background: var(--green-soft); color: var(--green); border: 1px solid rgba(74,222,128,0.25); }
+.tp-inactive { background: rgba(95,125,106,0.1); color: var(--text-muted); border: 1px solid var(--border); }
+
+/* Bet Sizing Panel */
+.bet-panel {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 24px 28px; margin-bottom: 16px;
+    box-shadow: var(--shadow);
+}
+.bet-panel:hover { border-color: rgba(61,139,94,0.4); }
+.bet-header {
+    display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 16px;
+}
+.bet-title {
+    font-size: 12px; font-weight: 600; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 1.5px;
+}
+.bet-title span { color: var(--green); font-weight: 700; }
+.bet-sub {
+    font-size: 11px; color: var(--text-muted); text-transform: uppercase;
+    letter-spacing: 1px; font-weight: 600;
+}
+.bet-grid {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px;
+}
+.bet-cell {
+    background: var(--bg-secondary); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 14px; text-align: center;
+}
+.bet-cell.bear { border-left: 3px solid #7c3aed; }
+.bet-cell.median { border-left: 3px solid var(--green); background: rgba(74,222,128,0.06); }
+.bet-cell.bull { border-left: 3px solid #c2410c; }
+.bet-cell .bk {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--text-muted); margin-bottom: 6px; font-weight: 600;
+}
+.bet-cell .bv {
+    font-size: 18px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.3px;
+}
+.bet-cell .bp { font-size: 11px; font-weight: 600; margin-top: 3px; }
+.bet-cell .bp.green { color: var(--green); }
+.bet-cell .bp.red { color: var(--red); }
+.bet-footer {
+    margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border);
+    font-size: 12px; color: var(--text-secondary); line-height: 1.6;
+}
+.bet-footer strong { color: var(--text-primary); }
+@media (max-width: 768px) { .bet-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 480px) { .bet-grid { grid-template-columns: 1fr 1fr; } }
+
+/* Legend Explainer */
+.legend-explain {
+    margin-top: 16px; padding: 16px 20px; background: var(--bg-secondary);
+    border-radius: var(--radius-sm); border: 1px solid var(--border);
+}
+.legend-explain .le-row {
+    display: flex; align-items: baseline; gap: 10px;
+    padding: 5px 0; font-size: 12px; line-height: 1.5;
+}
+.legend-explain .le-swatch {
+    display: inline-block; width: 28px; min-width: 28px; height: 3px;
+    border-radius: 2px; position: relative; top: -2px;
+}
+.legend-explain .le-name { font-weight: 600; color: var(--text-primary); white-space: nowrap; }
+.legend-explain .le-desc { color: var(--text-muted); }
 
 /* Loading */
 .loading {
@@ -279,6 +436,61 @@ body {
     .container { padding: 12px; }
     .diag-grid { grid-template-columns: 1fr; }
 }
+
+/* ── Public Pulse panel ── */
+#publicPulseCard { border-left: 3px solid #68A5EE; }
+.pp-header h3 { display: inline-flex; align-items: center; gap: 10px; }
+.pp-badge {
+    display: inline-block; padding: 2px 8px; border-radius: 10px;
+    background: rgba(104, 165, 238, 0.15); color: #68A5EE;
+    font-size: 10px; font-weight: 700; letter-spacing: 1px;
+    vertical-align: middle;
+}
+.pp-sub { font-size: 12px; color: var(--text-muted); margin-top: -4px; margin-bottom: 14px; }
+.pp-hero {
+    display: grid; grid-template-columns: auto 1fr auto; gap: 20px;
+    align-items: center; padding: 16px; margin-bottom: 14px;
+    background: var(--card-bg-secondary, rgba(104, 165, 238, 0.05));
+    border: 1px solid rgba(104, 165, 238, 0.2); border-radius: 10px;
+}
+.pp-hero-score { font-size: 42px; font-weight: 800; line-height: 1; }
+.pp-hero-mood { font-size: 13px; font-weight: 700; letter-spacing: 1px; }
+.pp-hero-sources { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.pp-hero-tilt { text-align: right; }
+.pp-hero-tilt-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); }
+.pp-hero-tilt-val { font-size: 20px; font-weight: 700; margin-top: 2px; }
+.pp-rows { display: flex; flex-direction: column; gap: 6px; }
+.pp-row {
+    display: grid; grid-template-columns: 200px 1fr 80px 80px; gap: 12px;
+    align-items: center; padding: 10px 12px;
+    background: rgba(0,0,0,0.2); border: 1px solid var(--border, #283C33); border-radius: 8px;
+}
+.pp-r-name { font-size: 13px; font-weight: 600; }
+.pp-r-note { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+.pp-r-bar {
+    height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden;
+}
+.pp-r-bar-fill { height: 100%; border-radius: 3px; transition: width 0.4s; }
+.pp-r-score { font-size: 14px; font-weight: 700; text-align: right; }
+.pp-r-raw { font-size: 11px; color: var(--text-muted); text-align: right; }
+
+/* ── Earnings proximity banner ── */
+.earn-prox { border-left: 3px solid var(--amber, #F9B53C); }
+.ep-row {
+    display: grid; grid-template-columns: 36px 1fr auto; gap: 14px;
+    align-items: center;
+}
+.ep-icon { font-size: 22px; }
+.ep-title { font-size: 14px; font-weight: 700; }
+.ep-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.ep-mult { font-size: 18px; font-weight: 700; }
+
+@media (max-width: 700px) {
+    .pp-row { grid-template-columns: 1fr 60px 60px; }
+    .pp-r-src { grid-column: 1 / -1; }
+    .pp-hero { grid-template-columns: 1fr; text-align: center; }
+    .pp-hero-tilt { text-align: center; }
+}
 </style>
 </head>
 <body>
@@ -310,6 +522,10 @@ body {
                     <option value="252" selected>1 Year</option>
                     <option value="504">2 Years</option>
                 </select>
+            </div>
+            <div class="control-group">
+                <label>Bet Size</label>
+                <input id="betInput" type="text" placeholder="10000" value="10000" style="width:110px;text-align:right">
             </div>
             <button class="btn-run" id="btnRun" onclick="runProjection()">Run Projection</button>
         </div>
@@ -343,10 +559,68 @@ body {
         <div class="enrich-box" id="enrichSignals"></div>
     </div>
 
+    <!-- Signal Tilt Breakdown -->
+    <div class="card" id="tiltCard" style="display:none">
+        <h3>Signal Intelligence — Active Tilts</h3>
+        <div id="tiltContent"></div>
+    </div>
+
+    <!-- Public Pulse — US public sentiment beyond the finance crowd -->
+    <div class="card" id="publicPulseCard" style="display:none">
+        <div class="pp-header">
+            <h3>Public Pulse <span class="pp-badge">NEW</span></h3>
+            <div class="pp-sub">US general-public sentiment — Google Trends · Wikipedia · GDELT · broad Reddit · Michigan CSI</div>
+        </div>
+        <div id="publicPulseContent"></div>
+    </div>
+
+    <!-- Earnings Proximity banner (shown when earnings are near) -->
+    <div class="card earn-prox" id="earnProxCard" style="display:none">
+        <div id="earnProxContent"></div>
+    </div>
+
+    <!-- Sentiment Intelligence -->
+    <div class="sent-intel" id="sentIntel" style="display:none">
+        <div class="sent-intel-box" id="sentTiltBox">
+            <h3>Sentiment Tilt (WSB/Reddit)</h3>
+            <div id="sentTiltContent"></div>
+        </div>
+        <div class="sent-intel-box" id="sentLiveBox">
+            <h3>Live Sentiment (StockTwits)</h3>
+            <div id="sentLiveContent"></div>
+        </div>
+    </div>
+
     <!-- Chart -->
     <div class="card" id="chartCard" style="display:none">
         <h3>Price Projection</h3>
         <div id="chartWrap"></div>
+        <!-- Legend -->
+        <div class="legend-explain">
+            <div class="le-row"><span class="le-swatch" style="background:#9cb3a4"></span><span class="le-name">Historical</span><span class="le-desc">— Past year of daily closing prices.</span></div>
+            <div class="le-row"><span class="le-swatch" style="background:#fbbf24"></span><span class="le-name">Median (50th)</span><span class="le-desc">— Most likely path. Half of simulations end above, half below.</span></div>
+            <div class="le-row"><span class="le-swatch" style="background:#4ade80"></span><span class="le-name">P90 — Bull case</span><span class="le-desc">— Strong upside: only 10% of simulations reach this high.</span></div>
+            <div class="le-row"><span class="le-swatch" style="background:#2dd4bf"></span><span class="le-name">P75 — Upside</span><span class="le-desc">— Optimistic case: only 25% of paths exceed this price.</span></div>
+            <div class="le-row"><span class="le-swatch" style="background:#f97316"></span><span class="le-name">P25 — Downside</span><span class="le-desc">— Pessimistic case: 75% of paths stay above this price.</span></div>
+            <div class="le-row"><span class="le-swatch" style="background:#f87171"></span><span class="le-name">P10 — Bear case</span><span class="le-desc">— Tail-risk downside: 90% of simulations stay above this level.</span></div>
+            <div class="le-row"><span class="le-swatch" style="background:#a78bfa;height:3px;border-top:2px dashed #a78bfa;background:transparent"></span><span class="le-name">MR Equilibrium</span><span class="le-desc">— Mean-reversion fair value: decays toward the trending moving-average at the OU half-life.</span></div>
+        </div>
+    </div>
+
+    <!-- Bet Sizing -->
+    <div class="bet-panel" id="betPanel" style="display:none">
+        <div class="bet-header">
+            <span class="bet-title">Conviction on a <span id="betSizeLabel">$10,000</span> position</span>
+            <span class="bet-sub" id="betHorizonLabel">at horizon</span>
+        </div>
+        <div class="bet-grid">
+            <div class="bet-cell bear"><div class="bk">Bear (10th)</div><div class="bv" id="betP10">—</div><div class="bp" id="betP10pct">—</div></div>
+            <div class="bet-cell"><div class="bk">Downside (25th)</div><div class="bv" id="betP25">—</div><div class="bp" id="betP25pct">—</div></div>
+            <div class="bet-cell median"><div class="bk">Median outcome</div><div class="bv" id="betP50">—</div><div class="bp" id="betP50pct">—</div></div>
+            <div class="bet-cell"><div class="bk">Upside (75th)</div><div class="bv" id="betP75">—</div><div class="bp" id="betP75pct">—</div></div>
+            <div class="bet-cell bull"><div class="bk">Bull (90th)</div><div class="bv" id="betP90">—</div><div class="bp" id="betP90pct">—</div></div>
+        </div>
+        <div class="bet-footer" id="betFooter"></div>
     </div>
 
     <!-- Milestones -->
@@ -360,12 +634,6 @@ body {
             <tbody id="milestoneBody"></tbody>
         </table>
         </div>
-    </div>
-
-    <!-- Sentiment -->
-    <div class="card" id="sentCard" style="display:none">
-        <h3>Retail Sentiment</h3>
-        <div class="sent-panel" id="sentPanel"></div>
     </div>
 
     <!-- Diagnostics -->
@@ -386,7 +654,9 @@ body {
 </div>
 
 <script>
+// Try same-origin first, fall back to localhost:8000 for dev
 const API = window.location.origin;
+const API_BACKENDS = [API, 'http://localhost:8000', 'http://localhost:8765'];
 const $ = id => document.getElementById(id);
 const fmtPrice = v => v >= 1000 ? `$${(v/1000).toFixed(1)}k` : `$${v.toFixed(2)}`;
 const fmtPct = v => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`;
@@ -404,12 +674,22 @@ async function runProjection() {
     status(`Fetching projection for ${symbol}...`);
 
     try {
-        const res = await fetch(`${API}/api/project?symbol=${symbol}&horizon=${horizon}`);
-        if (!res.ok) {
-            const err = await res.json().catch(() => ({ detail: res.statusText }));
-            throw new Error(err.detail || `HTTP ${res.status}`);
+        let data = null;
+        for (const base of API_BACKENDS) {
+            try {
+                const res = await fetch(`${base}/api/project?symbol=${symbol}&horizon=${horizon}`, { signal: AbortSignal.timeout(30000) });
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({ detail: res.statusText }));
+                    throw new Error(err.detail || `HTTP ${res.status}`);
+                }
+                data = await res.json();
+                break;
+            } catch (e) {
+                if (e.name === 'AbortError' || e.message.includes('HTTP')) throw e;
+                continue; // try next backend
+            }
         }
-        const data = await res.json();
+        if (!data) throw new Error('No API server found. Start with: uvicorn api:app --port 8000');
         render(data);
         status(`${symbol} — computed ${data.compute_secs}s, cached ${data.computed_at?.slice(0, 16) || ''}`);
     } catch (e) {
@@ -440,10 +720,8 @@ function render(d) {
     $('stEPS').textContent = eps != null ? `$${eps.toFixed(2)}` : 'N/A';
 
     $('metaDate').textContent = `Run: ${d.run_date}`;
-    const metaParts = [];
-    if (d.vix_regime) metaParts.push(`VIX: ${d.vix_value} ${d.vix_regime}`);
-    if (f.sector) metaParts.push(f.sector);
-    $('metaVix').textContent = metaParts.join(' · ');
+    if (d.vix_regime) $('metaVix').textContent = `VIX: ${d.vix_value} (${d.vix_regime})`;
+    else $('metaVix').textContent = '';
 
     // Momentum indicators
     renderMomentum(f);
@@ -451,14 +729,26 @@ function render(d) {
     // Enriched data (analyst, earnings, margins, signals)
     renderEnriched(f);
 
+    // Signal tilt breakdown
+    renderTiltBreakdown(f, d);
+
+    // Public Pulse panel (new — US general-public sentiment)
+    renderPublicPulse(f);
+
+    // Earnings proximity banner
+    renderEarningsProximity(f);
+
     // Chart
     renderChart(d);
+
+    // Bet sizing
+    renderBetPanel(d);
 
     // Milestones
     renderMilestones(d);
 
-    // Sentiment
-    renderSentiment(d);
+    // Sentiment Intelligence (WSB tilt + StockTwits live)
+    renderSentimentIntel(d);
 
     // Diagnostics
     renderDiag(d);
@@ -542,117 +832,404 @@ function renderEnriched(f) {
         ${f.price_to_book != null ? `<div class="sub" style="margin-top:6px">P/B: ${f.price_to_book.toFixed(2)}</div>` : ''}`;
 }
 
+function renderTiltBreakdown(f, d) {
+    const sent = f.sentiment_tilt || {};
+    const fund = f.fundamental_tilt || {};
+    const ds = f.data_sources || {};
+    const hasTilt = sent.active || fund.active;
+
+    $('tiltCard').style.display = '';
+
+    const fmtTilt = (v) => {
+        if (v == null || v === 0) return { text: '0 bps', color: 'var(--text-muted)' };
+        const bps = (v * 10000).toFixed(1);
+        const sign = v > 0 ? '+' : '';
+        const color = v > 0.001 ? 'var(--green)' : v < -0.001 ? 'var(--red)' : 'var(--amber)';
+        return { text: `${sign}${bps} bps`, color };
+    };
+
+    let signals = '';
+
+    // Sentiment tilt signal
+    const sentFmt = fmtTilt(sent.mu_tilt || 0);
+    signals += `<div class="tilt-signal">
+        <div class="ts-name">WSB/Reddit Sentiment</div>
+        <div class="ts-value" style="color:${sentFmt.color}">${sentFmt.text}</div>
+        <div class="ts-detail">${sent.active ? `Score: ${sent.avg_score?.toFixed(3)} · ${sent.n_days} days · L${sent.lookback}` : 'Inactive — need 3+ days of data'}</div>
+    </div>`;
+
+    // Fundamental tilt components
+    const comps = fund.components || {};
+
+    if (comps.analyst_target) {
+        const at = comps.analyst_target;
+        const fmt = fmtTilt(at.tilt);
+        signals += `<div class="tilt-signal">
+            <div class="ts-name">Analyst Price Target</div>
+            <div class="ts-value" style="color:${fmt.color}">${fmt.text}</div>
+            <div class="ts-detail">Target: $${at.target_mean?.toFixed(2)} · Implied: ${at.implied_return_pct > 0 ? '+' : ''}${at.implied_return_pct}%</div>
+        </div>`;
+    }
+
+    if (comps.eps_growth) {
+        const eg = comps.eps_growth;
+        const fmt = fmtTilt(eg.tilt);
+        signals += `<div class="tilt-signal">
+            <div class="ts-name">EPS Growth Estimate</div>
+            <div class="ts-value" style="color:${fmt.color}">${fmt.text}</div>
+            <div class="ts-detail">Forward EPS growth: ${eg.growth_pct > 0 ? '+' : ''}${eg.growth_pct}%</div>
+        </div>`;
+    }
+
+    if (comps.insider) {
+        const ins = comps.insider;
+        const fmt = fmtTilt(ins.tilt);
+        const sigColor = ins.signal === 'bullish' ? 'var(--green)' : ins.signal === 'bearish' ? 'var(--red)' : 'var(--amber)';
+        signals += `<div class="tilt-signal">
+            <div class="ts-name">Insider Trading</div>
+            <div class="ts-value" style="color:${fmt.color}">${fmt.text}</div>
+            <div class="ts-detail">Net ratio: ${ins.net_ratio?.toFixed(2)} · <span style="color:${sigColor}">${ins.signal}</span></div>
+        </div>`;
+    }
+
+    if (comps.macro) {
+        const mac = comps.macro;
+        const fmt = fmtTilt(mac.tilt);
+        const regColor = mac.regime === 'risk_on' ? 'var(--green)' : mac.regime === 'crisis' ? 'var(--red)' : mac.regime === 'risk_off' ? 'var(--red)' : 'var(--amber)';
+        signals += `<div class="tilt-signal">
+            <div class="ts-name">Macro Regime (FRED)</div>
+            <div class="ts-value" style="color:${fmt.color}">${fmt.text}</div>
+            <div class="ts-detail">Regime: <span style="color:${regColor}">${mac.regime}</span> · Score: ${mac.score}</div>
+        </div>`;
+    }
+
+    if (comps.recommendation) {
+        const rec = comps.recommendation;
+        const fmt = fmtTilt(rec.tilt);
+        const cColor = rec.consensus === 'buy' ? 'var(--green)' : rec.consensus === 'sell' ? 'var(--red)' : 'var(--amber)';
+        signals += `<div class="tilt-signal">
+            <div class="ts-name">Analyst Recs (Finnhub)</div>
+            <div class="ts-value" style="color:${fmt.color}">${fmt.text}</div>
+            <div class="ts-detail">${rec.buy} buy / ${rec.hold} hold / ${rec.sell} sell · <span style="color:${cColor};text-transform:capitalize">${rec.consensus}</span></div>
+        </div>`;
+    }
+
+    if (comps.put_call_contra) {
+        const pc = comps.put_call_contra;
+        const fmt = fmtTilt(pc.tilt);
+        const mood = pc.ratio > 1.0 ? 'Fearful (bullish contra)' : pc.ratio < 0.7 ? 'Complacent (bearish contra)' : 'Neutral';
+        signals += `<div class="tilt-signal">
+            <div class="ts-name">Put/Call Contra</div>
+            <div class="ts-value" style="color:${fmt.color}">${fmt.text}</div>
+            <div class="ts-detail">P/C: ${pc.ratio} · ${mood}</div>
+        </div>`;
+    }
+
+    if (comps.public_pulse) {
+        const pp = comps.public_pulse;
+        const fmt = fmtTilt(pp.tilt);
+        const scoreColor = pp.composite_score > 0.1 ? 'var(--green)' : pp.composite_score < -0.1 ? 'var(--red)' : 'var(--amber)';
+        const sign = pp.composite_score >= 0 ? '+' : '';
+        signals += `<div class="tilt-signal">
+            <div class="ts-name">Public Pulse</div>
+            <div class="ts-value" style="color:${fmt.color}">${fmt.text}</div>
+            <div class="ts-detail">Composite: <span style="color:${scoreColor}">${sign}${pp.composite_score}</span> · ${pp.active_sources}/${pp.total_sources} sources</div>
+        </div>`;
+    }
+
+    // If no fundamental components but macro exists
+    if (!comps.analyst_target && !comps.eps_growth && !comps.insider && !comps.macro && !comps.recommendation && !comps.put_call_contra && !comps.public_pulse) {
+        signals += `<div class="tilt-signal" style="grid-column: span 3">
+            <div class="ts-name">No Fundamental Signals</div>
+            <div class="ts-value" style="color:var(--text-muted)">—</div>
+            <div class="ts-detail">Add FMP + Finnhub API keys to activate analyst targets, EPS estimates, and insider trading signals</div>
+        </div>`;
+    }
+
+    // Total tilt
+    const totalTilt = ds.total_mu_tilt || 0;
+    const totalFmt = fmtTilt(totalTilt);
+    const totalPct = (totalTilt * 100).toFixed(3);
+
+    // Provider badges
+    const providers = ds.providers_active || {};
+    let badges = '';
+    for (const [name, active] of Object.entries(providers)) {
+        badges += `<span class="tp-badge ${active ? 'tp-active' : 'tp-inactive'}">${name}</span>`;
+    }
+    if (ds.macro_regime) {
+        badges += `<span class="tp-badge tp-active">Macro: ${ds.macro_regime}</span>`;
+    }
+
+    $('tiltContent').innerHTML = `
+        <div class="tilt-grid">${signals}</div>
+        <div class="tilt-total">
+            <div>
+                <div class="tt-label">Combined Drift Tilt</div>
+                <div class="tt-sub">${totalTilt > 0 ? '+' : ''}${totalPct}% annualized · Applied to Monte Carlo drift</div>
+            </div>
+            <div class="tt-value" style="color:${totalFmt.color}">${totalFmt.text}</div>
+        </div>
+        <div class="tilt-providers">${badges}</div>`;
+}
+
+function renderPublicPulse(f) {
+    const ft = f.fundamental_tilt || {};
+    const raw = (ft.data && ft.data.public_pulse) || null;
+    const comp = (ft.components && ft.components.public_pulse) || null;
+    const card = $('publicPulseCard');
+    if (!raw || !raw.components || raw.components.length === 0) {
+        card.style.display = 'none';
+        return;
+    }
+    card.style.display = '';
+
+    const composite = raw.composite_score;
+    const scoreColor = composite > 0.1 ? 'var(--green)' : composite < -0.1 ? 'var(--red)' : 'var(--amber)';
+    const scoreSign = composite == null ? '' : composite >= 0 ? '+' : '';
+    const mood = composite == null ? 'N/A' : composite > 0.1 ? 'BULLISH' : composite < -0.1 ? 'BEARISH' : 'NEUTRAL';
+    const tiltBps = comp ? `${comp.tilt >= 0 ? '+' : ''}${(comp.tilt * 10000).toFixed(1)} bps` : '—';
+    const tiltColor = !comp ? 'var(--text-muted)' : comp.tilt > 0.0001 ? 'var(--green)' : comp.tilt < -0.0001 ? 'var(--red)' : 'var(--amber)';
+
+    const niceName = {
+        google_trends: 'Google Trends',
+        wikipedia: 'Wikipedia',
+        gdelt: 'GDELT (news tone)',
+        broad_reddit: 'Broad Reddit',
+        michigan_csi: 'Michigan CSI'
+    };
+
+    let rows = '';
+    for (const c of raw.components) {
+        const active = c.normalised != null;
+        const rowColor = !active ? 'var(--text-muted)' : c.normalised > 0.05 ? 'var(--green)' : c.normalised < -0.05 ? 'var(--red)' : 'var(--amber)';
+        const normTxt = active ? `${c.normalised >= 0 ? '+' : ''}${c.normalised.toFixed(3)}` : '—';
+        const barPct = active ? Math.min(100, Math.abs(c.normalised) * 100) : 0;
+        const barSide = active && c.normalised < 0 ? 'var(--red)' : 'var(--green)';
+        const srcName = niceName[c.source] || c.source;
+        const rawTxt = c.raw_value != null ? c.raw_value : '—';
+        rows += `<div class="pp-row">
+            <div class="pp-r-src">
+                <div class="pp-r-name">${srcName}</div>
+                <div class="pp-r-note">${c.note || ''}</div>
+            </div>
+            <div class="pp-r-bar">
+                <div class="pp-r-bar-fill" style="width:${barPct}%;background:${barSide}"></div>
+            </div>
+            <div class="pp-r-score" style="color:${rowColor}">${normTxt}</div>
+            <div class="pp-r-raw">${rawTxt}</div>
+        </div>`;
+    }
+
+    $('publicPulseContent').innerHTML = `
+        <div class="pp-hero">
+            <div class="pp-hero-score" style="color:${scoreColor}">${scoreSign}${composite != null ? composite.toFixed(2) : '—'}</div>
+            <div class="pp-hero-meta">
+                <div class="pp-hero-mood" style="color:${scoreColor}">${mood}</div>
+                <div class="pp-hero-sources">${raw.active_sources}/${raw.total_sources} sources active</div>
+            </div>
+            <div class="pp-hero-tilt">
+                <div class="pp-hero-tilt-label">Drift contribution</div>
+                <div class="pp-hero-tilt-val" style="color:${tiltColor}">${tiltBps}</div>
+            </div>
+        </div>
+        <div class="pp-rows">${rows}</div>`;
+}
+
+function renderEarningsProximity(f) {
+    const ep = f.earnings_proximity;
+    const card = $('earnProxCard');
+    if (!ep || !ep.active) { card.style.display = 'none'; return; }
+    card.style.display = '';
+    const days = ep.days_to_earnings;
+    const mult = ep.sigma_mult;
+    const urgency = days <= 3 ? 'var(--red)' : days <= 10 ? 'var(--amber)' : 'var(--green)';
+    $('earnProxContent').innerHTML = `
+        <div class="ep-row">
+            <div class="ep-icon">📅</div>
+            <div class="ep-body">
+                <div class="ep-title">Earnings in <span style="color:${urgency}">${days} days</span> (${ep.earnings_date})</div>
+                <div class="ep-sub">Projection bands widened ×${mult} to reflect known volatility event</div>
+            </div>
+            <div class="ep-mult" style="color:${urgency}">σ × ${mult}</div>
+        </div>`;
+}
+
+// ── Downsample for smoother chart ──
+function downsample(arr, maxPoints) {
+    if (arr.length <= maxPoints) return arr;
+    const step = arr.length / maxPoints;
+    const result = [];
+    for (let i = 0; i < maxPoints; i++) result.push(arr[Math.round(i * step)]);
+    if (result[result.length - 1] !== arr[arr.length - 1]) result.push(arr[arr.length - 1]);
+    return result;
+}
+
 function renderChart(d) {
     $('chartCard').style.display = '';
 
-    // Parse data
     const curves = typeof d.curves_json === 'string' ? JSON.parse(d.curves_json) : d.curves_json;
     const hist = typeof d.hist_json === 'string' ? JSON.parse(d.hist_json) : d.hist_json;
     const projDates = typeof d.proj_dates_json === 'string' ? JSON.parse(d.proj_dates_json) : d.proj_dates_json;
     const mrEq = typeof d.mr_eq_json === 'string' ? JSON.parse(d.mr_eq_json) : d.mr_eq_json;
 
-    // Colours
     const C = {
         p90: '#4ade80', p75: '#2dd4bf', median: '#fbbf24',
         p25: '#f97316', p10: '#f87171', mr: '#a78bfa',
+        hist: '#9cb3a4', muted: '#5f7d6a', grid: 'rgba(42,68,52,0.3)',
+        label: '#e8f0eb',
     };
 
-    // Build series
+    // Downsample projection for smoothness (max 120 pts)
+    const dsIdx = (arr) => {
+        if (arr.length <= 120) return arr.map((_, i) => i);
+        const step = arr.length / 120;
+        const idxs = [];
+        for (let i = 0; i < 120; i++) idxs.push(Math.round(i * step));
+        if (idxs[idxs.length - 1] !== arr.length - 1) idxs.push(arr.length - 1);
+        return idxs;
+    };
+    const sampleIdxs = dsIdx(curves.p50);
+
     const histSeries = hist.dates.map((dt, i) => [new Date(dt).getTime(), hist.closes[i]]);
     const lastHistDate = new Date(hist.dates[hist.dates.length - 1]).getTime();
 
-    const makeSeries = (arr, dates) =>
-        [[lastHistDate, d.current_price], ...dates.map((dt, i) => [new Date(dt).getTime(), arr[i]])];
+    const makeSeries = (arr) => {
+        const pts = [[lastHistDate, d.current_price]];
+        for (const i of sampleIdxs) pts.push([new Date(projDates[i]).getTime(), arr[i]]);
+        return pts;
+    };
 
     const series = [
-        { name: 'Historical', type: 'line', data: histSeries },
-        { name: 'P90 (Bull)', type: 'line', data: makeSeries(curves.p90, projDates) },
-        { name: 'P75', type: 'line', data: makeSeries(curves.p75, projDates) },
-        { name: 'Median', type: 'line', data: makeSeries(curves.p50, projDates) },
-        { name: 'P25', type: 'line', data: makeSeries(curves.p25, projDates) },
-        { name: 'P10 (Bear)', type: 'line', data: makeSeries(curves.p10, projDates) },
+        { name: 'Historical',     type: 'line', data: histSeries },
+        { name: '90th — Bull',    type: 'line', data: makeSeries(curves.p90) },
+        { name: '75th — Upside',  type: 'line', data: makeSeries(curves.p75) },
+        { name: 'Median (50th)',  type: 'line', data: makeSeries(curves.p50) },
+        { name: '25th — Downside',type: 'line', data: makeSeries(curves.p25) },
+        { name: '10th — Bear',    type: 'line', data: makeSeries(curves.p10) },
     ];
     if (mrEq) {
-        series.push({ name: 'MR Equilibrium', type: 'line', data: makeSeries(mrEq, projDates) });
+        series.push({ name: 'MR Equilibrium', type: 'line', data: makeSeries(mrEq) });
     }
 
-    const colors = ['#9cb3a4', C.p90, C.p75, C.median, C.p25, C.p10];
-    const dashes = [0, 3, 3, 0, 3, 3];
-    const widths = [1.5, 1.5, 1.5, 2.5, 1.5, 1.5];
-    if (mrEq) {
-        colors.push(C.mr);
-        dashes.push(5);
-        widths.push(1.5);
-    }
+    const colors = [C.hist, C.p90, C.p75, C.median, C.p25, C.p10];
+    const dashes = [0, 4, 2, 0, 2, 4];
+    const widths = [1.5, 2, 2, 3.5, 2, 2];
+    if (mrEq) { colors.push(C.mr); dashes.push(8); widths.push(2); }
 
-    // End-of-line labels
-    const endLabels = [];
+    // Point annotations: end-of-line labels + milestone labels
+    const points = [];
     const lastIdx = curves.p50.length - 1;
     const endDate = new Date(projDates[lastIdx]).getTime();
-    const labelPairs = [
-        ['p90', C.p90, curves.p90], ['p75', C.p75, curves.p75],
-        ['p50', C.median, curves.p50], ['p25', C.p25, curves.p25],
-        ['p10', C.p10, curves.p10],
-    ];
-    for (const [lbl, clr, arr] of labelPairs) {
-        endLabels.push({
-            x: endDate, y: arr[lastIdx],
-            marker: { size: 4, fillColor: clr, strokeColor: '#0a1410', strokeWidth: 2 },
-            label: {
-                borderColor: clr, borderWidth: 1, offsetY: -10,
-                style: { background: '#0f1d14', color: clr, fontSize: '10px', fontWeight: 700, padding: { left: 6, right: 6, top: 3, bottom: 3 } },
-                text: fmtPrice(arr[lastIdx])
-            }
-        });
-    }
 
-    // Mid-line milestone labels
-    const milestoneIndices = [{ days: 21 }, { days: 63 }, { days: 126 }];
-    for (const m of milestoneIndices) {
+    const endLabel = (color, val) => ({
+        x: endDate, y: val,
+        marker: { size: 4, fillColor: color, strokeColor: color, strokeWidth: 0 },
+        label: {
+            borderColor: 'transparent', offsetX: 8, offsetY: 0,
+            style: { background: 'transparent', color: color, fontSize: '11px', fontWeight: 700, fontFamily: "'Inter', sans-serif" },
+            text: fmtPrice(val),
+        },
+    });
+    points.push(endLabel(C.p90, curves.p90[lastIdx]));
+    points.push(endLabel(C.p75, curves.p75[lastIdx]));
+    points.push(endLabel(C.median, curves.p50[lastIdx]));
+    points.push(endLabel(C.p25, curves.p25[lastIdx]));
+    points.push(endLabel(C.p10, curves.p10[lastIdx]));
+
+    // Milestone median labels (1M, 3M, 6M) — skip if too close to horizon end
+    for (const m of [{ days: 21, label: '1M' }, { days: 63, label: '3M' }, { days: 126, label: '6M' }]) {
         const idx = m.days - 1;
         if (idx < 0 || idx > lastIdx - 10) continue;
-        endLabels.push({
+        points.push({
             x: new Date(projDates[idx]).getTime(), y: curves.p50[idx],
             marker: { size: 5, fillColor: C.median, strokeColor: '#0a1410', strokeWidth: 2 },
             label: {
                 borderColor: C.median, borderWidth: 1, offsetY: -14,
-                style: { background: '#0f1d14', color: C.median, fontSize: '10px', fontWeight: 700, padding: { left: 6, right: 6, top: 3, bottom: 3 } },
-                text: fmtPrice(curves.p50[idx])
-            }
+                style: { background: '#0f1d14', color: C.median, fontSize: '10px', fontWeight: 700,
+                    fontFamily: "'Inter', sans-serif", padding: { left: 6, right: 6, top: 3, bottom: 3 } },
+                text: fmtPrice(curves.p50[idx]),
+            },
         });
     }
 
+    // X-axis annotations: TODAY line + milestone vertical guides
+    const xAnnots = [{
+        x: lastHistDate, strokeDashArray: 0, borderColor: '#3d8b5e', borderWidth: 2,
+        label: { text: 'TODAY', orientation: 'horizontal', position: 'top', offsetY: -2,
+            borderColor: 'transparent',
+            style: { background: '#142419', color: C.label, fontSize: '10px', fontWeight: 800,
+                fontFamily: "'Inter', sans-serif", padding: { left: 8, right: 8, top: 3, bottom: 3 } } },
+    }];
+    for (const m of [{ days: 21, label: '1M' }, { days: 63, label: '3M' }, { days: 126, label: '6M' }, { days: 252, label: '1Y' }]) {
+        if (m.days - 1 > lastIdx) continue;
+        xAnnots.push({
+            x: new Date(projDates[m.days - 1]).getTime(), borderColor: C.grid, strokeDashArray: 3, borderWidth: 1,
+            label: { text: m.label, orientation: 'horizontal', position: 'top', offsetY: -2, borderColor: 'transparent',
+                style: { background: 'transparent', color: C.muted, fontSize: '10px', fontWeight: 700, fontFamily: "'Inter', sans-serif" } },
+        });
+    }
+
+    // Bet size for tooltip
+    const betSize = parseInt(($('betInput').value || '0').replace(/[^0-9]/g, '')) || 0;
+
     const opts = {
         chart: {
-            type: 'line', height: 420, background: 'transparent',
+            type: 'line', height: 520, background: 'transparent',
             toolbar: { show: false }, zoom: { enabled: false },
-            animations: { enabled: true, easing: 'easeinout', speed: 600 },
-            fontFamily: 'Inter, sans-serif',
+            animations: { enabled: true, easing: 'easeinout', speed: 500 },
+            fontFamily: "'Inter', sans-serif",
         },
-        series,
-        colors,
-        stroke: { width: widths, dashArray: dashes, curve: 'smooth' },
-        annotations: {
-            xaxis: [{ x: lastHistDate, borderColor: '#3d8b5e', strokeDashArray: 4, label: { text: 'Today', style: { color: '#e8f0eb', background: '#3d8b5e', fontSize: '11px', padding: { left: 8, right: 8, top: 4, bottom: 4 } } } }],
-            points: endLabels,
+        series, colors,
+        stroke: {
+            curve: ['straight', 'smooth', 'smooth', 'smooth', 'smooth', 'smooth', ...(mrEq ? ['smooth'] : [])],
+            width: widths, dashArray: dashes,
         },
+        markers: { size: 0 },
+        dataLabels: { enabled: false },
+        annotations: { xaxis: xAnnots, points: points },
         xaxis: {
             type: 'datetime',
-            labels: { style: { colors: '#5f7d6a', fontSize: '11px' }, datetimeFormatter: { month: "MMM 'yy" } },
-            axisBorder: { color: '#2a4434' }, axisTicks: { color: '#2a4434' },
+            labels: { style: { colors: C.muted, fontSize: '11px', fontFamily: "'Inter', sans-serif", fontWeight: 600 },
+                datetimeUTC: false, datetimeFormatter: { year: 'yyyy', month: "MMM ''yy", day: 'MMM dd' } },
+            axisBorder: { show: true, color: C.grid }, axisTicks: { show: true, color: C.grid },
+            tooltip: { enabled: false },
         },
         yaxis: {
-            labels: { style: { colors: '#5f7d6a', fontSize: '11px' }, formatter: v => fmtPrice(v) },
+            labels: { style: { colors: C.muted, fontSize: '11px', fontFamily: "'Inter', sans-serif", fontWeight: 600 }, formatter: fmtPrice },
+            title: { text: 'Price (USD)', style: { color: C.muted, fontSize: '11px', fontWeight: 600, fontFamily: "'Inter', sans-serif" } },
+            forceNiceScale: true,
         },
-        grid: { borderColor: 'rgba(42,68,52,0.3)', strokeDashArray: 3 },
+        grid: {
+            borderColor: C.grid, strokeDashArray: 3,
+            xaxis: { lines: { show: false } }, yaxis: { lines: { show: true } },
+            padding: { left: 12, right: 64, top: 8, bottom: 24 },
+        },
         tooltip: {
-            theme: 'dark', x: { format: 'MMM dd, yyyy' },
-            y: { formatter: v => v != null ? fmtPrice(v) : '' },
+            theme: 'dark', shared: true, intersect: false,
+            style: { fontSize: '12px', fontFamily: "'Inter', sans-serif" },
+            x: { format: 'MMM dd, yyyy' },
+            y: { formatter: function(val, opts) {
+                if (val == null) return '';
+                const sIdx = opts?.seriesIndex;
+                if (sIdx === 0) return fmtPrice(val);
+                const pct = ((val - d.current_price) / d.current_price * 100);
+                const sign = pct >= 0 ? '+' : '';
+                if (betSize > 0) {
+                    const dollarChg = betSize * (val - d.current_price) / d.current_price;
+                    return `${fmtPrice(val)} (${sign}${pct.toFixed(1)}% | ${dollarChg >= 0 ? '+' : '-'}$${Math.abs(dollarChg).toFixed(0)})`;
+                }
+                return `${fmtPrice(val)} (${sign}${pct.toFixed(1)}%)`;
+            }},
+            marker: { show: true },
         },
         legend: {
-            position: 'top', horizontalAlign: 'left',
-            labels: { colors: '#9cb3a4' }, fontSize: '11px',
-            markers: { size: 6, strokeWidth: 0 },
+            show: true, position: 'top', horizontalAlign: 'center',
+            labels: { colors: C.label, useSeriesColors: false },
+            fontFamily: "'Inter', sans-serif", fontSize: '12px', fontWeight: 600,
+            markers: { width: 14, height: 14, radius: 7, offsetX: -2, offsetY: 2 },
+            itemMargin: { horizontal: 12, vertical: 6 },
+            onItemClick: { toggleDataSeries: true },
         },
         fill: { type: 'solid', opacity: 1 },
     };
@@ -660,6 +1237,50 @@ function renderChart(d) {
     if (chart) chart.destroy();
     chart = new ApexCharts($('chartWrap'), opts);
     chart.render();
+}
+
+// ── Bet Sizing Panel ──
+function renderBetPanel(d) {
+    const betSize = parseInt(($('betInput').value || '0').replace(/[^0-9]/g, '')) || 0;
+    if (!betSize) { $('betPanel').style.display = 'none'; return; }
+
+    $('betPanel').style.display = '';
+    const curves = typeof d.curves_json === 'string' ? JSON.parse(d.curves_json) : d.curves_json;
+    const projDates = typeof d.proj_dates_json === 'string' ? JSON.parse(d.proj_dates_json) : d.proj_dates_json;
+    const lastIdx = curves.p50.length - 1;
+    const cp = d.current_price;
+
+    const horizonDate = new Date(projDates[lastIdx]);
+    $('betSizeLabel').textContent = '$' + betSize.toLocaleString();
+    $('betHorizonLabel').textContent = `at ${horizonDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+
+    const fmt = v => '$' + Math.round(v).toLocaleString();
+    const setCell = (idV, idP, px) => {
+        const ret = (px - cp) / cp;
+        const outcome = betSize * (1 + ret);
+        const dollarChg = betSize * ret;
+        const sign = dollarChg >= 0 ? '+' : '-';
+        $(idV).textContent = fmt(outcome);
+        const el = $(idP);
+        el.textContent = `${sign}${fmt(Math.abs(dollarChg))} (${ret >= 0 ? '+' : ''}${(ret * 100).toFixed(1)}%)`;
+        el.className = 'bp ' + (ret >= 0 ? 'green' : 'red');
+    };
+
+    setCell('betP10', 'betP10pct', curves.p10[lastIdx]);
+    setCell('betP25', 'betP25pct', curves.p25[lastIdx]);
+    setCell('betP50', 'betP50pct', curves.p50[lastIdx]);
+    setCell('betP75', 'betP75pct', curves.p75[lastIdx]);
+    setCell('betP90', 'betP90pct', curves.p90[lastIdx]);
+
+    const medRet = (curves.p50[lastIdx] - cp) / cp;
+    const medOutcome = betSize * (1 + medRet);
+    const lowOutcome = betSize * (curves.p10[lastIdx] / cp);
+    const highOutcome = betSize * (curves.p90[lastIdx] / cp);
+    $('betFooter').innerHTML =
+        `Your <strong>${fmt(betSize)}</strong> position most likely lands near <strong>${fmt(medOutcome)}</strong> ` +
+        `(${medRet >= 0 ? '+' : ''}${(medRet * 100).toFixed(1)}%). ` +
+        `The 80% confidence range: <strong>${fmt(lowOutcome)}</strong> to <strong>${fmt(highOutcome)}</strong> — ` +
+        `prepare for any outcome in that band.`;
 }
 
 function renderMilestones(d) {
@@ -746,30 +1367,126 @@ function renderMomentum(f) {
         </div>`;
 }
 
-function renderSentiment(d) {
-    if (!d.sent_tagged || d.sent_tagged === 0) {
-        $('sentCard').style.display = 'none';
-        return;
-    }
-    $('sentCard').style.display = '';
-    const bull = d.sent_bull || 0;
-    const bear = d.sent_bear || 0;
-    const tagged = d.sent_tagged || 1;
-    const bullPct = (bull / tagged * 100).toFixed(0);
-    const bearPct = (bear / tagged * 100).toFixed(0);
-    const net = d.sent_net;
-    const netColor = net > 0.1 ? 'var(--green)' : net < -0.1 ? 'var(--red)' : 'var(--amber)';
-    const netLabel = net > 0.1 ? 'Bullish' : net < -0.1 ? 'Bearish' : 'Mixed';
+function renderSentimentIntel(d) {
+    const f = typeof d.fundamentals_json === 'string' ? JSON.parse(d.fundamentals_json) : (d.fundamentals_json || {});
+    const tilt = f.sentiment_tilt || {};
+    const hasTilt = tilt.active || tilt.n_days > 0;
+    const hasLive = d.sent_tagged && d.sent_tagged > 0;
 
-    $('sentPanel').innerHTML = `
-        <div class="sent-bar-wrap"><div class="sent-bar-fill" style="width:${bullPct}%"></div></div>
-        <div class="sent-stats">
-            <span style="color:var(--green)">${bullPct}% bull (${bull})</span>
-            <span style="color:${netColor};font-weight:600">${netLabel}</span>
-            <span style="color:var(--red)">${bearPct}% bear (${bear})</span>
-        </div>
-        <div class="sent-footer">${tagged} tagged of recent StockTwits messages &middot; Net score: ${net?.toFixed(2) ?? 'N/A'}</div>
-    `;
+    // Always show the panel — it's a key differentiator
+    $('sentIntel').style.display = '';
+
+    // ─── Left: WSB/Reddit Sentiment Tilt ───
+    if (tilt.active) {
+        const score = tilt.avg_score || 0;
+        const scorePct = Math.min(100, Math.max(0, (score + 1) / 2 * 100)); // map -1..+1 to 0..100
+        const ringCirc = 2 * Math.PI * 30; // r=30
+        const ringOffset = ringCirc - (scorePct / 100) * ringCirc;
+        const scoreColor = score > 0.1 ? 'var(--green)' : score < -0.1 ? 'var(--red)' : 'var(--amber)';
+        const dirLabel = score > 0.1 ? 'Bullish' : score < -0.1 ? 'Bearish' : 'Neutral';
+        const tiltBps = (tilt.mu_tilt * 10000).toFixed(1); // basis points
+        const tiltPctAnn = (tilt.mu_tilt * 100).toFixed(3);
+        const tiltDir = tilt.mu_tilt > 0 ? '+' : '';
+
+        $('sentTiltContent').innerHTML = `
+            <div class="sent-active-badge"><div class="dot"></div> ACTIVE — Tilting Projections</div>
+            <div class="sent-gauge">
+                <div class="sent-score-ring">
+                    <svg viewBox="0 0 72 72">
+                        <circle class="ring-bg" />
+                        <circle class="ring-fg" style="stroke:${scoreColor};stroke-dasharray:${ringCirc};stroke-dashoffset:${ringOffset}" />
+                    </svg>
+                    <div class="ring-value" style="color:${scoreColor}">${score.toFixed(2)}</div>
+                </div>
+                <div class="sent-gauge-detail">
+                    <div class="sent-label" style="color:${scoreColor}">${dirLabel}</div>
+                    <div class="sent-sub">Trailing ${tilt.lookback}-day average from ${tilt.n_days} days of WSB/Reddit data via FinBERT NLP</div>
+                </div>
+            </div>
+            <div class="sent-tilt-impact">
+                <div class="tilt-row"><span class="tl">Drift Adjustment</span><span class="tv" style="color:${scoreColor}">${tiltDir}${tiltPctAnn}% annual</span></div>
+                <div class="tilt-row"><span class="tl">Impact (bps)</span><span class="tv" style="color:${scoreColor}">${tiltDir}${tiltBps} bps</span></div>
+                <div class="tilt-row"><span class="tl">Applied To</span><span class="tv">Monte Carlo drift only</span></div>
+                <div class="tilt-row"><span class="tl">Config</span><span class="tv">L${tilt.lookback} / S${(0.005).toFixed(3)}</span></div>
+            </div>`;
+    } else {
+        const reason = tilt.n_days === 0 ? 'No sentiment data available for this symbol'
+            : tilt.n_days < 3 ? `Only ${tilt.n_days} day(s) — need 3+ for tilt activation`
+            : 'Sentiment data too stale';
+        $('sentTiltContent').innerHTML = `
+            <div class="sent-inactive-badge"><div class="dot"></div> INACTIVE — Using Base Model</div>
+            <div class="sent-gauge">
+                <div class="sent-score-ring">
+                    <svg viewBox="0 0 72 72">
+                        <circle class="ring-bg" />
+                    </svg>
+                    <div class="ring-value" style="color:var(--text-muted)">—</div>
+                </div>
+                <div class="sent-gauge-detail">
+                    <div class="sent-label" style="color:var(--text-muted)">No Tilt</div>
+                    <div class="sent-sub">${reason}. Projection uses base MC+MR blend without sentiment adjustment.</div>
+                </div>
+            </div>
+            <div class="sent-tilt-impact">
+                <div class="tilt-row"><span class="tl">Drift Adjustment</span><span class="tv" style="color:var(--text-muted)">0.000%</span></div>
+                <div class="tilt-row"><span class="tl">Impact</span><span class="tv" style="color:var(--text-muted)">None</span></div>
+                <div class="tilt-row"><span class="tl">Model</span><span class="tv">Base MC+MR blend (30/70)</span></div>
+                <div class="tilt-row"><span class="tl">To Activate</span><span class="tv">Collect fresh WSB data</span></div>
+            </div>`;
+    }
+
+    // ─── Right: Live StockTwits ───
+    if (hasLive) {
+        const bull = d.sent_bull || 0;
+        const bear = d.sent_bear || 0;
+        const tagged = d.sent_tagged || 1;
+        const bullPct = (bull / tagged * 100).toFixed(0);
+        const bearPct = (bear / tagged * 100).toFixed(0);
+        const net = d.sent_net;
+        const netColor = net > 0.1 ? 'var(--green)' : net < -0.1 ? 'var(--red)' : 'var(--amber)';
+        const netLabel = net > 0.1 ? 'Bullish' : net < -0.1 ? 'Bearish' : 'Mixed';
+
+        // Build a simple ring for net score too
+        const netPct = Math.min(100, Math.max(0, (net + 1) / 2 * 100));
+        const ringCirc = 2 * Math.PI * 30;
+        const ringOffset = ringCirc - (netPct / 100) * ringCirc;
+
+        $('sentLiveContent').innerHTML = `
+            <div class="sent-gauge">
+                <div class="sent-score-ring">
+                    <svg viewBox="0 0 72 72">
+                        <circle class="ring-bg" />
+                        <circle class="ring-fg" style="stroke:${netColor};stroke-dasharray:${ringCirc};stroke-dashoffset:${ringOffset}" />
+                    </svg>
+                    <div class="ring-value" style="color:${netColor}">${net?.toFixed(2) ?? '—'}</div>
+                </div>
+                <div class="sent-gauge-detail">
+                    <div class="sent-label" style="color:${netColor}">${netLabel}</div>
+                    <div class="sent-sub">${tagged} tagged messages from StockTwits (real-time)</div>
+                </div>
+            </div>
+            <div class="st-bar-wrap"><div class="st-bar-fill" style="width:${bullPct}%"></div></div>
+            <div class="st-stats">
+                <span style="color:var(--green)">${bullPct}% bullish (${bull})</span>
+                <span style="color:var(--red)">${bearPct}% bearish (${bear})</span>
+            </div>
+            <div class="st-footer">Live feed — does not affect model projections, for context only</div>`;
+    } else {
+        $('sentLiveContent').innerHTML = `
+            <div class="sent-gauge">
+                <div class="sent-score-ring">
+                    <svg viewBox="0 0 72 72">
+                        <circle class="ring-bg" />
+                    </svg>
+                    <div class="ring-value" style="color:var(--text-muted)">—</div>
+                </div>
+                <div class="sent-gauge-detail">
+                    <div class="sent-label" style="color:var(--text-muted)">No Data</div>
+                    <div class="sent-sub">StockTwits data unavailable for this symbol. This doesn't affect projections.</div>
+                </div>
+            </div>
+            <div class="st-footer">Live sentiment is informational only — not used in model calculations</div>`;
+    }
 }
 
 function renderDiag(d) {
@@ -782,6 +1499,10 @@ function renderDiag(d) {
         ['Hist Volatility', `${(d.sigma_hist * 100).toFixed(1)}%`],
         ['Drift (mu)', `${(d.mu * 100).toFixed(2)}%`],
         ['Sentiment Tilt', fn.sentiment_tilt?.active ? `${(fn.sentiment_tilt.mu_tilt * 100).toFixed(3)}% (${fn.sentiment_tilt.avg_score > 0 ? 'bullish' : 'bearish'}, ${fn.sentiment_tilt.n_days}d)` : 'Inactive'],
+        ['Fundamental Tilt', fn.fundamental_tilt?.active ? `${(fn.fundamental_tilt.mu_tilt * 100).toFixed(3)}% (${fn.fundamental_tilt.n_signals} signals)` : 'Inactive'],
+        ['Combined Tilt', fn.data_sources?.total_mu_tilt != null ? `${(fn.data_sources.total_mu_tilt * 100).toFixed(3)}% (${fn.data_sources.total_mu_tilt_bps?.toFixed(1)} bps)` : 'N/A'],
+        ['Macro Regime', fn.data_sources?.macro_regime ?? 'N/A'],
+        ['Macro σ Mult', fn.data_sources?.macro_sigma_mult?.toFixed(3) ?? '1.000'],
         ['MR Target', d.mr_target ? fmtPrice(d.mr_target) : 'N/A'],
         ['MR Kappa', d.mr_kappa?.toFixed(4) ?? 'N/A'],
         ['Beta', fn.beta?.toFixed(2) ?? 'N/A'],
@@ -808,6 +1529,7 @@ $('symbolInput').addEventListener('keydown', e => { if (e.key === 'Enter') runPr
 
 // Show today's date
 $('metaDate').textContent = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+
 </script>
 </body>
 </html>
