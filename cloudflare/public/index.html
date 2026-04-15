@@ -1172,15 +1172,12 @@ function renderTiltBreakdown(f, d) {
 }
 
 function renderPublicPulse(f) {
-    const ft = f.fundamental_tilt || {};
-    const raw = (ft.data && ft.data.public_pulse) || null;
-    const comp = (ft.components && ft.components.public_pulse) || null;
+    // Public Pulse signal retired 2026-04-15 — backtest showed noise on 2023-2025 data,
+    // and 2 of 4 upstream sources (pytrends, GDELT rate limits) are unreliable in prod.
+    // Panel permanently hidden; composite value still computed server-side for research.
     const card = $('publicPulseCard');
-    if (!raw || !raw.components || raw.components.length === 0) {
-        card.style.display = 'none';
-        return;
-    }
-    card.style.display = '';
+    if (card) card.style.display = 'none';
+    return;
 
     const composite = raw.composite_score;
     const scoreColor = composite > 0.1 ? 'var(--green)' : composite < -0.1 ? 'var(--red)' : 'var(--amber)';
