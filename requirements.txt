@@ -1,16 +1,15 @@
+# Production dependencies (Railway deploy).
+# Heavy research-only deps (transformers, torch, pytrends) moved to
+# requirements-research.txt to keep the API container lean.
+
+# Core data + engine
 yfinance>=0.2.31
 pandas>=2.0
 numpy>=1.24
 requests>=2.28
 python-dotenv>=1.0
+scipy>=1.11
 
 # API server
 fastapi>=0.100
-uvicorn>=0.23
-
-# Public Pulse (Google Trends)
-pytrends>=4.9.3
-
-# Sentiment collector (Phase B) — large downloads, optional for dashboard-only use
-transformers>=4.36
-torch>=2.1
+uvicorn[standard]>=0.23

@@ -112,8 +112,17 @@ SP500_NDX100 = [
     "XYZ", "YUM", "ZBH", "ZBRA", "ZS", "ZTS",
 ]
 
-# Combined: S&P 500 + Nasdaq 100 + WSB favorites (deduplicated)
-FULL_UNIVERSE = sorted(set(SP500_NDX100 + WSB_UNIVERSE))
+# Combined: Russell 3000 ∪ S&P 500 + Nasdaq 100 ∪ WSB favorites (deduplicated).
+# Falls back to SP500+NDX100+WSB only if iShares IWV holdings aren't cached yet
+# (so tests/imports never hit the network). Call `python3 universe.py refresh`
+# or `load_full_universe(force_refresh=True)` to force a re-fetch.
+try:
+    from universe import load_full_universe
+    FULL_UNIVERSE = load_full_universe()
+except Exception as _uni_err:
+    log.warning("universe.load_full_universe failed (%s); falling back to SP500+NDX100+WSB",
+                _uni_err)
+    FULL_UNIVERSE = sorted(set(SP500_NDX100 + WSB_UNIVERSE))
 
 STALE_HOURS = 18  # skip symbols computed within this window
 DEFAULT_HORIZONS = [252]

@@ -109,10 +109,14 @@ class TiltConfig:
     pp_strength: float = 0.0
     netliq_strength: float = 0.0  # 0 = no net-liq tilt
     form4_strength: float = 0.0   # 0 = no insider-buying tilt
+    hy_oas_strength: float = 0.0       # 0 = no HY OAS tilt
+    margin_debt_strength: float = 0.0  # 0 = no margin-debt tilt
 
     def mu_tilt(self, avg_sent: Optional[float], avg_pp: Optional[float],
                 netliq_signal: Optional[float] = None,
-                form4_signal: Optional[float] = None) -> float:
+                form4_signal: Optional[float] = None,
+                hy_oas_signal: Optional[float] = None,
+                margin_debt_signal: Optional[float] = None) -> float:
         tilt = 0.0
         if self.sent_strength != 0 and avg_sent is not None:
             tilt += self.sent_strength * avg_sent
@@ -122,6 +126,10 @@ class TiltConfig:
             tilt += self.netliq_strength * netliq_signal
         if self.form4_strength != 0 and form4_signal is not None:
             tilt += self.form4_strength * form4_signal
+        if self.hy_oas_strength != 0 and hy_oas_signal is not None:
+            tilt += self.hy_oas_strength * hy_oas_signal
+        if self.margin_debt_strength != 0 and margin_debt_signal is not None:
+            tilt += self.margin_debt_strength * margin_debt_signal
         # Clamp at ±10% annual drift (same as production engine)
         return max(-0.10, min(0.10, tilt))
 
@@ -161,6 +169,24 @@ def default_configs(mode: str) -> List[TiltConfig]:
         for s in [0.02, 0.04, 0.06, 0.08, 0.10]:
             configs.append(TiltConfig(f"form4_S{s}", form4_strength=s))
         return configs
+    if mode == "hy_oas_sweep":
+        configs = [base]
+        for s in [0.02, 0.04, 0.06, 0.08, 0.10]:
+            configs.append(TiltConfig(f"hyoas_S{s}", hy_oas_strength=s))
+        return configs
+    if mode == "margin_debt_sweep":
+        configs = [base]
+        for s in [0.02, 0.04, 0.06, 0.08, 0.10]:
+            configs.append(TiltConfig(f"mdebt_S{s}", margin_debt_strength=s))
+        return configs
+    if mode == "macro_combined":
+        # Test each macro signal alone + their combination at production-scale strength
+        return [
+            base,
+            TiltConfig("hyoas_S0.06", hy_oas_strength=0.06),
+            TiltConfig("mdebt_S0.06", margin_debt_strength=0.06),
+            TiltConfig("macro_combo", hy_oas_strength=0.06, margin_debt_strength=0.06),
+        ]
     if mode == "sweep":
         configs = [base, sent_only]
         # PP strength sweep — find the calibration that beats sent_only
@@ -203,12 +229,26 @@ def get_form4_signal(form4_df: Optional[pd.DataFrame], symbol: str,
     return float(val) if pd.notna(val) else None
 
 
+def get_macro_signal(macro_df: Optional[pd.DataFrame],
+                     rebalance: pd.Timestamp) -> Optional[float]:
+    """Most recent macro (HY OAS / margin debt) tilt signal at or before `rebalance`."""
+    if macro_df is None:
+        return None
+    sub = macro_df[macro_df.date <= rebalance]
+    if sub.empty:
+        return None
+    val = sub.iloc[-1]["tilt_signal"]
+    return float(val) if pd.notna(val) else None
+
+
 def backtest_symbol(
     symbol: str, closes: np.ndarray, dates: pd.DatetimeIndex,
     sent_df: Optional[pd.DataFrame], pp_df: Optional[pd.DataFrame],
     configs: List[TiltConfig], cfg: SentimentBacktestConfig,
     netliq_df: Optional[pd.DataFrame] = None,
     form4_df: Optional[pd.DataFrame] = None,
+    hy_oas_df: Optional[pd.DataFrame] = None,
+    margin_debt_df: Optional[pd.DataFrame] = None,
 ) -> List[dict]:
     rows: List[dict] = []
     n = len(closes)
@@ -236,12 +276,16 @@ def backtest_symbol(
                     pp_df, symbol, rebalance, c.pp_lookback)
         netliq_sig = get_netliq_signal(netliq_df, rebalance)
         form4_sig = get_form4_signal(form4_df, symbol, rebalance)
+        hy_oas_sig = get_macro_signal(hy_oas_df, rebalance)
+        margin_debt_sig = get_macro_signal(margin_debt_df, rebalance)
 
         for c in configs:
             sent = avg_sents.get(c.sent_lookback) if c.sent_lookback else None
             pp = avg_pps.get(c.pp_lookback) if c.pp_lookback else None
             mu_tilt = c.mu_tilt(sent, pp, netliq_signal=netliq_sig,
-                                form4_signal=form4_sig)
+                                form4_signal=form4_sig,
+                                hy_oas_signal=hy_oas_sig,
+                                margin_debt_signal=margin_debt_sig)
             # Same RNG seed across configs for apples-to-apples comparison
             rng = np.random.default_rng(cfg.rng_seed + wi)
             result = run_single_window(train, future, cfg, rng, mu_tilt=mu_tilt)
@@ -255,10 +299,14 @@ def backtest_symbol(
                 "pp_strength": c.pp_strength,
                 "netliq_strength": c.netliq_strength,
                 "form4_strength": c.form4_strength,
+                "hy_oas_strength": c.hy_oas_strength,
+                "margin_debt_strength": c.margin_debt_strength,
                 "avg_sent": sent if sent is not None else float("nan"),
                 "avg_pp": pp if pp is not None else float("nan"),
                 "netliq_sig": netliq_sig if netliq_sig is not None else float("nan"),
                 "form4_sig": form4_sig if form4_sig is not None else float("nan"),
+                "hy_oas_sig": hy_oas_sig if hy_oas_sig is not None else float("nan"),
+                "margin_debt_sig": margin_debt_sig if margin_debt_sig is not None else float("nan"),
                 "mu_tilt": mu_tilt,
                 **result,
             })
@@ -349,11 +397,14 @@ def main():
     p.add_argument("--symbols", nargs="+")
     p.add_argument("--all-symbols", action="store_true",
                    help="Use full 107-symbol DEFAULT_UNIVERSE (sidesteps shell quoting)")
+    p.add_argument("--full-universe", action="store_true",
+                   help="Use the 537-symbol S&P 500 + Nasdaq 100 + WSB universe (from worker.py)")
     p.add_argument("--start", required=True)
     p.add_argument("--end", required=True)
     p.add_argument("--mode", default="sweep",
                    choices=["baseline", "sent_only", "pp_only", "combined", "sweep",
-                            "netliq_sweep", "form4_sweep"])
+                            "netliq_sweep", "form4_sweep",
+                            "hy_oas_sweep", "margin_debt_sweep", "macro_combined"])
     p.add_argument("--sentiment-csv",
                    default="sentiment_data/sentiment_combined_2023-01-01_2026-04-15.csv")
     p.add_argument("--num-paths", type=int, default=1000)
@@ -402,6 +453,23 @@ def main():
     except Exception as e:
         logger.warning("Form 4 load failed: %s", e)
 
+    # Macro signals (HY OAS + margin debt — macro, applies to all symbols)
+    hy_oas_df = None
+    margin_debt_df = None
+    try:
+        import macro_signals
+        hy_oas_df = macro_signals.hy_oas_tilt_timeseries()
+        if hy_oas_df is not None:
+            logger.info("Loaded HY OAS: %d rows, %s to %s",
+                        len(hy_oas_df), hy_oas_df.date.min().date(), hy_oas_df.date.max().date())
+        margin_debt_df = macro_signals.margin_debt_tilt_timeseries()
+        if margin_debt_df is not None:
+            logger.info("Loaded margin debt: %d rows, %s to %s",
+                        len(margin_debt_df), margin_debt_df.date.min().date(),
+                        margin_debt_df.date.max().date())
+    except Exception as e:
+        logger.warning("Macro signals load failed: %s", e)
+
     configs = default_configs(args.mode)
     logger.info("Mode '%s' → %d configs: %s",
                 args.mode, len(configs), [c.name for c in configs])
@@ -414,7 +482,10 @@ def main():
     )
 
     # Resolve symbol list
-    if args.all_symbols:
+    if args.full_universe:
+        from worker import FULL_UNIVERSE
+        symbols = FULL_UNIVERSE
+    elif args.all_symbols:
         from public_pulse_backfill import DEFAULT_UNIVERSE
         symbols = DEFAULT_UNIVERSE
     elif args.symbols:
@@ -434,7 +505,8 @@ def main():
         closes, dates = hist
         try:
             rows = backtest_symbol(sym, closes, dates, sent_df, pp_df, configs, cfg,
-                                   netliq_df=netliq_df, form4_df=form4_df)
+                                   netliq_df=netliq_df, form4_df=form4_df,
+                                   hy_oas_df=hy_oas_df, margin_debt_df=margin_debt_df)
             all_rows.extend(rows)
         except Exception as e:
             logger.error("  [%s] skipped: %s", sym, e)

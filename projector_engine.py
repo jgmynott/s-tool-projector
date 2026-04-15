@@ -100,24 +100,26 @@ BLEND_MC = 0.30  # 30% MC / 70% MR (from sweep_report.md)
 DEFAULT_PATHS = 2000
 DEFAULT_HORIZON = 252  # 1 year
 
-# Sentiment tilt — from Phase C full backtest (107 symbols, 27,800 forecasts)
-# Best config: L21_S0.005 → -12.6% MAPE improvement at 1yr, +5.2% hit rate
+# Tilts disabled 2026-04-15: full backtest (2018-2025, 378 symbols) shows all
+# drift-tilt signals (sentiment, Public Pulse, HY OAS, margin debt) within ±0.17pp
+# MAPE of baseline at 1yr — statistical noise. Hit rate actually degrades (58%→57%)
+# when tilts applied. Keeping modules + weights for observability / future re-enable;
+# strengths zeroed so they don't alter projections.
 SENTIMENT_LOOKBACK_DAYS = 21
-SENTIMENT_TILT_STRENGTH = 0.005
+SENTIMENT_TILT_STRENGTH = 0.0   # was 0.005 — zeroed after regime-change finding
 SENTIMENT_CSV = "sentiment_data/sentiment_combined_2023-01-01_2026-04-15.csv"
 
-# Fundamental tilt weights — how much each signal adjusts annualized drift
-# Weights do not need to sum to 1.0; MAX_FUNDAMENTAL_TILT caps the combined tilt.
+# Fundamental tilt weights zeroed; signal values still computed + displayed.
 TILT_WEIGHTS = {
-    "analyst_target":    0.30,  # FMP analyst consensus price target vs current
-    "eps_growth":        0.18,  # FMP EPS growth estimate
-    "insider":           0.10,  # FMP insider buy/sell net ratio
-    "macro":             0.15,  # FRED macro regime (yield curve, rates, unemployment)
-    "recommendation":    0.07,  # Finnhub buy/hold/sell consensus (fresher than FMP target)
-    "put_call_contra":   0.05,  # yfinance put/call — CONTRARIAN (high P/C → bullish tilt)
-    "public_pulse":      0.15,  # US general-public sentiment (Google Trends, Wiki, GDELT, Reddit, CSI)
+    "analyst_target":    0.0,  # was 0.30
+    "eps_growth":        0.0,  # was 0.18
+    "insider":           0.0,  # was 0.10
+    "macro":             0.0,  # was 0.15
+    "recommendation":    0.0,  # was 0.07
+    "put_call_contra":   0.0,  # was 0.05
+    "public_pulse":      0.0,  # was 0.15
 }
-MAX_FUNDAMENTAL_TILT = 0.06  # ±6% max annual drift from all fundamentals combined
+MAX_FUNDAMENTAL_TILT = 0.0     # was 0.06 — hard cap now zero
 
 # Earnings proximity — sigma boost when earnings are near (known vol event)
 EARNINGS_SIGMA_MAX = 1.25   # max sigma multiplier when earnings = 0 days away

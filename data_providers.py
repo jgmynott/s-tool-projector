@@ -174,7 +174,13 @@ class FMPProvider(BaseProvider):
 
     def __init__(self, api_key: str | None = None):
         self.api_key = api_key or os.environ.get("FMP_API_KEY")
-        self.limiter = DailyLimiter(250)
+        # Daily budget lifted from 250 → 300 000 for Premium tier
+        # (300 req/min × 24h × 60 = ~432 000/day; keep some headroom).
+        self.limiter = DailyLimiter(300_000)
+        # Per-request throttle: Premium tier allows 300/min (~5/sec). Cap at 1/sec
+        # for safety margin and to smooth bursts from the daily worker at 2,600
+        # symbols × multiple endpoints per symbol.
+        self.rate_limiter = TokenBucketLimiter(max_tokens=1, window_seconds=1.0)
 
     def is_available(self) -> bool:
         return bool(self.api_key) and self.limiter.remaining > 0
@@ -194,6 +200,8 @@ class FMPProvider(BaseProvider):
         if not self.limiter.acquire():
             logger.warning("FMP daily rate limit exhausted")
             return None
+        # Per-request throttle (blocks up to ~1s if we're going too fast)
+        self.rate_limiter.acquire(block=True)
         params = params or {}
         params["apikey"] = self.api_key
         url = f"{self.BASE}/{path}"
@@ -208,16 +216,28 @@ class FMPProvider(BaseProvider):
     # -- public data methods --
 
     def fetch_fundamentals(self, symbol: str) -> Dict[str, Any] | None:
-        """P/E, market cap, EPS, beta, dividend yield, sector, industry."""
+        """P/E, market cap, EPS, beta, dividend yield, sector, industry.
+
+        /stable/profile no longer returns PE or EPS (those live in /stable/ratios
+        now). We fetch both and merge so callers still see `pe_ratio`/`eps`.
+        """
         data = self._get("profile", {"symbol": symbol})
         if not data:
             return None
         try:
             rec = data[0] if isinstance(data, list) else data
+            # Pull PE + EPS from ratios (no longer in /stable/profile)
+            pe_ratio = None
+            eps = None
+            ratios_data = self._get("ratios", {"symbol": symbol, "limit": 1})
+            if ratios_data:
+                r = ratios_data[0] if isinstance(ratios_data, list) else ratios_data
+                pe_ratio = r.get("priceToEarningsRatio") or r.get("priceEarningsRatio")
+                eps = r.get("netIncomePerShare") or r.get("earningsPerShare")
             return {
-                "pe_ratio":       rec.get("pe"),
+                "pe_ratio":       pe_ratio,
                 "market_cap":     rec.get("marketCap") or rec.get("mktCap"),
-                "eps":            rec.get("eps") if rec.get("eps") else None,
+                "eps":            eps,
                 "beta":           rec.get("beta"),
                 "dividend_yield": rec.get("lastDividend") or rec.get("lastDiv"),
                 "sector":         rec.get("sector"),
@@ -232,15 +252,15 @@ class FMPProvider(BaseProvider):
 
     def fetch_historical(self, symbol: str, years: int = 5) -> List[Dict] | None:
         """Daily OHLCV closes for the last *years* years."""
-        data = self._get("historical-price-full", {
-            "symbol": symbol,
-            "timeseries": years * 252,
-        })
+        # /stable/historical-price-eod/full returns a flat list of OHLCV rows
+        # (no "historical" envelope like the old v3 /historical-price-full).
+        data = self._get("historical-price-eod/full", {"symbol": symbol})
         if not data:
             return None
-        rows = data.get("historical", data) if isinstance(data, dict) else data
-        if not isinstance(rows, list):
+        rows = data if isinstance(data, list) else data.get("historical", [])
+        if not isinstance(rows, list) or not rows:
             return None
+        rows = rows[: years * 252]
         return [
             {
                 "date":   r["date"],
@@ -268,7 +288,7 @@ class FMPProvider(BaseProvider):
                 "return_on_assets":      rec.get("returnOnAssets"),
                 "debt_to_equity":        rec.get("debtEquityRatio"),
                 "current_ratio":         rec.get("currentRatio"),
-                "pe_ratio":              rec.get("priceEarningsRatio"),
+                "pe_ratio":              rec.get("priceToEarningsRatio") or rec.get("priceEarningsRatio"),
                 "price_to_book":         rec.get("priceToBookRatio"),
                 "price_to_sales":        rec.get("priceToSalesRatio"),
                 "source":                "fmp",
@@ -279,7 +299,7 @@ class FMPProvider(BaseProvider):
 
     def fetch_earnings_calendar(self, symbol: str) -> Dict[str, Any] | None:
         """Next earnings date for *symbol*."""
-        data = self._get("earning-calendar", {"symbol": symbol})
+        data = self._get("earnings", {"symbol": symbol})
         if not data:
             return None
         try:
@@ -843,7 +863,7 @@ class FMPAnalystProvider:
 
     def fetch_insider_trading(self, symbol: str, limit: int = 20) -> Dict[str, Any] | None:
         """Recent insider transactions — net buy/sell signal."""
-        data = self.fmp._get("insider-trading", {"symbol": symbol, "limit": limit})
+        data = self.fmp._get("insider-trading/latest", {"symbol": symbol, "limit": limit})
         if not data or not isinstance(data, list):
             return None
         try:
