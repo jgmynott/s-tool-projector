@@ -7,6 +7,13 @@ account_id = "18479801bf03932e04409c95b49e358a"
 directory = "./public"
 binding = "ASSETS"
 
+# Public client-safe keys. Set real values via `wrangler secret put` (for
+# production) or the Cloudflare dashboard Worker → Settings → Variables.
+# Never put sk_ / rk_ / whsec_ secrets here — those live server-side on Railway.
+[vars]
+CLERK_PUBLISHABLE_KEY = ""
+STRIPE_PUBLISHABLE_KEY = ""
+
 [[routes]]
 pattern = "s-tool.io/*"
 zone_name = "s-tool.io"

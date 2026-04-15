@@ -7,6 +7,7 @@
 *.pyc
 .env
 .env.*
+!.env.example
 __pycache__/
 public_pulse_data/
 sentiment_data/*.csv
