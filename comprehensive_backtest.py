@@ -107,13 +107,21 @@ class TiltConfig:
     sent_strength: float = 0.0
     pp_lookback: int = 0        # 0 = no PP tilt
     pp_strength: float = 0.0
+    netliq_strength: float = 0.0  # 0 = no net-liq tilt
+    form4_strength: float = 0.0   # 0 = no insider-buying tilt
 
-    def mu_tilt(self, avg_sent: Optional[float], avg_pp: Optional[float]) -> float:
+    def mu_tilt(self, avg_sent: Optional[float], avg_pp: Optional[float],
+                netliq_signal: Optional[float] = None,
+                form4_signal: Optional[float] = None) -> float:
         tilt = 0.0
         if self.sent_strength != 0 and avg_sent is not None:
             tilt += self.sent_strength * avg_sent
         if self.pp_strength != 0 and avg_pp is not None:
             tilt += self.pp_strength * avg_pp
+        if self.netliq_strength != 0 and netliq_signal is not None:
+            tilt += self.netliq_strength * netliq_signal
+        if self.form4_strength != 0 and form4_signal is not None:
+            tilt += self.form4_strength * form4_signal
         # Clamp at ±10% annual drift (same as production engine)
         return max(-0.10, min(0.10, tilt))
 
@@ -140,6 +148,19 @@ def default_configs(mode: str) -> List[TiltConfig]:
         return [base, pp_only]
     if mode == "combined":
         return [base, sent_only, pp_only, combined]
+    if mode == "netliq_sweep":
+        # Net-liquidity tilt signal is already in [-1, +1] (z-score scaled)
+        # Test multiple strengths to find the optimum
+        configs = [base]
+        for s in [0.02, 0.04, 0.06, 0.08, 0.10]:
+            configs.append(TiltConfig(f"netliq_S{s}", netliq_strength=s))
+        return configs
+    if mode == "form4_sweep":
+        # Form-4 insider-buying tilt signal in [-1, +1]
+        configs = [base]
+        for s in [0.02, 0.04, 0.06, 0.08, 0.10]:
+            configs.append(TiltConfig(f"form4_S{s}", form4_strength=s))
+        return configs
     if mode == "sweep":
         configs = [base, sent_only]
         # PP strength sweep — find the calibration that beats sent_only
@@ -158,10 +179,36 @@ def default_configs(mode: str) -> List[TiltConfig]:
 # Walk-forward
 # ─────────────────────────────────────────────────────────────────────
 
+def get_netliq_signal(netliq_df: Optional[pd.DataFrame],
+                      rebalance: pd.Timestamp) -> Optional[float]:
+    """Most recent net-liquidity tilt signal at or before `rebalance`."""
+    if netliq_df is None:
+        return None
+    sub = netliq_df[netliq_df.date <= rebalance]
+    if sub.empty:
+        return None
+    val = sub.iloc[-1]["tilt_signal"]
+    return float(val) if pd.notna(val) else None
+
+
+def get_form4_signal(form4_df: Optional[pd.DataFrame], symbol: str,
+                     rebalance: pd.Timestamp) -> Optional[float]:
+    """Form-4 insider-buying tilt signal for `symbol` at or before `rebalance`."""
+    if form4_df is None:
+        return None
+    sub = form4_df[(form4_df.symbol == symbol) & (form4_df.date <= rebalance)]
+    if sub.empty:
+        return None
+    val = sub.iloc[-1]["tilt_signal"]
+    return float(val) if pd.notna(val) else None
+
+
 def backtest_symbol(
     symbol: str, closes: np.ndarray, dates: pd.DatetimeIndex,
     sent_df: Optional[pd.DataFrame], pp_df: Optional[pd.DataFrame],
     configs: List[TiltConfig], cfg: SentimentBacktestConfig,
+    netliq_df: Optional[pd.DataFrame] = None,
+    form4_df: Optional[pd.DataFrame] = None,
 ) -> List[dict]:
     rows: List[dict] = []
     n = len(closes)
@@ -187,11 +234,14 @@ def backtest_symbol(
             if c.pp_lookback and c.pp_lookback not in avg_pps and pp_df is not None:
                 avg_pps[c.pp_lookback] = get_trailing_pp(
                     pp_df, symbol, rebalance, c.pp_lookback)
+        netliq_sig = get_netliq_signal(netliq_df, rebalance)
+        form4_sig = get_form4_signal(form4_df, symbol, rebalance)
 
         for c in configs:
             sent = avg_sents.get(c.sent_lookback) if c.sent_lookback else None
             pp = avg_pps.get(c.pp_lookback) if c.pp_lookback else None
-            mu_tilt = c.mu_tilt(sent, pp)
+            mu_tilt = c.mu_tilt(sent, pp, netliq_signal=netliq_sig,
+                                form4_signal=form4_sig)
             # Same RNG seed across configs for apples-to-apples comparison
             rng = np.random.default_rng(cfg.rng_seed + wi)
             result = run_single_window(train, future, cfg, rng, mu_tilt=mu_tilt)
@@ -203,8 +253,12 @@ def backtest_symbol(
                 "sent_strength": c.sent_strength,
                 "pp_lookback": c.pp_lookback,
                 "pp_strength": c.pp_strength,
+                "netliq_strength": c.netliq_strength,
+                "form4_strength": c.form4_strength,
                 "avg_sent": sent if sent is not None else float("nan"),
                 "avg_pp": pp if pp is not None else float("nan"),
+                "netliq_sig": netliq_sig if netliq_sig is not None else float("nan"),
+                "form4_sig": form4_sig if form4_sig is not None else float("nan"),
                 "mu_tilt": mu_tilt,
                 **result,
             })
@@ -292,11 +346,14 @@ def write_report(summary: pd.DataFrame, path: Path, meta: dict) -> None:
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("--symbols", nargs="+", required=True)
+    p.add_argument("--symbols", nargs="+")
+    p.add_argument("--all-symbols", action="store_true",
+                   help="Use full 107-symbol DEFAULT_UNIVERSE (sidesteps shell quoting)")
     p.add_argument("--start", required=True)
     p.add_argument("--end", required=True)
     p.add_argument("--mode", default="sweep",
-                   choices=["baseline", "sent_only", "pp_only", "combined", "sweep"])
+                   choices=["baseline", "sent_only", "pp_only", "combined", "sweep",
+                            "netliq_sweep", "form4_sweep"])
     p.add_argument("--sentiment-csv",
                    default="sentiment_data/sentiment_combined_2023-01-01_2026-04-15.csv")
     p.add_argument("--num-paths", type=int, default=1000)
@@ -324,6 +381,27 @@ def main():
     if pp_df is not None:
         logger.info("Loaded PP data: %d rows, %d symbols", len(pp_df), pp_df.symbol.nunique())
 
+    # Net liquidity time series (macro — applies to all symbols)
+    netliq_df = None
+    try:
+        import net_liquidity
+        netliq_df = net_liquidity.tilt_timeseries()
+        logger.info("Loaded net-liq: %d rows, %s to %s",
+                    len(netliq_df), netliq_df.date.min().date(), netliq_df.date.max().date())
+    except Exception as e:
+        logger.warning("Net-liquidity load failed: %s", e)
+
+    # Form 4 insider buying (stock-level — per-symbol tilt)
+    form4_df = None
+    try:
+        import form4_insider
+        form4_df = form4_insider.tilt_timeseries()
+        if form4_df is not None:
+            logger.info("Loaded Form 4: %d rows, %d symbols",
+                        len(form4_df), form4_df.symbol.nunique())
+    except Exception as e:
+        logger.warning("Form 4 load failed: %s", e)
+
     configs = default_configs(args.mode)
     logger.info("Mode '%s' → %d configs: %s",
                 args.mode, len(configs), [c.name for c in configs])
@@ -335,17 +413,32 @@ def main():
         step=args.step,
     )
 
+    # Resolve symbol list
+    if args.all_symbols:
+        from public_pulse_backfill import DEFAULT_UNIVERSE
+        symbols = DEFAULT_UNIVERSE
+    elif args.symbols:
+        symbols = args.symbols
+    else:
+        logger.error("Must pass --symbols or --all-symbols")
+        sys.exit(1)
+
     # Walk-forward each symbol
     all_rows: List[dict] = []
-    for i, sym in enumerate(args.symbols):
-        logger.info("── [%d/%d] %s ──", i + 1, len(args.symbols), sym)
+    for i, sym in enumerate(symbols):
+        logger.info("── [%d/%d] %s ──", i + 1, len(symbols), sym)
         hist = fetch_price_history(sym, years=5)
         if hist is None:
             logger.error("  skip %s: no price history", sym)
             continue
         closes, dates = hist
-        rows = backtest_symbol(sym, closes, dates, sent_df, pp_df, configs, cfg)
-        all_rows.extend(rows)
+        try:
+            rows = backtest_symbol(sym, closes, dates, sent_df, pp_df, configs, cfg,
+                                   netliq_df=netliq_df, form4_df=form4_df)
+            all_rows.extend(rows)
+        except Exception as e:
+            logger.error("  [%s] skipped: %s", sym, e)
+            continue
 
     if not all_rows:
         logger.error("No results"); sys.exit(1)

@@ -84,7 +84,7 @@ BACKTEST_SYMBOLS = [
 # arctic-shift mirror of the old Pushshift dump.
 # Public, no key required, but rate-limited.
 ARCTIC_BASE = "https://arctic-shift.photon-reddit.com/api"
-SUB = "wallstreetbets"
+SUB = "wallstreetbets"  # overridden by --subreddit arg at runtime
 
 # Words to never treat as a ticker even though uppercase pattern matches.
 # Aggressive list — false positives in WSB chatter would dominate signal.
@@ -480,7 +480,13 @@ def main():
                    help="Skip days already in the output CSV. Use after a crash or interrupt.")
     p.add_argument("--fast", action="store_true",
                    help="Fast mode: sample 200 texts/ticker, cap 1500 scores/day, faster API. ~10x speedup.")
+    p.add_argument("--subreddit", default="wallstreetbets",
+                   help="Subreddit to crawl (default: wallstreetbets). Use for broad-Reddit Public Pulse crawl.")
     args = p.parse_args()
+
+    # Allow overriding target subreddit
+    global SUB
+    SUB = args.subreddit
 
     if args.backtest:
         syms = BACKTEST_SYMBOLS
