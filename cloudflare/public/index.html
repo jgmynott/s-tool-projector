@@ -593,6 +593,48 @@ body {
     letter-spacing: 0.2px;
 }
 .glossary-def { color: var(--text-secondary); }
+
+/* ── Hero / intro strip ── */
+.hero {
+    background: linear-gradient(135deg, rgba(61, 139, 94, 0.08) 0%, rgba(45, 212, 191, 0.04) 100%);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px 28px;
+    margin-bottom: 20px;
+}
+.hero-headline {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.2px;
+    line-height: 1.25;
+    margin-bottom: 10px;
+}
+.hero-headline .accent { color: var(--accent); }
+.hero-sub {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.55;
+    max-width: 780px;
+}
+.hero-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+}
+.hero-pill {
+    font-size: 11px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: rgba(61, 139, 94, 0.12);
+    border: 1px solid rgba(61, 139, 94, 0.35);
+    color: var(--text-primary);
+    font-weight: 500;
+}
+@media (max-width: 700px) {
+    .hero-headline { font-size: 18px; }
+}
 </style>
 </head>
 <body>
@@ -606,6 +648,28 @@ body {
         <div class="meta">
             <div id="metaDate"></div>
             <div id="metaVix"></div>
+        </div>
+    </div>
+
+    <!-- Hero / intro -->
+    <div class="hero">
+        <div class="hero-headline">
+            Honest projection bands for <span class="accent">2,609 US stocks</span> — no false alpha, no mystery signals.
+        </div>
+        <div class="hero-sub">
+            Enter a ticker and we simulate thousands of forward paths under the stock's
+            own volatility and long-run mean-reversion behavior. The 10th–90th percentile
+            range shows where the stock could plausibly land, not where we "think" it will.
+            Every signal the engine uses had to earn its spot in a rigorous walk-forward backtest —
+            sentiment, Public Pulse, HY OAS, and margin-debt tilts all failed that bar on post-2023 data
+            and were zeroed. Hover the <span class="info" data-tip="Like this one — hover for definitions throughout the page.">i</span>
+            icons or open the glossary at the bottom for any term.
+        </div>
+        <div class="hero-pills">
+            <span class="hero-pill">Russell 3000 coverage</span>
+            <span class="hero-pill">Walk-forward validated</span>
+            <span class="hero-pill">No hidden tilts</span>
+            <span class="hero-pill">Free during beta</span>
         </div>
     </div>
 
