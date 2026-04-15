@@ -1,109 +1,106 @@
-# Session Handoff — 2026-04-15
+# Session Handoff — 2026-04-15 (end of day)
 
-Write-up for the terminal Claude Code session picking up from the desktop app session.
+> Replace "Read SESSION_HANDOFF.md and MEMORY.md then tell me where we left off" to resume.
 
-## What's in flight vs done
+## TL;DR of today's session
 
-### ✅ Shipped this week
-- **6 tilt signals wired into production** engine (`projector_engine.py`):
-  analyst_target (FMP), eps_growth (FMP), insider (FMP), macro (FRED), recommendation (Finnhub), put_call_contra (yfinance options), public_pulse (composite).
-- **Earnings-proximity sigma boost** — widens bands as earnings approach, via Finnhub calendar.
-- **Public Pulse module** (`public_pulse.py`) — Google Trends + Wikipedia + GDELT + broad Reddit + Michigan CSI, all collectors built.
-- **Full PP backfill** — 107 symbols × 3 years × 3 sources in `public_pulse_data/`.
-- **Frontend updated** — `frontend.html` renders the new Public Pulse panel and tilt breakdown (committed, not deployed).
-- **Figma mockup** — hero dashboard at https://www.figma.com/design/eMBkOhNhxJMt9FbREpaLYa
-- **GitHub repo** at `github.com/stool-cell/s-tool-projector` (will migrate to `jgmynott` — see below)
+Shipped a **drift-free, honest projection engine** to production at **https://s-tool.io** running a **Russell 3000 universe (2,609 tickers)** on a FastAPI backend at Railway, fronted by a Cloudflare Worker that serves the static UI and reverse-proxies `/api/*`. All drift-tilt signals (sentiment, Public Pulse, HY OAS, margin debt) were backtested and zeroed — they're noise on post-2023 data. The frontend got a landing hero, watchlist, info tooltips on every important field, a glossary card, and a "how it works" explainer. A SKEW + breadth strength sweep is still running in the background — if SKEW with a flipped sign (momentum interpretation) shows meaningful MAPE lift, it's the first signal we've found that actually works post-2023.
 
-### 🔬 Research finding (this is the headline)
-**Crowd-sentiment tilts worked 2018-2022 (−8.4pp MAPE at 1yr), DIED in 2023-2025 (+0.5pp worse).**
-Every text-based signal we can backtest is noise on post-2023 data. See:
-- Linear S-87 (the finding) and S-88 (new-signal research task)
-- Notion subpage: `2026-04-15 — Crowd-sentiment signals died ~2023 (backtest forensic)`
-- Memory file: `project_regime_change_finding.md` (auto-loads in future sessions)
+## Live production stack
 
-### 🔬 Non-text signals tested today
-**None of them move the needle either:**
-
-| Signal | Verdict | File |
+| Layer | What | Where |
 |---|---|---|
-| Net Liquidity (FRED WALCL−WTREGEN−RRP) | dead, −0.04 to −0.31pp | `net_liquidity.py`, `netliq_backtest.csv` |
-| Form 4 insider buying (openinsider) | faint +0.01-0.04pp (5% of obs have signal — data-sparse) | `form4_insider.py`, `form4_backtest.csv` |
-| HY OAS enhanced (4 features) | **built but NOT backtested** | `macro_signals.py` |
-| Margin debt (FINRA via FRED) | **built but NOT backtested** | `macro_signals.py` |
+| Domain | s-tool.io | Cloudflare zone `c0abd1c036057a443c0a40aa25d1da14` |
+| Edge worker | `s-tool-site` (serves UI + proxies /api/*) | wrangler deploys from `cloudflare/` |
+| API | FastAPI (`api.py`) | Railway service `c2ee9f5b-22e3-41db-b9f4-77bb53843c87` at `api-production-9fce.up.railway.app` |
+| Daily cron | `worker.py --all` at 10:00 UTC (6am ET DST) | Railway service `a4a9e05b-83fb-4e7e-b1bc-2a4e6c83fdde` |
+| Price cache | `data_cache/prices/<SYM>.csv` (2,597/2,609 = 99.5%) | local + shipped with deploy |
+| R2 bucket | `s-tool` | created, not wired to code yet |
+| GitHub | `jgmynott/s-tool-projector` | auth via `gh` CLI as `jgmynott` |
 
-Live readings right now: HY OAS tilt **−0.48** (credit widening), Margin debt tilt **−1.00** (extreme peak → NYU Stern says expect SPX −7.8% over 12mo).
+**Railway manual deploy** (no auto-deploy wired): pass `latestCommit: true` to `serviceInstanceDeploy` mutation. Example in recent calls.
 
-### 🔜 Pending when you pick up in terminal
-1. **Form 4 cohort test** — rerun the 22 symbols that actually had signal (full universe diluted it)
-2. **Backtest HY OAS + margin debt** — modules built, just run `comprehensive_backtest.py --mode` for each (need to add modes to the script — quick edit)
-3. **GitHub migration stool-cell → jgmynott** — user exported (`~/Downloads/443ea640-*.tar.gz`), gh CLI auth on this machine is logged out. Terminal session: run `gh auth login -h github.com --web --scopes repo,workflow`, then I'll help retire stool-cell and push to jgmynott/s-tool-projector.
-4. **Production decision** — dial sentiment + PP tilts to zero in `projector_engine.py`? Discussed but unshipped.
-5. **Workflow file push** — `.github/workflows/daily-refresh.yml` is staged locally. Needs workflow OAuth scope + push.
-6. **Cloudflare deploy** — final milestone. All scaffolding ready.
+**Cloudflare MCP** works for account `18479801bf03932e04409c95b49e358a` (Stool@s-tool.io's Account). Worker **deploy** requires wrangler (authed via browser earlier).
 
-## Quick state check commands
+## What's shipped this session
+
+- **Tilts zeroed** in `projector_engine.py` — SENTIMENT_TILT_STRENGTH=0, all TILT_WEIGHTS=0, MAX_FUNDAMENTAL_TILT=0
+- **Universe expanded** 537 → **2,609** via new `universe.py` module (iShares IWV holdings, auto-refresh every 24h)
+- **`price_backfill.py`** — yfinance-batched 5yr-then-2yr-fallback history cache for the whole universe
+- **FMP migration** `/v3/` → `/stable/`: profile, ratios (+ key-metrics merge for ROE/ROA), historical-price-eod/full, earnings, insider-trading/latest, price-target-consensus. Field renames fixed (`pe` → `priceToEarningsRatio`, `debtEquityRatio` → `debtToEquityRatio`).
+- **1 req/sec FMP throttle** (`TokenBucketLimiter`) + daily limit raised from 250 → 300,000 for Premium tier.
+- **Railway deploy scaffolding**: `Procfile`, `railway.json`, `runtime.txt`, slimmed `requirements.txt` (moved torch/transformers/pytrends to `requirements-research.txt`).
+- **`cloudflare/` directory**: `wrangler.toml` + `src/worker.js` + `public/index.html`. Worker routes `s-tool.io/*` → ASSETS for UI, `/api/*` → Railway.
+- **Frontend cleanup**: retired Public Pulse panel, hid tilt breakdown + sentiment intel + put/call + news-sentiment rows since they're all dead or paid-tier gated.
+- **Landing hero + "How it works" explainer + glossary + 27 info tooltips + watchlist (localStorage).**
+- **Two new signals built and wired into `comprehensive_backtest.py`**: `signals_skew.py` (CBOE SKEW z-score) and `signals_breadth.py` (% of our cached universe above 200-day SMA).
+
+## Backtest findings (hardened)
+
+| Signal | Test | Result |
+|---|---|---|
+| Sentiment / Public Pulse / HY OAS / margin debt | Various full-universe 2018–2025 sweeps | All within ±0.17 to ±0.43pp MAPE; hit rate drops with tilts. **DEAD.** |
+| SKEW (contrarian sign, S0.06) | 2,478 symbols × 466 windows × 2018–2025 | 1yr MAPE **–0.73pp** (worse). Implies flipped sign (high SKEW → bearish, momentum interp) = **+0.73pp improvement**. |
+| Breadth (contrarian sign, S0.06) | same | 1yr MAPE **+0.43pp** (small positive, hit rate slightly worse). Marginal. |
+
+**The SKEW sweep with both signs and 5 strengths is running in background as of handoff.** Output lands in `skew_sweep_backtest.csv` / `skew_sweep_report.md`. If positive sign flip confirms, this is the first signal we've found that works post-2023 — wire into `projector_engine.py` with the winning strength, add a `SKEW` line to the glossary, redeploy.
+
+## Known costs + tokens rotated
+
+- **FMP Premium** — user subscribed, price not verified by me (user said $29/mo for Starter; I should check site.financialmodelingprep.com/pricing before quoting any number)
+- **Railway** — on free/hobby tier, no charges seen yet
+- **Cloudflare R2 + Workers + Pages** — free tiers, no charges seen yet; **docs say no minimum monthly charge** for R2 above free tier
+- **Domain** — ~$60/yr per user
+- **Claude Code** — $200/mo (big rock)
+- **Tokens**: Railway `1ababd88-…` rotated to `130f3dca-19a6-458a-a527-d22c26f5e283` via API. Old Cloudflare `cfat_5C9v…` never worked (likely a CF Access token, not API) — user to manually delete from dashboard if wanted.
+
+## What's NOT done and why
+
+| Item | Why not | How to finish |
+|---|---|---|
+| SKEW strength sweep results analysis | Still running when handoff written | Read `skew_sweep_report.md` once done; pick the winning (sign × strength) pair; wire into engine |
+| Auto-deploy Railway on `git push` | Railway GraphQL `deploymentTriggerCreate` blocked: "no one in the project has access" — needs GitHub OAuth linked at account level | User visits https://railway.com/account → Integrations → Connect GitHub. Then retry trigger mutation. |
+| PDF export feature | Asked at end of session. Recommended Option A (magic-URL unlock + client-side PDF via `html2pdf.js`) | Wait for user to confirm option, then build. ~15 min implementation. |
+| CF `cfat_…` token manual delete | Requires user dashboard action; it's invalid so low urgency | Delete from https://dash.cloudflare.com/profile/api-tokens or Zero Trust → Access |
+| Paid Finnhub/Polygon data | Backtest said same-family signals are dead | Don't pay until a free-data signal is proven to work |
+| Proper user auth + watchlists server-side | Deferred for beta; localStorage watchlist is good enough | When MAU justifies it, add Clerk or Cloudflare Access |
+
+## Key files to know about
+
+**Research / backtest:**
+- `comprehensive_backtest.py` — unified harness, modes include `skew_sweep`, `breadth_sweep`, `skew_breadth_combo` now
+- `signals_skew.py`, `signals_breadth.py` — today's new signals
+- `skew_breadth_backtest.csv`, `skew_breadth_report.md` — first pass results
+- `skew_sweep_backtest.csv`, `skew_sweep_report.md` — full strength sweep (in flight at handoff)
+
+**Engine + API + UI:**
+- `projector_engine.py` — engine, tilts zeroed with comment explaining why
+- `data_providers.py` — FMP migrated to /stable/, throttled
+- `api.py` — FastAPI, `/api/health`, `/api/project`, 18h projection cache
+- `worker.py` — daily cron target; FULL_UNIVERSE imported from `universe.py`
+- `universe.py` — IWV holdings → Russell 3000 (2,581) + SP500 ∪ WSB → 2,609 combined
+- `frontend.html` — hero, watchlist, tooltips, glossary, how-it-works, same render paths for projection
+
+**Infra:**
+- `cloudflare/wrangler.toml`, `cloudflare/src/worker.js`, `cloudflare/public/index.html` (copy of frontend.html)
+- `Procfile`, `railway.json`, `runtime.txt`
+- `.gitignore` excludes `data_cache/`, `*_backtest*.csv`, overnight logs, Claude internals
+
+## Resume recipe
+
+1. Read this file + `MEMORY.md` (auto-loads)
+2. Check if SKEW sweep finished: `cat skew_sweep_report.md 2>/dev/null | tail -30`
+3. If SKEW works → wire into `projector_engine.py`, redeploy Railway (`serviceInstanceDeploy latestCommit: true`)
+4. Confirm PDF export approach with user and build if asked
+5. Otherwise, pick from the pending list above
+
+## Snapshot commands
 
 ```bash
 cd ~/Documents/Claude/s2tool-projector
-git log --oneline -10                      # commit history
-git status                                  # should be clean
-ls public_pulse_data/*.csv | wc -l          # backfill data count
-python3 net_liquidity.py latest            # live net-liq reading
-python3 macro_signals.py latest            # live HY OAS + margin debt
-python3 form4_insider.py latest TSLA       # sample ticker form4 signal
+git log --oneline -10
+/usr/bin/curl -s https://s-tool.io/api/health | python3 -m json.tool
+ls data_cache/prices/*.csv | wc -l                 # 2,597 or 2,598 expected
+python3 universe.py list                            # Russell 3000 universe sizes
+tail -30 skew_sweep_report.md                       # if running/done
 ```
-
-## Key files (absolute paths)
-
-**Signal modules (all have CLIs):**
-- `data_providers.py` — live provider chain (FMP, Finnhub, Polygon, FRED, yfinance)
-- `public_pulse.py` — 5-source composite for PP
-- `public_pulse_backfill.py` — historical PP crawler
-- `net_liquidity.py` — TGA/reserves/RRP signal
-- `form4_insider.py` — openinsider scraper + signal
-- `macro_signals.py` — HY OAS + margin debt signals
-
-**Backtesters:**
-- `comprehensive_backtest.py` — unified harness (sentiment, PP, net_liq, form4 modes)
-- `sentiment_backtest.py` — original Phase C engine (kept for reference)
-- `projector_backtest.py` — original simple backtester
-
-**Engine + API + UI:**
-- `projector_engine.py` — production MC+MR + tilts
-- `api.py` — FastAPI backend (port 8000)
-- `worker.py` — batch precompute for S&P 500 + Nasdaq 100
-- `frontend.html` — dashboard (PP panel live)
-
-**Data:**
-- `sentiment_data/` — WSB FinBERT results
-- `public_pulse_data/` — all PP backfill + form4 + net_liq + macro CSVs
-- `sentiment_backtest_full_results.csv` — the original Phase C 2018-2025 data
-- `comprehensive_backtest_full.csv` — 107 × 3yr × 17 config sweep (62,985 rows)
-- `phase_c_reproduction.csv` — the definitive reproduction showing signal died 2023+
-- `form4_backtest.csv` — today's Form 4 result
-- `netliq_backtest.csv` — today's net-liq result
-
-**Ops / infra (for migration):**
-- `.env` — API keys (gitignored)
-- `.github/workflows/daily-refresh.yml` — cron (STAGED, unpushed; needs workflow OAuth)
-- `run_overnight.sh`, `overnight_v3.sh` — overnight pipelines (already executed)
-
-## Auth state
-
-- **gh CLI**: logged out (stool-cell signed out, jgmynott browser step never completed)
-- **Local git remote**: still points to `https://github.com/stool-cell/s-tool-projector.git`
-- Terminal should start with: `gh auth login -h github.com --web --scopes repo,workflow` — login as jgmynott.
-
-## Backtest results reference (for "did we already test this?")
-
-| Mode | Result | File |
-|---|---|---|
-| sent_only 107×2023-25 (phase_c_reproduction) | ΔMAPE −0.00pp | `phase_c_reproduction.csv` |
-| sent_only 107×2018-25 (original Phase C) | ΔMAPE −8.38pp ✅ (signal's dead era) | `sentiment_backtest_full_results.csv` |
-| sweep (17 configs PP+sent+combo) 107×2023-25 | all within ±0.07pp | `comprehensive_backtest_full.csv` |
-| netliq_sweep 107×2020-25 | −0.04 to −0.31pp (worse) | `netliq_backtest.csv` |
-| form4_sweep 107×2020-25 | +0.01 to +0.04pp (tiny, data-sparse) | `form4_backtest.csv` |
-
-## When the terminal session starts
-
-Tell it: **"Read SESSION_HANDOFF.md and MEMORY.md then tell me where we left off."** The memory system auto-loads from `~/.claude/projects/…/memory/MEMORY.md` in any Claude Code instance on the same machine — it's shared.
