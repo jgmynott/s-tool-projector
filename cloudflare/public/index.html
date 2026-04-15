@@ -491,6 +491,108 @@ body {
     .pp-hero { grid-template-columns: 1fr; text-align: center; }
     .pp-hero-tilt { text-align: center; }
 }
+
+/* ── Info tooltips + glossary ── */
+.info {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 13px;
+    height: 13px;
+    margin-left: 4px;
+    border: 1px solid var(--text-muted);
+    border-radius: 50%;
+    color: var(--text-muted);
+    font-size: 9px;
+    font-weight: 700;
+    font-style: normal;
+    cursor: help;
+    vertical-align: middle;
+    line-height: 1;
+    transition: border-color 0.15s, color 0.15s;
+    position: relative;
+}
+.info:hover { border-color: var(--accent); color: var(--accent); }
+.info::after {
+    content: attr(data-tip);
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    min-width: 200px;
+    max-width: 280px;
+    padding: 8px 10px;
+    background: #0a1410;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-primary);
+    font-size: 11px;
+    font-weight: 400;
+    font-style: normal;
+    text-transform: none;
+    letter-spacing: normal;
+    line-height: 1.45;
+    white-space: normal;
+    text-align: left;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.15s, visibility 0.15s;
+    z-index: 100;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+}
+.info:hover::after { opacity: 1; visibility: visible; }
+
+/* Glossary card */
+.glossary {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-top: 24px;
+}
+.glossary-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 22px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s;
+}
+.glossary-header:hover { background: var(--bg-card-alt); }
+.glossary-header h3 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: 0.3px;
+}
+.glossary-header .chev {
+    color: var(--text-muted);
+    font-size: 12px;
+    transition: transform 0.2s;
+}
+.glossary.open .chev { transform: rotate(180deg); }
+.glossary-body {
+    display: none;
+    padding: 0 22px 22px;
+    border-top: 1px solid var(--border);
+}
+.glossary.open .glossary-body { display: block; }
+.glossary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 14px 28px;
+    margin-top: 18px;
+}
+.glossary-item { font-size: 12px; line-height: 1.5; }
+.glossary-term {
+    color: var(--accent);
+    font-weight: 600;
+    margin-bottom: 2px;
+    letter-spacing: 0.2px;
+}
+.glossary-def { color: var(--text-secondary); }
 </style>
 </head>
 <body>
@@ -535,12 +637,12 @@ body {
     <!-- Stats -->
     <div class="stat-grid" id="statsGrid" style="display:none">
         <div class="stat-box"><div class="label">Current Price</div><div class="value" id="stPrice">—</div><div class="trend" id="stPriceTrend"></div></div>
-        <div class="stat-box"><div class="label">Median Target</div><div class="value green" id="stMedian">—</div></div>
-        <div class="stat-box"><div class="label">Expected Return</div><div class="value green" id="stReturn">—</div></div>
-        <div class="stat-box"><div class="label">Upside Prob</div><div class="value blue" id="stUpside">—</div></div>
-        <div class="stat-box"><div class="label">P/E Ratio</div><div class="value yellow" id="stPE">—</div><div class="trend" id="stPETrend"></div></div>
-        <div class="stat-box"><div class="label">Market Cap</div><div class="value cyan" id="stMcap">—</div><div class="trend" id="stMcapTrend"></div></div>
-        <div class="stat-box"><div class="label">EPS</div><div class="value" id="stEPS">—</div></div>
+        <div class="stat-box"><div class="label">Median Target <span class="info" data-tip="P50 — half of simulated paths ended above this price at the chosen horizon, half below.">i</span></div><div class="value green" id="stMedian">—</div></div>
+        <div class="stat-box"><div class="label">Expected Return <span class="info" data-tip="Percent change from current price to the median projected price at the horizon.">i</span></div><div class="value green" id="stReturn">—</div></div>
+        <div class="stat-box"><div class="label">Upside Prob <span class="info" data-tip="Share of simulated paths that ended above the current price at the selected horizon.">i</span></div><div class="value blue" id="stUpside">—</div></div>
+        <div class="stat-box"><div class="label">P/E Ratio <span class="info" data-tip="Trailing Price-to-Earnings: price divided by last 12mo EPS. Lower = cheaper relative to recent profits.">i</span></div><div class="value yellow" id="stPE">—</div><div class="trend" id="stPETrend"></div></div>
+        <div class="stat-box"><div class="label">Market Cap <span class="info" data-tip="Total market value: shares outstanding × current price.">i</span></div><div class="value cyan" id="stMcap">—</div><div class="trend" id="stMcapTrend"></div></div>
+        <div class="stat-box"><div class="label">EPS <span class="info" data-tip="Earnings per share — net income divided by share count (trailing 12 months).">i</span></div><div class="value" id="stEPS">—</div></div>
     </div>
 
     <!-- Momentum -->
@@ -644,6 +746,17 @@ body {
         </div>
     </div>
 
+    <!-- Glossary -->
+    <div class="glossary" id="glossaryCard">
+        <div class="glossary-header" onclick="document.getElementById('glossaryCard').classList.toggle('open')">
+            <h3>Glossary & Field Definitions</h3>
+            <span class="chev">▾</span>
+        </div>
+        <div class="glossary-body">
+            <div class="glossary-grid" id="glossaryGrid"></div>
+        </div>
+    </div>
+
     <!-- Honesty Callout -->
     <div class="honesty">
         <strong>Honest disclaimer:</strong> These projections show the range of plausible outcomes based on
@@ -660,6 +773,77 @@ const API_BACKENDS = [API, 'http://localhost:8000', 'http://localhost:8765'];
 const $ = id => document.getElementById(id);
 const fmtPrice = v => v >= 1000 ? `$${(v/1000).toFixed(1)}k` : `$${v.toFixed(2)}`;
 const fmtPct = v => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`;
+
+// ─── Glossary / field definitions ────────────────────────────────────
+// All human-readable tooltips live here. `info('term')` renders the (i)
+// icon; `renderGlossary()` builds the alphabetical reference card.
+const TERMS = {
+    'P10': 'Projected 10th-percentile price at the chosen horizon. 90% of simulated paths ended above this.',
+    'P25': 'Projected 25th-percentile price. Lower quartile of simulated outcomes.',
+    'P50': 'Median projected price. Half of simulations ended above, half below.',
+    'P75': 'Projected 75th-percentile price. Upper quartile of simulated outcomes.',
+    'P90': 'Projected 90th-percentile price. Only 10% of simulated paths ended above this — treat as an optimistic tail outcome.',
+    'Upside Probability': 'Share of simulated paths that ended above the starting price at the selected horizon.',
+    'Market Cap': 'Total value of all shares outstanding (shares × price). Rough size of the company.',
+    'Trailing P/E': 'Price divided by earnings per share over the last 12 months. Lower = cheaper relative to recent profits.',
+    'Forward P/E': 'Price divided by analysts\' consensus forecast EPS for the next 12 months. Reflects expected, not realized, earnings.',
+    'EPS Trailing': 'Earnings per share over the last 12 months — total profit divided by share count.',
+    'EPS Forward': 'Analyst-consensus EPS estimate for the next 12 months.',
+    'Beta': 'Volatility relative to the broad market. 1.0 = moves with S&P 500; >1 = more volatile; <1 = less. Negative = inversely correlated.',
+    'Dividend Yield': 'Annual dividend per share divided by current price.',
+    '52-Week Range': 'The highest and lowest closing price over the past 52 weeks.',
+    'Gross Margin': 'Revenue minus cost of goods sold, as % of revenue. Measures product-level profitability.',
+    'Operating Margin': 'Operating income as % of revenue. Profit left after all operating costs (COGS + SG&A + R&D).',
+    'Net Margin': 'Net income as % of revenue. Profit left after every expense, interest, and tax.',
+    'ROE': 'Return on Equity. Net income divided by shareholder equity. How much profit the company generates per $ of equity.',
+    'ROA': 'Return on Assets. Net income divided by total assets. How efficiently assets are used to produce profit.',
+    'Debt/Equity': 'Total debt divided by shareholder equity. Higher = more leveraged.',
+    'P/B': 'Price to Book. Market cap divided by book value of equity. <1 can signal undervaluation; sector context matters.',
+    'Analyst Consensus': 'Aggregated buy/hold/sell rating across covering Wall Street analysts.',
+    'Next Earnings': 'Date of the next scheduled quarterly earnings report.',
+    'Days to Earnings': 'Trading days until the next earnings report. Our sigma boost widens projection bands as this approaches zero.',
+    '30d Change': 'Percent change in price over the last ~30 calendar days.',
+    '60d Change': 'Percent change in price over the last ~60 calendar days.',
+    '90d Change': 'Percent change in price over the last ~90 calendar days.',
+    'RSI (14)': 'Relative Strength Index over 14 days. 0–100 momentum oscillator. >70 often labeled overbought, <30 oversold.',
+    'Trend Score': 'Internal composite of 30/60/90-day moves and SMA crossovers. +1 = strong uptrend; –1 = strong downtrend.',
+    'Off High': '% below the 52-week high.',
+    'Off Low': '% above the 52-week low.',
+    'VIX Regime': 'Which volatility bucket the S&P 500 VIX index is in right now (calm / normal / elevated / crisis).',
+    'VIX Multiplier': 'Scalar we apply to projection sigma based on the VIX regime — higher VIX → wider bands.',
+    'Volatility (ann.)': 'Final annualized sigma used by the Monte Carlo engine, after VIX + earnings adjustments.',
+    'Hist. Volatility': 'Annualized standard deviation of daily returns over the training window — the raw input before any adjustment.',
+    'Drift (μ)': 'Annualized expected return used by the Monte Carlo engine. Currently derived from historical mean return only (tilts zeroed).',
+    'Macro Regime': 'Our classification of the current macro backdrop (yield curve, rates, unemployment). Feeds into sigma scaling but not drift.',
+    'Macro σ Multiplier': 'Scalar applied to sigma based on the macro regime.',
+    'MR Target': 'Mean-reversion anchor price — the engine pulls simulated paths gently toward this long-run value.',
+    'MR Kappa': 'Mean-reversion speed. Higher = faster pull toward the MR target.',
+    'MC Blend': 'Weight given to the pure Monte Carlo component vs. the mean-reversion component (currently 30% MC / 70% MR).',
+    'Paths': 'Number of Monte Carlo simulations run for this projection.',
+    'Earnings Sigma Boost': 'When earnings are within 30 days, we widen projection bands (up to 1.25× sigma) to reflect the known volatility event.',
+    'Put/Call Ratio': 'Daily put option volume divided by call option volume. >1.2 often read as bearish crowd positioning, <0.7 as bullish. Contrarian signals possible.',
+    'News Sentiment': 'Aggregate sentiment score across recent news articles about the ticker (–1 bearish to +1 bullish).',
+    'Data Source': 'Which provider supplied this number (yfinance, FMP, Finnhub, Polygon, FRED).',
+    'Compute Time': 'Wall-clock seconds the engine took to compute this projection.',
+    'MAPE': 'Mean Absolute Percentage Error — average |forecast − actual| ÷ actual, in %. Lower is better forecast accuracy.',
+    'Horizon': 'How many trading days forward the projection looks.',
+};
+
+function info(term, extra) {
+    const def = TERMS[term] || extra || '';
+    if (!def) return '';
+    const safe = def.replace(/"/g, '&quot;');
+    return `<span class="info" data-tip="${safe}">i</span>`;
+}
+
+function renderGlossary() {
+    const entries = Object.entries(TERMS).sort((a, b) => a[0].localeCompare(b[0]));
+    $('glossaryGrid').innerHTML = entries
+        .map(([t, d]) => `<div class="glossary-item"><div class="glossary-term">${t}</div><div class="glossary-def">${d}</div></div>`)
+        .join('');
+}
+// Populate once on load — glossary never changes per projection.
+document.addEventListener('DOMContentLoaded', renderGlossary);
 
 let chart = null;
 
@@ -765,7 +949,7 @@ function renderEnriched(f) {
     const daysUntil = ed ? Math.ceil((new Date(ed) - new Date()) / 86400000) : null;
     const edSub = daysUntil != null && daysUntil > 0 ? `${daysUntil} days away` : daysUntil === 0 ? 'Today' : '';
     $('enrichEarnings').innerHTML = `
-        <div class="label">Next Earnings</div>
+        <div class="label">Next Earnings ${info('Next Earnings')}</div>
         <div class="value" style="color:var(--amber)">${edStr}</div>
         <div class="sub">${edSub}</div>
         ${f.data_sources ? `<div class="source-tag">${f.data_sources.fundamentals || 'yfinance'}</div>` : ''}`;
@@ -780,7 +964,7 @@ function renderEnriched(f) {
         const consensus = f.analyst_consensus || 'N/A';
         const cColor = consensus === 'buy' ? 'var(--green)' : consensus === 'sell' ? 'var(--red)' : 'var(--amber)';
         $('enrichAnalyst').innerHTML = `
-            <div class="label">Analyst Consensus</div>
+            <div class="label">Analyst Consensus ${info('Analyst Consensus')}</div>
             <div class="value" style="color:${cColor};text-transform:capitalize">${consensus}</div>
             <div class="analyst-bar">
                 <div class="buy" style="width:${bPct}%"></div>
@@ -803,13 +987,13 @@ function renderEnriched(f) {
     const fmtM = v => v != null ? `${(v * 100).toFixed(1)}%` : 'N/A';
     const mColor = v => v != null ? (v > 0.15 ? 'var(--green)' : v > 0 ? 'var(--amber)' : 'var(--red)') : 'var(--text-muted)';
     $('enrichMargins').innerHTML = `
-        <div class="label">Profit Margins</div>
+        <div class="label">Profit Margins ${info('Net Margin', 'Gross / Operating / Net profit margins — profit left after COGS / all operating costs / everything.')}</div>
         <div class="margin-row">
-            <div class="margin-item"><div class="ml">Gross</div><div class="mv" style="color:${mColor(f.gross_margin)}">${fmtM(f.gross_margin)}</div></div>
-            <div class="margin-item"><div class="ml">Operating</div><div class="mv" style="color:${mColor(f.operating_margin)}">${fmtM(f.operating_margin)}</div></div>
-            <div class="margin-item"><div class="ml">Net</div><div class="mv" style="color:${mColor(f.net_margin)}">${fmtM(f.net_margin)}</div></div>
+            <div class="margin-item"><div class="ml">Gross ${info('Gross Margin')}</div><div class="mv" style="color:${mColor(f.gross_margin)}">${fmtM(f.gross_margin)}</div></div>
+            <div class="margin-item"><div class="ml">Operating ${info('Operating Margin')}</div><div class="mv" style="color:${mColor(f.operating_margin)}">${fmtM(f.operating_margin)}</div></div>
+            <div class="margin-item"><div class="ml">Net ${info('Net Margin')}</div><div class="mv" style="color:${mColor(f.net_margin)}">${fmtM(f.net_margin)}</div></div>
         </div>
-        ${f.return_on_equity != null ? `<div class="sub" style="margin-top:8px">ROE: ${(f.return_on_equity * 100).toFixed(1)}% · D/E: ${f.debt_to_equity?.toFixed(2) ?? 'N/A'}</div>` : ''}`;
+        ${f.return_on_equity != null ? `<div class="sub" style="margin-top:8px">ROE ${info('ROE')}: ${(f.return_on_equity * 100).toFixed(1)}% · D/E ${info('Debt/Equity')}: ${f.debt_to_equity?.toFixed(2) ?? 'N/A'}</div>` : ''}`;
 
     // Signals (put/call + news)
     const pcr = f.put_call_ratio;
@@ -1339,20 +1523,20 @@ function renderMomentum(f) {
     $('stMcapTrend').innerHTML = `${arrow(chg30)} ${fmtChg(chg30)} <span style="color:var(--text-muted)">(30d)</span>`;
 
     // Momentum boxes
-    const momBox = (el, label, val, sub) => {
+    const momBox = (el, label, val, sub, term) => {
         const c = cls(val);
         const barPct = Math.min(100, Math.abs(val || 0) * 2);
         const barColor = c === 'up' ? 'var(--green)' : c === 'down' ? 'var(--red)' : 'var(--text-muted)';
         el.innerHTML = `
-            <div class="label">${label}</div>
+            <div class="label">${label} ${term ? info(term) : ''}</div>
             <div class="value" style="color:${barColor}">${arrow(val)} ${fmtChg(val)}</div>
             <div class="trend-bar"><div class="fill" style="width:${barPct}%;background:${barColor}"></div></div>
             <div class="sub">${sub}</div>`;
     };
 
-    momBox($('mom30'), '30-Day', f.chg_30d, 'Short-term');
-    momBox($('mom60'), '60-Day', f.chg_60d, 'Medium-term');
-    momBox($('mom90'), '90-Day', f.chg_90d, 'Quarterly');
+    momBox($('mom30'), '30-Day', f.chg_30d, 'Short-term', '30d Change');
+    momBox($('mom60'), '60-Day', f.chg_60d, 'Medium-term', '60d Change');
+    momBox($('mom90'), '90-Day', f.chg_90d, 'Quarterly', '90d Change');
 
     // Signal box — overall assessment
     const ts = f.trend_score;
@@ -1369,14 +1553,14 @@ function renderMomentum(f) {
     const rsiColor = rsi > 70 ? 'var(--red)' : rsi < 30 ? 'var(--green)' : 'var(--text-muted)';
 
     $('momSignal').innerHTML = `
-        <div class="label">Trend Signal</div>
+        <div class="label">Trend Signal ${info('Trend Score')}</div>
         <div class="value" style="color:${signalColor};font-size:15px">${signalLabel}</div>
         <div style="margin-top:8px;font-size:11px">
-            <span style="color:var(--text-muted)">RSI(14):</span>
+            <span style="color:var(--text-muted)">RSI(14) ${info('RSI (14)')}:</span>
             <span style="color:${rsiColor};font-weight:600">${rsi?.toFixed(0) ?? 'N/A'} ${rsiLabel}</span>
         </div>
         <div style="margin-top:4px;font-size:11px">
-            <span style="color:var(--text-muted)">Off 52w High:</span>
+            <span style="color:var(--text-muted)">Off 52w High ${info('Off High')}:</span>
             <span style="color:${offHigh > -5 ? 'var(--green)' : offHigh > -20 ? 'var(--amber)' : 'var(--red)'};font-weight:600">${offHigh?.toFixed(1)}%</span>
         </div>`;
 }
@@ -1509,27 +1693,27 @@ function renderDiag(d) {
     $('diagCard').style.display = '';
     const fn = typeof d.fundamentals_json === 'string' ? JSON.parse(d.fundamentals_json) : (d.fundamentals_json || {});
     const items = [
-        ['VIX Regime', d.vix_regime ? `${d.vix_value} (${d.vix_regime})` : 'N/A'],
-        ['VIX Multiplier', `${d.sigma_mult?.toFixed(2) ?? 'N/A'}`],
-        ['Volatility (ann)', `${(d.sigma * 100).toFixed(1)}%`],
-        ['Hist Volatility', `${(d.sigma_hist * 100).toFixed(1)}%`],
-        ['Drift (mu)', `${(d.mu * 100).toFixed(2)}%`],
-        ['Macro Regime', fn.data_sources?.macro_regime ?? 'N/A'],
-        ['Macro σ Mult', fn.data_sources?.macro_sigma_mult?.toFixed(3) ?? '1.000'],
-        ['MR Target', d.mr_target ? fmtPrice(d.mr_target) : 'N/A'],
-        ['MR Kappa', d.mr_kappa?.toFixed(4) ?? 'N/A'],
-        ['Beta', fn.beta?.toFixed(2) ?? 'N/A'],
-        ['52w Range', fn.week52_low && fn.week52_high ? `${fmtPrice(fn.week52_low)} – ${fmtPrice(fn.week52_high)}` : 'N/A'],
-        ['Fwd P/E', fn.pe_forward?.toFixed(1) ?? 'N/A'],
-        ['Div Yield', fn.dividend_yield ? `${(fn.dividend_yield * 100).toFixed(2)}%` : 'N/A'],
-        ['Blend (MC %)', `${((d.blend_mc || 0.3) * 100).toFixed(0)}%`],
-        ['Paths', d.num_paths?.toLocaleString() ?? 'N/A'],
-        ['Compute Time', `${d.compute_secs}s`],
-        ['Price Source', fn.data_sources?.price ?? 'yfinance'],
-        ['Fund. Source', fn.data_sources?.fundamentals ?? 'yfinance'],
+        ['VIX Regime', d.vix_regime ? `${d.vix_value} (${d.vix_regime})` : 'N/A', 'VIX Regime'],
+        ['VIX Multiplier', `${d.sigma_mult?.toFixed(2) ?? 'N/A'}`, 'VIX Multiplier'],
+        ['Volatility (ann)', `${(d.sigma * 100).toFixed(1)}%`, 'Volatility (ann.)'],
+        ['Hist Volatility', `${(d.sigma_hist * 100).toFixed(1)}%`, 'Hist. Volatility'],
+        ['Drift (μ)', `${(d.mu * 100).toFixed(2)}%`, 'Drift (μ)'],
+        ['Macro Regime', fn.data_sources?.macro_regime ?? 'N/A', 'Macro Regime'],
+        ['Macro σ Mult', fn.data_sources?.macro_sigma_mult?.toFixed(3) ?? '1.000', 'Macro σ Multiplier'],
+        ['MR Target', d.mr_target ? fmtPrice(d.mr_target) : 'N/A', 'MR Target'],
+        ['MR Kappa', d.mr_kappa?.toFixed(4) ?? 'N/A', 'MR Kappa'],
+        ['Beta', fn.beta?.toFixed(2) ?? 'N/A', 'Beta'],
+        ['52w Range', fn.week52_low && fn.week52_high ? `${fmtPrice(fn.week52_low)} – ${fmtPrice(fn.week52_high)}` : 'N/A', '52-Week Range'],
+        ['Fwd P/E', fn.pe_forward?.toFixed(1) ?? 'N/A', 'Forward P/E'],
+        ['Div Yield', fn.dividend_yield ? `${(fn.dividend_yield * 100).toFixed(2)}%` : 'N/A', 'Dividend Yield'],
+        ['Blend (MC %)', `${((d.blend_mc || 0.3) * 100).toFixed(0)}%`, 'MC Blend'],
+        ['Paths', d.num_paths?.toLocaleString() ?? 'N/A', 'Paths'],
+        ['Compute Time', `${d.compute_secs}s`, 'Compute Time'],
+        ['Price Source', fn.data_sources?.price ?? 'yfinance', 'Data Source'],
+        ['Fund. Source', fn.data_sources?.fundamentals ?? 'yfinance', 'Data Source'],
     ];
-    $('diagGrid').innerHTML = items.map(([lbl, val]) =>
-        `<div class="diag-item"><div class="dl">${lbl}</div><div class="dv">${val}</div></div>`
+    $('diagGrid').innerHTML = items.map(([lbl, val, term]) =>
+        `<div class="diag-item"><div class="dl">${lbl}${term ? info(term) : ''}</div><div class="dv">${val}</div></div>`
     ).join('');
 }
 
