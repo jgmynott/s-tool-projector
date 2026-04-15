@@ -16,6 +16,11 @@
 
 name: daily-refresh
 
+# Both jobs commit/push cache artifacts back to main. GITHUB_TOKEN defaults to
+# read-only on public repos, so grant contents:write at the workflow level.
+permissions:
+  contents: write
+
 on:
   schedule:
     # Pre-open (11:00 UTC = 07:00 ET) — refresh signals
