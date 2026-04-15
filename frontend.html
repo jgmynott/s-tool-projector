@@ -492,6 +492,68 @@ body {
     .pp-hero-tilt { text-align: center; }
 }
 
+/* ── How it works ── */
+.how-it-works {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 26px 28px;
+    margin-top: 24px;
+}
+.how-it-works h3 {
+    margin: 0 0 18px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: 0.3px;
+}
+.how-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 18px 22px;
+}
+.how-item {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+}
+.how-n {
+    flex: 0 0 28px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--accent-soft);
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0;
+}
+.how-t {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+.how-d {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.55;
+}
+.how-note {
+    margin-top: 22px;
+    padding: 14px 16px;
+    background: var(--bg-card-alt);
+    border-left: 3px solid var(--amber);
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--text-secondary);
+}
+.how-note strong { color: var(--amber); font-weight: 600; }
+
 /* ── Info tooltips + glossary ── */
 .info {
     display: inline-flex;
@@ -872,6 +934,44 @@ body {
         <button class="diag-toggle" onclick="toggleDiag()">Model Diagnostics</button>
         <div class="diag-body" id="diagBody">
             <div class="diag-grid" id="diagGrid"></div>
+        </div>
+    </div>
+
+    <!-- How it works -->
+    <div class="how-it-works">
+        <h3>How the projection is built</h3>
+        <div class="how-grid">
+            <div class="how-item">
+                <div class="how-n">1</div>
+                <div class="how-body">
+                    <div class="how-t">Learn the stock's own dynamics</div>
+                    <div class="how-d">We pull ~2 years of daily closes, estimate annualized drift (μ) and volatility (σ), and fit a mean-reversion anchor by regressing price on its 1-year moving average.</div>
+                </div>
+            </div>
+            <div class="how-item">
+                <div class="how-n">2</div>
+                <div class="how-body">
+                    <div class="how-t">Scale volatility to the current regime</div>
+                    <div class="how-d">σ is multiplied by a VIX-regime factor and further widened when earnings are within 30 days — the one systematic adjustment that empirically improves band calibration.</div>
+                </div>
+            </div>
+            <div class="how-item">
+                <div class="how-n">3</div>
+                <div class="how-body">
+                    <div class="how-t">Simulate 2,000 forward paths</div>
+                    <div class="how-d">Each path is a blend of a Monte Carlo random-walk (30%) and a mean-reverting Ornstein-Uhlenbeck process pulling toward the MR target (70%). Neither dominates — the blend prevents both "infinite trend" and "forced reversion" failure modes.</div>
+                </div>
+            </div>
+            <div class="how-item">
+                <div class="how-n">4</div>
+                <div class="how-body">
+                    <div class="how-t">Report percentiles, not point forecasts</div>
+                    <div class="how-d">P10 / P25 / P50 / P75 / P90 of the simulated terminal prices. The band is the answer — not a single number. If someone tells you an exact 1-year price target, they're selling, not forecasting.</div>
+                </div>
+            </div>
+        </div>
+        <div class="how-note">
+            <strong>What the model does NOT do.</strong> It doesn't read news, Reddit, or analyst reports. It doesn't apply crowd-sentiment or macro "tilts" — we backtested those through 2025 and they failed to improve accuracy. It doesn't output buy/sell/hold signals, because calibrated uncertainty and a single directional call are different (and usually conflicting) products.
         </div>
     </div>
 
