@@ -1,0 +1,118 @@
+# S-Tool Projector — Daily Refresh Cron
+#
+# Refreshes the projection cache and signal data on a tiered schedule:
+#   * Every market day at 07:00 ET (11:00 UTC) — pre-open signal refresh
+#   * Every market day at 16:30 ET (20:30 UTC) — post-close projection re-run
+#
+# Jobs run sequentially (signal-refresh first, then projector-rerun) so the
+# projections incorporate the freshest signals.
+#
+# Secrets required in the repo settings (Settings → Secrets and variables → Actions):
+#   FMP_API_KEY, FINNHUB_API_KEY, POLYGON_API_KEY, FRED_API_KEY, ALPHA_VANTAGE_API_KEY
+#
+# The cache DB is committed back to main on each successful run so the
+# deployed frontend stays warm. If/when we move to D1 this step becomes a
+# remote DB write.
+
+name: daily-refresh
+
+on:
+  schedule:
+    # Pre-open (11:00 UTC = 07:00 ET) — refresh signals
+    - cron: "0 11 * * 1-5"
+    # Post-close (20:30 UTC = 16:30 ET) — recompute projections
+    - cron: "30 20 * * 1-5"
+  workflow_dispatch:   # allow manual trigger from GitHub UI
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install deps
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Smoke-test providers
+        env:
+          FMP_API_KEY:        ${{ secrets.FMP_API_KEY }}
+          FINNHUB_API_KEY:    ${{ secrets.FINNHUB_API_KEY }}
+          POLYGON_API_KEY:    ${{ secrets.POLYGON_API_KEY }}
+          FRED_API_KEY:       ${{ secrets.FRED_API_KEY }}
+        run: python3 data_providers.py
+
+      - name: Refresh S&P 500 + Nasdaq 100 projections
+        env:
+          FMP_API_KEY:        ${{ secrets.FMP_API_KEY }}
+          FINNHUB_API_KEY:    ${{ secrets.FINNHUB_API_KEY }}
+          POLYGON_API_KEY:    ${{ secrets.POLYGON_API_KEY }}
+          FRED_API_KEY:       ${{ secrets.FRED_API_KEY }}
+          ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}
+        run: python3 worker.py
+
+      - name: Refresh Public Pulse snapshots for top watchlist
+        env:
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+        run: |
+          # Take a fresh live snapshot of the top-20 tickers — populates the
+          # DataManager cache for instant response on dashboard hits.
+          for sym in AAPL MSFT GOOGL AMZN NVDA META TSLA SPY QQQ JPM \
+                     BAC V WMT DIS NFLX KO PEP NKE SBUX MCD; do
+            echo "── $sym ──"
+            python3 public_pulse.py snapshot "$sym" --fast || true
+            sleep 6   # respect GDELT 5s rate limit
+          done
+
+      - name: Commit cache updates
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add projector_cache.db
+          if git diff --staged --quiet; then
+            echo "No cache changes to commit"
+          else
+            git commit -m "chore(cron): refresh cache $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            git push
+          fi
+
+  # Weekly backfill job — every Saturday at 02:00 UTC
+  weekly-backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    if: github.event.schedule == null   # only on manual dispatch unless we add a weekly schedule
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+      - name: Install deps
+        run: pip install -r requirements.txt
+      - name: Backfill Public Pulse historical (rolling 30d window)
+        env:
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+        run: |
+          START=$(date -u -d '30 days ago' +%Y-%m-%d)
+          END=$(date -u +%Y-%m-%d)
+          python3 public_pulse_backfill.py --all --start "$START" --end "$END" --resume
+      - name: Commit backfill
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add public_pulse_data/
+          if ! git diff --staged --quiet; then
+            git commit -m "chore(backfill): weekly PP data refresh"
+            git push
+          fi
