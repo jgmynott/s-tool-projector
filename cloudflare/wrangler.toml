@@ -1,0 +1,16 @@
+name = "s-tool-site"
+main = "src/worker.js"
+compatibility_date = "2025-01-01"
+account_id = "18479801bf03932e04409c95b49e358a"
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+
+[[routes]]
+pattern = "s-tool.io/*"
+zone_name = "s-tool.io"
+
+[[routes]]
+pattern = "www.s-tool.io/*"
+zone_name = "s-tool.io"

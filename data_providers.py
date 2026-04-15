@@ -274,25 +274,36 @@ class FMPProvider(BaseProvider):
         ]
 
     def fetch_ratios(self, symbol: str) -> Dict[str, Any] | None:
-        """Latest-quarter profitability, debt, and valuation ratios."""
+        """Latest-quarter profitability, debt, and valuation ratios.
+
+        /stable/ratios covers margins + debt + valuation. /stable/key-metrics
+        holds returnOnEquity / returnOnAssets (moved out of /ratios post-migration).
+        """
         data = self._get("ratios", {"symbol": symbol, "limit": 1})
         if not data:
             return None
         try:
             rec = data[0] if isinstance(data, list) else data
-            return {
+            out = {
                 "gross_margin":          rec.get("grossProfitMargin"),
                 "operating_margin":      rec.get("operatingProfitMargin"),
                 "net_margin":            rec.get("netProfitMargin"),
-                "return_on_equity":      rec.get("returnOnEquity"),
-                "return_on_assets":      rec.get("returnOnAssets"),
-                "debt_to_equity":        rec.get("debtEquityRatio"),
+                "debt_to_equity":        rec.get("debtToEquityRatio") or rec.get("debtEquityRatio"),
                 "current_ratio":         rec.get("currentRatio"),
+                "quick_ratio":           rec.get("quickRatio"),
                 "pe_ratio":              rec.get("priceToEarningsRatio") or rec.get("priceEarningsRatio"),
                 "price_to_book":         rec.get("priceToBookRatio"),
                 "price_to_sales":        rec.get("priceToSalesRatio"),
                 "source":                "fmp",
             }
+            # Merge ROE/ROA from key-metrics
+            km = self._get("key-metrics", {"symbol": symbol, "limit": 1})
+            if km:
+                k = km[0] if isinstance(km, list) else km
+                out["return_on_equity"] = k.get("returnOnEquity")
+                out["return_on_assets"] = k.get("returnOnAssets")
+                out["return_on_invested_capital"] = k.get("returnOnInvestedCapital")
+            return out
         except (IndexError, KeyError, TypeError) as exc:
             logger.warning("FMP ratios parse error: %s", exc)
             return None
