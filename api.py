@@ -110,6 +110,12 @@ STALE_HOURS = 18  # recompute if older than this
 # into sign-in / checkout on a 402.
 PAYWALL_ENABLED = os.getenv("PAYWALL_ENABLED", "false").lower() == "true"
 
+# Pre-launch safeguard: hard cap all non-owner users to 5 projections/hour.
+# Prevents runaway costs from bots or abuse. Owner is identified by email.
+# Remove this once we go live with proper paywall enforcement.
+OWNER_EMAIL = os.getenv("OWNER_EMAIL", "jamesgmynott@gmail.com")
+PRE_LAUNCH_HOURLY_CAP = 5
+
 
 # ── Helpers ──
 
@@ -157,6 +163,24 @@ def project(
     used = users_db.projections_in_last_24h(
         users_conn, clerk_user_id=clerk_user_id, anon_key=anon_key
     )
+
+    # Pre-launch safeguard: hard cap non-owner users to 5/hour.
+    user_email = user.get("email") if user else None
+    is_owner = user_email and user_email.lower() == OWNER_EMAIL.lower()
+    if not is_owner:
+        hourly = users_db.projections_in_last_hour(
+            users_conn, clerk_user_id=clerk_user_id, anon_key=anon_key
+        )
+        if hourly >= PRE_LAUNCH_HOURLY_CAP:
+            return JSONResponse(
+                status_code=429,
+                content={
+                    "error": "pre_launch_cap",
+                    "limit": PRE_LAUNCH_HOURLY_CAP,
+                    "used": hourly,
+                    "hint": "Pre-launch rate limit: 5 projections per hour. Check back soon.",
+                },
+            )
 
     if PAYWALL_ENABLED and quota["limit"] is not None and used >= quota["limit"]:
         return JSONResponse(

@@ -178,6 +178,29 @@ def record_usage(
     conn.commit()
 
 
+def projections_in_last_hour(
+    conn: sqlite3.Connection,
+    *,
+    clerk_user_id: Optional[str] = None,
+    anon_key: Optional[str] = None,
+) -> int:
+    """Count 'project' actions by this actor in the past 1 hour."""
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat()
+    if clerk_user_id:
+        row = conn.execute(
+            "SELECT COUNT(*) FROM usage WHERE clerk_user_id = ? AND action LIKE 'project%' AND at > ?",
+            (clerk_user_id, cutoff),
+        ).fetchone()
+    elif anon_key:
+        row = conn.execute(
+            "SELECT COUNT(*) FROM usage WHERE anon_key = ? AND action LIKE 'project%' AND at > ?",
+            (anon_key, cutoff),
+        ).fetchone()
+    else:
+        return 0
+    return int(row[0]) if row else 0
+
+
 def projections_in_last_24h(
     conn: sqlite3.Connection,
     *,
