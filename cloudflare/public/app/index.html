@@ -4,28 +4,32 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>S-Tool Projector</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230A6577'/%3E%3Cpath d='M16 44 L24 32 L34 38 L48 18' stroke='%23D2DDEA' stroke-width='4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
 <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.46.0/dist/apexcharts.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
-    --bg-primary: #0a1410;
-    --bg-secondary: #0f1e16;
-    --bg-card: #142419;
-    --bg-card-alt: #1a2e21;
-    --border: #2a4434;
-    --border-hover: #3d8b5e;
-    --text-primary: #e8f0eb;
-    --text-secondary: #9cb3a4;
-    --text-muted: #5f7d6a;
-    --accent: #3d8b5e;
-    --accent-soft: rgba(61, 139, 94, 0.15);
+    /* Glacier palette — synced with landing page (Banff/Zermatt/Interlaken) */
+    --bg-primary: #0B1006;
+    --bg-secondary: #111512;
+    --bg-card: #1F232D;
+    --bg-card-alt: #28303B;
+    --border: rgba(155,161,185,0.16);
+    --border-hover: rgba(95,170,197,0.35);
+    --text-primary: #EDECE6;
+    --text-secondary: #9BA1B9;
+    --text-muted: #6B7382;
+    --accent: #0A6577;
+    --accent-soft: rgba(10,101,119,0.15);
     --green: #4ade80;
     --green-soft: rgba(74, 222, 128, 0.12);
     --red: #f87171;
     --red-soft: rgba(248, 113, 113, 0.12);
     --amber: #fbbf24;
-    --teal: #2dd4bf;
-    --cream: #fde68a;
+    --teal: #5FAAC5;
+    --cream: #D2DDEA;
     --radius: 16px;
     --radius-sm: 10px;
     --shadow: 0 4px 24px rgba(0,0,0,0.35);
@@ -42,7 +46,9 @@ body {
 
 /* Header */
 .header {
-    background: linear-gradient(135deg, var(--bg-card) 0%, #1a3325 50%, #122a1c 100%);
+    background:
+        linear-gradient(135deg, rgba(31,35,45,0.92) 0%, rgba(2,40,52,0.85) 50%, rgba(10,101,119,0.7) 100%),
+        url('/img/accent-peaks.jpg') center/cover no-repeat;
     border: 1px solid var(--border);
     border-radius: var(--radius);
     padding: 32px 36px;
@@ -53,13 +59,21 @@ body {
     box-shadow: var(--shadow);
 }
 .header h1 {
-    font-size: 26px; font-weight: 700;
-    background: linear-gradient(135deg, #4ade80 0%, #2dd4bf 50%, #a3e635 100%);
+    font-family: 'Crimson Text', Georgia, serif;
+    font-size: 28px; font-weight: 600;
+    background: linear-gradient(135deg, #5FAAC5 0%, #D2DDEA 50%, #5FAAC5 100%);
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     letter-spacing: -0.5px;
 }
 .header .subtitle { font-size: 13px; color: var(--text-muted); margin-top: 4px; font-weight: 500; }
 .header .meta { text-align: right; color: var(--text-secondary); font-size: 13px; font-weight: 500; }
+.back-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    font: 500 13px 'Inter'; color: var(--text-secondary);
+    text-decoration: none; margin-bottom: 6px;
+    transition: color .15s;
+}
+.back-link:hover { color: var(--text-primary); }
 
 /* Cards */
 .card {
@@ -70,7 +84,7 @@ body {
     margin-bottom: 16px;
     box-shadow: var(--shadow);
 }
-.card:hover { border-color: rgba(61,139,94,0.4); }
+.card:hover { border-color: rgba(95,170,197,0.35); }
 .card h3 {
     font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px;
     color: var(--text-muted); margin-bottom: 20px; font-weight: 600;
@@ -177,13 +191,14 @@ body {
     font-size: 16px; letter-spacing: 1px;
 }
 .btn-run {
-    background: linear-gradient(135deg, #3d8b5e 0%, #2a7d50 50%, #1d6b40 100%);
-    color: white; border: none; font-family: inherit; font-size: 13px;
-    font-weight: 700; padding: 11px 32px; border-radius: var(--radius-sm);
+    background: linear-gradient(135deg, #0A6577 0%, #5FAAC5 100%);
+    color: #0B1006; border: none; font-family: inherit; font-size: 13px;
+    font-weight: 700; padding: 11px 32px; border-radius: 999px;
     cursor: pointer; text-transform: uppercase; letter-spacing: 1px;
     transition: transform 0.2s, box-shadow 0.3s;
+    box-shadow: 0 4px 16px -4px rgba(95,170,197,0.5);
 }
-.btn-run:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(61,139,94,0.3); }
+.btn-run:hover { transform: translateY(-1px); box-shadow: 0 6px 20px -4px rgba(95,170,197,0.7); }
 .btn-run:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
 /* Chart */
@@ -721,21 +736,32 @@ body {
 
 /* ── Hero / intro strip ── */
 .hero {
-    background: linear-gradient(135deg, rgba(61, 139, 94, 0.08) 0%, rgba(45, 212, 191, 0.04) 100%);
+    background:
+        linear-gradient(135deg, rgba(10,101,119,0.12) 0%, rgba(95,170,197,0.06) 100%),
+        url('/img/accent-lake.jpg') center/cover no-repeat;
+    background-blend-mode: overlay;
     border: 1px solid var(--border);
     border-radius: var(--radius);
     padding: 24px 28px;
     margin-bottom: 20px;
+    position: relative; overflow: hidden;
 }
+.hero::before {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(11,16,6,0.88) 0%, rgba(31,35,45,0.92) 100%);
+    pointer-events: none;
+}
+.hero > * { position: relative; }
 .hero-headline {
-    font-size: 22px;
-    font-weight: 700;
+    font-family: 'Crimson Text', Georgia, serif;
+    font-size: 24px;
+    font-weight: 600;
     color: var(--text-primary);
     letter-spacing: -0.2px;
     line-height: 1.25;
     margin-bottom: 10px;
 }
-.hero-headline .accent { color: var(--accent); }
+.hero-headline .accent { color: #5FAAC5; }
 .hero-sub {
     font-size: 13px;
     color: var(--text-secondary);
@@ -752,8 +778,8 @@ body {
     font-size: 11px;
     padding: 5px 10px;
     border-radius: 999px;
-    background: rgba(61, 139, 94, 0.12);
-    border: 1px solid rgba(61, 139, 94, 0.35);
+    background: rgba(10,101,119,0.15);
+    border: 1px solid rgba(95,170,197,0.35);
     color: var(--text-primary);
     font-weight: 500;
 }
@@ -795,6 +821,7 @@ body {
     <!-- Header -->
     <div class="header">
         <div>
+            <a href="/" class="back-link">&larr; s-tool.io</a>
             <h1>S-TOOL PROJECTOR</h1>
             <div class="subtitle">Monte Carlo + Mean Reversion Projection Engine</div>
         </div>
