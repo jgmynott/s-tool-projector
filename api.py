@@ -21,6 +21,11 @@ from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+
 from db import init_db, get_projection, get_projection_age_hours, save_projection, list_cached_symbols, get_sentiment
 from projector_engine import run_projection
 from hardening import health_checker
@@ -34,14 +39,30 @@ log = logging.getLogger("api")
 
 app = FastAPI(title="S-Tool Projector API", version="0.2.0")
 
-# CORS: wildcard for local dev, tightened list in prod via env.
-_cors_origins = [o.strip() for o in os.getenv("CORS_ORIGINS", "*").split(",") if o.strip()]
+# CORS: fail closed. No env var = dev localhost only. Never wildcard origins
+# when Authorization bearer tokens are in play — a wildcard + credentials is a
+# browser-side auth-bypass footgun even though we're not using cookies.
+_cors_env = os.getenv("CORS_ORIGINS", "").strip()
+_cors_origins = [o.strip() for o in _cors_env.split(",") if o.strip()] or [
+    "http://localhost:8000",
+    "http://localhost:5173",
+    "http://127.0.0.1:8000",
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=_cors_origins if _cors_origins and _cors_origins != ["*"] else ["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=_cors_origins,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "Stripe-Signature"],
+    allow_credentials=False,  # Bearer tokens, no cookies — keep this False.
 )
+
+# Per-IP rate limiting. Protects against abuse of /api/project (FMP quota +
+# CPU) and /api/billing/checkout (spam Stripe customer creation). Webhook is
+# exempt — Stripe retries hard and we MUST absorb those.
+limiter = Limiter(key_func=get_remote_address, default_limits=["120/minute"])
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
 
 # ── Request counting & error rate tracking ──
 
@@ -113,6 +134,7 @@ def _quota_headers(used: int, limit: Optional[int], tier: str) -> dict[str, str]
 # ── Endpoints ──
 
 @app.get("/api/project")
+@limiter.limit("30/minute")
 def project(
     request: Request,
     symbol: str = Query(..., min_length=1, max_length=10),
@@ -232,6 +254,7 @@ def api_me(user: Optional[dict] = Depends(auth.optional_user)):
 
 
 @app.post("/api/billing/checkout")
+@limiter.limit("10/minute")
 def api_billing_checkout(
     request: Request,
     user: dict = Depends(auth.current_user),
@@ -249,6 +272,7 @@ def api_billing_checkout(
 
 
 @app.post("/api/billing/portal")
+@limiter.limit("10/minute")
 def api_billing_portal(
     request: Request,
     user: dict = Depends(auth.current_user),

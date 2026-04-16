@@ -1,0 +1,25 @@
+version: 2
+updates:
+  # Python backend — surfaces CVEs in stripe, fastapi, pyjwt, etc.
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    labels: ["dependencies", "python"]
+
+  # Cloudflare Worker toolchain + any npm deps we add.
+  - package-ecosystem: "npm"
+    directory: "/cloudflare"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    labels: ["dependencies", "cloudflare"]
+
+  # Pin + auto-update GitHub Actions (addresses the S-90 Node 24 deprecation
+  # proactively — Dependabot will PR the version bump when available).
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels: ["dependencies", "actions"]
