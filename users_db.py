@@ -15,11 +15,19 @@ is still a one-file swap when we outgrow it.
 
 from __future__ import annotations
 
+import os
 import sqlite3
 from datetime import datetime, timezone, timedelta
+from pathlib import Path
 from typing import Optional
 
-from db import get_db
+# Users + usage live in a SEPARATE DB from projector_cache.db because the
+# daily-refresh cron commits projector_cache.db back to a public repo. Keeping
+# PII (email, Stripe customer ids) out of that DB is the whole point.
+#
+# Default path is repo-local for dev; in prod set USERS_DB_PATH to a Railway
+# Volume mount (e.g. /data/users.db) so rows survive container restarts.
+USERS_DB_PATH = os.getenv("USERS_DB_PATH", str(Path(__file__).parent / "users.db"))
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS users (
@@ -51,6 +59,18 @@ CREATE INDEX IF NOT EXISTS idx_usage_user_at
 CREATE INDEX IF NOT EXISTS idx_usage_anon_at
     ON usage(anon_key, at);
 """
+
+
+def get_users_db(path: str | None = None) -> sqlite3.Connection:
+    """Open (or create) the users DB, separate from projector_cache.db."""
+    p = path or USERS_DB_PATH
+    # Ensure parent dir exists (matters when mounted under /data on Railway).
+    parent = Path(p).parent
+    parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(p, check_same_thread=False)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL")
+    return conn
 
 
 def init_users_db(conn: sqlite3.Connection) -> None:

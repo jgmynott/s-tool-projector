@@ -75,9 +75,11 @@ async def request_counter_middleware(request: Request, call_next):
     return response
 
 
-# DB connection (module-level, WAL mode is fine for concurrent reads)
+# Separate connections: projector_cache.db (committed back via cron) vs
+# users.db (private, never committed, under a Railway Volume in prod).
 conn = init_db()
-users_db.init_users_db(conn)
+users_conn = users_db.get_users_db()
+users_db.init_users_db(users_conn)
 
 STALE_HOURS = 18  # recompute if older than this
 
@@ -126,11 +128,11 @@ def project(
     anon_key = None if clerk_user_id else _anon_key(request)
     user_row = None
     if clerk_user_id:
-        user_row = users_db.upsert_user(conn, clerk_user_id, email=user.get("email"))
+        user_row = users_db.upsert_user(users_conn, clerk_user_id, email=user.get("email"))
 
     quota = users_db.quota_for_user(user_row)
     used = users_db.projections_in_last_24h(
-        conn, clerk_user_id=clerk_user_id, anon_key=anon_key
+        users_conn, clerk_user_id=clerk_user_id, anon_key=anon_key
     )
 
     if PAYWALL_ENABLED and quota["limit"] is not None and used >= quota["limit"]:
@@ -154,7 +156,7 @@ def project(
             if cached:
                 log.info(f"Cache hit: {symbol} h={horizon} age={age:.1f}h user={clerk_user_id or 'anon'}")
                 users_db.record_usage(
-                    conn, action="project", clerk_user_id=clerk_user_id,
+                    users_conn, action="project", clerk_user_id=clerk_user_id,
                     anon_key=anon_key, symbol=symbol,
                 )
                 return JSONResponse(
@@ -174,7 +176,7 @@ def project(
 
     save_projection(conn, result)
     users_db.record_usage(
-        conn,
+        users_conn,
         action="project_force" if force else "project",
         clerk_user_id=clerk_user_id,
         anon_key=anon_key,
@@ -211,9 +213,9 @@ def api_me(user: Optional[dict] = Depends(auth.optional_user)):
     """Return current user context. Anonymous when unauthed."""
     if not user:
         return {"authenticated": False, "tier": "anonymous"}
-    user_row = users_db.upsert_user(conn, user["user_id"], email=user.get("email"))
+    user_row = users_db.upsert_user(users_conn, user["user_id"], email=user.get("email"))
     quota = users_db.quota_for_user(user_row)
-    used = users_db.projections_in_last_24h(conn, clerk_user_id=user["user_id"])
+    used = users_db.projections_in_last_24h(users_conn, clerk_user_id=user["user_id"])
     return {
         "authenticated": True,
         "user_id": user["user_id"],
@@ -237,7 +239,7 @@ def api_billing_checkout(
     """Start a Stripe Checkout session for Pro. Returns the redirect URL."""
     origin = request.headers.get("origin") or "https://s-tool.io"
     url = billing.create_checkout_session(
-        conn,
+        users_conn,
         clerk_user_id=user["user_id"],
         email=user.get("email"),
         success_url=f"{origin}/?billing=success",
@@ -254,7 +256,7 @@ def api_billing_portal(
     """Return a Stripe Customer Portal URL for the current user."""
     origin = request.headers.get("origin") or "https://s-tool.io"
     url = billing.create_portal_session(
-        conn,
+        users_conn,
         clerk_user_id=user["user_id"],
         return_url=f"{origin}/",
     )
@@ -266,7 +268,7 @@ async def api_billing_webhook(request: Request):
     """Stripe webhook endpoint. Signature verified via STRIPE_WEBHOOK_SECRET."""
     sig = request.headers.get("stripe-signature", "")
     payload = await request.body()
-    return billing.handle_webhook(conn, payload=payload, signature=sig)
+    return billing.handle_webhook(users_conn, payload=payload, signature=sig)
 
 
 # ── Health & Provider Status ──
