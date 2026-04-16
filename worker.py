@@ -22,6 +22,7 @@ from db import init_db, save_projection, get_projection_age_hours
 from projector_engine import run_projection
 from hardening import retry_with_backoff, health_checker, AlertManager
 from portfolio_scanner import scan_universe, save_picks
+import signals_sec_edgar
 
 logging.basicConfig(
     level=logging.INFO,
@@ -192,6 +193,18 @@ def run_worker(symbols: list[str], horizons: list[int], force: bool = False,
         worker_stats = {"total": computed + failed, "failed": failed}
         health = health_checker.check_health()
         alert_manager.check_and_alert(health, worker_stats=worker_stats)
+
+    # ── SEC EDGAR fundamentals: refresh for everything we have a projection for ──
+    # Must run BEFORE portfolio_scanner so rationale strings pick up fresh data.
+    log.info("Refreshing SEC EDGAR fundamentals...")
+    try:
+        proj_symbols = [r[0] for r in conn.execute(
+            "SELECT DISTINCT symbol FROM projections").fetchall()]
+        signals_sec_edgar.init_sec_fundamentals_table(conn)
+        summary = signals_sec_edgar.refresh_universe(proj_symbols)
+        log.info("SEC EDGAR refresh: %s", summary)
+    except Exception as e:
+        log.warning("SEC EDGAR refresh failed: %s", e)
 
     # ── Portfolio scan: rank & tier all cached projections ──
     log.info("Running portfolio scan...")

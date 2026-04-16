@@ -60,6 +60,9 @@ table.picks td.sym { color: var(--text-hi); font-weight: 600; font-size: 15px; }
 table.picks td.num { text-align: right; font-variant-numeric: tabular-nums; }
 table.picks td.pos { color: #6ee7b7; }
 table.picks td.neg { color: #fca5a5; }
+table.picks tr.pick-row > td { border-bottom: none; padding-bottom: 6px; }
+table.picks tr.rationale-row > td { padding-top: 0; padding-bottom: 14px; border-bottom: 1px dashed var(--border); color: var(--accent-lake); font-family: 'Crimson Text', serif; font-size: 13px; font-style: italic; }
+table.picks tr.rationale-row td.rat-indent { padding-left: 12px; }
 .teaser { filter: blur(6px); pointer-events: none; user-select: none; }
 
 .disclaimer { margin-top: 64px; padding: 20px 24px; background: rgba(10,101,119,0.1); border-left: 3px solid var(--accent-alpine); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; color: var(--text-mid); font-size: 14px; }
@@ -67,8 +70,12 @@ table.picks td.neg { color: #fca5a5; }
 footer { border-top: 1px solid var(--border); padding: 40px 32px; text-align: center; color: var(--text-dim); font-size: 13px; margin-top: 80px; }
 footer a { color: var(--text-mid); }
 
+@media (max-width: 900px) {
+  table.picks th.col-sharpe, table.picks td.col-sharpe,
+  table.picks th.col-gross,  table.picks td.col-gross { display: none; }
+}
 @media (max-width: 700px) {
-  table.picks th:nth-child(3), table.picks td:nth-child(3) { display: none; }
+  table.picks th.col-current, table.picks td.col-current { display: none; }
 }
 </style>
 <script async
@@ -170,15 +177,25 @@ function renderPicks(data) {
     const sections = ['conservative', 'moderate', 'aggressive'].map(tier => {
         const rows = (grouped[tier] || []).slice(0, 10);
         if (!rows.length) return '';
-        const body = rows.map(p => `
-            <tr>
-                <td class="sym">${p.symbol}</td>
-                <td class="num ${(p.expected_return ?? 0) >= 0 ? 'pos' : 'neg'}">${fmtPct(p.expected_return)}</td>
-                <td class="num">${fmtPct(p.risk)}</td>
-                <td class="num">${fmtSharpe(p.sharpe_proxy)}</td>
-                <td class="num" style="color:var(--text-mid);">$${(p.current_price ?? 0).toFixed(2)}</td>
-                <td class="num" style="color:var(--text-hi);">$${(p.p50_target ?? 0).toFixed(2)}</td>
-            </tr>`).join('');
+        const body = rows.map(p => {
+            const sec = p.sec_fundamentals || {};
+            const yoy = sec.revenue_yoy_growth;
+            const gm  = sec.gross_margin;
+            const pickRow = `
+                <tr class="pick-row">
+                    <td class="sym">${p.symbol}</td>
+                    <td class="num ${(p.expected_return ?? 0) >= 0 ? 'pos' : 'neg'}">${fmtPct(p.expected_return)}</td>
+                    <td class="num col-sharpe">${fmtSharpe(p.sharpe_proxy)}</td>
+                    <td class="num ${(yoy ?? 0) >= 0 ? 'pos' : 'neg'}">${fmtPct(yoy)}</td>
+                    <td class="num col-gross">${fmtPct(gm)}</td>
+                    <td class="num col-current" style="color:var(--text-mid);">$${(p.current_price ?? 0).toFixed(2)}</td>
+                    <td class="num" style="color:var(--text-hi);">$${(p.p50_target ?? 0).toFixed(2)}</td>
+                </tr>`;
+            const ratRow = p.rationale
+                ? `<tr class="rationale-row"><td colspan="7" class="rat-indent">${p.rationale}</td></tr>`
+                : `<tr class="rationale-row"><td colspan="7" class="rat-indent" style="color:var(--text-dim);font-style:normal;">&nbsp;</td></tr>`;
+            return pickRow + ratRow;
+        }).join('');
         return `
             <section class="tier-section">
                 <div class="tier-header">
@@ -188,12 +205,20 @@ function renderPicks(data) {
                     </div>
                 </div>
                 <table class="picks">
-                    <thead><tr><th>Symbol</th><th style="text-align:right;">Exp. return</th><th style="text-align:right;">Proj. vol</th><th style="text-align:right;">Sharpe proxy</th><th style="text-align:right;">Current</th><th style="text-align:right;">P50 target</th></tr></thead>
+                    <thead><tr>
+                        <th>Symbol</th>
+                        <th style="text-align:right;">Exp. return</th>
+                        <th class="col-sharpe" style="text-align:right;">Sharpe</th>
+                        <th style="text-align:right;">Rev YoY</th>
+                        <th class="col-gross" style="text-align:right;">Gross margin</th>
+                        <th class="col-current" style="text-align:right;">Current</th>
+                        <th style="text-align:right;">P50 target</th>
+                    </tr></thead>
                     <tbody>${body}</tbody>
                 </table>
             </section>`;
     }).join('');
-    const disclaimer = `<div class="disclaimer"><b>Not investment advice.</b> Picks are ranked outputs of a Monte Carlo + mean-reversion projection engine running on cached price + fundamentals. Every projection shows its own MAPE &mdash; use that to judge the bands. Past projection accuracy is not indicative of future performance.</div>`;
+    const disclaimer = `<div class="disclaimer"><b>Not investment advice.</b> Picks are ranked outputs of a Monte Carlo + mean-reversion projection engine running on cached price + fundamentals. The rationale line surfaces the most notable SEC EDGAR fundamentals per ticker; an empty line means no metric stood out. Every projection shows its own MAPE &mdash; use that to judge the bands. Past projection accuracy is not indicative of future performance.</div>`;
     return sections + disclaimer;
 }
 
