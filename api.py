@@ -279,11 +279,11 @@ def picks(
     scan_age = get_scan_age_hours()
 
     if not is_strategist:
-        # Teaser: just symbols + tier names, no expected returns or Sharpe.
-        teaser = [
-            {"symbol": p["symbol"], "tier": p["tier"]}
-            for p in results[:9]  # 3 per tier
-        ]
+        # Teaser: 3 per bucket, not results[:9] (which would be same-tier heavy).
+        teaser: list[dict] = []
+        for t in ("conservative", "moderate", "aggressive"):
+            bucket = [p for p in results if p.get("tier") == t][:3]
+            teaser.extend({"symbol": p["symbol"], "tier": t} for p in bucket)
         return JSONResponse(
             status_code=402,
             content={

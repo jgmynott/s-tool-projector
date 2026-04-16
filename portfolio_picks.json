@@ -1,6 +1,6 @@
 {
-  "scanned_at": "2026-04-16T15:13:32.486871+00:00",
-  "total_tickers": 28,
+  "scanned_at": "2026-04-16T15:17:12.131148+00:00",
+  "total_tickers": 24,
   "picks": [
     {
       "symbol": "GS",
@@ -18,31 +18,16 @@
       "tier": "conservative"
     },
     {
-      "symbol": "QQQ",
-      "expected_return": 0.079369,
-      "risk": 0.196248,
-      "sharpe_proxy": 0.404434,
-      "current_price": 637.4,
-      "p50_target": 687.99,
+      "symbol": "NFLX",
+      "expected_return": 0.129979,
+      "risk": 0.334426,
+      "sharpe_proxy": 0.388662,
+      "current_price": 107.71,
+      "p50_target": 121.71,
       "fundamentals": {
-        "pe_trailing": 33.67412,
-        "market_cap": 250561953792,
-        "sector": null,
-        "debt_equity": null
-      },
-      "tier": "conservative"
-    },
-    {
-      "symbol": "SPY",
-      "expected_return": 0.059377,
-      "risk": 0.151882,
-      "sharpe_proxy": 0.390938,
-      "current_price": 699.94,
-      "p50_target": 741.5,
-      "fundamentals": {
-        "pe_trailing": 27.750748,
-        "market_cap": 642392326144,
-        "sector": null,
+        "pe_trailing": 42.573124,
+        "market_cap": 456893923328,
+        "sector": "Communication Services",
         "debt_equity": null
       },
       "tier": "conservative"
@@ -63,21 +48,6 @@
       "tier": "conservative"
     },
     {
-      "symbol": "DIA",
-      "expected_return": 0.034824,
-      "risk": 0.134659,
-      "sharpe_proxy": 0.25861,
-      "current_price": 484.72,
-      "p50_target": 501.6,
-      "fundamentals": {
-        "pe_trailing": 23.758434,
-        "market_cap": 39380058112,
-        "sector": null,
-        "debt_equity": null
-      },
-      "tier": "conservative"
-    },
-    {
       "symbol": "BAC",
       "expected_return": 0.062592,
       "risk": 0.251356,
@@ -93,16 +63,16 @@
       "tier": "conservative"
     },
     {
-      "symbol": "IWM",
-      "expected_return": 0.041093,
-      "risk": 0.211734,
-      "sharpe_proxy": 0.194078,
-      "current_price": 269.39,
-      "p50_target": 280.46,
+      "symbol": "AAPL",
+      "expected_return": 0.040461,
+      "risk": 0.291957,
+      "sharpe_proxy": 0.138585,
+      "current_price": 266.43,
+      "p50_target": 277.21,
       "fundamentals": {
-        "pe_trailing": 19.502718,
-        "market_cap": 75712061440,
-        "sector": null,
+        "pe_trailing": 33.68268,
+        "market_cap": 3915968151552,
+        "sector": "Technology",
         "debt_equity": null
       },
       "tier": "conservative"
@@ -183,16 +153,16 @@
       "tier": "moderate"
     },
     {
-      "symbol": "NFLX",
-      "expected_return": 0.129979,
-      "risk": 0.334426,
-      "sharpe_proxy": 0.388662,
-      "current_price": 107.71,
-      "p50_target": 121.71,
+      "symbol": "MU",
+      "expected_return": 0.181619,
+      "risk": 0.546045,
+      "sharpe_proxy": 0.332608,
+      "current_price": 456.23,
+      "p50_target": 539.09,
       "fundamentals": {
-        "pe_trailing": 42.573124,
-        "market_cap": 456893923328,
-        "sector": "Communication Services",
+        "pe_trailing": 21.55078,
+        "market_cap": 514506096640,
+        "sector": "Technology",
         "debt_equity": null
       },
       "tier": "moderate"
@@ -228,15 +198,15 @@
       "tier": "moderate"
     },
     {
-      "symbol": "AAPL",
-      "expected_return": 0.040461,
-      "risk": 0.291957,
-      "sharpe_proxy": 0.138585,
-      "current_price": 266.43,
-      "p50_target": 277.21,
+      "symbol": "AMD",
+      "expected_return": 0.067682,
+      "risk": 0.581797,
+      "sharpe_proxy": 0.116332,
+      "current_price": 258.12,
+      "p50_target": 275.59,
       "fundamentals": {
-        "pe_trailing": 33.68268,
-        "market_cap": 3915968151552,
+        "pe_trailing": 98.89655,
+        "market_cap": 420841652224,
         "sector": "Technology",
         "debt_equity": null
       },
@@ -252,36 +222,6 @@
       "fundamentals": {
         "pe_trailing": 225.63492,
         "market_cap": 339976683520,
-        "sector": "Technology",
-        "debt_equity": null
-      },
-      "tier": "aggressive"
-    },
-    {
-      "symbol": "MU",
-      "expected_return": 0.181619,
-      "risk": 0.546045,
-      "sharpe_proxy": 0.332608,
-      "current_price": 456.23,
-      "p50_target": 539.09,
-      "fundamentals": {
-        "pe_trailing": 21.55078,
-        "market_cap": 514506096640,
-        "sector": "Technology",
-        "debt_equity": null
-      },
-      "tier": "aggressive"
-    },
-    {
-      "symbol": "AMD",
-      "expected_return": 0.067682,
-      "risk": 0.581797,
-      "sharpe_proxy": 0.116332,
-      "current_price": 258.12,
-      "p50_target": 275.59,
-      "fundamentals": {
-        "pe_trailing": 98.89655,
-        "market_cap": 420841652224,
         "sector": "Technology",
         "debt_equity": null
       },
@@ -391,6 +331,36 @@
         "debt_equity": null
       },
       "tier": "aggressive"
+    },
+    {
+      "symbol": "NKE",
+      "expected_return": -0.132482,
+      "risk": 0.365598,
+      "sharpe_proxy": -0.362372,
+      "current_price": 45.44,
+      "p50_target": 39.42,
+      "fundamentals": {
+        "pe_trailing": 29.894737,
+        "market_cap": 67291504640,
+        "sector": "Consumer Cyclical",
+        "debt_equity": null
+      },
+      "tier": "aggressive"
+    },
+    {
+      "symbol": "AMC",
+      "expected_return": -0.443114,
+      "risk": 0.950955,
+      "sharpe_proxy": -0.465967,
+      "current_price": 1.67,
+      "p50_target": 0.93,
+      "fundamentals": {
+        "pe_trailing": -1.2654895635673624,
+        "market_cap": 973271360,
+        "sector": "Communication Services",
+        "debt_equity": null
+      },
+      "tier": "aggressive"
     }
   ],
   "full_results": [
@@ -404,36 +374,6 @@
       "fundamentals": {
         "pe_trailing": 225.63492,
         "market_cap": 339976683520,
-        "sector": "Technology",
-        "debt_equity": null
-      },
-      "tier": "aggressive"
-    },
-    {
-      "symbol": "MU",
-      "expected_return": 0.181619,
-      "risk": 0.546045,
-      "sharpe_proxy": 0.332608,
-      "current_price": 456.23,
-      "p50_target": 539.09,
-      "fundamentals": {
-        "pe_trailing": 21.55078,
-        "market_cap": 514506096640,
-        "sector": "Technology",
-        "debt_equity": null
-      },
-      "tier": "aggressive"
-    },
-    {
-      "symbol": "AMD",
-      "expected_return": 0.067682,
-      "risk": 0.581797,
-      "sharpe_proxy": 0.116332,
-      "current_price": 258.12,
-      "p50_target": 275.59,
-      "fundamentals": {
-        "pe_trailing": 98.89655,
-        "market_cap": 420841652224,
         "sector": "Technology",
         "debt_equity": null
       },
@@ -620,16 +560,16 @@
       "tier": "moderate"
     },
     {
-      "symbol": "NFLX",
-      "expected_return": 0.129979,
-      "risk": 0.334426,
-      "sharpe_proxy": 0.388662,
-      "current_price": 107.71,
-      "p50_target": 121.71,
+      "symbol": "MU",
+      "expected_return": 0.181619,
+      "risk": 0.546045,
+      "sharpe_proxy": 0.332608,
+      "current_price": 456.23,
+      "p50_target": 539.09,
       "fundamentals": {
-        "pe_trailing": 42.573124,
-        "market_cap": 456893923328,
-        "sector": "Communication Services",
+        "pe_trailing": 21.55078,
+        "market_cap": 514506096640,
+        "sector": "Technology",
         "debt_equity": null
       },
       "tier": "moderate"
@@ -665,15 +605,15 @@
       "tier": "moderate"
     },
     {
-      "symbol": "AAPL",
-      "expected_return": 0.040461,
-      "risk": 0.291957,
-      "sharpe_proxy": 0.138585,
-      "current_price": 266.43,
-      "p50_target": 277.21,
+      "symbol": "AMD",
+      "expected_return": 0.067682,
+      "risk": 0.581797,
+      "sharpe_proxy": 0.116332,
+      "current_price": 258.12,
+      "p50_target": 275.59,
       "fundamentals": {
-        "pe_trailing": 33.68268,
-        "market_cap": 3915968151552,
+        "pe_trailing": 98.89655,
+        "market_cap": 420841652224,
         "sector": "Technology",
         "debt_equity": null
       },
@@ -695,31 +635,16 @@
       "tier": "conservative"
     },
     {
-      "symbol": "QQQ",
-      "expected_return": 0.079369,
-      "risk": 0.196248,
-      "sharpe_proxy": 0.404434,
-      "current_price": 637.4,
-      "p50_target": 687.99,
+      "symbol": "NFLX",
+      "expected_return": 0.129979,
+      "risk": 0.334426,
+      "sharpe_proxy": 0.388662,
+      "current_price": 107.71,
+      "p50_target": 121.71,
       "fundamentals": {
-        "pe_trailing": 33.67412,
-        "market_cap": 250561953792,
-        "sector": null,
-        "debt_equity": null
-      },
-      "tier": "conservative"
-    },
-    {
-      "symbol": "SPY",
-      "expected_return": 0.059377,
-      "risk": 0.151882,
-      "sharpe_proxy": 0.390938,
-      "current_price": 699.94,
-      "p50_target": 741.5,
-      "fundamentals": {
-        "pe_trailing": 27.750748,
-        "market_cap": 642392326144,
-        "sector": null,
+        "pe_trailing": 42.573124,
+        "market_cap": 456893923328,
+        "sector": "Communication Services",
         "debt_equity": null
       },
       "tier": "conservative"
@@ -740,21 +665,6 @@
       "tier": "conservative"
     },
     {
-      "symbol": "DIA",
-      "expected_return": 0.034824,
-      "risk": 0.134659,
-      "sharpe_proxy": 0.25861,
-      "current_price": 484.72,
-      "p50_target": 501.6,
-      "fundamentals": {
-        "pe_trailing": 23.758434,
-        "market_cap": 39380058112,
-        "sector": null,
-        "debt_equity": null
-      },
-      "tier": "conservative"
-    },
-    {
       "symbol": "BAC",
       "expected_return": 0.062592,
       "risk": 0.251356,
@@ -770,16 +680,16 @@
       "tier": "conservative"
     },
     {
-      "symbol": "IWM",
-      "expected_return": 0.041093,
-      "risk": 0.211734,
-      "sharpe_proxy": 0.194078,
-      "current_price": 269.39,
-      "p50_target": 280.46,
+      "symbol": "AAPL",
+      "expected_return": 0.040461,
+      "risk": 0.291957,
+      "sharpe_proxy": 0.138585,
+      "current_price": 266.43,
+      "p50_target": 277.21,
       "fundamentals": {
-        "pe_trailing": 19.502718,
-        "market_cap": 75712061440,
-        "sector": null,
+        "pe_trailing": 33.68268,
+        "market_cap": 3915968151552,
+        "sector": "Technology",
         "debt_equity": null
       },
       "tier": "conservative"

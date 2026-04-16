@@ -29,6 +29,18 @@ PICKS_PATH = Path(__file__).parent / "portfolio_picks.json"
 HORIZON = 252  # standard 1-year horizon
 TOP_N = 10     # picks per tier
 
+# Common ETFs that end up in the price cache but don't belong in a stock-picks
+# product. These are indices / sector baskets, not companies — surfacing them
+# in "conservative picks" confuses the Strategist offering.
+ETF_BLOCKLIST = {
+    "SPY", "QQQ", "DIA", "IWM", "VOO", "VTI", "VXUS", "BND", "AGG",
+    "GLD", "SLV", "USO", "UNG", "TLT", "IEF", "SHY", "LQD", "HYG",
+    "XLF", "XLK", "XLE", "XLV", "XLY", "XLP", "XLB", "XLI", "XLU",
+    "XLRE", "XLC", "EFA", "EEM", "VGK", "VWO", "ACWI", "QQQM",
+    "SPLG", "RSP", "IVV", "VEA", "VNQ", "SCHX", "SCHB", "SCHF",
+    "TQQQ", "SQQQ", "SOXL", "SOXS", "TMF", "TMV",
+}
+
 
 def scan_universe(conn=None) -> list[dict]:
     """Scan all cached projections and return ranked, tiered results.
@@ -76,6 +88,8 @@ def scan_universe(conn=None) -> list[dict]:
         sigma = r.get("sigma")
 
         if not current_price or not p50 or not sigma or sigma <= 0 or current_price <= 0:
+            continue
+        if r["symbol"] in ETF_BLOCKLIST:
             continue
 
         expected_return = (p50 - current_price) / current_price
