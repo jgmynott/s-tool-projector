@@ -1,0 +1,2145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>S-Tool Projector</title>
+<script src="https://cdn.jsdelivr.net/npm/apexcharts@3.46.0/dist/apexcharts.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+    --bg-primary: #0a1410;
+    --bg-secondary: #0f1e16;
+    --bg-card: #142419;
+    --bg-card-alt: #1a2e21;
+    --border: #2a4434;
+    --border-hover: #3d8b5e;
+    --text-primary: #e8f0eb;
+    --text-secondary: #9cb3a4;
+    --text-muted: #5f7d6a;
+    --accent: #3d8b5e;
+    --accent-soft: rgba(61, 139, 94, 0.15);
+    --green: #4ade80;
+    --green-soft: rgba(74, 222, 128, 0.12);
+    --red: #f87171;
+    --red-soft: rgba(248, 113, 113, 0.12);
+    --amber: #fbbf24;
+    --teal: #2dd4bf;
+    --cream: #fde68a;
+    --radius: 16px;
+    --radius-sm: 10px;
+    --shadow: 0 4px 24px rgba(0,0,0,0.35);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.6;
+    min-height: 100vh;
+}
+.container { max-width: 1320px; margin: 0 auto; padding: 24px; }
+
+/* Header */
+.header {
+    background: linear-gradient(135deg, var(--bg-card) 0%, #1a3325 50%, #122a1c 100%);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 32px 36px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: var(--shadow);
+}
+.header h1 {
+    font-size: 26px; font-weight: 700;
+    background: linear-gradient(135deg, #4ade80 0%, #2dd4bf 50%, #a3e635 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    letter-spacing: -0.5px;
+}
+.header .subtitle { font-size: 13px; color: var(--text-muted); margin-top: 4px; font-weight: 500; }
+.header .meta { text-align: right; color: var(--text-secondary); font-size: 13px; font-weight: 500; }
+
+/* Cards */
+.card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px 28px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow);
+}
+.card:hover { border-color: rgba(61,139,94,0.4); }
+.card h3 {
+    font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px;
+    color: var(--text-muted); margin-bottom: 20px; font-weight: 600;
+}
+
+/* Stat Grid */
+.stat-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 12px; margin-bottom: 16px; }
+.stat-box {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 20px 16px; text-align: center;
+    box-shadow: var(--shadow);
+}
+.stat-box .label {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 1.2px;
+    color: var(--text-muted); margin-bottom: 8px; font-weight: 600;
+}
+.stat-box .value { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+.stat-box .value.green { color: var(--green); }
+.stat-box .value.red { color: var(--red); }
+.stat-box .value.blue { color: var(--teal); }
+.stat-box .value.yellow { color: var(--amber); }
+.stat-box .value.cyan { color: var(--cream); }
+.stat-box .trend {
+    font-size: 11px; font-weight: 600; margin-top: 6px;
+    display: flex; align-items: center; justify-content: center; gap: 4px;
+}
+.stat-box .trend.up { color: var(--green); }
+.stat-box .trend.down { color: var(--red); }
+.stat-box .trend.flat { color: var(--text-muted); }
+
+/* Momentum Row */
+.momentum-row {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px;
+}
+.mom-box {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 16px; text-align: center;
+    box-shadow: var(--shadow);
+}
+.mom-box .label {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 1.2px;
+    color: var(--text-muted); margin-bottom: 6px; font-weight: 600;
+}
+.mom-box .value { font-size: 18px; font-weight: 700; }
+.mom-box .sub { font-size: 10px; color: var(--text-muted); margin-top: 4px; }
+.trend-bar {
+    height: 4px; border-radius: 2px; margin-top: 8px;
+    background: var(--bg-secondary); overflow: hidden; position: relative;
+}
+.trend-bar .fill {
+    height: 100%; border-radius: 2px; transition: width 0.5s;
+}
+@media (max-width: 600px) { .momentum-row { grid-template-columns: repeat(2, 1fr); } }
+
+/* Enriched Data Row */
+.enriched-row {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px;
+}
+.enrich-box {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 16px; box-shadow: var(--shadow);
+}
+.enrich-box .label {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 1.2px;
+    color: var(--text-muted); margin-bottom: 8px; font-weight: 600;
+}
+.enrich-box .value { font-size: 16px; font-weight: 700; }
+.enrich-box .sub { font-size: 10px; color: var(--text-muted); margin-top: 4px; }
+.analyst-bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; margin: 8px 0; }
+.analyst-bar .buy { background: var(--green); }
+.analyst-bar .hold { background: var(--amber); }
+.analyst-bar .sell { background: var(--red); }
+.analyst-counts { display: flex; justify-content: space-between; font-size: 10px; }
+.margin-row { display: flex; gap: 12px; margin-top: 6px; }
+.margin-item { font-size: 11px; }
+.margin-item .ml { color: var(--text-muted); }
+.margin-item .mv { font-weight: 600; }
+.source-tag {
+    display: inline-block; font-size: 9px; letter-spacing: 0.5px; padding: 2px 6px;
+    border-radius: 4px; background: rgba(61,139,94,0.15); color: var(--accent);
+    text-transform: uppercase; font-weight: 600; margin-top: 6px;
+}
+@media (max-width: 900px) { .enriched-row { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 600px) { .enriched-row { grid-template-columns: 1fr; } }
+
+/* Controls */
+.controls-row { display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap; }
+.control-group { display: flex; flex-direction: column; gap: 6px; }
+.control-group label {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 1.2px;
+    color: var(--text-muted); font-weight: 600;
+}
+.control-group input, .control-group select {
+    background: var(--bg-secondary); border: 1px solid var(--border);
+    color: var(--text-primary); font-family: inherit; font-size: 14px;
+    padding: 11px 16px; border-radius: var(--radius-sm); outline: none;
+    transition: border-color 0.3s; font-weight: 500;
+}
+.control-group input:focus, .control-group select:focus {
+    border-color: var(--accent); box-shadow: 0 0 0 3px rgba(61,139,94,0.2);
+}
+#symbolInput {
+    width: 130px; text-transform: uppercase; font-weight: 700;
+    font-size: 16px; letter-spacing: 1px;
+}
+.btn-run {
+    background: linear-gradient(135deg, #3d8b5e 0%, #2a7d50 50%, #1d6b40 100%);
+    color: white; border: none; font-family: inherit; font-size: 13px;
+    font-weight: 700; padding: 11px 32px; border-radius: var(--radius-sm);
+    cursor: pointer; text-transform: uppercase; letter-spacing: 1px;
+    transition: transform 0.2s, box-shadow 0.3s;
+}
+.btn-run:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(61,139,94,0.3); }
+.btn-run:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+/* Chart */
+#chartWrap { min-height: 420px; }
+
+/* Milestone Table */
+.milestone-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.milestone-table {
+    width: 100%; border-collapse: collapse; font-size: 13px; min-width: 580px;
+}
+.milestone-table th {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 1.2px;
+    color: var(--text-muted); font-weight: 600; padding: 10px 12px;
+    border-bottom: 1px solid var(--border); text-align: right;
+}
+.milestone-table th:first-child { text-align: left; }
+.milestone-table td {
+    padding: 10px 12px; border-bottom: 1px solid rgba(42,68,52,0.4);
+    text-align: right; font-weight: 500; font-variant-numeric: tabular-nums;
+}
+.milestone-table td:first-child {
+    text-align: left; color: var(--text-secondary); font-weight: 600;
+}
+.milestone-table tr:hover td { background: rgba(61,139,94,0.05); }
+
+/* Sentiment Intelligence */
+.sent-intel {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;
+}
+.sent-intel-box {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px 24px; box-shadow: var(--shadow);
+    position: relative; overflow: hidden;
+}
+.sent-intel-box:hover { border-color: rgba(61,139,94,0.4); }
+.sent-intel-box h3 {
+    font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px;
+    color: var(--text-muted); margin-bottom: 16px; font-weight: 600;
+}
+.sent-gauge {
+    display: flex; align-items: center; gap: 16px; margin-bottom: 12px;
+}
+.sent-score-ring {
+    width: 72px; height: 72px; border-radius: 50%; position: relative;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.sent-score-ring .ring-value {
+    font-size: 20px; font-weight: 700; z-index: 1;
+}
+.sent-score-ring svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+.sent-score-ring circle {
+    fill: none; cx: 36; cy: 36; r: 30;
+}
+.sent-score-ring .ring-bg { stroke: var(--bg-secondary); stroke-width: 5; }
+.sent-score-ring .ring-fg { stroke-width: 5; stroke-linecap: round; transition: stroke-dashoffset 0.8s ease; }
+.sent-gauge-detail { flex: 1; }
+.sent-gauge-detail .sent-label { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+.sent-gauge-detail .sent-sub { font-size: 11px; color: var(--text-muted); line-height: 1.5; }
+.sent-tilt-impact {
+    background: var(--bg-secondary); border-radius: var(--radius-sm); padding: 12px 16px;
+    margin-top: 12px;
+}
+.sent-tilt-impact .tilt-row {
+    display: flex; justify-content: space-between; align-items: center; font-size: 12px;
+    padding: 4px 0;
+}
+.sent-tilt-impact .tilt-row .tl { color: var(--text-muted); }
+.sent-tilt-impact .tilt-row .tv { font-weight: 600; font-variant-numeric: tabular-nums; }
+.sent-inactive-badge {
+    display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px;
+    background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.25);
+    border-radius: 6px; font-size: 11px; color: var(--amber); font-weight: 600;
+    margin-bottom: 8px;
+}
+.sent-inactive-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--amber); }
+.sent-active-badge {
+    display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px;
+    background: rgba(74,222,128,0.1); border: 1px solid rgba(74,222,128,0.25);
+    border-radius: 6px; font-size: 11px; color: var(--green); font-weight: 600;
+    margin-bottom: 8px;
+}
+.sent-active-badge .dot {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--green);
+    animation: pulse-dot 1.5s infinite;
+}
+@keyframes pulse-dot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(1.3); }
+}
+/* StockTwits bar */
+.st-bar-wrap {
+    background: var(--bg-secondary); border-radius: 6px; height: 10px;
+    overflow: hidden; margin: 12px 0;
+}
+.st-bar-fill {
+    height: 100%; border-radius: 6px;
+    background: linear-gradient(90deg, var(--green), var(--teal));
+    transition: width 0.5s ease;
+}
+.st-stats { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-secondary); }
+.st-footer { font-size: 11px; color: var(--text-muted); margin-top: 8px; }
+@media (max-width: 768px) { .sent-intel { grid-template-columns: 1fr; } }
+
+/* Signal Tilt Breakdown */
+.tilt-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;
+}
+.tilt-signal {
+    background: var(--bg-card-alt); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 14px 16px;
+}
+.tilt-signal .ts-name { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 6px; }
+.tilt-signal .ts-value { font-size: 20px; font-weight: 700; }
+.tilt-signal .ts-detail { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+.tilt-total {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--bg-card-alt); border: 1px solid var(--accent);
+    border-radius: var(--radius-sm); padding: 14px 20px; margin-top: 12px;
+}
+.tilt-total .tt-label { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-secondary); }
+.tilt-total .tt-value { font-size: 22px; font-weight: 700; }
+.tilt-total .tt-sub { font-size: 11px; color: var(--text-muted); }
+.tilt-providers {
+    display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px;
+}
+.tilt-providers .tp-badge {
+    font-size: 10px; padding: 3px 8px; border-radius: 6px;
+    font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+}
+.tp-active { background: var(--green-soft); color: var(--green); border: 1px solid rgba(74,222,128,0.25); }
+.tp-inactive { background: rgba(95,125,106,0.1); color: var(--text-muted); border: 1px solid var(--border); }
+
+/* Bet Sizing Panel */
+.bet-panel {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 24px 28px; margin-bottom: 16px;
+    box-shadow: var(--shadow);
+}
+.bet-panel:hover { border-color: rgba(61,139,94,0.4); }
+.bet-header {
+    display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 16px;
+}
+.bet-title {
+    font-size: 12px; font-weight: 600; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 1.5px;
+}
+.bet-title span { color: var(--green); font-weight: 700; }
+.bet-sub {
+    font-size: 11px; color: var(--text-muted); text-transform: uppercase;
+    letter-spacing: 1px; font-weight: 600;
+}
+.bet-grid {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px;
+}
+.bet-cell {
+    background: var(--bg-secondary); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 14px; text-align: center;
+}
+.bet-cell.bear { border-left: 3px solid #7c3aed; }
+.bet-cell.median { border-left: 3px solid var(--green); background: rgba(74,222,128,0.06); }
+.bet-cell.bull { border-left: 3px solid #c2410c; }
+.bet-cell .bk {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--text-muted); margin-bottom: 6px; font-weight: 600;
+}
+.bet-cell .bv {
+    font-size: 18px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.3px;
+}
+.bet-cell .bp { font-size: 11px; font-weight: 600; margin-top: 3px; }
+.bet-cell .bp.green { color: var(--green); }
+.bet-cell .bp.red { color: var(--red); }
+.bet-footer {
+    margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border);
+    font-size: 12px; color: var(--text-secondary); line-height: 1.6;
+}
+.bet-footer strong { color: var(--text-primary); }
+@media (max-width: 768px) { .bet-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 480px) { .bet-grid { grid-template-columns: 1fr 1fr; } }
+
+/* Legend Explainer */
+.legend-explain {
+    margin-top: 16px; padding: 16px 20px; background: var(--bg-secondary);
+    border-radius: var(--radius-sm); border: 1px solid var(--border);
+}
+.legend-explain .le-row {
+    display: flex; align-items: baseline; gap: 10px;
+    padding: 5px 0; font-size: 12px; line-height: 1.5;
+}
+.legend-explain .le-swatch {
+    display: inline-block; width: 28px; min-width: 28px; height: 3px;
+    border-radius: 2px; position: relative; top: -2px;
+}
+.legend-explain .le-name { font-weight: 600; color: var(--text-primary); white-space: nowrap; }
+.legend-explain .le-desc { color: var(--text-muted); }
+
+/* Loading */
+.loading {
+    display: flex; align-items: center; justify-content: center;
+    padding: 60px 20px; color: var(--text-muted); font-size: 14px;
+}
+.spinner {
+    width: 20px; height: 20px; border: 2px solid var(--border);
+    border-top-color: var(--accent); border-radius: 50%;
+    animation: spin 0.8s linear infinite; margin-right: 12px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Status */
+.status-bar {
+    font-size: 12px; color: var(--text-muted); margin-top: 8px;
+    min-height: 18px;
+}
+
+/* Diagnostics */
+.diag-toggle {
+    background: none; border: 1px solid var(--border); color: var(--text-muted);
+    font-family: inherit; font-size: 11px; padding: 6px 14px;
+    border-radius: var(--radius-sm); cursor: pointer; margin-top: 12px;
+    text-transform: uppercase; letter-spacing: 1px;
+}
+.diag-toggle:hover { border-color: var(--accent); color: var(--text-secondary); }
+.diag-body { display: none; margin-top: 16px; }
+.diag-body.open { display: block; }
+.diag-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+}
+.diag-item {
+    background: var(--bg-secondary); border-radius: 8px; padding: 10px 14px;
+}
+.diag-item .dl { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+.diag-item .dv { font-size: 15px; font-weight: 600; margin-top: 4px; font-variant-numeric: tabular-nums; }
+
+/* Honesty */
+.honesty {
+    background: var(--bg-secondary); border: 1px solid rgba(251,191,36,0.2);
+    border-radius: var(--radius-sm); padding: 16px 20px;
+    margin-top: 16px; font-size: 12px; color: var(--text-muted); line-height: 1.7;
+}
+.honesty strong { color: var(--amber); font-weight: 600; }
+
+/* Responsive */
+@media (max-width: 900px) {
+    .stat-grid { grid-template-columns: repeat(3, 1fr); }
+    .header { flex-direction: column; text-align: center; gap: 12px; }
+    .header .meta { text-align: center; }
+    .diag-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 600px) {
+    .stat-grid { grid-template-columns: repeat(2, 1fr); }
+    .container { padding: 12px; }
+    .diag-grid { grid-template-columns: 1fr; }
+}
+
+/* ── Public Pulse panel ── */
+#publicPulseCard { border-left: 3px solid #68A5EE; }
+.pp-header h3 { display: inline-flex; align-items: center; gap: 10px; }
+.pp-badge {
+    display: inline-block; padding: 2px 8px; border-radius: 10px;
+    background: rgba(104, 165, 238, 0.15); color: #68A5EE;
+    font-size: 10px; font-weight: 700; letter-spacing: 1px;
+    vertical-align: middle;
+}
+.pp-sub { font-size: 12px; color: var(--text-muted); margin-top: -4px; margin-bottom: 14px; }
+.pp-hero {
+    display: grid; grid-template-columns: auto 1fr auto; gap: 20px;
+    align-items: center; padding: 16px; margin-bottom: 14px;
+    background: var(--card-bg-secondary, rgba(104, 165, 238, 0.05));
+    border: 1px solid rgba(104, 165, 238, 0.2); border-radius: 10px;
+}
+.pp-hero-score { font-size: 42px; font-weight: 800; line-height: 1; }
+.pp-hero-mood { font-size: 13px; font-weight: 700; letter-spacing: 1px; }
+.pp-hero-sources { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.pp-hero-tilt { text-align: right; }
+.pp-hero-tilt-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); }
+.pp-hero-tilt-val { font-size: 20px; font-weight: 700; margin-top: 2px; }
+.pp-rows { display: flex; flex-direction: column; gap: 6px; }
+.pp-row {
+    display: grid; grid-template-columns: 200px 1fr 80px 80px; gap: 12px;
+    align-items: center; padding: 10px 12px;
+    background: rgba(0,0,0,0.2); border: 1px solid var(--border, #283C33); border-radius: 8px;
+}
+.pp-r-name { font-size: 13px; font-weight: 600; }
+.pp-r-note { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+.pp-r-bar {
+    height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden;
+}
+.pp-r-bar-fill { height: 100%; border-radius: 3px; transition: width 0.4s; }
+.pp-r-score { font-size: 14px; font-weight: 700; text-align: right; }
+.pp-r-raw { font-size: 11px; color: var(--text-muted); text-align: right; }
+
+/* ── Earnings proximity banner ── */
+.earn-prox { border-left: 3px solid var(--amber, #F9B53C); }
+.ep-row {
+    display: grid; grid-template-columns: 36px 1fr auto; gap: 14px;
+    align-items: center;
+}
+.ep-icon { font-size: 22px; }
+.ep-title { font-size: 14px; font-weight: 700; }
+.ep-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.ep-mult { font-size: 18px; font-weight: 700; }
+
+@media (max-width: 700px) {
+    .pp-row { grid-template-columns: 1fr 60px 60px; }
+    .pp-r-src { grid-column: 1 / -1; }
+    .pp-hero { grid-template-columns: 1fr; text-align: center; }
+    .pp-hero-tilt { text-align: center; }
+}
+
+/* ── How it works ── */
+.how-it-works {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 26px 28px;
+    margin-top: 24px;
+}
+.how-it-works h3 {
+    margin: 0 0 18px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: 0.3px;
+}
+.how-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 18px 22px;
+}
+.how-item {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+}
+.how-n {
+    flex: 0 0 28px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--accent-soft);
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0;
+}
+.how-t {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+.how-d {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.55;
+}
+.how-note {
+    margin-top: 22px;
+    padding: 14px 16px;
+    background: var(--bg-card-alt);
+    border-left: 3px solid var(--amber);
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--text-secondary);
+}
+.how-note strong { color: var(--amber); font-weight: 600; }
+
+/* ── Info tooltips + glossary ── */
+.info {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 13px;
+    height: 13px;
+    margin-left: 4px;
+    border: 1px solid var(--text-muted);
+    border-radius: 50%;
+    color: var(--text-muted);
+    font-size: 9px;
+    font-weight: 700;
+    font-style: normal;
+    cursor: help;
+    vertical-align: middle;
+    line-height: 1;
+    transition: border-color 0.15s, color 0.15s;
+    position: relative;
+}
+.info:hover { border-color: var(--accent); color: var(--accent); }
+.info::after {
+    content: attr(data-tip);
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    min-width: 200px;
+    max-width: 280px;
+    padding: 8px 10px;
+    background: #0a1410;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-primary);
+    font-size: 11px;
+    font-weight: 400;
+    font-style: normal;
+    text-transform: none;
+    letter-spacing: normal;
+    line-height: 1.45;
+    white-space: normal;
+    text-align: left;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.15s, visibility 0.15s;
+    z-index: 100;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+}
+.info:hover::after { opacity: 1; visibility: visible; }
+
+/* Glossary card */
+.glossary {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-top: 24px;
+}
+.glossary-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 22px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s;
+}
+.glossary-header:hover { background: var(--bg-card-alt); }
+.glossary-header h3 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: 0.3px;
+}
+.glossary-header .chev {
+    color: var(--text-muted);
+    font-size: 12px;
+    transition: transform 0.2s;
+}
+.glossary.open .chev { transform: rotate(180deg); }
+.glossary-body {
+    display: none;
+    padding: 0 22px 22px;
+    border-top: 1px solid var(--border);
+}
+.glossary.open .glossary-body { display: block; }
+.glossary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 14px 28px;
+    margin-top: 18px;
+}
+.glossary-item { font-size: 12px; line-height: 1.5; }
+.glossary-term {
+    color: var(--accent);
+    font-weight: 600;
+    margin-bottom: 2px;
+    letter-spacing: 0.2px;
+}
+.glossary-def { color: var(--text-secondary); }
+
+/* ── Watchlist ── */
+.btn-save {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    width: 42px;
+    height: 42px;
+    border-radius: var(--radius-sm);
+    font-size: 18px;
+    cursor: pointer;
+    transition: all 0.15s;
+    align-self: flex-end;
+}
+.btn-save:hover { border-color: var(--accent); color: var(--accent); }
+.btn-save.saved { color: var(--cream); border-color: var(--cream); }
+.watchlist-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 12px;
+    min-height: 0;
+}
+.watchlist-row:empty { display: none; }
+.wl-label {
+    font-size: 10px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+    margin-right: 6px;
+    align-self: center;
+}
+.wl-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    padding: 5px 4px 5px 10px;
+    border-radius: 999px;
+    background: var(--bg-card-alt);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.3px;
+}
+.wl-pill:hover { border-color: var(--accent); color: var(--accent); }
+.wl-pill .x {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    color: var(--text-muted);
+    font-size: 11px;
+    line-height: 1;
+    background: transparent;
+    transition: all 0.15s;
+}
+.wl-pill .x:hover { background: var(--red-soft); color: var(--red); }
+
+/* ── Hero / intro strip ── */
+.hero {
+    background: linear-gradient(135deg, rgba(61, 139, 94, 0.08) 0%, rgba(45, 212, 191, 0.04) 100%);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px 28px;
+    margin-bottom: 20px;
+}
+.hero-headline {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.2px;
+    line-height: 1.25;
+    margin-bottom: 10px;
+}
+.hero-headline .accent { color: var(--accent); }
+.hero-sub {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.55;
+    max-width: 780px;
+}
+.hero-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+}
+.hero-pill {
+    font-size: 11px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: rgba(61, 139, 94, 0.12);
+    border: 1px solid rgba(61, 139, 94, 0.35);
+    color: var(--text-primary);
+    font-weight: 500;
+}
+@media (max-width: 700px) {
+    .hero-headline { font-size: 18px; }
+}
+
+/* ── Auth + billing UI ────────────────────────────────────────── */
+.auth-row { display:flex; align-items:center; gap:12px; }
+.auth-btn {
+    background: var(--bg-card); color: var(--text-primary);
+    border: 1px solid var(--border); border-radius: 10px;
+    padding: 8px 14px; font: 500 13px 'Inter', sans-serif;
+    cursor: pointer; transition: all .15s;
+}
+.auth-btn:hover { border-color: var(--border-hover); background: var(--bg-card-alt); }
+.auth-btn.primary {
+    background: linear-gradient(135deg, var(--accent), #2dd4bf);
+    color: #0a1410; border-color: transparent; font-weight: 600;
+}
+.quota-badge {
+    font: 500 12px 'Inter', sans-serif; color: var(--text-secondary);
+    background: var(--bg-card); border: 1px solid var(--border);
+    padding: 6px 10px; border-radius: 8px; white-space: nowrap;
+}
+.quota-badge.pro { color: #fde68a; border-color: rgba(253,230,138,0.35); }
+.quota-badge.exceeded { color: var(--red); border-color: rgba(248,113,113,0.4); }
+#userSlot > div { display: inline-block; }   /* Clerk UserButton root */
+</style>
+<!-- Clerk auth (test instance — swap pk_test_ for pk_live_ on launch). -->
+<script async
+  data-clerk-publishable-key="pk_test_Zmx1ZW50LW1vbGUtNzEuY2xlcmsuYWNjb3VudHMuZGV2JA"
+  src="https://fluent-mole-71.clerk.accounts.dev/npm/@clerk/clerk-js@5/dist/clerk.browser.js"
+  crossorigin="anonymous"
+></script>
+</head>
+<body>
+<div class="container">
+    <!-- Header -->
+    <div class="header">
+        <div>
+            <h1>S-TOOL PROJECTOR</h1>
+            <div class="subtitle">Monte Carlo + Mean Reversion Projection Engine</div>
+        </div>
+        <div class="meta auth-row">
+            <div>
+                <div id="metaDate"></div>
+                <div id="metaVix"></div>
+            </div>
+            <div id="quotaBadge" class="quota-badge" style="display:none;"></div>
+            <div id="authControls" class="auth-row">
+                <button id="btnSignIn" class="auth-btn" onclick="openClerkSignIn()" style="display:none;">Sign in</button>
+                <button id="btnGetPro" class="auth-btn primary" onclick="startCheckout()" style="display:none;">Get Pro</button>
+                <div id="userSlot"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hero / intro -->
+    <div class="hero">
+        <div class="hero-headline">
+            Honest projection bands for <span class="accent">2,609 US stocks</span> — no false alpha, no mystery signals.
+        </div>
+        <div class="hero-sub">
+            Enter a ticker and we simulate thousands of forward paths under the stock's
+            own volatility and long-run mean-reversion behavior. The 10th–90th percentile
+            range shows where the stock could plausibly land, not where we "think" it will.
+            Every signal the engine uses had to earn its spot in a rigorous walk-forward backtest —
+            sentiment, Public Pulse, HY OAS, and margin-debt tilts all failed that bar on post-2023 data
+            and were zeroed. Hover the <span class="info" data-tip="Like this one — hover for definitions throughout the page.">i</span>
+            icons or open the glossary at the bottom for any term.
+        </div>
+        <div class="hero-pills">
+            <span class="hero-pill">Russell 3000 coverage</span>
+            <span class="hero-pill">Walk-forward validated</span>
+            <span class="hero-pill">No hidden tilts</span>
+            <span class="hero-pill">Free during beta</span>
+        </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="card">
+        <div class="controls-row">
+            <div class="control-group">
+                <label>Symbol</label>
+                <input id="symbolInput" type="text" placeholder="QQQ" maxlength="6" value="QQQ">
+            </div>
+            <div class="control-group">
+                <label>Horizon</label>
+                <select id="horizonSelect">
+                    <option value="63">3 Months</option>
+                    <option value="126">6 Months</option>
+                    <option value="252" selected>1 Year</option>
+                    <option value="504">2 Years</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label>Bet Size</label>
+                <input id="betInput" type="text" placeholder="10000" value="10000" style="width:110px;text-align:right">
+            </div>
+            <button class="btn-run" id="btnRun" onclick="runProjection()">Run Projection</button>
+            <button class="btn-save" id="btnSave" onclick="toggleWatchlist()" title="Save current ticker to watchlist">☆</button>
+        </div>
+        <div class="watchlist-row" id="watchlistRow"></div>
+        <div class="status-bar" id="statusBar"></div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stat-grid" id="statsGrid" style="display:none">
+        <div class="stat-box"><div class="label">Current Price</div><div class="value" id="stPrice">—</div><div class="trend" id="stPriceTrend"></div></div>
+        <div class="stat-box"><div class="label">Median Target <span class="info" data-tip="P50 — half of simulated paths ended above this price at the chosen horizon, half below.">i</span></div><div class="value green" id="stMedian">—</div></div>
+        <div class="stat-box"><div class="label">Expected Return <span class="info" data-tip="Percent change from current price to the median projected price at the horizon.">i</span></div><div class="value green" id="stReturn">—</div></div>
+        <div class="stat-box"><div class="label">Upside Prob <span class="info" data-tip="Share of simulated paths that ended above the current price at the selected horizon.">i</span></div><div class="value blue" id="stUpside">—</div></div>
+        <div class="stat-box"><div class="label">P/E Ratio <span class="info" data-tip="Trailing Price-to-Earnings: price divided by last 12mo EPS. Lower = cheaper relative to recent profits.">i</span></div><div class="value yellow" id="stPE">—</div><div class="trend" id="stPETrend"></div></div>
+        <div class="stat-box"><div class="label">Market Cap <span class="info" data-tip="Total market value: shares outstanding × current price.">i</span></div><div class="value cyan" id="stMcap">—</div><div class="trend" id="stMcapTrend"></div></div>
+        <div class="stat-box"><div class="label">EPS <span class="info" data-tip="Earnings per share — net income divided by share count (trailing 12 months).">i</span></div><div class="value" id="stEPS">—</div></div>
+    </div>
+
+    <!-- Momentum -->
+    <div class="momentum-row" id="momentumRow" style="display:none">
+        <div class="mom-box" id="mom30"></div>
+        <div class="mom-box" id="mom60"></div>
+        <div class="mom-box" id="mom90"></div>
+        <div class="mom-box" id="momSignal"></div>
+    </div>
+
+    <!-- Enriched Data -->
+    <div class="enriched-row" id="enrichedRow" style="display:none">
+        <div class="enrich-box" id="enrichEarnings"></div>
+        <div class="enrich-box" id="enrichAnalyst"></div>
+        <div class="enrich-box" id="enrichMargins"></div>
+        <div class="enrich-box" id="enrichSignals"></div>
+    </div>
+
+    <!-- Signal Tilt Breakdown -->
+    <div class="card" id="tiltCard" style="display:none">
+        <h3>Signal Intelligence — Active Tilts</h3>
+        <div id="tiltContent"></div>
+    </div>
+
+    <!-- Public Pulse — US public sentiment beyond the finance crowd -->
+    <div class="card" id="publicPulseCard" style="display:none">
+        <div class="pp-header">
+            <h3>Public Pulse <span class="pp-badge">NEW</span></h3>
+            <div class="pp-sub">US general-public sentiment — Google Trends · Wikipedia · GDELT · broad Reddit · Michigan CSI</div>
+        </div>
+        <div id="publicPulseContent"></div>
+    </div>
+
+    <!-- Earnings Proximity banner (shown when earnings are near) -->
+    <div class="card earn-prox" id="earnProxCard" style="display:none">
+        <div id="earnProxContent"></div>
+    </div>
+
+    <!-- Sentiment Intelligence -->
+    <div class="sent-intel" id="sentIntel" style="display:none">
+        <div class="sent-intel-box" id="sentTiltBox">
+            <h3>Sentiment Tilt (WSB/Reddit)</h3>
+            <div id="sentTiltContent"></div>
+        </div>
+        <div class="sent-intel-box" id="sentLiveBox">
+            <h3>Live Sentiment (StockTwits)</h3>
+            <div id="sentLiveContent"></div>
+        </div>
+    </div>
+
+    <!-- Chart -->
+    <div class="card" id="chartCard" style="display:none">
+        <h3>Price Projection</h3>
+        <div id="chartWrap"></div>
+        <!-- Legend -->
+        <div class="legend-explain">
+            <div class="le-row"><span class="le-swatch" style="background:#9cb3a4"></span><span class="le-name">Historical</span><span class="le-desc">— Past year of daily closing prices.</span></div>
+            <div class="le-row"><span class="le-swatch" style="background:#fbbf24"></span><span class="le-name">Median (50th)</span><span class="le-desc">— Most likely path. Half of simulations end above, half below.</span></div>
+            <div class="le-row"><span class="le-swatch" style="background:#4ade80"></span><span class="le-name">P90 — Bull case</span><span class="le-desc">— Strong upside: only 10% of simulations reach this high.</span></div>
+            <div class="le-row"><span class="le-swatch" style="background:#2dd4bf"></span><span class="le-name">P75 — Upside</span><span class="le-desc">— Optimistic case: only 25% of paths exceed this price.</span></div>
+            <div class="le-row"><span class="le-swatch" style="background:#f97316"></span><span class="le-name">P25 — Downside</span><span class="le-desc">— Pessimistic case: 75% of paths stay above this price.</span></div>
+            <div class="le-row"><span class="le-swatch" style="background:#f87171"></span><span class="le-name">P10 — Bear case</span><span class="le-desc">— Tail-risk downside: 90% of simulations stay above this level.</span></div>
+            <div class="le-row"><span class="le-swatch" style="background:#a78bfa;height:3px;border-top:2px dashed #a78bfa;background:transparent"></span><span class="le-name">MR Equilibrium</span><span class="le-desc">— Mean-reversion fair value: decays toward the trending moving-average at the OU half-life.</span></div>
+        </div>
+    </div>
+
+    <!-- Bet Sizing -->
+    <div class="bet-panel" id="betPanel" style="display:none">
+        <div class="bet-header">
+            <span class="bet-title">Conviction on a <span id="betSizeLabel">$10,000</span> position</span>
+            <span class="bet-sub" id="betHorizonLabel">at horizon</span>
+        </div>
+        <div class="bet-grid">
+            <div class="bet-cell bear"><div class="bk">Bear (10th)</div><div class="bv" id="betP10">—</div><div class="bp" id="betP10pct">—</div></div>
+            <div class="bet-cell"><div class="bk">Downside (25th)</div><div class="bv" id="betP25">—</div><div class="bp" id="betP25pct">—</div></div>
+            <div class="bet-cell median"><div class="bk">Median outcome</div><div class="bv" id="betP50">—</div><div class="bp" id="betP50pct">—</div></div>
+            <div class="bet-cell"><div class="bk">Upside (75th)</div><div class="bv" id="betP75">—</div><div class="bp" id="betP75pct">—</div></div>
+            <div class="bet-cell bull"><div class="bk">Bull (90th)</div><div class="bv" id="betP90">—</div><div class="bp" id="betP90pct">—</div></div>
+        </div>
+        <div class="bet-footer" id="betFooter"></div>
+    </div>
+
+    <!-- Milestones -->
+    <div class="card" id="milestoneCard" style="display:none">
+        <h3>Price Milestones</h3>
+        <div class="milestone-wrap">
+        <table class="milestone-table">
+            <thead>
+                <tr><th>Horizon</th><th>Date</th><th>Bear (P10)</th><th>P25</th><th>Median</th><th>P75</th><th>Bull (P90)</th><th>Ret %</th></tr>
+            </thead>
+            <tbody id="milestoneBody"></tbody>
+        </table>
+        </div>
+    </div>
+
+    <!-- Diagnostics -->
+    <div class="card" id="diagCard" style="display:none">
+        <button class="diag-toggle" onclick="toggleDiag()">Model Diagnostics</button>
+        <div class="diag-body" id="diagBody">
+            <div class="diag-grid" id="diagGrid"></div>
+        </div>
+    </div>
+
+    <!-- How it works -->
+    <div class="how-it-works">
+        <h3>How the projection is built</h3>
+        <div class="how-grid">
+            <div class="how-item">
+                <div class="how-n">1</div>
+                <div class="how-body">
+                    <div class="how-t">Learn the stock's own dynamics</div>
+                    <div class="how-d">We pull ~2 years of daily closes, estimate annualized drift (μ) and volatility (σ), and fit a mean-reversion anchor by regressing price on its 1-year moving average.</div>
+                </div>
+            </div>
+            <div class="how-item">
+                <div class="how-n">2</div>
+                <div class="how-body">
+                    <div class="how-t">Scale volatility to the current regime</div>
+                    <div class="how-d">σ is multiplied by a VIX-regime factor and further widened when earnings are within 30 days — the one systematic adjustment that empirically improves band calibration.</div>
+                </div>
+            </div>
+            <div class="how-item">
+                <div class="how-n">3</div>
+                <div class="how-body">
+                    <div class="how-t">Simulate 2,000 forward paths</div>
+                    <div class="how-d">Each path is a blend of a Monte Carlo random-walk (30%) and a mean-reverting Ornstein-Uhlenbeck process pulling toward the MR target (70%). Neither dominates — the blend prevents both "infinite trend" and "forced reversion" failure modes.</div>
+                </div>
+            </div>
+            <div class="how-item">
+                <div class="how-n">4</div>
+                <div class="how-body">
+                    <div class="how-t">Report percentiles, not point forecasts</div>
+                    <div class="how-d">P10 / P25 / P50 / P75 / P90 of the simulated terminal prices. The band is the answer — not a single number. If someone tells you an exact 1-year price target, they're selling, not forecasting.</div>
+                </div>
+            </div>
+        </div>
+        <div class="how-note">
+            <strong>What the model does NOT do.</strong> It doesn't read news, Reddit, or analyst reports. It doesn't apply crowd-sentiment or macro "tilts" — we backtested those through 2025 and they failed to improve accuracy. It doesn't output buy/sell/hold signals, because calibrated uncertainty and a single directional call are different (and usually conflicting) products.
+        </div>
+    </div>
+
+    <!-- Glossary -->
+    <div class="glossary" id="glossaryCard">
+        <div class="glossary-header" onclick="document.getElementById('glossaryCard').classList.toggle('open')">
+            <h3>Glossary & Field Definitions</h3>
+            <span class="chev">▾</span>
+        </div>
+        <div class="glossary-body">
+            <div class="glossary-grid" id="glossaryGrid"></div>
+        </div>
+    </div>
+
+    <!-- Honesty Callout -->
+    <div class="honesty">
+        <strong>Honest disclaimer:</strong> These projections show the range of plausible outcomes based on
+        historical price dynamics — they are not predictions or investment advice. The median forecast is
+        statistically indistinguishable from "price stays flat." Use the bands to understand uncertainty,
+        not to set price targets. Past volatility does not predict future returns.
+    </div>
+</div>
+
+<script>
+// Try same-origin first, fall back to localhost:8000 for dev
+const API = window.location.origin;
+const API_BACKENDS = [API, 'http://localhost:8000', 'http://localhost:8765'];
+const $ = id => document.getElementById(id);
+const fmtPrice = v => v >= 1000 ? `$${(v/1000).toFixed(1)}k` : `$${v.toFixed(2)}`;
+const fmtPct = v => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`;
+
+// ─── Glossary / field definitions ────────────────────────────────────
+// All human-readable tooltips live here. `info('term')` renders the (i)
+// icon; `renderGlossary()` builds the alphabetical reference card.
+const TERMS = {
+    'P10': 'Projected 10th-percentile price at the chosen horizon. 90% of simulated paths ended above this.',
+    'P25': 'Projected 25th-percentile price. Lower quartile of simulated outcomes.',
+    'P50': 'Median projected price. Half of simulations ended above, half below.',
+    'P75': 'Projected 75th-percentile price. Upper quartile of simulated outcomes.',
+    'P90': 'Projected 90th-percentile price. Only 10% of simulated paths ended above this — treat as an optimistic tail outcome.',
+    'Upside Probability': 'Share of simulated paths that ended above the starting price at the selected horizon.',
+    'Market Cap': 'Total value of all shares outstanding (shares × price). Rough size of the company.',
+    'Trailing P/E': 'Price divided by earnings per share over the last 12 months. Lower = cheaper relative to recent profits.',
+    'Forward P/E': 'Price divided by analysts\' consensus forecast EPS for the next 12 months. Reflects expected, not realized, earnings.',
+    'EPS Trailing': 'Earnings per share over the last 12 months — total profit divided by share count.',
+    'EPS Forward': 'Analyst-consensus EPS estimate for the next 12 months.',
+    'Beta': 'Volatility relative to the broad market. 1.0 = moves with S&P 500; >1 = more volatile; <1 = less. Negative = inversely correlated.',
+    'Dividend Yield': 'Annual dividend per share divided by current price.',
+    '52-Week Range': 'The highest and lowest closing price over the past 52 weeks.',
+    'Gross Margin': 'Revenue minus cost of goods sold, as % of revenue. Measures product-level profitability.',
+    'Operating Margin': 'Operating income as % of revenue. Profit left after all operating costs (COGS + SG&A + R&D).',
+    'Net Margin': 'Net income as % of revenue. Profit left after every expense, interest, and tax.',
+    'ROE': 'Return on Equity. Net income divided by shareholder equity. How much profit the company generates per $ of equity.',
+    'ROA': 'Return on Assets. Net income divided by total assets. How efficiently assets are used to produce profit.',
+    'Debt/Equity': 'Total debt divided by shareholder equity. Higher = more leveraged.',
+    'P/B': 'Price to Book. Market cap divided by book value of equity. <1 can signal undervaluation; sector context matters.',
+    'Analyst Consensus': 'Aggregated buy/hold/sell rating across covering Wall Street analysts.',
+    'Next Earnings': 'Date of the next scheduled quarterly earnings report.',
+    'Days to Earnings': 'Trading days until the next earnings report. Our sigma boost widens projection bands as this approaches zero.',
+    '30d Change': 'Percent change in price over the last ~30 calendar days.',
+    '60d Change': 'Percent change in price over the last ~60 calendar days.',
+    '90d Change': 'Percent change in price over the last ~90 calendar days.',
+    'RSI (14)': 'Relative Strength Index over 14 days. 0–100 momentum oscillator. >70 often labeled overbought, <30 oversold.',
+    'Trend Score': 'Internal composite of 30/60/90-day moves and SMA crossovers. +1 = strong uptrend; –1 = strong downtrend.',
+    'Off High': '% below the 52-week high.',
+    'Off Low': '% above the 52-week low.',
+    'VIX Regime': 'Which volatility bucket the S&P 500 VIX index is in right now (calm / normal / elevated / crisis).',
+    'VIX Multiplier': 'Scalar we apply to projection sigma based on the VIX regime — higher VIX → wider bands.',
+    'Volatility (ann.)': 'Final annualized sigma used by the Monte Carlo engine, after VIX + earnings adjustments.',
+    'Hist. Volatility': 'Annualized standard deviation of daily returns over the training window — the raw input before any adjustment.',
+    'Drift (μ)': 'Annualized expected return used by the Monte Carlo engine. Currently derived from historical mean return only (tilts zeroed).',
+    'Macro Regime': 'Our classification of the current macro backdrop (yield curve, rates, unemployment). Feeds into sigma scaling but not drift.',
+    'Macro σ Multiplier': 'Scalar applied to sigma based on the macro regime.',
+    'MR Target': 'Mean-reversion anchor price — the engine pulls simulated paths gently toward this long-run value.',
+    'MR Kappa': 'Mean-reversion speed. Higher = faster pull toward the MR target.',
+    'MC Blend': 'Weight given to the pure Monte Carlo component vs. the mean-reversion component (currently 30% MC / 70% MR).',
+    'Paths': 'Number of Monte Carlo simulations run for this projection.',
+    'Earnings Sigma Boost': 'When earnings are within 30 days, we widen projection bands (up to 1.25× sigma) to reflect the known volatility event.',
+    'Put/Call Ratio': 'Daily put option volume divided by call option volume. >1.2 often read as bearish crowd positioning, <0.7 as bullish. Contrarian signals possible.',
+    'News Sentiment': 'Aggregate sentiment score across recent news articles about the ticker (–1 bearish to +1 bullish).',
+    'Data Source': 'Which provider supplied this number (yfinance, FMP, Finnhub, Polygon, FRED).',
+    'Compute Time': 'Wall-clock seconds the engine took to compute this projection.',
+    'MAPE': 'Mean Absolute Percentage Error — average |forecast − actual| ÷ actual, in %. Lower is better forecast accuracy.',
+    'Horizon': 'How many trading days forward the projection looks.',
+};
+
+function info(term, extra) {
+    const def = TERMS[term] || extra || '';
+    if (!def) return '';
+    const safe = def.replace(/"/g, '&quot;');
+    return `<span class="info" data-tip="${safe}">i</span>`;
+}
+
+function renderGlossary() {
+    const entries = Object.entries(TERMS).sort((a, b) => a[0].localeCompare(b[0]));
+    $('glossaryGrid').innerHTML = entries
+        .map(([t, d]) => `<div class="glossary-item"><div class="glossary-term">${t}</div><div class="glossary-def">${d}</div></div>`)
+        .join('');
+}
+// Populate once on load — glossary never changes per projection.
+document.addEventListener('DOMContentLoaded', () => { renderGlossary(); renderWatchlist(); });
+
+// ─── Watchlist (client-side, localStorage) ───────────────────────────
+const WL_KEY = 'stool_watchlist_v1';
+function wlGet() {
+    try { return JSON.parse(localStorage.getItem(WL_KEY) || '[]'); }
+    catch { return []; }
+}
+function wlSet(list) { localStorage.setItem(WL_KEY, JSON.stringify(list)); }
+
+function renderWatchlist() {
+    const list = wlGet();
+    const row = $('watchlistRow');
+    if (!list.length) { row.innerHTML = ''; return; }
+    row.innerHTML = '<span class="wl-label">Watchlist</span>' + list.map(sym =>
+        `<span class="wl-pill" onclick="loadFromWatchlist('${sym}')">${sym}<span class="x" onclick="event.stopPropagation(); removeFromWatchlist('${sym}')" title="Remove">×</span></span>`
+    ).join('');
+    updateSaveButton();
+}
+function updateSaveButton() {
+    const sym = ($('symbolInput').value || '').trim().toUpperCase();
+    const btn = $('btnSave');
+    if (!btn) return;
+    const saved = wlGet().includes(sym);
+    btn.classList.toggle('saved', saved);
+    btn.textContent = saved ? '★' : '☆';
+    btn.title = saved ? `Remove ${sym} from watchlist` : `Save ${sym} to watchlist`;
+}
+function toggleWatchlist() {
+    const sym = ($('symbolInput').value || '').trim().toUpperCase();
+    if (!sym) return;
+    const list = wlGet();
+    const idx = list.indexOf(sym);
+    if (idx >= 0) list.splice(idx, 1);
+    else list.unshift(sym);  // newest first
+    if (list.length > 20) list.length = 20;  // cap
+    wlSet(list);
+    renderWatchlist();
+}
+function removeFromWatchlist(sym) {
+    wlSet(wlGet().filter(s => s !== sym));
+    renderWatchlist();
+}
+function loadFromWatchlist(sym) {
+    $('symbolInput').value = sym;
+    updateSaveButton();
+    runProjection();
+}
+// Re-sync save-button state when the user types a new symbol
+document.addEventListener('DOMContentLoaded', () => {
+    const input = $('symbolInput');
+    if (input) input.addEventListener('input', updateSaveButton);
+});
+
+let chart = null;
+
+function status(msg) { $('statusBar').textContent = msg; }
+
+async function runProjection() {
+    const symbol = $('symbolInput').value.trim().toUpperCase();
+    const horizon = parseInt($('horizonSelect').value);
+    if (!symbol) return;
+
+    $('btnRun').disabled = true;
+    status(`Fetching projection for ${symbol}...`);
+
+    try {
+        let data = null;
+        const headers = await authHeaders();
+        for (const base of API_BACKENDS) {
+            try {
+                const res = await fetch(`${base}/api/project?symbol=${symbol}&horizon=${horizon}`, { headers, signal: AbortSignal.timeout(30000) });
+                updateQuotaFromHeaders(res.headers);
+                if (res.status === 402) {
+                    const err = await res.json().catch(() => ({}));
+                    handlePaywall(err);
+                    return;
+                }
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({ detail: res.statusText }));
+                    throw new Error(err.detail || `HTTP ${res.status}`);
+                }
+                data = await res.json();
+                break;
+            } catch (e) {
+                if (e.name === 'AbortError' || e.message.includes('HTTP')) throw e;
+                continue; // try next backend
+            }
+        }
+        if (!data) throw new Error('No API server found. Start with: uvicorn api:app --port 8000');
+        render(data);
+        status(`${symbol} — computed ${data.compute_secs}s, cached ${data.computed_at?.slice(0, 16) || ''}`);
+    } catch (e) {
+        status(`Error: ${e.message}`);
+        console.error(e);
+    } finally {
+        $('btnRun').disabled = false;
+    }
+}
+
+function render(d) {
+    // Stats
+    $('statsGrid').style.display = '';
+    $('stPrice').textContent = fmtPrice(d.current_price);
+    $('stMedian').textContent = fmtPrice(d.p50);
+    const ret = ((d.p50 - d.current_price) / d.current_price * 100);
+    $('stReturn').textContent = fmtPct(ret);
+    $('stReturn').className = `value ${ret >= 0 ? 'green' : 'red'}`;
+    $('stUpside').textContent = `${(d.upside_prob * 100).toFixed(0)}%`;
+
+    // Fundamentals
+    const f = typeof d.fundamentals_json === 'string' ? JSON.parse(d.fundamentals_json) : (d.fundamentals_json || {});
+    const pe = f.pe_trailing ?? f.pe_forward;
+    $('stPE').textContent = pe != null ? pe.toFixed(1) : 'N/A';
+    const mcap = f.market_cap;
+    $('stMcap').textContent = mcap != null ? (mcap >= 1e12 ? `$${(mcap/1e12).toFixed(2)}T` : mcap >= 1e9 ? `$${(mcap/1e9).toFixed(1)}B` : mcap >= 1e6 ? `$${(mcap/1e6).toFixed(0)}M` : 'N/A') : 'N/A';
+    const eps = f.eps_trailing ?? f.eps_forward;
+    $('stEPS').textContent = eps != null ? `$${eps.toFixed(2)}` : 'N/A';
+
+    $('metaDate').textContent = `Run: ${d.run_date}`;
+    if (d.vix_regime) $('metaVix').textContent = `VIX: ${d.vix_value} (${d.vix_regime})`;
+    else $('metaVix').textContent = '';
+
+    // Momentum indicators
+    renderMomentum(f);
+
+    // Enriched data (analyst, earnings, margins, signals)
+    renderEnriched(f);
+
+    // Signal tilt breakdown
+    renderTiltBreakdown(f, d);
+
+    // Public Pulse panel (new — US general-public sentiment)
+    renderPublicPulse(f);
+
+    // Earnings proximity banner
+    renderEarningsProximity(f);
+
+    // Chart
+    renderChart(d);
+
+    // Bet sizing
+    renderBetPanel(d);
+
+    // Milestones
+    renderMilestones(d);
+
+    // Sentiment Intelligence (WSB tilt + StockTwits live)
+    renderSentimentIntel(d);
+
+    // Diagnostics
+    renderDiag(d);
+}
+
+function renderEnriched(f) {
+    const hasAny = f.analyst_consensus || f.next_earnings_date || f.gross_margin != null || f.put_call_ratio != null;
+    $('enrichedRow').style.display = hasAny ? '' : 'none';
+    if (!hasAny) return;
+
+    // Earnings date
+    const ed = f.next_earnings_date;
+    const edStr = ed ? new Date(ed).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
+    const daysUntil = ed ? Math.ceil((new Date(ed) - new Date()) / 86400000) : null;
+    const edSub = daysUntil != null && daysUntil > 0 ? `${daysUntil} days away` : daysUntil === 0 ? 'Today' : '';
+    $('enrichEarnings').innerHTML = `
+        <div class="label">Next Earnings ${info('Next Earnings')}</div>
+        <div class="value" style="color:var(--amber)">${edStr}</div>
+        <div class="sub">${edSub}</div>
+        ${f.data_sources ? `<div class="source-tag">${f.data_sources.fundamentals || 'yfinance'}</div>` : ''}`;
+
+    // Analyst consensus
+    const buy = f.analyst_buy || 0, hold = f.analyst_hold || 0, sell = f.analyst_sell || 0;
+    const aTotal = buy + hold + sell;
+    if (aTotal > 0) {
+        const bPct = (buy / aTotal * 100).toFixed(0);
+        const hPct = (hold / aTotal * 100).toFixed(0);
+        const sPct = (sell / aTotal * 100).toFixed(0);
+        const consensus = f.analyst_consensus || 'N/A';
+        const cColor = consensus === 'buy' ? 'var(--green)' : consensus === 'sell' ? 'var(--red)' : 'var(--amber)';
+        $('enrichAnalyst').innerHTML = `
+            <div class="label">Analyst Consensus ${info('Analyst Consensus')}</div>
+            <div class="value" style="color:${cColor};text-transform:capitalize">${consensus}</div>
+            <div class="analyst-bar">
+                <div class="buy" style="width:${bPct}%"></div>
+                <div class="hold" style="width:${hPct}%"></div>
+                <div class="sell" style="width:${sPct}%"></div>
+            </div>
+            <div class="analyst-counts">
+                <span style="color:var(--green)">Buy ${buy}</span>
+                <span style="color:var(--amber)">Hold ${hold}</span>
+                <span style="color:var(--red)">Sell ${sell}</span>
+            </div>`;
+    } else {
+        $('enrichAnalyst').innerHTML = `
+            <div class="label">Analyst Consensus</div>
+            <div class="value" style="color:var(--text-muted)">N/A</div>
+            <div class="sub">No Finnhub key configured</div>`;
+    }
+
+    // Margins
+    const fmtM = v => v != null ? `${(v * 100).toFixed(1)}%` : 'N/A';
+    const mColor = v => v != null ? (v > 0.15 ? 'var(--green)' : v > 0 ? 'var(--amber)' : 'var(--red)') : 'var(--text-muted)';
+    $('enrichMargins').innerHTML = `
+        <div class="label">Profit Margins ${info('Net Margin', 'Gross / Operating / Net profit margins — profit left after COGS / all operating costs / everything.')}</div>
+        <div class="margin-row">
+            <div class="margin-item"><div class="ml">Gross ${info('Gross Margin')}</div><div class="mv" style="color:${mColor(f.gross_margin)}">${fmtM(f.gross_margin)}</div></div>
+            <div class="margin-item"><div class="ml">Operating ${info('Operating Margin')}</div><div class="mv" style="color:${mColor(f.operating_margin)}">${fmtM(f.operating_margin)}</div></div>
+            <div class="margin-item"><div class="ml">Net ${info('Net Margin')}</div><div class="mv" style="color:${mColor(f.net_margin)}">${fmtM(f.net_margin)}</div></div>
+        </div>
+        ${f.return_on_equity != null ? `<div class="sub" style="margin-top:8px">ROE ${info('ROE')}: ${(f.return_on_equity * 100).toFixed(1)}% · D/E ${info('Debt/Equity')}: ${f.debt_to_equity?.toFixed(2) ?? 'N/A'}</div>` : ''}`;
+
+    // Signals (put/call + news)
+    const pcr = f.put_call_ratio;
+    const pcrLabel = pcr != null ? (pcr > 1.2 ? 'Bearish' : pcr < 0.7 ? 'Bullish' : 'Neutral') : 'N/A';
+    const pcrColor = pcr != null ? (pcr > 1.2 ? 'var(--red)' : pcr < 0.7 ? 'var(--green)' : 'var(--amber)') : 'var(--text-muted)';
+    const newsCount = f.news_article_count;
+    const newsSent = f.news_sentiment_score;
+    // Put/call (Polygon paid-tier) and news-sentiment (Finnhub paid-tier) gated —
+    // hide rows when the provider returned N/A instead of showing empty fields.
+    const rows = [];
+    if (pcr != null) {
+        rows.push(`<div style="margin-bottom:6px">
+            <span style="font-size:10px;color:var(--text-muted)">Put/Call Ratio:</span>
+            <span style="font-size:15px;font-weight:700;color:${pcrColor}">${pcr.toFixed(2)}</span>
+            <span style="font-size:10px;color:${pcrColor}">${pcrLabel}</span>
+        </div>`);
+    }
+    if (newsCount != null || newsSent != null) {
+        rows.push(`<div>
+            <span style="font-size:10px;color:var(--text-muted)">News (7d):</span>
+            <span style="font-size:13px;font-weight:600">${newsCount != null ? `${newsCount} articles` : ''}</span>
+            ${newsSent != null ? `<span style="font-size:10px;color:${newsSent > 0.1 ? 'var(--green)' : newsSent < -0.1 ? 'var(--red)' : 'var(--amber)'}">${newsSent.toFixed(2)}</span>` : ''}
+        </div>`);
+    }
+    if (f.price_to_book != null) rows.push(`<div class="sub" style="margin-top:6px">P/B: ${f.price_to_book.toFixed(2)}</div>`);
+    if (f.return_on_assets != null) rows.push(`<div class="sub" style="margin-top:2px">ROA: ${(f.return_on_assets * 100).toFixed(1)}%</div>`);
+    $('enrichSignals').innerHTML = rows.length
+        ? `<div class="label">Market Signals</div>${rows.join('')}`
+        : '';
+    if (!rows.length) $('enrichSignals').style.display = 'none';
+    else $('enrichSignals').style.display = '';
+}
+
+function renderTiltBreakdown(f, d) {
+    const sent = f.sentiment_tilt || {};
+    const fund = f.fundamental_tilt || {};
+    const ds = f.data_sources || {};
+    const hasTilt = sent.active || fund.active;
+
+    // Tilts zeroed 2026-04-15 (backtest: all drift signals noise-level).
+    // Hide the tilt breakdown panel unless a signal is actively contributing.
+    if (!hasTilt) { $('tiltCard').style.display = 'none'; return; }
+    $('tiltCard').style.display = '';
+
+    const fmtTilt = (v) => {
+        if (v == null || v === 0) return { text: '0 bps', color: 'var(--text-muted)' };
+        const bps = (v * 10000).toFixed(1);
+        const sign = v > 0 ? '+' : '';
+        const color = v > 0.001 ? 'var(--green)' : v < -0.001 ? 'var(--red)' : 'var(--amber)';
+        return { text: `${sign}${bps} bps`, color };
+    };
+
+    let signals = '';
+
+    // Sentiment tilt signal
+    const sentFmt = fmtTilt(sent.mu_tilt || 0);
+    signals += `<div class="tilt-signal">
+        <div class="ts-name">WSB/Reddit Sentiment</div>
+        <div class="ts-value" style="color:${sentFmt.color}">${sentFmt.text}</div>
+        <div class="ts-detail">${sent.active ? `Score: ${sent.avg_score?.toFixed(3)} · ${sent.n_days} days · L${sent.lookback}` : 'Inactive — need 3+ days of data'}</div>
+    </div>`;
+
+    // Fundamental tilt components
+    const comps = fund.components || {};
+
+    if (comps.analyst_target) {
+        const at = comps.analyst_target;
+        const fmt = fmtTilt(at.tilt);
+        signals += `<div class="tilt-signal">
+            <div class="ts-name">Analyst Price Target</div>
+            <div class="ts-value" style="color:${fmt.color}">${fmt.text}</div>
+            <div class="ts-detail">Target: $${at.target_mean?.toFixed(2)} · Implied: ${at.implied_return_pct > 0 ? '+' : ''}${at.implied_return_pct}%</div>
+        </div>`;
+    }
+
+    if (comps.eps_growth) {
+        const eg = comps.eps_growth;
+        const fmt = fmtTilt(eg.tilt);
+        signals += `<div class="tilt-signal">
+            <div class="ts-name">EPS Growth Estimate</div>
+            <div class="ts-value" style="color:${fmt.color}">${fmt.text}</div>
+            <div class="ts-detail">Forward EPS growth: ${eg.growth_pct > 0 ? '+' : ''}${eg.growth_pct}%</div>
+        </div>`;
+    }
+
+    if (comps.insider) {
+        const ins = comps.insider;
+        const fmt = fmtTilt(ins.tilt);
+        const sigColor = ins.signal === 'bullish' ? 'var(--green)' : ins.signal === 'bearish' ? 'var(--red)' : 'var(--amber)';
+        signals += `<div class="tilt-signal">
+            <div class="ts-name">Insider Trading</div>
+            <div class="ts-value" style="color:${fmt.color}">${fmt.text}</div>
+            <div class="ts-detail">Net ratio: ${ins.net_ratio?.toFixed(2)} · <span style="color:${sigColor}">${ins.signal}</span></div>
+        </div>`;
+    }
+
+    if (comps.macro) {
+        const mac = comps.macro;
+        const fmt = fmtTilt(mac.tilt);
+        const regColor = mac.regime === 'risk_on' ? 'var(--green)' : mac.regime === 'crisis' ? 'var(--red)' : mac.regime === 'risk_off' ? 'var(--red)' : 'var(--amber)';
+        signals += `<div class="tilt-signal">
+            <div class="ts-name">Macro Regime (FRED)</div>
+            <div class="ts-value" style="color:${fmt.color}">${fmt.text}</div>
+            <div class="ts-detail">Regime: <span style="color:${regColor}">${mac.regime}</span> · Score: ${mac.score}</div>
+        </div>`;
+    }
+
+    if (comps.recommendation) {
+        const rec = comps.recommendation;
+        const fmt = fmtTilt(rec.tilt);
+        const cColor = rec.consensus === 'buy' ? 'var(--green)' : rec.consensus === 'sell' ? 'var(--red)' : 'var(--amber)';
+        signals += `<div class="tilt-signal">
+            <div class="ts-name">Analyst Recs (Finnhub)</div>
+            <div class="ts-value" style="color:${fmt.color}">${fmt.text}</div>
+            <div class="ts-detail">${rec.buy} buy / ${rec.hold} hold / ${rec.sell} sell · <span style="color:${cColor};text-transform:capitalize">${rec.consensus}</span></div>
+        </div>`;
+    }
+
+    if (comps.put_call_contra) {
+        const pc = comps.put_call_contra;
+        const fmt = fmtTilt(pc.tilt);
+        const mood = pc.ratio > 1.0 ? 'Fearful (bullish contra)' : pc.ratio < 0.7 ? 'Complacent (bearish contra)' : 'Neutral';
+        signals += `<div class="tilt-signal">
+            <div class="ts-name">Put/Call Contra</div>
+            <div class="ts-value" style="color:${fmt.color}">${fmt.text}</div>
+            <div class="ts-detail">P/C: ${pc.ratio} · ${mood}</div>
+        </div>`;
+    }
+
+    if (comps.public_pulse) {
+        const pp = comps.public_pulse;
+        const fmt = fmtTilt(pp.tilt);
+        const scoreColor = pp.composite_score > 0.1 ? 'var(--green)' : pp.composite_score < -0.1 ? 'var(--red)' : 'var(--amber)';
+        const sign = pp.composite_score >= 0 ? '+' : '';
+        signals += `<div class="tilt-signal">
+            <div class="ts-name">Public Pulse</div>
+            <div class="ts-value" style="color:${fmt.color}">${fmt.text}</div>
+            <div class="ts-detail">Composite: <span style="color:${scoreColor}">${sign}${pp.composite_score}</span> · ${pp.active_sources}/${pp.total_sources} sources</div>
+        </div>`;
+    }
+
+    // If no fundamental components but macro exists
+    if (!comps.analyst_target && !comps.eps_growth && !comps.insider && !comps.macro && !comps.recommendation && !comps.put_call_contra && !comps.public_pulse) {
+        signals += `<div class="tilt-signal" style="grid-column: span 3">
+            <div class="ts-name">No Fundamental Signals</div>
+            <div class="ts-value" style="color:var(--text-muted)">—</div>
+            <div class="ts-detail">Add FMP + Finnhub API keys to activate analyst targets, EPS estimates, and insider trading signals</div>
+        </div>`;
+    }
+
+    // Total tilt
+    const totalTilt = ds.total_mu_tilt || 0;
+    const totalFmt = fmtTilt(totalTilt);
+    const totalPct = (totalTilt * 100).toFixed(3);
+
+    // Provider badges
+    const providers = ds.providers_active || {};
+    let badges = '';
+    for (const [name, active] of Object.entries(providers)) {
+        badges += `<span class="tp-badge ${active ? 'tp-active' : 'tp-inactive'}">${name}</span>`;
+    }
+    if (ds.macro_regime) {
+        badges += `<span class="tp-badge tp-active">Macro: ${ds.macro_regime}</span>`;
+    }
+
+    $('tiltContent').innerHTML = `
+        <div class="tilt-grid">${signals}</div>
+        <div class="tilt-total">
+            <div>
+                <div class="tt-label">Combined Drift Tilt</div>
+                <div class="tt-sub">${totalTilt > 0 ? '+' : ''}${totalPct}% annualized · Applied to Monte Carlo drift</div>
+            </div>
+            <div class="tt-value" style="color:${totalFmt.color}">${totalFmt.text}</div>
+        </div>
+        <div class="tilt-providers">${badges}</div>`;
+}
+
+function renderPublicPulse(f) {
+    // Public Pulse signal retired 2026-04-15 — backtest showed noise on 2023-2025 data,
+    // and 2 of 4 upstream sources (pytrends, GDELT rate limits) are unreliable in prod.
+    // Panel permanently hidden; composite value still computed server-side for research.
+    const card = $('publicPulseCard');
+    if (card) card.style.display = 'none';
+    return;
+
+    const composite = raw.composite_score;
+    const scoreColor = composite > 0.1 ? 'var(--green)' : composite < -0.1 ? 'var(--red)' : 'var(--amber)';
+    const scoreSign = composite == null ? '' : composite >= 0 ? '+' : '';
+    const mood = composite == null ? 'N/A' : composite > 0.1 ? 'BULLISH' : composite < -0.1 ? 'BEARISH' : 'NEUTRAL';
+    const tiltBps = comp ? `${comp.tilt >= 0 ? '+' : ''}${(comp.tilt * 10000).toFixed(1)} bps` : '—';
+    const tiltColor = !comp ? 'var(--text-muted)' : comp.tilt > 0.0001 ? 'var(--green)' : comp.tilt < -0.0001 ? 'var(--red)' : 'var(--amber)';
+
+    const niceName = {
+        google_trends: 'Google Trends',
+        wikipedia: 'Wikipedia',
+        gdelt: 'GDELT (news tone)',
+        broad_reddit: 'Broad Reddit',
+        michigan_csi: 'Michigan CSI'
+    };
+
+    let rows = '';
+    for (const c of raw.components) {
+        const active = c.normalised != null;
+        const rowColor = !active ? 'var(--text-muted)' : c.normalised > 0.05 ? 'var(--green)' : c.normalised < -0.05 ? 'var(--red)' : 'var(--amber)';
+        const normTxt = active ? `${c.normalised >= 0 ? '+' : ''}${c.normalised.toFixed(3)}` : '—';
+        const barPct = active ? Math.min(100, Math.abs(c.normalised) * 100) : 0;
+        const barSide = active && c.normalised < 0 ? 'var(--red)' : 'var(--green)';
+        const srcName = niceName[c.source] || c.source;
+        const rawTxt = c.raw_value != null ? c.raw_value : '—';
+        rows += `<div class="pp-row">
+            <div class="pp-r-src">
+                <div class="pp-r-name">${srcName}</div>
+                <div class="pp-r-note">${c.note || ''}</div>
+            </div>
+            <div class="pp-r-bar">
+                <div class="pp-r-bar-fill" style="width:${barPct}%;background:${barSide}"></div>
+            </div>
+            <div class="pp-r-score" style="color:${rowColor}">${normTxt}</div>
+            <div class="pp-r-raw">${rawTxt}</div>
+        </div>`;
+    }
+
+    $('publicPulseContent').innerHTML = `
+        <div class="pp-hero">
+            <div class="pp-hero-score" style="color:${scoreColor}">${scoreSign}${composite != null ? composite.toFixed(2) : '—'}</div>
+            <div class="pp-hero-meta">
+                <div class="pp-hero-mood" style="color:${scoreColor}">${mood}</div>
+                <div class="pp-hero-sources">${raw.active_sources}/${raw.total_sources} sources active</div>
+            </div>
+            <div class="pp-hero-tilt">
+                <div class="pp-hero-tilt-label">Drift contribution</div>
+                <div class="pp-hero-tilt-val" style="color:${tiltColor}">${tiltBps}</div>
+            </div>
+        </div>
+        <div class="pp-rows">${rows}</div>`;
+}
+
+function renderEarningsProximity(f) {
+    const ep = f.earnings_proximity;
+    const card = $('earnProxCard');
+    if (!ep || !ep.active) { card.style.display = 'none'; return; }
+    card.style.display = '';
+    const days = ep.days_to_earnings;
+    const mult = ep.sigma_mult;
+    const urgency = days <= 3 ? 'var(--red)' : days <= 10 ? 'var(--amber)' : 'var(--green)';
+    $('earnProxContent').innerHTML = `
+        <div class="ep-row">
+            <div class="ep-icon">📅</div>
+            <div class="ep-body">
+                <div class="ep-title">Earnings in <span style="color:${urgency}">${days} days</span> (${ep.earnings_date})</div>
+                <div class="ep-sub">Projection bands widened ×${mult} to reflect known volatility event</div>
+            </div>
+            <div class="ep-mult" style="color:${urgency}">σ × ${mult}</div>
+        </div>`;
+}
+
+// ── Downsample for smoother chart ──
+function downsample(arr, maxPoints) {
+    if (arr.length <= maxPoints) return arr;
+    const step = arr.length / maxPoints;
+    const result = [];
+    for (let i = 0; i < maxPoints; i++) result.push(arr[Math.round(i * step)]);
+    if (result[result.length - 1] !== arr[arr.length - 1]) result.push(arr[arr.length - 1]);
+    return result;
+}
+
+function renderChart(d) {
+    $('chartCard').style.display = '';
+
+    const curves = typeof d.curves_json === 'string' ? JSON.parse(d.curves_json) : d.curves_json;
+    const hist = typeof d.hist_json === 'string' ? JSON.parse(d.hist_json) : d.hist_json;
+    const projDates = typeof d.proj_dates_json === 'string' ? JSON.parse(d.proj_dates_json) : d.proj_dates_json;
+    const mrEq = typeof d.mr_eq_json === 'string' ? JSON.parse(d.mr_eq_json) : d.mr_eq_json;
+
+    const C = {
+        p90: '#4ade80', p75: '#2dd4bf', median: '#fbbf24',
+        p25: '#f97316', p10: '#f87171', mr: '#a78bfa',
+        hist: '#9cb3a4', muted: '#5f7d6a', grid: 'rgba(42,68,52,0.3)',
+        label: '#e8f0eb',
+    };
+
+    // Downsample projection for smoothness (max 120 pts)
+    const dsIdx = (arr) => {
+        if (arr.length <= 120) return arr.map((_, i) => i);
+        const step = arr.length / 120;
+        const idxs = [];
+        for (let i = 0; i < 120; i++) idxs.push(Math.round(i * step));
+        if (idxs[idxs.length - 1] !== arr.length - 1) idxs.push(arr.length - 1);
+        return idxs;
+    };
+    const sampleIdxs = dsIdx(curves.p50);
+
+    const histSeries = hist.dates.map((dt, i) => [new Date(dt).getTime(), hist.closes[i]]);
+    const lastHistDate = new Date(hist.dates[hist.dates.length - 1]).getTime();
+
+    const makeSeries = (arr) => {
+        const pts = [[lastHistDate, d.current_price]];
+        for (const i of sampleIdxs) pts.push([new Date(projDates[i]).getTime(), arr[i]]);
+        return pts;
+    };
+
+    const series = [
+        { name: 'Historical',     type: 'line', data: histSeries },
+        { name: '90th — Bull',    type: 'line', data: makeSeries(curves.p90) },
+        { name: '75th — Upside',  type: 'line', data: makeSeries(curves.p75) },
+        { name: 'Median (50th)',  type: 'line', data: makeSeries(curves.p50) },
+        { name: '25th — Downside',type: 'line', data: makeSeries(curves.p25) },
+        { name: '10th — Bear',    type: 'line', data: makeSeries(curves.p10) },
+    ];
+    if (mrEq) {
+        series.push({ name: 'MR Equilibrium', type: 'line', data: makeSeries(mrEq) });
+    }
+
+    const colors = [C.hist, C.p90, C.p75, C.median, C.p25, C.p10];
+    const dashes = [0, 4, 2, 0, 2, 4];
+    const widths = [1.5, 2, 2, 3.5, 2, 2];
+    if (mrEq) { colors.push(C.mr); dashes.push(8); widths.push(2); }
+
+    // Point annotations: end-of-line labels + milestone labels
+    const points = [];
+    const lastIdx = curves.p50.length - 1;
+    const endDate = new Date(projDates[lastIdx]).getTime();
+
+    const endLabel = (color, val) => ({
+        x: endDate, y: val,
+        marker: { size: 4, fillColor: color, strokeColor: color, strokeWidth: 0 },
+        label: {
+            borderColor: 'transparent', offsetX: 8, offsetY: 0,
+            style: { background: 'transparent', color: color, fontSize: '11px', fontWeight: 700, fontFamily: "'Inter', sans-serif" },
+            text: fmtPrice(val),
+        },
+    });
+    points.push(endLabel(C.p90, curves.p90[lastIdx]));
+    points.push(endLabel(C.p75, curves.p75[lastIdx]));
+    points.push(endLabel(C.median, curves.p50[lastIdx]));
+    points.push(endLabel(C.p25, curves.p25[lastIdx]));
+    points.push(endLabel(C.p10, curves.p10[lastIdx]));
+
+    // Milestone median labels (1M, 3M, 6M) — skip if too close to horizon end
+    for (const m of [{ days: 21, label: '1M' }, { days: 63, label: '3M' }, { days: 126, label: '6M' }]) {
+        const idx = m.days - 1;
+        if (idx < 0 || idx > lastIdx - 10) continue;
+        points.push({
+            x: new Date(projDates[idx]).getTime(), y: curves.p50[idx],
+            marker: { size: 5, fillColor: C.median, strokeColor: '#0a1410', strokeWidth: 2 },
+            label: {
+                borderColor: C.median, borderWidth: 1, offsetY: -14,
+                style: { background: '#0f1d14', color: C.median, fontSize: '10px', fontWeight: 700,
+                    fontFamily: "'Inter', sans-serif", padding: { left: 6, right: 6, top: 3, bottom: 3 } },
+                text: fmtPrice(curves.p50[idx]),
+            },
+        });
+    }
+
+    // X-axis annotations: TODAY line + milestone vertical guides
+    const xAnnots = [{
+        x: lastHistDate, strokeDashArray: 0, borderColor: '#3d8b5e', borderWidth: 2,
+        label: { text: 'TODAY', orientation: 'horizontal', position: 'top', offsetY: -2,
+            borderColor: 'transparent',
+            style: { background: '#142419', color: C.label, fontSize: '10px', fontWeight: 800,
+                fontFamily: "'Inter', sans-serif", padding: { left: 8, right: 8, top: 3, bottom: 3 } } },
+    }];
+    for (const m of [{ days: 21, label: '1M' }, { days: 63, label: '3M' }, { days: 126, label: '6M' }, { days: 252, label: '1Y' }]) {
+        if (m.days - 1 > lastIdx) continue;
+        xAnnots.push({
+            x: new Date(projDates[m.days - 1]).getTime(), borderColor: C.grid, strokeDashArray: 3, borderWidth: 1,
+            label: { text: m.label, orientation: 'horizontal', position: 'top', offsetY: -2, borderColor: 'transparent',
+                style: { background: 'transparent', color: C.muted, fontSize: '10px', fontWeight: 700, fontFamily: "'Inter', sans-serif" } },
+        });
+    }
+
+    // Bet size for tooltip
+    const betSize = parseInt(($('betInput').value || '0').replace(/[^0-9]/g, '')) || 0;
+
+    const opts = {
+        chart: {
+            type: 'line', height: 520, background: 'transparent',
+            toolbar: { show: false }, zoom: { enabled: false },
+            animations: { enabled: true, easing: 'easeinout', speed: 500 },
+            fontFamily: "'Inter', sans-serif",
+        },
+        series, colors,
+        stroke: {
+            curve: ['straight', 'smooth', 'smooth', 'smooth', 'smooth', 'smooth', ...(mrEq ? ['smooth'] : [])],
+            width: widths, dashArray: dashes,
+        },
+        markers: { size: 0 },
+        dataLabels: { enabled: false },
+        annotations: { xaxis: xAnnots, points: points },
+        xaxis: {
+            type: 'datetime',
+            labels: { style: { colors: C.muted, fontSize: '11px', fontFamily: "'Inter', sans-serif", fontWeight: 600 },
+                datetimeUTC: false, datetimeFormatter: { year: 'yyyy', month: "MMM ''yy", day: 'MMM dd' } },
+            axisBorder: { show: true, color: C.grid }, axisTicks: { show: true, color: C.grid },
+            tooltip: { enabled: false },
+        },
+        yaxis: {
+            labels: { style: { colors: C.muted, fontSize: '11px', fontFamily: "'Inter', sans-serif", fontWeight: 600 }, formatter: fmtPrice },
+            title: { text: 'Price (USD)', style: { color: C.muted, fontSize: '11px', fontWeight: 600, fontFamily: "'Inter', sans-serif" } },
+            forceNiceScale: true,
+        },
+        grid: {
+            borderColor: C.grid, strokeDashArray: 3,
+            xaxis: { lines: { show: false } }, yaxis: { lines: { show: true } },
+            padding: { left: 12, right: 64, top: 8, bottom: 24 },
+        },
+        tooltip: {
+            theme: 'dark', shared: true, intersect: false,
+            style: { fontSize: '12px', fontFamily: "'Inter', sans-serif" },
+            x: { format: 'MMM dd, yyyy' },
+            y: { formatter: function(val, opts) {
+                if (val == null) return '';
+                const sIdx = opts?.seriesIndex;
+                if (sIdx === 0) return fmtPrice(val);
+                const pct = ((val - d.current_price) / d.current_price * 100);
+                const sign = pct >= 0 ? '+' : '';
+                if (betSize > 0) {
+                    const dollarChg = betSize * (val - d.current_price) / d.current_price;
+                    return `${fmtPrice(val)} (${sign}${pct.toFixed(1)}% | ${dollarChg >= 0 ? '+' : '-'}$${Math.abs(dollarChg).toFixed(0)})`;
+                }
+                return `${fmtPrice(val)} (${sign}${pct.toFixed(1)}%)`;
+            }},
+            marker: { show: true },
+        },
+        legend: {
+            show: true, position: 'top', horizontalAlign: 'center',
+            labels: { colors: C.label, useSeriesColors: false },
+            fontFamily: "'Inter', sans-serif", fontSize: '12px', fontWeight: 600,
+            markers: { width: 14, height: 14, radius: 7, offsetX: -2, offsetY: 2 },
+            itemMargin: { horizontal: 12, vertical: 6 },
+            onItemClick: { toggleDataSeries: true },
+        },
+        fill: { type: 'solid', opacity: 1 },
+    };
+
+    if (chart) chart.destroy();
+    chart = new ApexCharts($('chartWrap'), opts);
+    chart.render();
+}
+
+// ── Bet Sizing Panel ──
+function renderBetPanel(d) {
+    const betSize = parseInt(($('betInput').value || '0').replace(/[^0-9]/g, '')) || 0;
+    if (!betSize) { $('betPanel').style.display = 'none'; return; }
+
+    $('betPanel').style.display = '';
+    const curves = typeof d.curves_json === 'string' ? JSON.parse(d.curves_json) : d.curves_json;
+    const projDates = typeof d.proj_dates_json === 'string' ? JSON.parse(d.proj_dates_json) : d.proj_dates_json;
+    const lastIdx = curves.p50.length - 1;
+    const cp = d.current_price;
+
+    const horizonDate = new Date(projDates[lastIdx]);
+    $('betSizeLabel').textContent = '$' + betSize.toLocaleString();
+    $('betHorizonLabel').textContent = `at ${horizonDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+
+    const fmt = v => '$' + Math.round(v).toLocaleString();
+    const setCell = (idV, idP, px) => {
+        const ret = (px - cp) / cp;
+        const outcome = betSize * (1 + ret);
+        const dollarChg = betSize * ret;
+        const sign = dollarChg >= 0 ? '+' : '-';
+        $(idV).textContent = fmt(outcome);
+        const el = $(idP);
+        el.textContent = `${sign}${fmt(Math.abs(dollarChg))} (${ret >= 0 ? '+' : ''}${(ret * 100).toFixed(1)}%)`;
+        el.className = 'bp ' + (ret >= 0 ? 'green' : 'red');
+    };
+
+    setCell('betP10', 'betP10pct', curves.p10[lastIdx]);
+    setCell('betP25', 'betP25pct', curves.p25[lastIdx]);
+    setCell('betP50', 'betP50pct', curves.p50[lastIdx]);
+    setCell('betP75', 'betP75pct', curves.p75[lastIdx]);
+    setCell('betP90', 'betP90pct', curves.p90[lastIdx]);
+
+    const medRet = (curves.p50[lastIdx] - cp) / cp;
+    const medOutcome = betSize * (1 + medRet);
+    const lowOutcome = betSize * (curves.p10[lastIdx] / cp);
+    const highOutcome = betSize * (curves.p90[lastIdx] / cp);
+    $('betFooter').innerHTML =
+        `Your <strong>${fmt(betSize)}</strong> position most likely lands near <strong>${fmt(medOutcome)}</strong> ` +
+        `(${medRet >= 0 ? '+' : ''}${(medRet * 100).toFixed(1)}%). ` +
+        `The 80% confidence range: <strong>${fmt(lowOutcome)}</strong> to <strong>${fmt(highOutcome)}</strong> — ` +
+        `prepare for any outcome in that band.`;
+}
+
+function renderMilestones(d) {
+    $('milestoneCard').style.display = '';
+    const milestones = typeof d.milestones_json === 'string' ? JSON.parse(d.milestones_json) : d.milestones_json;
+    const body = $('milestoneBody');
+    body.innerHTML = '';
+    for (const m of milestones) {
+        const retColor = m.ret_pct >= 0 ? 'color:var(--green)' : 'color:var(--red)';
+        body.innerHTML += `<tr>
+            <td>${m.label}</td><td>${m.date}</td>
+            <td style="color:var(--red)">${fmtPrice(m.p10)}</td>
+            <td style="color:var(--p25)">${fmtPrice(m.p25)}</td>
+            <td style="color:var(--amber);font-weight:700">${fmtPrice(m.p50)}</td>
+            <td>${fmtPrice(m.p75)}</td>
+            <td style="color:var(--green)">${fmtPrice(m.p90)}</td>
+            <td style="${retColor};font-weight:600">${fmtPct(m.ret_pct)}</td>
+        </tr>`;
+    }
+}
+
+function renderMomentum(f) {
+    const hasMom = f.chg_30d != null;
+    $('momentumRow').style.display = hasMom ? '' : 'none';
+    if (!hasMom) return;
+
+    const arrow = v => v > 0 ? '\u25B2' : v < 0 ? '\u25BC' : '\u25CF';
+    const cls = v => v > 0 ? 'up' : v < 0 ? 'down' : 'flat';
+    const fmtChg = v => v != null ? `${v >= 0 ? '+' : ''}${v.toFixed(1)}%` : 'N/A';
+
+    // Trend sub-indicators on stat boxes
+    const chg30 = f.chg_30d;
+    $('stPriceTrend').className = `trend ${cls(chg30)}`;
+    $('stPriceTrend').innerHTML = `${arrow(chg30)} ${fmtChg(chg30)} <span style="color:var(--text-muted)">(30d)</span>`;
+
+    // P/E trend approximated from price change (EPS is quarterly)
+    $('stPETrend').className = `trend ${cls(chg30)}`;
+    $('stPETrend').innerHTML = `${arrow(chg30)} ${fmtChg(chg30)} <span style="color:var(--text-muted)">(30d)</span>`;
+
+    // Market cap trend = price trend
+    $('stMcapTrend').className = `trend ${cls(chg30)}`;
+    $('stMcapTrend').innerHTML = `${arrow(chg30)} ${fmtChg(chg30)} <span style="color:var(--text-muted)">(30d)</span>`;
+
+    // Momentum boxes
+    const momBox = (el, label, val, sub, term) => {
+        const c = cls(val);
+        const barPct = Math.min(100, Math.abs(val || 0) * 2);
+        const barColor = c === 'up' ? 'var(--green)' : c === 'down' ? 'var(--red)' : 'var(--text-muted)';
+        el.innerHTML = `
+            <div class="label">${label} ${term ? info(term) : ''}</div>
+            <div class="value" style="color:${barColor}">${arrow(val)} ${fmtChg(val)}</div>
+            <div class="trend-bar"><div class="fill" style="width:${barPct}%;background:${barColor}"></div></div>
+            <div class="sub">${sub}</div>`;
+    };
+
+    momBox($('mom30'), '30-Day', f.chg_30d, 'Short-term', '30d Change');
+    momBox($('mom60'), '60-Day', f.chg_60d, 'Medium-term', '60d Change');
+    momBox($('mom90'), '90-Day', f.chg_90d, 'Quarterly', '90d Change');
+
+    // Signal box — overall assessment
+    const ts = f.trend_score;
+    const rsi = f.rsi_14;
+    const offHigh = f.off_high_pct;
+    let signalLabel, signalColor;
+    if (ts >= 0.5) { signalLabel = 'Strong Uptrend'; signalColor = 'var(--green)'; }
+    else if (ts > 0) { signalLabel = 'Mild Uptrend'; signalColor = 'var(--green)'; }
+    else if (ts === 0) { signalLabel = 'Neutral'; signalColor = 'var(--amber)'; }
+    else if (ts > -0.5) { signalLabel = 'Mild Downtrend'; signalColor = 'var(--red)'; }
+    else { signalLabel = 'Strong Downtrend'; signalColor = 'var(--red)'; }
+
+    const rsiLabel = rsi != null ? (rsi > 70 ? 'Overbought' : rsi < 30 ? 'Oversold' : 'Neutral') : '';
+    const rsiColor = rsi > 70 ? 'var(--red)' : rsi < 30 ? 'var(--green)' : 'var(--text-muted)';
+
+    $('momSignal').innerHTML = `
+        <div class="label">Trend Signal ${info('Trend Score')}</div>
+        <div class="value" style="color:${signalColor};font-size:15px">${signalLabel}</div>
+        <div style="margin-top:8px;font-size:11px">
+            <span style="color:var(--text-muted)">RSI(14) ${info('RSI (14)')}:</span>
+            <span style="color:${rsiColor};font-weight:600">${rsi?.toFixed(0) ?? 'N/A'} ${rsiLabel}</span>
+        </div>
+        <div style="margin-top:4px;font-size:11px">
+            <span style="color:var(--text-muted)">Off 52w High ${info('Off High')}:</span>
+            <span style="color:${offHigh > -5 ? 'var(--green)' : offHigh > -20 ? 'var(--amber)' : 'var(--red)'};font-weight:600">${offHigh?.toFixed(1)}%</span>
+        </div>`;
+}
+
+function renderSentimentIntel(d) {
+    const f = typeof d.fundamentals_json === 'string' ? JSON.parse(d.fundamentals_json) : (d.fundamentals_json || {});
+    const tilt = f.sentiment_tilt || {};
+    const hasTilt = tilt.active || tilt.n_days > 0;
+    const hasLive = d.sent_tagged && d.sent_tagged > 0;
+
+    // Sentiment data deprecated — hide unless we actually have WSB/FinBERT live feed.
+    // (Signal died post-2023 per forensic backtest; data no longer shipped to prod.)
+    if (!hasTilt && !hasLive) { $('sentIntel').style.display = 'none'; return; }
+    $('sentIntel').style.display = '';
+
+    // ─── Left: WSB/Reddit Sentiment Tilt ───
+    if (tilt.active) {
+        const score = tilt.avg_score || 0;
+        const scorePct = Math.min(100, Math.max(0, (score + 1) / 2 * 100)); // map -1..+1 to 0..100
+        const ringCirc = 2 * Math.PI * 30; // r=30
+        const ringOffset = ringCirc - (scorePct / 100) * ringCirc;
+        const scoreColor = score > 0.1 ? 'var(--green)' : score < -0.1 ? 'var(--red)' : 'var(--amber)';
+        const dirLabel = score > 0.1 ? 'Bullish' : score < -0.1 ? 'Bearish' : 'Neutral';
+        const tiltBps = (tilt.mu_tilt * 10000).toFixed(1); // basis points
+        const tiltPctAnn = (tilt.mu_tilt * 100).toFixed(3);
+        const tiltDir = tilt.mu_tilt > 0 ? '+' : '';
+
+        $('sentTiltContent').innerHTML = `
+            <div class="sent-active-badge"><div class="dot"></div> ACTIVE — Tilting Projections</div>
+            <div class="sent-gauge">
+                <div class="sent-score-ring">
+                    <svg viewBox="0 0 72 72">
+                        <circle class="ring-bg" />
+                        <circle class="ring-fg" style="stroke:${scoreColor};stroke-dasharray:${ringCirc};stroke-dashoffset:${ringOffset}" />
+                    </svg>
+                    <div class="ring-value" style="color:${scoreColor}">${score.toFixed(2)}</div>
+                </div>
+                <div class="sent-gauge-detail">
+                    <div class="sent-label" style="color:${scoreColor}">${dirLabel}</div>
+                    <div class="sent-sub">Trailing ${tilt.lookback}-day average from ${tilt.n_days} days of WSB/Reddit data via FinBERT NLP</div>
+                </div>
+            </div>
+            <div class="sent-tilt-impact">
+                <div class="tilt-row"><span class="tl">Drift Adjustment</span><span class="tv" style="color:${scoreColor}">${tiltDir}${tiltPctAnn}% annual</span></div>
+                <div class="tilt-row"><span class="tl">Impact (bps)</span><span class="tv" style="color:${scoreColor}">${tiltDir}${tiltBps} bps</span></div>
+                <div class="tilt-row"><span class="tl">Applied To</span><span class="tv">Monte Carlo drift only</span></div>
+                <div class="tilt-row"><span class="tl">Config</span><span class="tv">L${tilt.lookback} / S${(0.005).toFixed(3)}</span></div>
+            </div>`;
+    } else {
+        const reason = tilt.n_days === 0 ? 'No sentiment data available for this symbol'
+            : tilt.n_days < 3 ? `Only ${tilt.n_days} day(s) — need 3+ for tilt activation`
+            : 'Sentiment data too stale';
+        $('sentTiltContent').innerHTML = `
+            <div class="sent-inactive-badge"><div class="dot"></div> INACTIVE — Using Base Model</div>
+            <div class="sent-gauge">
+                <div class="sent-score-ring">
+                    <svg viewBox="0 0 72 72">
+                        <circle class="ring-bg" />
+                    </svg>
+                    <div class="ring-value" style="color:var(--text-muted)">—</div>
+                </div>
+                <div class="sent-gauge-detail">
+                    <div class="sent-label" style="color:var(--text-muted)">No Tilt</div>
+                    <div class="sent-sub">${reason}. Projection uses base MC+MR blend without sentiment adjustment.</div>
+                </div>
+            </div>
+            <div class="sent-tilt-impact">
+                <div class="tilt-row"><span class="tl">Drift Adjustment</span><span class="tv" style="color:var(--text-muted)">0.000%</span></div>
+                <div class="tilt-row"><span class="tl">Impact</span><span class="tv" style="color:var(--text-muted)">None</span></div>
+                <div class="tilt-row"><span class="tl">Model</span><span class="tv">Base MC+MR blend (30/70)</span></div>
+                <div class="tilt-row"><span class="tl">To Activate</span><span class="tv">Collect fresh WSB data</span></div>
+            </div>`;
+    }
+
+    // ─── Right: Live StockTwits ───
+    if (hasLive) {
+        const bull = d.sent_bull || 0;
+        const bear = d.sent_bear || 0;
+        const tagged = d.sent_tagged || 1;
+        const bullPct = (bull / tagged * 100).toFixed(0);
+        const bearPct = (bear / tagged * 100).toFixed(0);
+        const net = d.sent_net;
+        const netColor = net > 0.1 ? 'var(--green)' : net < -0.1 ? 'var(--red)' : 'var(--amber)';
+        const netLabel = net > 0.1 ? 'Bullish' : net < -0.1 ? 'Bearish' : 'Mixed';
+
+        // Build a simple ring for net score too
+        const netPct = Math.min(100, Math.max(0, (net + 1) / 2 * 100));
+        const ringCirc = 2 * Math.PI * 30;
+        const ringOffset = ringCirc - (netPct / 100) * ringCirc;
+
+        $('sentLiveContent').innerHTML = `
+            <div class="sent-gauge">
+                <div class="sent-score-ring">
+                    <svg viewBox="0 0 72 72">
+                        <circle class="ring-bg" />
+                        <circle class="ring-fg" style="stroke:${netColor};stroke-dasharray:${ringCirc};stroke-dashoffset:${ringOffset}" />
+                    </svg>
+                    <div class="ring-value" style="color:${netColor}">${net?.toFixed(2) ?? '—'}</div>
+                </div>
+                <div class="sent-gauge-detail">
+                    <div class="sent-label" style="color:${netColor}">${netLabel}</div>
+                    <div class="sent-sub">${tagged} tagged messages from StockTwits (real-time)</div>
+                </div>
+            </div>
+            <div class="st-bar-wrap"><div class="st-bar-fill" style="width:${bullPct}%"></div></div>
+            <div class="st-stats">
+                <span style="color:var(--green)">${bullPct}% bullish (${bull})</span>
+                <span style="color:var(--red)">${bearPct}% bearish (${bear})</span>
+            </div>
+            <div class="st-footer">Live feed — does not affect model projections, for context only</div>`;
+    } else {
+        $('sentLiveContent').innerHTML = `
+            <div class="sent-gauge">
+                <div class="sent-score-ring">
+                    <svg viewBox="0 0 72 72">
+                        <circle class="ring-bg" />
+                    </svg>
+                    <div class="ring-value" style="color:var(--text-muted)">—</div>
+                </div>
+                <div class="sent-gauge-detail">
+                    <div class="sent-label" style="color:var(--text-muted)">No Data</div>
+                    <div class="sent-sub">StockTwits data unavailable for this symbol. This doesn't affect projections.</div>
+                </div>
+            </div>
+            <div class="st-footer">Live sentiment is informational only — not used in model calculations</div>`;
+    }
+}
+
+function renderDiag(d) {
+    $('diagCard').style.display = '';
+    const fn = typeof d.fundamentals_json === 'string' ? JSON.parse(d.fundamentals_json) : (d.fundamentals_json || {});
+    const items = [
+        ['VIX Regime', d.vix_regime ? `${d.vix_value} (${d.vix_regime})` : 'N/A', 'VIX Regime'],
+        ['VIX Multiplier', `${d.sigma_mult?.toFixed(2) ?? 'N/A'}`, 'VIX Multiplier'],
+        ['Volatility (ann)', `${(d.sigma * 100).toFixed(1)}%`, 'Volatility (ann.)'],
+        ['Hist Volatility', `${(d.sigma_hist * 100).toFixed(1)}%`, 'Hist. Volatility'],
+        ['Drift (μ)', `${(d.mu * 100).toFixed(2)}%`, 'Drift (μ)'],
+        ['Macro Regime', fn.data_sources?.macro_regime ?? 'N/A', 'Macro Regime'],
+        ['Macro σ Mult', fn.data_sources?.macro_sigma_mult?.toFixed(3) ?? '1.000', 'Macro σ Multiplier'],
+        ['MR Target', d.mr_target ? fmtPrice(d.mr_target) : 'N/A', 'MR Target'],
+        ['MR Kappa', d.mr_kappa?.toFixed(4) ?? 'N/A', 'MR Kappa'],
+        ['Beta', fn.beta?.toFixed(2) ?? 'N/A', 'Beta'],
+        ['52w Range', fn.week52_low && fn.week52_high ? `${fmtPrice(fn.week52_low)} – ${fmtPrice(fn.week52_high)}` : 'N/A', '52-Week Range'],
+        ['Fwd P/E', fn.pe_forward?.toFixed(1) ?? 'N/A', 'Forward P/E'],
+        ['Div Yield', fn.dividend_yield ? `${(fn.dividend_yield * 100).toFixed(2)}%` : 'N/A', 'Dividend Yield'],
+        ['Blend (MC %)', `${((d.blend_mc || 0.3) * 100).toFixed(0)}%`, 'MC Blend'],
+        ['Paths', d.num_paths?.toLocaleString() ?? 'N/A', 'Paths'],
+        ['Compute Time', `${d.compute_secs}s`, 'Compute Time'],
+        ['Price Source', fn.data_sources?.price ?? 'yfinance', 'Data Source'],
+        ['Fund. Source', fn.data_sources?.fundamentals ?? 'yfinance', 'Data Source'],
+    ];
+    $('diagGrid').innerHTML = items.map(([lbl, val, term]) =>
+        `<div class="diag-item"><div class="dl">${lbl}${term ? info(term) : ''}</div><div class="dv">${val}</div></div>`
+    ).join('');
+}
+
+function toggleDiag() {
+    $('diagBody').classList.toggle('open');
+}
+
+// Auto-run on Enter
+$('symbolInput').addEventListener('keydown', e => { if (e.key === 'Enter') runProjection(); });
+
+// Show today's date
+$('metaDate').textContent = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+
+// ── Auth + billing helpers (Clerk + Stripe) ─────────────────────
+
+async function authHeaders() {
+    try {
+        const token = await window.Clerk?.session?.getToken?.();
+        return token ? { Authorization: `Bearer ${token}` } : {};
+    } catch { return {}; }
+}
+
+function updateQuotaFromHeaders(h) {
+    const tier = h.get('X-Quota-Tier');
+    const limit = h.get('X-Quota-Limit');
+    const used = h.get('X-Quota-Used');
+    const remaining = h.get('X-Quota-Remaining');
+    const el = $('quotaBadge');
+    if (!tier) { el.style.display = 'none'; return; }
+    el.style.display = 'inline-block';
+    el.className = 'quota-badge';
+    if (limit === 'unlimited') {
+        el.classList.add('pro');
+        el.textContent = 'Pro · unlimited';
+    } else {
+        if (remaining === '0') el.classList.add('exceeded');
+        el.textContent = `${used || 0} / ${limit} today`;
+    }
+}
+
+function handlePaywall(err) {
+    if (err.tier === 'anonymous' || !window.Clerk?.user) {
+        status('Daily limit reached. Sign in for 3 free projections/day, or upgrade to Pro for unlimited.');
+        openClerkSignIn();
+    } else {
+        status('You\u2019ve used your 3 free projections today. Upgrade to Pro for unlimited.');
+        $('btnGetPro').style.display = 'inline-block';
+    }
+}
+
+async function openClerkSignIn() {
+    if (!window.Clerk) return alert('Auth loading, try again in a moment.');
+    await window.Clerk.openSignIn({ afterSignInUrl: location.pathname, afterSignUpUrl: location.pathname });
+}
+
+async function startCheckout() {
+    if (!window.Clerk?.session) { await openClerkSignIn(); return; }
+    try {
+        const res = await fetch('/api/billing/checkout', {
+            method: 'POST',
+            headers: await authHeaders(),
+        });
+        if (!res.ok) throw new Error((await res.json()).detail || `HTTP ${res.status}`);
+        const { checkout_url } = await res.json();
+        location.href = checkout_url;
+    } catch (e) {
+        status(`Checkout failed: ${e.message}`);
+    }
+}
+
+async function refreshUserPill() {
+    if (!window.Clerk) return;
+    const signedIn = !!window.Clerk.user;
+    $('btnSignIn').style.display = signedIn ? 'none' : 'inline-block';
+    const userSlot = $('userSlot');
+    userSlot.innerHTML = '';
+    if (signedIn) {
+        try {
+            window.Clerk.mountUserButton(userSlot, { afterSignOutUrl: '/' });
+        } catch {}
+    }
+    // Fetch /api/me so the quota badge reflects server truth.
+    try {
+        const res = await fetch('/api/project?symbol=__probe__&horizon=252', { headers: await authHeaders() });
+        updateQuotaFromHeaders(res.headers);
+    } catch {}
+    try {
+        const me = await (await fetch('/api/me', { headers: await authHeaders() })).json();
+        $('btnGetPro').style.display = (signedIn && me.tier !== 'pro') ? 'inline-block' : 'none';
+    } catch {}
+}
+
+// Clerk SDK loads async; wait for it, then wire listeners.
+(function waitForClerk() {
+    if (!window.Clerk?.load) { setTimeout(waitForClerk, 100); return; }
+    window.Clerk.load().then(() => {
+        refreshUserPill();
+        window.Clerk.addListener(() => refreshUserPill());
+        // Handle post-checkout redirect flash.
+        const p = new URLSearchParams(location.search);
+        if (p.get('billing') === 'success') status('Welcome to Pro. Subscription confirmed.');
+        if (p.get('billing') === 'cancel') status('Checkout canceled \u2014 you can try again any time.');
+    });
+})();
+
+</script>
+</body>
+</html>
