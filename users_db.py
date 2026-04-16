@@ -140,8 +140,8 @@ def set_subscription(
     status: Optional[str],
     tier: str,
 ) -> None:
-    """Update subscription state. `tier` must be 'free' or 'pro'."""
-    assert tier in ("free", "pro"), f"bad tier: {tier}"
+    """Update subscription state. `tier` must be 'free' | 'pro' | 'strategist'."""
+    assert tier in ("free", "pro", "strategist"), f"bad tier: {tier}"
     conn.execute(
         """
         UPDATE users SET
@@ -160,6 +160,9 @@ def set_subscription(
 
 FREE_DAILY_PROJECTIONS = 3
 PRO_DAILY_PROJECTIONS = 10
+# Strategist tier ($29/mo) is the top tier: unlimited projections + access to
+# portfolio picks (risk-tiered recommendations). `None` means no daily cap.
+STRATEGIST_DAILY_PROJECTIONS = None
 
 
 def record_usage(
@@ -225,7 +228,20 @@ def projections_in_last_24h(
 
 
 def quota_for_user(user_row: Optional[dict]) -> dict:
-    """Return {'limit': int, 'tier': str}. Pro gets 10/day, free gets 3/day."""
-    if user_row and user_row.get("tier") == "pro":
+    """Return {'limit': int|None, 'tier': str}.
+
+    - strategist: unlimited (None)
+    - pro: 10/day
+    - free / anonymous: 3/day
+    """
+    tier = user_row.get("tier") if user_row else None
+    if tier == "strategist":
+        return {"limit": STRATEGIST_DAILY_PROJECTIONS, "tier": "strategist"}
+    if tier == "pro":
         return {"limit": PRO_DAILY_PROJECTIONS, "tier": "pro"}
     return {"limit": FREE_DAILY_PROJECTIONS, "tier": "free"}
+
+
+def can_access_picks(user_row: Optional[dict]) -> bool:
+    """Portfolio picks are gated to the Strategist tier."""
+    return bool(user_row and user_row.get("tier") == "strategist")

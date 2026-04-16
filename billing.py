@@ -34,14 +34,29 @@ log = logging.getLogger("billing")
 STRIPE_SK = os.getenv("STRIPE_SK", "").strip()
 STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "").strip()
 STRIPE_PRICE_ID_PRO = os.getenv("STRIPE_PRICE_ID_PRO", "").strip()
+STRIPE_PRICE_ID_STRATEGIST = os.getenv("STRIPE_PRICE_ID_STRATEGIST", "").strip()
+
+# Map tier name → price id + canonical tier label written to users.tier
+# when the subscription becomes active. Keep this in sync with
+# users_db.quota_for_user and the landing page pricing copy.
+TIER_PRICES = {
+    "pro": (STRIPE_PRICE_ID_PRO, "pro"),
+    "strategist": (STRIPE_PRICE_ID_STRATEGIST, "strategist"),
+}
 
 if STRIPE_SK:
     stripe.api_key = STRIPE_SK
 
 
-def _require_configured() -> None:
-    if not STRIPE_SK or not STRIPE_PRICE_ID_PRO:
-        raise HTTPException(status_code=503, detail="Billing not configured")
+def _require_configured(tier: str = "pro") -> str:
+    """Resolve the Stripe price id for the requested tier. Raises if unset."""
+    price_id, _ = TIER_PRICES.get(tier, ("", ""))
+    if not STRIPE_SK or not price_id:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Billing not configured for tier '{tier}'",
+        )
+    return price_id
 
 
 def create_checkout_session(
@@ -51,9 +66,10 @@ def create_checkout_session(
     email: str | None,
     success_url: str,
     cancel_url: str,
+    tier: str = "pro",
 ) -> str:
-    """Create a Checkout Session and return its URL for client redirect."""
-    _require_configured()
+    """Create a Checkout Session for the requested tier. Returns redirect URL."""
+    price_id = _require_configured(tier)
 
     user = upsert_user(conn, clerk_user_id, email=email)
     customer_id = user.get("stripe_customer_id")
@@ -69,10 +85,14 @@ def create_checkout_session(
         mode="subscription",
         customer=customer_id,
         client_reference_id=clerk_user_id,
-        line_items=[{"price": STRIPE_PRICE_ID_PRO, "quantity": 1}],
+        line_items=[{"price": price_id, "quantity": 1}],
         success_url=success_url,
         cancel_url=cancel_url,
         allow_promotion_codes=True,
+        # Stamp the requested tier into the session metadata so the webhook
+        # knows which tier to assign when the subscription activates.
+        metadata={"tier": tier},
+        subscription_data={"metadata": {"tier": tier}},
     )
     return session.url
 
@@ -141,7 +161,22 @@ def handle_webhook(
             log.info("Webhook %s: no matching user for customer %s", etype, customer_id)
             return {"ok": True, "type": etype, "skipped": "no_user"}
         status = obj.get("status")
-        tier = "pro" if status in ACTIVE_STATUSES else "free"
+        # Derive tier from subscription metadata (set at checkout) or the
+        # price id on the subscription's first item. Fall back to free when
+        # neither matches — prevents a bad webhook from granting unintended
+        # tier access.
+        tier = "free"
+        if status in ACTIVE_STATUSES:
+            meta_tier = (obj.get("metadata") or {}).get("tier")
+            if meta_tier in ("pro", "strategist"):
+                tier = meta_tier
+            else:
+                items = (obj.get("items") or {}).get("data") or []
+                price_id = items[0].get("price", {}).get("id") if items else None
+                for t_name, (t_price, _) in TIER_PRICES.items():
+                    if price_id and price_id == t_price:
+                        tier = t_name
+                        break
         set_subscription(
             conn,
             user["clerk_user_id"],

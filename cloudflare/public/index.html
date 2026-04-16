@@ -174,7 +174,9 @@ section { padding: 96px 0; }
 .step p { color: var(--text-mid); font-size: 14.5px; }
 @media (max-width: 820px) { .steps { grid-template-columns: 1fr; } }
 .pricing { background: linear-gradient(180deg, var(--bg-base) 0%, var(--bg-deepest) 100%); }
-.price-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+.price-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.price-card.strategist { background: linear-gradient(180deg, var(--bg-surface), rgba(2,40,52,0.35)); border-color: rgba(95,170,197,0.25); }
+.price-card.strategist .tier { color: #d2ddea; }
 .price-card { padding: 40px; border-radius: var(--radius-lg); background: var(--bg-surface); border: 1px solid var(--border); position: relative; }
 .price-card.pro { background: linear-gradient(180deg, var(--bg-surface), rgba(10,101,119,0.18)); border-color: var(--accent-lake); box-shadow: 0 24px 60px -20px rgba(95,170,197,0.25); }
 .price-card .tier { font: 600 13px 'Inter'; color: var(--text-mid); letter-spacing: 0.06em; text-transform: uppercase; }
@@ -188,7 +190,7 @@ section { padding: 96px 0; }
 .price-card .cta { margin-top: 32px; display: flex; }
 .price-card .cta .btn { flex: 1; justify-content: center; }
 .popular-badge { position: absolute; top: -12px; right: 32px; padding: 6px 12px; border-radius: 999px; background: var(--accent-lake); color: var(--bg-deepest); font: 600 11px 'Inter'; letter-spacing: 0.12em; text-transform: uppercase; }
-@media (max-width: 820px) { .price-grid { grid-template-columns: 1fr; } }
+@media (max-width: 1000px) { .price-grid { grid-template-columns: 1fr; } }
 .faq-list { max-width: 880px; }
 .faq-item { padding: 24px 0; border-bottom: 1px solid var(--border); }
 .faq-item h3 { font: 600 18px 'Inter'; margin-bottom: 10px; }
@@ -222,6 +224,7 @@ footer { border-top: 1px solid var(--border); padding: 56px 0 40px; color: var(-
         <div class="nav-links">
             <a href="#how">How it works</a>
             <a href="#edge">The edge</a>
+            <a href="/picks">Picks</a>
             <a href="#pricing">Pricing</a>
             <a href="/app">Open app</a>
         </div>
@@ -320,7 +323,7 @@ footer { border-top: 1px solid var(--border); padding: 56px 0 40px; color: var(-
                 <div class="cta"><a href="/app" class="btn btn-ghost">Start free &rarr;</a></div>
             </div>
             <div class="price-card pro">
-                <span class="popular-badge">Recommended</span>
+                <span class="popular-badge">Popular</span>
                 <div class="tier">Pro</div>
                 <div><span class="price">$8</span><span class="interval">/ month</span></div>
                 <ul class="features">
@@ -329,9 +332,21 @@ footer { border-top: 1px solid var(--border); padding: 56px 0 40px; color: var(-
                     <li>PDF export of every projection</li>
                     <li>Synced watchlist across devices</li>
                     <li>Daily email digest for your watchlist</li>
-                    <li>Early access to new signals as they validate</li>
                 </ul>
-                <div class="cta"><button class="btn btn-primary" onclick="startCheckout()">Get Pro &mdash; cancel anytime</button></div>
+                <div class="cta"><button class="btn btn-primary" onclick="startCheckout('pro')">Get Pro</button></div>
+            </div>
+            <div class="price-card strategist">
+                <div class="tier">Strategist</div>
+                <div><span class="price">$29</span><span class="interval">/ month</span></div>
+                <ul class="features">
+                    <li>Unlimited projections</li>
+                    <li>Portfolio picks by risk tier &mdash; conservative, moderate, aggressive</li>
+                    <li>Daily ranked recommendations from the full Russell 3000 scan</li>
+                    <li>Every Pro feature included</li>
+                    <li>Early access to new signals as they validate</li>
+                    <li>API access for your own tooling</li>
+                </ul>
+                <div class="cta"><button class="btn btn-ghost" onclick="startCheckout('strategist')">Get Strategist</button></div>
             </div>
         </div>
     </div>
@@ -384,10 +399,13 @@ async function openSignIn() {
     if (!window.Clerk) return alert('Auth still loading, try again in a moment.');
     await window.Clerk.openSignIn({ afterSignInUrl: '/app', afterSignUpUrl: '/app' });
 }
-async function startCheckout() {
+async function startCheckout(tier) {
+    tier = tier || 'pro';
     if (!window.Clerk?.session) { return openSignIn(); }
     try {
-        const res = await fetch('/api/billing/checkout', { method: 'POST', headers: await authHeaders() });
+        const res = await fetch(`/api/billing/checkout?tier=${encodeURIComponent(tier)}`, {
+            method: 'POST', headers: await authHeaders()
+        });
         if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || `HTTP ${res.status}`);
         const { checkout_url } = await res.json();
         location.href = checkout_url;

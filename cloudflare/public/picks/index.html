@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Portfolio picks — s-tool</title>
+<meta name="description" content="Risk-tiered stock picks from a nightly scan of the Russell 3000, ranked by forward Sharpe proxy. Strategist tier." />
+<link rel="canonical" href="https://s-tool.io/picks" />
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230A6577'/%3E%3Cpath d='M16 44 L24 32 L34 38 L48 18' stroke='%23D2DDEA' stroke-width='4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" />
+<style>
+:root {
+    --bg-deepest: #0B1006; --bg-base: #111512; --bg-surface: #1F232D;
+    --bg-card: #28303B; --accent-deep: #022834; --accent-alpine: #0A6577;
+    --accent-lake: #5FAAC5; --text-hi: #EDECE6; --text-mid: #9BA1B9;
+    --text-dim: #6B7382; --border: rgba(155,161,185,0.16);
+    --border-strong: rgba(95,170,197,0.35);
+    --radius-md: 16px; --radius-sm: 10px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Inter', sans-serif; background: var(--bg-deepest); color: var(--text-hi); line-height: 1.55; -webkit-font-smoothing: antialiased; }
+a { color: inherit; text-decoration: none; }
+.container { max-width: 1180px; margin: 0 auto; padding: 0 32px; }
+
+nav { position: sticky; top: 0; z-index: 50; backdrop-filter: blur(12px); background: rgba(11,16,6,0.75); border-bottom: 1px solid var(--border); }
+.nav-row { display: flex; align-items: center; justify-content: space-between; padding: 18px 0; }
+.logo { display: flex; align-items: center; gap: 10px; font: 700 18px 'Inter'; letter-spacing: -0.04em; color: var(--text-hi); }
+.logo-mark { width: 28px; height: 28px; border-radius: 7px; background: linear-gradient(135deg, var(--accent-deep), var(--accent-alpine), var(--accent-lake)); display: flex; align-items: center; justify-content: center; }
+.nav-links { display: flex; gap: 24px; font: 500 14px 'Inter'; color: var(--text-mid); }
+.nav-links a:hover { color: var(--text-hi); }
+
+header.hero { padding: 72px 0 56px; }
+.eyebrow { font: 600 11px 'Inter'; color: var(--accent-lake); letter-spacing: 0.22em; text-transform: uppercase; margin-bottom: 20px; display: inline-block; }
+.title { font-family: 'Crimson Text', Georgia, serif; font-size: clamp(36px, 5vw, 56px); font-weight: 400; line-height: 1.08; letter-spacing: -0.02em; }
+.title em { font-style: italic; color: var(--accent-lake); }
+.subtitle { color: var(--text-mid); font-size: 17px; margin-top: 20px; max-width: 60ch; }
+.scan-meta { color: var(--text-dim); font-size: 13px; margin-top: 16px; }
+
+/* Gate card for non-Strategists */
+.gate { padding: 48px 40px; border: 1px solid var(--border-strong); border-radius: 24px; background: linear-gradient(180deg, var(--bg-surface), rgba(2,40,52,0.3)); margin: 48px 0; }
+.gate h2 { font-family: 'Crimson Text', serif; font-weight: 600; font-size: 32px; line-height: 1.15; margin-bottom: 14px; }
+.gate p { color: var(--text-mid); font-size: 16px; max-width: 62ch; margin-bottom: 24px; }
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 14px 26px; border-radius: 999px; font: 500 15px/1 'Inter'; cursor: pointer; transition: all .2s; border: 1px solid transparent; text-decoration: none; white-space: nowrap; background: var(--accent-lake); color: var(--bg-deepest); }
+.btn:hover { background: #82c1d6; transform: translateY(-1px); }
+.btn.ghost { background: transparent; color: var(--text-hi); border-color: var(--border-strong); }
+.btn.ghost:hover { background: rgba(95,170,197,0.08); border-color: var(--accent-lake); }
+
+/* Pick tables */
+.tier-section { margin: 48px 0; }
+.tier-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+.tier-name { font-family: 'Crimson Text', serif; font-size: 28px; font-weight: 600; }
+.tier-name .pill { font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.12em; padding: 4px 10px; border-radius: 999px; margin-left: 12px; text-transform: uppercase; background: rgba(95,170,197,0.14); color: var(--accent-lake); vertical-align: middle; }
+.tier-meta { color: var(--text-mid); font-size: 13px; }
+table.picks { width: 100%; border-collapse: collapse; font-size: 14px; }
+table.picks th { text-align: left; font: 600 11px 'Inter'; color: var(--text-dim); letter-spacing: 0.12em; text-transform: uppercase; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+table.picks td { padding: 12px; border-bottom: 1px dashed var(--border); color: var(--text-mid); }
+table.picks td.sym { color: var(--text-hi); font-weight: 600; font-size: 15px; }
+table.picks td.num { text-align: right; font-variant-numeric: tabular-nums; }
+table.picks td.pos { color: #6ee7b7; }
+table.picks td.neg { color: #fca5a5; }
+.teaser { filter: blur(6px); pointer-events: none; user-select: none; }
+
+.disclaimer { margin-top: 64px; padding: 20px 24px; background: rgba(10,101,119,0.1); border-left: 3px solid var(--accent-alpine); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; color: var(--text-mid); font-size: 14px; }
+
+footer { border-top: 1px solid var(--border); padding: 40px 32px; text-align: center; color: var(--text-dim); font-size: 13px; margin-top: 80px; }
+footer a { color: var(--text-mid); }
+
+@media (max-width: 700px) {
+  table.picks th:nth-child(3), table.picks td:nth-child(3) { display: none; }
+}
+</style>
+<script async
+  data-clerk-publishable-key="pk_test_Zmx1ZW50LW1vbGUtNzEuY2xlcmsuYWNjb3VudHMuZGV2JA"
+  src="https://fluent-mole-71.clerk.accounts.dev/npm/@clerk/clerk-js@5/dist/clerk.browser.js"
+  crossorigin="anonymous"
+></script>
+</head>
+<body>
+
+<nav>
+    <div class="container nav-row">
+        <a href="/" class="logo"><span class="logo-mark"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#EDECE6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 18 9 12 13 16 21 4"></polyline></svg></span><span>s-tool</span></a>
+        <div class="nav-links">
+            <a href="/">Home</a>
+            <a href="/app">App</a>
+            <a href="/how">How it works</a>
+            <a href="/#pricing">Pricing</a>
+        </div>
+    </div>
+</nav>
+
+<header class="hero">
+    <div class="container">
+        <div class="eyebrow">Strategist tier &middot; Portfolio picks</div>
+        <h1 class="title serif">Risk-tiered picks from a <em>full-universe</em> scan.</h1>
+        <p class="subtitle">Every night we run the engine on all 2,609 Russell 3000 tickers, rank by forward Sharpe proxy (expected return &divide; projected volatility), and bucket into three risk tiers. These are ranked outputs of an honest projection engine &mdash; not tips, not calls, not alpha claims. You judge the model's MAPE per ticker yourself.</p>
+        <div class="scan-meta" id="scanMeta">Loading&hellip;</div>
+    </div>
+</header>
+
+<main class="container" id="content"></main>
+
+<footer>
+    <div>&copy; 2026 s-tool.io &nbsp;&middot;&nbsp; <a href="/">Home</a> &nbsp;&middot;&nbsp; <a href="/app">App</a> &nbsp;&middot;&nbsp; Not investment advice.</div>
+</footer>
+
+<script>
+const TIER_COPY = {
+    conservative: { label: 'Conservative', blurb: 'Lower projected volatility, positive expected return, quality screened.' },
+    moderate:     { label: 'Moderate',     blurb: 'Balanced vol and expected return; middle-tercile of projected volatility.' },
+    aggressive:   { label: 'Aggressive',   blurb: 'Higher projected volatility with the largest expected returns.' },
+};
+
+function fmtPct(v) {
+    if (v === null || v === undefined) return '&mdash;';
+    const n = v * 100;
+    return `${n >= 0 ? '+' : ''}${n.toFixed(1)}%`;
+}
+function fmtSharpe(v) {
+    return (v === null || v === undefined) ? '—' : v.toFixed(2);
+}
+
+async function authHeaders() {
+    try { const t = await window.Clerk?.session?.getToken?.(); return t ? { Authorization: `Bearer ${t}` } : {}; } catch { return {}; }
+}
+
+async function startCheckout(tier) {
+    tier = tier || 'strategist';
+    if (!window.Clerk?.session) return window.Clerk?.openSignIn({ afterSignInUrl: '/picks' });
+    try {
+        const res = await fetch(`/api/billing/checkout?tier=${encodeURIComponent(tier)}`, { method: 'POST', headers: await authHeaders() });
+        if (!res.ok) throw new Error((await res.json().catch(()=>({}))).detail || `HTTP ${res.status}`);
+        const { checkout_url } = await res.json();
+        location.href = checkout_url;
+    } catch (e) { alert(`Checkout failed: ${e.message}`); }
+}
+
+function renderGate(data) {
+    const teaserRows = (data.teaser || []).reduce((acc, t) => {
+        (acc[t.tier] = acc[t.tier] || []).push(t.symbol);
+        return acc;
+    }, {});
+    const teaserHtml = Object.entries(teaserRows).map(([tier, syms]) => `
+        <div style="margin-bottom:14px;"><span class="tier-name" style="font-size:18px;">${TIER_COPY[tier]?.label || tier}</span>
+            <div class="teaser" style="margin-top:8px;color:var(--text-hi);font-family:'Crimson Text',serif;font-size:20px;">${syms.join(' · ')}</div>
+        </div>`).join('');
+    return `
+        <div class="gate">
+            <div class="eyebrow" style="margin-bottom:14px;">Unlock with Strategist</div>
+            <h2>See the full ranked list.</h2>
+            <p>Strategist ($29/mo) unlocks the full 30-ticker list across all three risk tiers, with expected returns, projected volatility, and Sharpe proxy per ticker. Pro tier covers projections &mdash; Strategist adds portfolio-level intelligence on top.</p>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;">
+                <button class="btn" onclick="startCheckout('strategist')">Upgrade to Strategist &mdash; $29/mo</button>
+                <a href="/#pricing" class="btn ghost">Compare tiers</a>
+            </div>
+            <div style="margin-top:36px;padding-top:28px;border-top:1px solid var(--border);">
+                <div style="font:600 11px 'Inter';color:var(--text-dim);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:14px;">Preview &mdash; today's top 3 per bucket</div>
+                ${teaserHtml}
+            </div>
+        </div>`;
+}
+
+function renderPicks(data) {
+    const grouped = {};
+    for (const p of data.picks) {
+        (grouped[p.tier] = grouped[p.tier] || []).push(p);
+    }
+    const sections = ['conservative', 'moderate', 'aggressive'].map(tier => {
+        const rows = (grouped[tier] || []).slice(0, 10);
+        if (!rows.length) return '';
+        const body = rows.map(p => `
+            <tr>
+                <td class="sym">${p.symbol}</td>
+                <td class="num ${(p.expected_return ?? 0) >= 0 ? 'pos' : 'neg'}">${fmtPct(p.expected_return)}</td>
+                <td class="num">${fmtPct(p.risk)}</td>
+                <td class="num">${fmtSharpe(p.sharpe_proxy)}</td>
+                <td class="num" style="color:var(--text-mid);">$${(p.current_price ?? 0).toFixed(2)}</td>
+                <td class="num" style="color:var(--text-hi);">$${(p.p50_target ?? 0).toFixed(2)}</td>
+            </tr>`).join('');
+        return `
+            <section class="tier-section">
+                <div class="tier-header">
+                    <div>
+                        <div class="tier-name">${TIER_COPY[tier].label}<span class="pill">${rows.length} picks</span></div>
+                        <div class="tier-meta" style="margin-top:4px;">${TIER_COPY[tier].blurb}</div>
+                    </div>
+                </div>
+                <table class="picks">
+                    <thead><tr><th>Symbol</th><th style="text-align:right;">Exp. return</th><th style="text-align:right;">Proj. vol</th><th style="text-align:right;">Sharpe proxy</th><th style="text-align:right;">Current</th><th style="text-align:right;">P50 target</th></tr></thead>
+                    <tbody>${body}</tbody>
+                </table>
+            </section>`;
+    }).join('');
+    const disclaimer = `<div class="disclaimer"><b>Not investment advice.</b> Picks are ranked outputs of a Monte Carlo + mean-reversion projection engine running on cached price + fundamentals. Every projection shows its own MAPE &mdash; use that to judge the bands. Past projection accuracy is not indicative of future performance.</div>`;
+    return sections + disclaimer;
+}
+
+async function load() {
+    const res = await fetch('/api/picks', { headers: await authHeaders() });
+    const data = await res.json().catch(() => null);
+    const scanMeta = document.getElementById('scanMeta');
+    const content = document.getElementById('content');
+    if (res.status === 402 && data && data.error === 'strategist_required') {
+        scanMeta.textContent = data.scan_age_hours != null ? `Scan age: ${data.scan_age_hours.toFixed(1)}h` : 'Scan pending overnight refresh';
+        content.innerHTML = renderGate(data);
+        return;
+    }
+    if (res.status === 404) {
+        scanMeta.textContent = '';
+        content.innerHTML = `<div class="gate"><h2>The overnight scan hasn't run yet.</h2><p>Picks refresh after the daily cron at 10:00 UTC (6am ET). Check back then &mdash; or <a href="/app" style="color:var(--accent-lake);">try an individual projection</a> in the meantime.</p></div>`;
+        return;
+    }
+    if (!res.ok || !data) {
+        scanMeta.textContent = '';
+        content.innerHTML = `<div class="gate"><h2>Couldn't load picks.</h2><p>Please refresh in a moment.</p></div>`;
+        return;
+    }
+    scanMeta.textContent = data.scan_age_hours != null ? `Scan refreshed ${data.scan_age_hours.toFixed(1)}h ago · ${data.count} picks across 3 tiers` : `${data.count} picks across 3 tiers`;
+    content.innerHTML = renderPicks(data);
+}
+
+(function waitForClerk() {
+    if (!window.Clerk?.load) { setTimeout(waitForClerk, 100); return; }
+    window.Clerk.load().then(() => { load(); window.Clerk.addListener(() => load()); });
+})();
+</script>
+</body>
+</html>

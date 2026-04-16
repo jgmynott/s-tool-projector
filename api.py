@@ -258,17 +258,43 @@ def sentiment(
 def picks(
     request: Request,
     tier: Optional[str] = Query(None, regex="^(conservative|moderate|aggressive)$"),
+    user: Optional[dict] = Depends(auth.optional_user),
 ):
     """Risk-tiered stock picks from cached projection scan.
 
-    Returns top 10 per tier (conservative / moderate / aggressive),
-    optionally filtered to a single tier.  Reads from a pre-scanned
-    JSON cache refreshed daily by the worker cron.
+    Gated to the Strategist tier — this is the primary value exchange
+    for that tier. Anonymous + free + pro users get a 402 with a teaser
+    payload (top 3 tickers per bucket, no prices/scores) so the UI can
+    render an "unlock" state. Strategist users get the full ranked list.
     """
+    # Upgrade-aware preview for non-Strategists.
+    is_strategist = False
+    if user:
+        user_row = users_db.upsert_user(users_conn, user["user_id"], email=user.get("email"))
+        is_strategist = users_db.can_access_picks(user_row)
+
     results = get_picks(tier=tier)
     if not results:
         raise HTTPException(status_code=404, detail="No scan results available yet")
     scan_age = get_scan_age_hours()
+
+    if not is_strategist:
+        # Teaser: just symbols + tier names, no expected returns or Sharpe.
+        teaser = [
+            {"symbol": p["symbol"], "tier": p["tier"]}
+            for p in results[:9]  # 3 per tier
+        ]
+        return JSONResponse(
+            status_code=402,
+            content={
+                "error": "strategist_required",
+                "tier_required": "strategist",
+                "teaser": teaser,
+                "scan_age_hours": round(scan_age, 1) if scan_age is not None else None,
+                "hint": "Portfolio picks are part of the Strategist tier ($29/mo). Upgrade to unlock full ranked lists.",
+            },
+        )
+
     return {
         "scan_age_hours": round(scan_age, 1) if scan_age is not None else None,
         "tier_filter": tier,
@@ -306,18 +332,20 @@ def api_me(user: Optional[dict] = Depends(auth.optional_user)):
 @limiter.limit("10/minute")
 def api_billing_checkout(
     request: Request,
+    tier: str = Query("pro", regex="^(pro|strategist)$"),
     user: dict = Depends(auth.current_user),
 ):
-    """Start a Stripe Checkout session for Pro. Returns the redirect URL."""
+    """Start a Stripe Checkout session for the requested tier."""
     origin = request.headers.get("origin") or "https://s-tool.io"
     url = billing.create_checkout_session(
         users_conn,
         clerk_user_id=user["user_id"],
         email=user.get("email"),
-        success_url=f"{origin}/?billing=success",
+        success_url=f"{origin}/?billing=success&tier={tier}",
         cancel_url=f"{origin}/?billing=cancel",
+        tier=tier,
     )
-    return {"checkout_url": url}
+    return {"checkout_url": url, "tier": tier}
 
 
 @app.post("/api/billing/portal")
