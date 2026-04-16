@@ -96,9 +96,8 @@ nav {
 .hero {
     position: relative; padding: 96px 0 120px;
     background:
-        radial-gradient(ellipse 80% 60% at 70% 0%, rgba(10,101,119,0.45), transparent 60%),
-        radial-gradient(ellipse 60% 50% at 20% 30%, rgba(95,170,197,0.18), transparent 60%),
-        var(--bg-deepest);
+        linear-gradient(180deg, rgba(11,16,6,0.6) 0%, rgba(11,16,6,0.85) 100%),
+        url('/img/hero-banff.jpg') center/cover no-repeat;
     overflow: hidden;
 }
 .hero::before {
@@ -146,11 +145,12 @@ section { padding: 96px 0; }
 .edge-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 64px; align-items: center; }
 .edge-art {
     aspect-ratio: 4/5; border-radius: var(--radius-lg);
-    background: linear-gradient(135deg, var(--accent-deep) 0%, var(--accent-alpine) 50%, var(--accent-lake) 100%);
     position: relative; overflow: hidden; box-shadow: var(--shadow-glow);
 }
-.edge-art::before { content: ""; position: absolute; inset: 0; background-image: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.15), transparent 40%), radial-gradient(circle at 70% 80%, rgba(0,0,0,0.3), transparent 60%); }
-.edge-art::after { content: "Banff \00b7  Moraine Lake \00b7  2025"; position: absolute; bottom: 24px; left: 24px; font: 500 11px 'Inter'; color: rgba(237,236,230,0.7); letter-spacing: 0.16em; text-transform: uppercase; }
+.edge-art img {
+    width: 100%; height: 100%; object-fit: cover;
+    filter: brightness(0.9) contrast(1.05);
+}
 .edge-body p { color: var(--text-mid); font-size: 17px; margin-top: 20px; }
 .edge-list { margin-top: 36px; padding-top: 28px; border-top: 1px solid var(--border); list-style: none; }
 .edge-list li { display: grid; grid-template-columns: 100px 1fr; gap: 24px; padding: 14px 0; border-bottom: 1px dashed var(--border); }
@@ -259,7 +259,7 @@ footer { border-top: 1px solid var(--border); padding: 56px 0 40px; color: var(-
 <section id="edge" class="edge">
     <div class="container">
         <div class="edge-grid">
-            <div class="edge-art" aria-label="Glacial water &mdash; placeholder for upcoming Banff hero photo"></div>
+            <div class="edge-art"><img src="/img/edge-matterhorn.jpg" alt="Matterhorn peak in clouds, Zermatt 2023" loading="lazy" /></div>
             <div class="edge-body">
                 <div class="eyebrow">The honest part</div>
                 <h2 class="section-title serif" style="margin-top:18px;">Most projection tools <em>lie</em> with a straight face.</h2>
