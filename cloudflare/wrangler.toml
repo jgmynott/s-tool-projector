@@ -7,12 +7,12 @@ account_id = "18479801bf03932e04409c95b49e358a"
 directory = "./public"
 binding = "ASSETS"
 
-# Public client-safe keys. Set real values via `wrangler secret put` (for
-# production) or the Cloudflare dashboard Worker → Settings → Variables.
+# The frontend currently hardcodes publishable keys directly in index.html
+# (pk_ keys are client-safe by design, visible in any page source). If we later
+# move to Worker-side injection via HTMLRewriter, add real values here or set
+# them via the Cloudflare dashboard — DON'T declare them as empty strings here
+# because wrangler deploy will then clobber whatever the dashboard had.
 # Never put sk_ / rk_ / whsec_ secrets here — those live server-side on Railway.
-[vars]
-CLERK_PUBLISHABLE_KEY = ""
-STRIPE_PUBLISHABLE_KEY = ""
 
 [[routes]]
 pattern = "s-tool.io/*"

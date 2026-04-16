@@ -760,7 +760,35 @@ body {
 @media (max-width: 700px) {
     .hero-headline { font-size: 18px; }
 }
+
+/* ── Auth + billing UI ────────────────────────────────────────── */
+.auth-row { display:flex; align-items:center; gap:12px; }
+.auth-btn {
+    background: var(--bg-card); color: var(--text-primary);
+    border: 1px solid var(--border); border-radius: 10px;
+    padding: 8px 14px; font: 500 13px 'Inter', sans-serif;
+    cursor: pointer; transition: all .15s;
+}
+.auth-btn:hover { border-color: var(--border-hover); background: var(--bg-card-alt); }
+.auth-btn.primary {
+    background: linear-gradient(135deg, var(--accent), #2dd4bf);
+    color: #0a1410; border-color: transparent; font-weight: 600;
+}
+.quota-badge {
+    font: 500 12px 'Inter', sans-serif; color: var(--text-secondary);
+    background: var(--bg-card); border: 1px solid var(--border);
+    padding: 6px 10px; border-radius: 8px; white-space: nowrap;
+}
+.quota-badge.pro { color: #fde68a; border-color: rgba(253,230,138,0.35); }
+.quota-badge.exceeded { color: var(--red); border-color: rgba(248,113,113,0.4); }
+#userSlot > div { display: inline-block; }   /* Clerk UserButton root */
 </style>
+<!-- Clerk auth (test instance — swap pk_test_ for pk_live_ on launch). -->
+<script async
+  data-clerk-publishable-key="pk_test_Zmx1ZW50LW1vbGUtNzEuY2xlcmsuYWNjb3VudHMuZGV2JA"
+  src="https://fluent-mole-71.clerk.accounts.dev/npm/@clerk/clerk-js@5/dist/clerk.browser.js"
+  crossorigin="anonymous"
+></script>
 </head>
 <body>
 <div class="container">
@@ -770,9 +798,17 @@ body {
             <h1>S-TOOL PROJECTOR</h1>
             <div class="subtitle">Monte Carlo + Mean Reversion Projection Engine</div>
         </div>
-        <div class="meta">
-            <div id="metaDate"></div>
-            <div id="metaVix"></div>
+        <div class="meta auth-row">
+            <div>
+                <div id="metaDate"></div>
+                <div id="metaVix"></div>
+            </div>
+            <div id="quotaBadge" class="quota-badge" style="display:none;"></div>
+            <div id="authControls" class="auth-row">
+                <button id="btnSignIn" class="auth-btn" onclick="openClerkSignIn()" style="display:none;">Sign in</button>
+                <button id="btnGetPro" class="auth-btn primary" onclick="startCheckout()" style="display:none;">Get Pro</button>
+                <div id="userSlot"></div>
+            </div>
         </div>
     </div>
 
@@ -1140,9 +1176,16 @@ async function runProjection() {
 
     try {
         let data = null;
+        const headers = await authHeaders();
         for (const base of API_BACKENDS) {
             try {
-                const res = await fetch(`${base}/api/project?symbol=${symbol}&horizon=${horizon}`, { signal: AbortSignal.timeout(30000) });
+                const res = await fetch(`${base}/api/project?symbol=${symbol}&horizon=${horizon}`, { headers, signal: AbortSignal.timeout(30000) });
+                updateQuotaFromHeaders(res.headers);
+                if (res.status === 402) {
+                    const err = await res.json().catch(() => ({}));
+                    handlePaywall(err);
+                    return;
+                }
                 if (!res.ok) {
                     const err = await res.json().catch(() => ({ detail: res.statusText }));
                     throw new Error(err.detail || `HTTP ${res.status}`);
@@ -2004,6 +2047,98 @@ $('symbolInput').addEventListener('keydown', e => { if (e.key === 'Enter') runPr
 
 // Show today's date
 $('metaDate').textContent = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+
+// ── Auth + billing helpers (Clerk + Stripe) ─────────────────────
+
+async function authHeaders() {
+    try {
+        const token = await window.Clerk?.session?.getToken?.();
+        return token ? { Authorization: `Bearer ${token}` } : {};
+    } catch { return {}; }
+}
+
+function updateQuotaFromHeaders(h) {
+    const tier = h.get('X-Quota-Tier');
+    const limit = h.get('X-Quota-Limit');
+    const used = h.get('X-Quota-Used');
+    const remaining = h.get('X-Quota-Remaining');
+    const el = $('quotaBadge');
+    if (!tier) { el.style.display = 'none'; return; }
+    el.style.display = 'inline-block';
+    el.className = 'quota-badge';
+    if (limit === 'unlimited') {
+        el.classList.add('pro');
+        el.textContent = 'Pro · unlimited';
+    } else {
+        if (remaining === '0') el.classList.add('exceeded');
+        el.textContent = `${used || 0} / ${limit} today`;
+    }
+}
+
+function handlePaywall(err) {
+    if (err.tier === 'anonymous' || !window.Clerk?.user) {
+        status('Daily limit reached. Sign in for 3 free projections/day, or upgrade to Pro for unlimited.');
+        openClerkSignIn();
+    } else {
+        status('You\u2019ve used your 3 free projections today. Upgrade to Pro for unlimited.');
+        $('btnGetPro').style.display = 'inline-block';
+    }
+}
+
+async function openClerkSignIn() {
+    if (!window.Clerk) return alert('Auth loading, try again in a moment.');
+    await window.Clerk.openSignIn({ afterSignInUrl: location.pathname, afterSignUpUrl: location.pathname });
+}
+
+async function startCheckout() {
+    if (!window.Clerk?.session) { await openClerkSignIn(); return; }
+    try {
+        const res = await fetch('/api/billing/checkout', {
+            method: 'POST',
+            headers: await authHeaders(),
+        });
+        if (!res.ok) throw new Error((await res.json()).detail || `HTTP ${res.status}`);
+        const { checkout_url } = await res.json();
+        location.href = checkout_url;
+    } catch (e) {
+        status(`Checkout failed: ${e.message}`);
+    }
+}
+
+async function refreshUserPill() {
+    if (!window.Clerk) return;
+    const signedIn = !!window.Clerk.user;
+    $('btnSignIn').style.display = signedIn ? 'none' : 'inline-block';
+    const userSlot = $('userSlot');
+    userSlot.innerHTML = '';
+    if (signedIn) {
+        try {
+            window.Clerk.mountUserButton(userSlot, { afterSignOutUrl: '/' });
+        } catch {}
+    }
+    // Fetch /api/me so the quota badge reflects server truth.
+    try {
+        const res = await fetch('/api/project?symbol=__probe__&horizon=252', { headers: await authHeaders() });
+        updateQuotaFromHeaders(res.headers);
+    } catch {}
+    try {
+        const me = await (await fetch('/api/me', { headers: await authHeaders() })).json();
+        $('btnGetPro').style.display = (signedIn && me.tier !== 'pro') ? 'inline-block' : 'none';
+    } catch {}
+}
+
+// Clerk SDK loads async; wait for it, then wire listeners.
+(function waitForClerk() {
+    if (!window.Clerk?.load) { setTimeout(waitForClerk, 100); return; }
+    window.Clerk.load().then(() => {
+        refreshUserPill();
+        window.Clerk.addListener(() => refreshUserPill());
+        // Handle post-checkout redirect flash.
+        const p = new URLSearchParams(location.search);
+        if (p.get('billing') === 'success') status('Welcome to Pro. Subscription confirmed.');
+        if (p.get('billing') === 'cancel') status('Checkout canceled \u2014 you can try again any time.');
+    });
+})();
 
 </script>
 </body>
