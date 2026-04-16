@@ -29,6 +29,7 @@ from slowapi.middleware import SlowAPIMiddleware
 from db import init_db, get_projection, get_projection_age_hours, save_projection, list_cached_symbols, get_sentiment
 from projector_engine import run_projection
 from hardening import health_checker
+from portfolio_scanner import get_picks, get_scan_age_hours
 
 import auth
 import billing
@@ -226,6 +227,30 @@ def sentiment(
     if not rows:
         raise HTTPException(status_code=404, detail=f"No sentiment data for {ticker}")
     return rows
+
+
+@app.get("/api/picks")
+@limiter.limit("30/minute")
+def picks(
+    request: Request,
+    tier: Optional[str] = Query(None, regex="^(conservative|moderate|aggressive)$"),
+):
+    """Risk-tiered stock picks from cached projection scan.
+
+    Returns top 10 per tier (conservative / moderate / aggressive),
+    optionally filtered to a single tier.  Reads from a pre-scanned
+    JSON cache refreshed daily by the worker cron.
+    """
+    results = get_picks(tier=tier)
+    if not results:
+        raise HTTPException(status_code=404, detail="No scan results available yet")
+    scan_age = get_scan_age_hours()
+    return {
+        "scan_age_hours": round(scan_age, 1) if scan_age is not None else None,
+        "tier_filter": tier,
+        "count": len(results),
+        "picks": results,
+    }
 
 
 # ── User + billing ──

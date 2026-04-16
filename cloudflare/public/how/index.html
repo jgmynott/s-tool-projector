@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>How it works — s-tool</title>
+<meta name="description" content="A deep look at the Monte Carlo + mean-reversion projection engine behind s-tool.io. How we build honest projection bands, what we tested, and why most signals got killed." />
+<link rel="canonical" href="https://s-tool.io/how" />
+<meta property="og:title" content="How s-tool works — projection methodology" />
+<meta property="og:description" content="Monte Carlo + mean-reversion: how we build honest projection bands for 2,609 US stocks." />
+<meta property="og:image" content="https://s-tool.io/img/hero-banff.jpg" />
+<meta property="og:url" content="https://s-tool.io/how" />
+<meta property="og:type" content="article" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="How s-tool works" />
+<meta name="twitter:description" content="Monte Carlo + mean-reversion: honest projection bands for 2,609 US stocks." />
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230A6577'/%3E%3Cpath d='M16 44 L24 32 L34 38 L48 18' stroke='%23D2DDEA' stroke-width='4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" />
+<style>
+:root {
+    --bg-deepest: #0B1006; --bg-base: #111512; --bg-surface: #1F232D;
+    --bg-card: #28303B; --accent-deep: #022834; --accent-alpine: #0A6577;
+    --accent-lake: #5FAAC5; --text-hi: #EDECE6; --text-mid: #9BA1B9;
+    --text-dim: #6B7382; --border: rgba(155,161,185,0.16);
+    --border-strong: rgba(95,170,197,0.35);
+    --radius-lg: 24px; --radius-md: 16px; --radius-sm: 10px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg-deepest); color: var(--text-hi);
+    line-height: 1.65; -webkit-font-smoothing: antialiased;
+}
+a { color: var(--accent-lake); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* Nav (minimal, shared with landing) */
+nav { position: sticky; top: 0; z-index: 50; backdrop-filter: blur(12px); background: rgba(11,16,6,0.75); border-bottom: 1px solid var(--border); }
+.nav-row { max-width: 1180px; margin: 0 auto; padding: 18px 32px; display: flex; align-items: center; justify-content: space-between; }
+.logo { display: flex; align-items: center; gap: 10px; font: 700 18px 'Inter'; letter-spacing: -0.04em; color: var(--text-hi); text-decoration: none; }
+.logo-mark { width: 28px; height: 28px; border-radius: 7px; background: linear-gradient(135deg, var(--accent-deep), var(--accent-alpine), var(--accent-lake)); display: flex; align-items: center; justify-content: center; }
+.logo-mark svg { stroke: var(--text-hi); }
+.nav-links { display: flex; gap: 24px; font: 500 14px 'Inter'; }
+.nav-links a { color: var(--text-mid); text-decoration: none; }
+.nav-links a:hover { color: var(--text-hi); }
+
+/* Article layout */
+.article { max-width: 760px; margin: 0 auto; padding: 80px 32px 120px; }
+.article h1 {
+    font-family: 'Crimson Text', Georgia, serif; font-weight: 400;
+    font-size: clamp(36px, 5vw, 56px); line-height: 1.08; letter-spacing: -0.02em;
+    margin-bottom: 24px;
+}
+.article h1 em { font-style: italic; color: var(--accent-lake); }
+.article .lead { font-size: 19px; color: var(--text-mid); line-height: 1.6; margin-bottom: 56px; max-width: 60ch; }
+.article h2 {
+    font-family: 'Crimson Text', Georgia, serif; font-weight: 600;
+    font-size: 28px; margin: 56px 0 20px; padding-top: 40px;
+    border-top: 1px solid var(--border);
+}
+.article h3 { font: 600 18px 'Inter'; margin: 32px 0 12px; }
+.article p { color: var(--text-mid); font-size: 16px; margin-bottom: 18px; }
+.article p strong { color: var(--text-hi); font-weight: 600; }
+.article ul, .article ol { color: var(--text-mid); font-size: 15px; margin: 0 0 20px 24px; }
+.article li { margin-bottom: 8px; }
+.article code {
+    font-family: 'SF Mono', 'Fira Code', monospace; font-size: 13.5px;
+    background: var(--bg-surface); padding: 2px 7px; border-radius: 5px;
+    color: var(--accent-lake);
+}
+.formula-box {
+    background: var(--bg-surface); border: 1px solid var(--border);
+    border-radius: var(--radius-md); padding: 28px 32px; margin: 24px 0;
+    font-family: 'Crimson Text', serif; font-size: 20px;
+    text-align: center; color: var(--text-hi); letter-spacing: 0.02em;
+}
+.formula-box .label { font: 500 11px 'Inter'; color: var(--text-dim); letter-spacing: 0.16em; text-transform: uppercase; display: block; margin-bottom: 12px; }
+.signal-table { width: 100%; border-collapse: collapse; margin: 24px 0; font-size: 14px; }
+.signal-table th { text-align: left; font: 600 12px 'Inter'; color: var(--text-dim); letter-spacing: 0.1em; text-transform: uppercase; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+.signal-table td { padding: 10px 12px; border-bottom: 1px dashed var(--border); color: var(--text-mid); }
+.signal-table .dead { color: var(--text-dim); }
+.callout {
+    background: rgba(10,101,119,0.1); border-left: 3px solid var(--accent-alpine);
+    padding: 20px 24px; border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    margin: 28px 0; font-size: 15px; color: var(--text-mid);
+}
+.callout strong { color: var(--accent-lake); }
+
+/* Footer */
+footer { border-top: 1px solid var(--border); padding: 40px 32px; text-align: center; color: var(--text-dim); font-size: 13px; }
+footer a { color: var(--text-mid); }
+</style>
+</head>
+<body>
+
+<nav>
+    <div class="nav-row">
+        <a href="/" class="logo">
+            <span class="logo-mark"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 18 9 12 13 16 21 4"></polyline></svg></span>
+            <span>s-tool</span>
+        </a>
+        <div class="nav-links">
+            <a href="/">Home</a>
+            <a href="/app">Open app</a>
+            <a href="/#pricing">Pricing</a>
+        </div>
+    </div>
+</nav>
+
+<article class="article">
+
+<h1>How s-tool builds <em>honest</em> projection bands</h1>
+<p class="lead">A transparent look at the Monte Carlo + mean-reversion engine, what signals we tested, and why most of them got killed.</p>
+
+<h2>1. Learn the stock's own dynamics</h2>
+
+<p>For each ticker, we pull <strong>~2 years of daily closing prices</strong> from yfinance and estimate two core parameters:</p>
+
+<ul>
+    <li><strong>Annualized drift (&#956;)</strong> &mdash; the stock's average return tendency, estimated from log-returns.</li>
+    <li><strong>Annualized volatility (&#963;)</strong> &mdash; how wildly the stock swings. This is the single most important input &mdash; it determines how wide the projection bands are.</li>
+</ul>
+
+<p>We also fit a <strong>mean-reversion anchor</strong> by regressing the stock's price on its 1-year moving average. If the stock is far above its long-run trend, the engine pulls projections slightly downward; if below, slightly upward. The strength of this pull is controlled by <code>&kappa;</code> (the reversion speed).</p>
+
+<div class="formula-box">
+    <span class="label">Geometric Brownian Motion with mean reversion</span>
+    dS = &kappa;(&#952; &minus; S)dt + &#963;S&middot;dW
+</div>
+
+<p>Where <code>&#952;</code> is the mean-reversion target (from fundamentals + moving-average regression), <code>&kappa;</code> controls how fast the stock reverts, and <code>&#963;</code> is historical volatility.</p>
+
+<h2>2. Simulate thousands of forward paths</h2>
+
+<p>The engine runs <strong>10,000 Monte Carlo paths</strong> at the configured horizon (default: 252 trading days = ~1 year). Each path is a random walk under the stock's own volatility, pulled by the mean-reversion force.</p>
+
+<p>At the end, we extract percentiles across all 10,000 terminal prices:</p>
+
+<ul>
+    <li><strong>P10 / P90</strong> &mdash; the wide band. 80% of simulated outcomes fall between these.</li>
+    <li><strong>P25 / P75</strong> &mdash; the narrower band. 50% of outcomes.</li>
+    <li><strong>P50</strong> &mdash; the median outcome. Not a "target price" &mdash; it's where the engine expects the stock to be under its own drift + vol + reversion dynamics, nothing more.</li>
+</ul>
+
+<p>This blend of Monte Carlo (for path diversity) and mean reversion (for fundamental anchoring) is what gives the projections their shape. Pure MC alone would just extrapolate drift; pure MR alone would snap everything to a moving average. The blend captures both randomness and the stock's long-run gravity.</p>
+
+<h2>3. Validate with MAPE</h2>
+
+<p><strong>Mean Absolute Percentage Error (MAPE)</strong> is how we measure whether the engine is honest. For every ticker with at least 2 years of history, we run a <strong>walk-forward backtest</strong>:</p>
+
+<ol>
+    <li>Pick a historical date</li>
+    <li>Run the projection as of that date (using only data available at the time)</li>
+    <li>Compare the P50 prediction to what actually happened</li>
+    <li>Repeat across 466 rolling windows from 2018&ndash;2025</li>
+</ol>
+
+<p>The resulting MAPE tells you: <strong>"On average, the engine's median projection was X% off from reality for this ticker."</strong> A MAPE of 15% on a stock with 40% annualized vol is honest. A MAPE of 2% would be a lie.</p>
+
+<div class="callout">
+    <strong>Every projection on s-tool shows the model's historical MAPE for that ticker.</strong> If the MAPE is high, the bands are wide for a reason &mdash; the stock is genuinely hard to predict. We don't hide that.
+</div>
+
+<h2>4. What we tested &mdash; and killed</h2>
+
+<p>Between January and April 2026, we ran comprehensive backtests on every tilt/signal we could source for free or cheap. The test: does adding this signal to the base MC+MR engine <strong>improve MAPE by at least 1 percentage point</strong> on the full Russell 3000 across 2018&ndash;2025?</p>
+
+<p>Nothing passed.</p>
+
+<table class="signal-table">
+    <thead>
+        <tr><th>Signal</th><th>Source</th><th>&Delta;MAPE at 1yr</th><th>Hit rate</th><th>Verdict</th></tr>
+    </thead>
+    <tbody>
+        <tr><td>WSB / FinBERT sentiment</td><td>Reddit + NLP</td><td class="dead">Worked pre-2023, dead after</td><td class="dead">&darr;</td><td class="dead">Killed</td></tr>
+        <tr><td>Public Pulse (Trends + GDELT + Reddit + CSI)</td><td>Google, Reddit, FRED</td><td class="dead">&plusmn;0.07pp</td><td class="dead">&darr;</td><td class="dead">Killed</td></tr>
+        <tr><td>HY OAS spread</td><td>FRED</td><td class="dead">&plusmn;0.17pp</td><td class="dead">&rarr;</td><td class="dead">Killed</td></tr>
+        <tr><td>Margin debt</td><td>FINRA/FRED</td><td class="dead">&plusmn;0.17pp</td><td class="dead">&rarr;</td><td class="dead">Killed</td></tr>
+        <tr><td>CBOE SKEW (both signs)</td><td>CBOE</td><td class="dead">+0.92pp contrarian / &minus;1.28pp momentum</td><td class="dead">Mixed</td><td class="dead">Not shipped</td></tr>
+        <tr><td>Market breadth (% &gt; 200d SMA)</td><td>Derived</td><td class="dead">+0.43pp</td><td class="dead">&darr;</td><td class="dead">Marginal</td></tr>
+        <tr><td>Net liquidity (WALCL &minus; TGA &minus; RRP)</td><td>FRED</td><td class="dead">&minus;0.04 to &minus;0.31pp</td><td class="dead">&darr;</td><td class="dead">Worse</td></tr>
+        <tr><td>Form 4 insider buying</td><td>OpenInsider</td><td class="dead">+0.04pp</td><td class="dead">&rarr;</td><td class="dead">Data-sparse</td></tr>
+    </tbody>
+</table>
+
+<div class="callout">
+    <strong>The hypothesis:</strong> crowd-sentiment and macro-regime signals were arbitraged away post-2023, likely accelerated by LLM-generated content polluting the text corpora these signals depend on. Signals that require actual capital commitment or regulatory disclosure (not text) may still have alpha &mdash; that's our active research direction.
+</div>
+
+<h2>5. What's next</h2>
+
+<p>The engine currently ships <strong>tilt-free projections</strong> &mdash; pure MC + MR on the stock's own dynamics. That's the honest baseline. But we're actively researching the next generation of signals:</p>
+
+<ul>
+    <li><strong>Cross-sectional momentum</strong> &mdash; the most robust anomaly in academic finance. Relative outperformers tend to continue. Different statistical structure from the macro signals we tested.</li>
+    <li><strong>Factor investing</strong> &mdash; value, quality, low-volatility. We have the fundamentals data via FMP; backtesting infrastructure is built.</li>
+    <li><strong>Portfolio-level intelligence</strong> &mdash; instead of projecting one ticker at a time, scanning the full Russell 3000 to surface risk-tiered picks (conservative / moderate / aggressive).</li>
+</ul>
+
+<p>Any signal that makes it into the engine will have passed the same bar: <strong>&ge;1pp MAPE lift on &ge;2,000 symbols across 2018&ndash;2025 in walk-forward testing.</strong> We'd rather ship nothing than ship noise.</p>
+
+<h2>6. Data sources</h2>
+
+<ul>
+    <li><strong>Prices:</strong> yfinance (5-year daily OHLCV, cached and refreshed daily)</li>
+    <li><strong>Fundamentals:</strong> Financial Modeling Prep (FMP) &mdash; PE, debt/equity, ROE, sector, market cap</li>
+    <li><strong>Universe:</strong> iShares IWV (Russell 3000 ETF) holdings, refreshed every 24h &rarr; 2,609 tickers</li>
+    <li><strong>Macro reference:</strong> FRED (VIX, SKEW, risk-free rate for Sharpe calculations)</li>
+</ul>
+
+<p style="margin-top:56px;"><a href="/app">&larr; Try the projector</a> &nbsp;&middot;&nbsp; <a href="/#pricing">See pricing</a> &nbsp;&middot;&nbsp; <a href="https://github.com/jgmynott/s-tool-projector" target="_blank" rel="noopener">View on GitHub</a></p>
+
+</article>
+
+<footer>
+    <p>&copy; 2026 s-tool.io &nbsp;&middot;&nbsp; <a href="/">Home</a> &nbsp;&middot;&nbsp; <a href="/app">App</a> &nbsp;&middot;&nbsp; Not investment advice.</p>
+</footer>
+
+</body>
+</html>

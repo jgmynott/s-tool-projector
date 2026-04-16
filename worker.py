@@ -21,6 +21,7 @@ from datetime import datetime, timezone, timedelta
 from db import init_db, save_projection, get_projection_age_hours
 from projector_engine import run_projection
 from hardening import retry_with_backoff, health_checker, AlertManager
+from portfolio_scanner import scan_universe, save_picks
 
 logging.basicConfig(
     level=logging.INFO,
@@ -191,6 +192,15 @@ def run_worker(symbols: list[str], horizons: list[int], force: bool = False,
         worker_stats = {"total": computed + failed, "failed": failed}
         health = health_checker.check_health()
         alert_manager.check_and_alert(health, worker_stats=worker_stats)
+
+    # ── Portfolio scan: rank & tier all cached projections ──
+    log.info("Running portfolio scan...")
+    try:
+        scan_results = scan_universe(conn)
+        save_picks(scan_results)
+        log.info("Portfolio scan complete: %d tickers scanned", len(scan_results))
+    except Exception as e:
+        log.warning("Portfolio scan failed: %s", e)
 
     conn.close()
 
