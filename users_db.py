@@ -159,6 +159,7 @@ def set_subscription(
 # ── Usage + quotas ──
 
 FREE_DAILY_PROJECTIONS = 3
+PRO_DAILY_PROJECTIONS = 10
 
 
 def record_usage(
@@ -201,7 +202,7 @@ def projections_in_last_24h(
 
 
 def quota_for_user(user_row: Optional[dict]) -> dict:
-    """Return {'limit': int|None, 'tier': str}. None limit = unlimited (Pro)."""
+    """Return {'limit': int, 'tier': str}. Pro gets 10/day, free gets 3/day."""
     if user_row and user_row.get("tier") == "pro":
-        return {"limit": None, "tier": "pro"}
+        return {"limit": PRO_DAILY_PROJECTIONS, "tier": "pro"}
     return {"limit": FREE_DAILY_PROJECTIONS, "tier": "free"}

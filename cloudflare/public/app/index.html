@@ -2093,9 +2093,9 @@ function updateQuotaFromHeaders(h) {
     if (!tier) { el.style.display = 'none'; return; }
     el.style.display = 'inline-block';
     el.className = 'quota-badge';
-    if (limit === 'unlimited') {
+    if (tier === 'pro') {
         el.classList.add('pro');
-        el.textContent = 'Pro · unlimited';
+        el.textContent = `Pro · ${used || 0} / ${limit} today`;
     } else {
         if (remaining === '0') el.classList.add('exceeded');
         el.textContent = `${used || 0} / ${limit} today`;
