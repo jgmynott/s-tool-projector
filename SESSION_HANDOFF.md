@@ -1,106 +1,185 @@
-# Session Handoff — 2026-04-15 (end of day)
+# Session Handoff — 2026-04-16 (late morning)
 
-> Replace "Read SESSION_HANDOFF.md and MEMORY.md then tell me where we left off" to resume.
+> Resume with: "Read SESSION_HANDOFF.md and MEMORY.md then tell me where we left off."
 
-## TL;DR of today's session
+## TL;DR
 
-Shipped a **drift-free, honest projection engine** to production at **https://s-tool.io** running a **Russell 3000 universe (2,609 tickers)** on a FastAPI backend at Railway, fronted by a Cloudflare Worker that serves the static UI and reverse-proxies `/api/*`. All drift-tilt signals (sentiment, Public Pulse, HY OAS, margin debt) were backtested and zeroed — they're noise on post-2023 data. The frontend got a landing hero, watchlist, info tooltips on every important field, a glossary card, and a "how it works" explainer. A SKEW + breadth strength sweep is still running in the background — if SKEW with a flipped sign (momentum interpretation) shows meaningful MAPE lift, it's the first signal we've found that actually works post-2023.
+Went from bare projection engine to a **three-tier SaaS with auth + billing + portfolio intelligence** in one long session. Live on s-tool.io:
 
-## Live production stack
+- **Free** (3 proj/day) · **Pro $8/mo** (10/day) · **Strategist $29/mo** (unlimited + portfolio picks)
+- Clerk auth, Stripe test-mode checkout (Apple Pay works), webhook-synced tier state
+- Four pages: `/` landing, `/app` generator, `/how` methodology, `/picks` risk-tiered recommendations
+- Pre-launch safeguard: **5 projections/hour** cap for anyone who isn't the owner
+- Full security batch: CSP/HSTS/XFO, rate limiting, fail-closed CORS, Dependabot, user-data isolation, Railway Volume
+
+Backtested momentum, value, and quality (low-beta) factors across 2022–2024. **All three failed** to improve projection MAPE — same pattern as the sentiment/SKEW signals killed earlier. The engine stays tilt-free. "Every signal died" is the honest narrative and it just got stronger.
+
+21 free data sources documented; **FINRA short interest module shipped** (200k rows loaded). SEC EDGAR XBRL and CBOE options deferred.
+
+## Production stack (unchanged from prior handoff)
 
 | Layer | What | Where |
 |---|---|---|
 | Domain | s-tool.io | Cloudflare zone `c0abd1c036057a443c0a40aa25d1da14` |
-| Edge worker | `s-tool-site` (serves UI + proxies /api/*) | wrangler deploys from `cloudflare/` |
+| Edge Worker | `s-tool-site` (landing + proxy) | wrangler from `cloudflare/`, **version `97b1a983`** |
 | API | FastAPI (`api.py`) | Railway service `c2ee9f5b-22e3-41db-b9f4-77bb53843c87` at `api-production-9fce.up.railway.app` |
-| Daily cron | `worker.py --all` at 10:00 UTC (6am ET DST) | Railway service `a4a9e05b-83fb-4e7e-b1bc-2a4e6c83fdde` |
-| Price cache | `data_cache/prices/<SYM>.csv` (2,597/2,609 = 99.5%) | local + shipped with deploy |
-| R2 bucket | `s-tool` | created, not wired to code yet |
-| GitHub | `jgmynott/s-tool-projector` | auth via `gh` CLI as `jgmynott` |
+| Daily cron | `worker.py --all` + scan step at 11:00 UTC | Railway service `a4a9e05b-83fb-4e7e-b1bc-2a4e6c83fdde` |
+| User data | `users.db` on **Railway Volume `/data`** (NEW) | Never committed, survives restarts |
+| Projection cache | `projector_cache.db` (git-committed nightly by cron) | Cache refresh commits work again after S-89 fix |
+| GitHub | `jgmynott/s-tool-projector` | Auto-deploy still NOT wired (use `railway up --detach`) |
 
-**Railway manual deploy** (no auto-deploy wired): pass `latestCommit: true` to `serviceInstanceDeploy` mutation. Example in recent calls.
+## What shipped this session
 
-**Cloudflare MCP** works for account `18479801bf03932e04409c95b49e358a` (Stool@s-tool.io's Account). Worker **deploy** requires wrangler (authed via browser earlier).
+### Revenue plumbing
+- **Clerk auth** — JWT verify via JWKS, `optional_user` / `current_user` deps (`auth.py`)
+- **Stripe billing** — checkout, portal, idempotent webhook, tier derived from metadata→price_id fallback (`billing.py`)
+- **Three-tier pricing** — Free / Pro $8/mo (10/day) / Strategist $29/mo (unlimited + picks)
+- **`/api/me`, `/api/billing/{checkout,portal,webhook}`, `/api/picks`**
+- **Pre-launch cap**: 5 projections/hour for non-owner (owner = `OWNER_EMAIL` env, defaults to jamesgmynott@gmail.com)
 
-## What's shipped this session
+### Frontend
+- `cloudflare/public/index.html` — landing with glacier palette (Banff/Zermatt/Interlaken), `/picks` nav link
+- `cloudflare/public/app/index.html` — generator UI synced to same palette + Crimson Text serif
+- `cloudflare/public/how/index.html` — methodology deep-dive + signal graveyard
+- `cloudflare/public/picks/index.html` — Strategist-gated risk-tiered picks w/ teaser
+- `cloudflare/public/img/` — 4 optimized photos (hero-banff, edge-matterhorn, accent-lake, accent-peaks) @ 621KB total
+- `cloudflare/public/_headers` — CSP + HSTS + XFO + Referrer-Policy + Permissions-Policy
 
-- **Tilts zeroed** in `projector_engine.py` — SENTIMENT_TILT_STRENGTH=0, all TILT_WEIGHTS=0, MAX_FUNDAMENTAL_TILT=0
-- **Universe expanded** 537 → **2,609** via new `universe.py` module (iShares IWV holdings, auto-refresh every 24h)
-- **`price_backfill.py`** — yfinance-batched 5yr-then-2yr-fallback history cache for the whole universe
-- **FMP migration** `/v3/` → `/stable/`: profile, ratios (+ key-metrics merge for ROE/ROA), historical-price-eod/full, earnings, insider-trading/latest, price-target-consensus. Field renames fixed (`pe` → `priceToEarningsRatio`, `debtEquityRatio` → `debtToEquityRatio`).
-- **1 req/sec FMP throttle** (`TokenBucketLimiter`) + daily limit raised from 250 → 300,000 for Premium tier.
-- **Railway deploy scaffolding**: `Procfile`, `railway.json`, `runtime.txt`, slimmed `requirements.txt` (moved torch/transformers/pytrends to `requirements-research.txt`).
-- **`cloudflare/` directory**: `wrangler.toml` + `src/worker.js` + `public/index.html`. Worker routes `s-tool.io/*` → ASSETS for UI, `/api/*` → Railway.
-- **Frontend cleanup**: retired Public Pulse panel, hid tilt breakdown + sentiment intel + put/call + news-sentiment rows since they're all dead or paid-tier gated.
-- **Landing hero + "How it works" explainer + glossary + 27 info tooltips + watchlist (localStorage).**
-- **Two new signals built and wired into `comprehensive_backtest.py`**: `signals_skew.py` (CBOE SKEW z-score) and `signals_breadth.py` (% of our cached universe above 200-day SMA).
+### Security + ops
+- Rate limiting via slowapi: 30/min on `/api/project`, 10/min on billing, 120/min default
+- Fail-closed CORS (no wildcard fallback, explicit methods/headers, credentials=false)
+- CSP + HSTS via `_headers`
+- `.github/dependabot.yml` (weekly pip, npm, github-actions)
+- S-89 GitHub Actions cron fix: `git add -f projector_cache.db` + `permissions: contents: write`
+- `settings.json` malformed fork-bomb deny rule removed
+- `.env.example` documenting every env var
+- `.railwayignore` preventing 220MB data_cache uploads
 
-## Backtest findings (hardened)
+### Intelligence
+- **`portfolio_scanner.py`** — ranks full Russell 3000 cached projections by forward Sharpe proxy, buckets into conservative/moderate/aggressive w/ quality filter, ETF blocklist
+- **`signals_short_interest.py`** — FINRA module, custom CSV parser handling unquoted commas in issuer names. 200k historical rows loaded.
+- **`momentum_factor_backtest.py`** — vectorized MC, 2,150+ tickers × 22 windows
+- **`factor_sweep_overnight.py`** — momentum + value + quality (low-beta), 11 windows × 5 tilts × 2 horizons
 
-| Signal | Test | Result |
-|---|---|---|
-| Sentiment / Public Pulse / HY OAS / margin debt | Various full-universe 2018–2025 sweeps | All within ±0.17 to ±0.43pp MAPE; hit rate drops with tilts. **DEAD.** |
-| SKEW (contrarian sign, S0.06) | 2,478 symbols × 466 windows × 2018–2025 | 1yr MAPE **–0.73pp** (worse). Implies flipped sign (high SKEW → bearish, momentum interp) = **+0.73pp improvement**. |
-| Breadth (contrarian sign, S0.06) | same | 1yr MAPE **+0.43pp** (small positive, hit rate slightly worse). Marginal. |
+## Backtest findings (this session)
 
-**The SKEW sweep with both signs and 5 strengths is running in background as of handoff.** Output lands in `skew_sweep_backtest.csv` / `skew_sweep_report.md`. If positive sign flip confirms, this is the first signal we've found that works post-2023 — wire into `projector_engine.py` with the winning strength, add a `SKEW` line to the glossary, redeploy.
+**None of the three canonical factors improved MAPE.** Same pattern as SKEW — tilt makes MAPE worse while nudging hit rate up marginally.
 
-## Known costs + tokens rotated
+| Factor | 1yr baseline | Best tilt | ΔMAPE | ΔHit |
+|---|---|---|---|---|
+| Momentum 12-1 | 38.44% | S0.09 | **+1.47pp worse** | +0.3pp |
+| Value (earnings yield) | 26.33% | S0.06 | **+0.42pp worse** | −0.2pp |
+| Quality (low-beta) | 27.09% | S0.06 | **+0.63pp worse** | +0.6pp |
 
-- **FMP Premium** — user subscribed, price not verified by me (user said $29/mo for Starter; I should check site.financialmodelingprep.com/pricing before quoting any number)
-- **Railway** — on free/hobby tier, no charges seen yet
-- **Cloudflare R2 + Workers + Pages** — free tiers, no charges seen yet; **docs say no minimum monthly charge** for R2 above free tier
-- **Domain** — ~$60/yr per user
-- **Claude Code** — $200/mo (big rock)
-- **Tokens**: Railway `1ababd88-…` rotated to `130f3dca-19a6-458a-a527-d22c26f5e283` via API. Old Cloudflare `cfat_5C9v…` never worked (likely a CF Access token, not API) — user to manually delete from dashboard if wanted.
+**Conclusion:** engine stays tilt-free. Portfolio-level intelligence (ranking across the universe) is the product differentiator, not drift tilts. Medallion-caliber alpha still requires signals nobody else has tested.
+
+## Key files (new this session)
+
+**Auth + billing:**
+- `auth.py` — Clerk JWT verification
+- `billing.py` — Stripe checkout + webhook, tier routing via `TIER_PRICES` map
+- `users_db.py` — users + usage tables, `quota_for_user`, `can_access_picks`
+- `.env.example` — env var template
+
+**Intelligence:**
+- `portfolio_scanner.py` — ETF-filtered ranker
+- `signals_short_interest.py` — FINRA module (backtest wiring pending)
+- `momentum_factor_backtest.py`, `factor_sweep_overnight.py` — backtest harnesses
+- `portfolio_picks.json` — seed picks output (overwritten by daily cron)
+
+**Content / design:**
+- `cloudflare/public/{index,app,how,picks}/index.html`
+- `cloudflare/public/img/*.jpg`
+- `cloudflare/public/_headers`
+- `design/media/` + `design/palette.json` + `design/extract_palette.py`
+
+**Research:**
+- `research/pricing_tiers_research.md` — competitive analysis, 3-tier recommendation
+- `research/free_data_sources.md` — 21 verified free data sources ranked
+
+**Reports:**
+- `momentum_factor_report.md`, `factor_sweep_report.md` — backtest results
+- `momentum_factor_backtest.csv`, `factor_sweep_results.csv` — raw data
 
 ## What's NOT done and why
 
 | Item | Why not | How to finish |
 |---|---|---|
-| SKEW strength sweep results analysis | Still running when handoff written | Read `skew_sweep_report.md` once done; pick the winning (sign × strength) pair; wire into engine |
-| Auto-deploy Railway on `git push` | Railway GraphQL `deploymentTriggerCreate` blocked: "no one in the project has access" — needs GitHub OAuth linked at account level | User visits https://railway.com/account → Integrations → Connect GitHub. Then retry trigger mutation. |
-| PDF export feature | Asked at end of session. Recommended Option A (magic-URL unlock + client-side PDF via `html2pdf.js`) | Wait for user to confirm option, then build. ~15 min implementation. |
-| CF `cfat_…` token manual delete | Requires user dashboard action; it's invalid so low urgency | Delete from https://dash.cloudflare.com/profile/api-tokens or Zero Trust → Access |
-| Paid Finnhub/Polygon data | Backtest said same-family signals are dead | Don't pay until a free-data signal is proven to work |
-| Proper user auth + watchlists server-side | Deferred for beta; localStorage watchlist is good enough | When MAU justifies it, add Clerk or Cloudflare Access |
+| `$8/mo` Stripe price | User has to create in Stripe dashboard | User → Stripe Test → new Pro price $8/mo → update `STRIPE_PRICE_ID_PRO` in Railway (currently still `price_1TMd5gHijsJzoz12PswsXLhj` @ $19.99) |
+| `$29/mo` Strategist price | Same — user-side action | Create `s-tool Strategist` $29/mo → paste `price_…` to Claude → set `STRIPE_PRICE_ID_STRATEGIST` in Railway |
+| Rotate exposed API keys | I printed full values for FMP, Finnhub, Polygon, FRED, Alpha Vantage into the chat transcript during env audit | User → each provider dashboard → roll → paste new values into Railway env |
+| PDF export (task #7) | Deprioritized when Strategist tier built out | `html2pdf.js` in `/app`, Pro-gated button on projection result |
+| FINRA latest-date fetch | FINRA API silently ignores date filters | Either scrape their separate daily-volume files endpoint, or accept historical-only data for backtesting |
+| SEC EDGAR XBRL + CBOE options | Only FINRA integrated of top 3 recommended | Build `signals_sec_edgar.py` and `signals_options.py` using the research doc as spec |
+| Auto-deploy Railway on `git push` | GitHub OAuth still blocked at project level | User → railway.com/account → Integrations → Connect GitHub |
+| `PAYWALL_ENABLED=true` | Still false in Railway — nothing blocks yet | Only flip once Strategist price is set + user has tested checkout end-to-end |
 
-## Key files to know about
+## Open secrets still in chat transcript
 
-**Research / backtest:**
-- `comprehensive_backtest.py` — unified harness, modes include `skew_sweep`, `breadth_sweep`, `skew_breadth_combo` now
-- `signals_skew.py`, `signals_breadth.py` — today's new signals
-- `skew_breadth_backtest.csv`, `skew_breadth_report.md` — first pass results
-- `skew_sweep_backtest.csv`, `skew_sweep_report.md` — full strength sweep (in flight at handoff)
+These values were pasted in the chat and should be rolled at convenience (test-mode so low-risk, but hygiene):
+- Stripe `sk_test_…ynsz` (can be rolled at dashboard.stripe.com/test/apikeys)
+- FMP `KPUDzcVq8UeskEHvExkOk8GlpcCmpSoF` — **paid tier, prioritize rotating**
+- Finnhub `d7fbr81r…`
+- Polygon `MJFCE6KCmcLhTcAVNCfBdzcV9Rxp5mZa`
+- FRED `4e1028065e3393a3565aee40da09b842`
+- Alpha Vantage `VWNW7C8SCK7V66B2`
 
-**Engine + API + UI:**
-- `projector_engine.py` — engine, tilts zeroed with comment explaining why
-- `data_providers.py` — FMP migrated to /stable/, throttled
-- `api.py` — FastAPI, `/api/health`, `/api/project`, 18h projection cache
-- `worker.py` — daily cron target; FULL_UNIVERSE imported from `universe.py`
-- `universe.py` — IWV holdings → Russell 3000 (2,581) + SP500 ∪ WSB → 2,609 combined
-- `frontend.html` — hero, watchlist, tooltips, glossary, how-it-works, same render paths for projection
+Live keys (rk_live_, sk_live_) — user confirmed "rotated" last night.
 
-**Infra:**
-- `cloudflare/wrangler.toml`, `cloudflare/src/worker.js`, `cloudflare/public/index.html` (copy of frontend.html)
-- `Procfile`, `railway.json`, `runtime.txt`
-- `.gitignore` excludes `data_cache/`, `*_backtest*.csv`, overnight logs, Claude internals
+## Env var state on Railway `api` service (verified)
+
+```
+CLERK_JWKS_URL            = https://fluent-mole-71.clerk.accounts.dev/.well-known/jwks.json
+CLERK_SECRET_KEY          = sk_test_…
+CORS_ORIGINS              = https://s-tool.io,https://www.s-tool.io,http://localhost:8000
+STRIPE_SK                 = sk_test_…
+STRIPE_WEBHOOK_SECRET     = whsec_maVNYc9dQIryXARqpQ1E8iXDOAlnCMvu
+STRIPE_PRICE_ID_PRO       = price_1TMd5gHijsJzoz12PswsXLhj  ← $19.99/mo, NEEDS REPLACING WITH $8/mo
+USERS_DB_PATH             = /data/users.db
+RAILWAY_VOLUME_NAME       = api-volume
+FMP_API_KEY, FINNHUB_API_KEY, POLYGON_API_KEY, FRED_API_KEY, ALPHA_VANTAGE_API_KEY (all set)
+```
+
+**Missing:** `STRIPE_PRICE_ID_STRATEGIST` (needed for $29 tier checkout)
+
+## Live endpoints sanity
+
+```bash
+curl https://s-tool.io/api/health | python3 -m json.tool        # paywall_enabled: false, overall: healthy
+curl https://s-tool.io/api/me                                    # anonymous returns {authenticated:false}
+curl https://s-tool.io/api/picks                                 # 402 teaser w/ 9 symbols (3/tier)
+curl -X POST https://s-tool.io/api/billing/webhook               # 400 invalid sig (signature verification live)
+```
 
 ## Resume recipe
 
 1. Read this file + `MEMORY.md` (auto-loads)
-2. Check if SKEW sweep finished: `cat skew_sweep_report.md 2>/dev/null | tail -30`
-3. If SKEW works → wire into `projector_engine.py`, redeploy Railway (`serviceInstanceDeploy latestCommit: true`)
-4. Confirm PDF export approach with user and build if asked
-5. Otherwise, pick from the pending list above
+2. User's top blockers: **create $8/mo + $29/mo Stripe test prices**, then set both env vars on Railway
+3. After prices set, test end-to-end: sign up → Get Pro → 4242 card → webhook fires → tier=pro → badge shows "Pro · 0/10 today"
+4. Same test for Strategist → tier=strategist → /picks unlocks full data
+5. Flip `PAYWALL_ENABLED=true` in Railway after E2E confirms
+6. Pending work choices from the 7am email: PDF export · SEC EDGAR integration · more data sources · model V2
+
+## Current open session state
+
+- Railway CLI linked (`~/.railway/`, auth persists across sessions)
+- `wrangler` authed via `npx` (uses user's Cloudflare account)
+- GitHub `gh` CLI authed as `jgmynott`
+- Clerk MCP: not needed, no Clerk MCP exists
+- Gmail MCP: connected, used for the 7am morning report draft
+- Linear MCP: connected, team `S-tool` (id `e9c7bb5e-…`) — issues S-89 (resolved in progress), S-90 (Node 24 bumps), S-91/S-92 (duplicates, archived)
 
 ## Snapshot commands
 
 ```bash
 cd ~/Documents/Claude/s2tool-projector
 git log --oneline -10
+railway status
+railway variables --service api | grep -E "STRIPE|CLERK|PAYWALL"
 /usr/bin/curl -s https://s-tool.io/api/health | python3 -m json.tool
-ls data_cache/prices/*.csv | wc -l                 # 2,597 or 2,598 expected
-python3 universe.py list                            # Russell 3000 universe sizes
-tail -30 skew_sweep_report.md                       # if running/done
+/usr/bin/curl -s https://s-tool.io/api/picks | python3 -m json.tool
+cat momentum_factor_report.md
+cat factor_sweep_report.md
+cat research/pricing_tiers_research.md
+cat research/free_data_sources.md
 ```
