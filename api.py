@@ -321,8 +321,16 @@ def backtest_report(request: Request):
     performance, simulated-portfolio stats, bootstrap confidence
     intervals. Cached, cheap to serve.
     """
-    path = Path(__file__).parent / "data_cache" / "backtest_report.json"
-    if not path.exists():
+    # Dual-path lookup: runtime_data/ is the Railway-shipped copy (ships
+    # reliably because the directory has no gitignore entry), data_cache/
+    # is the local dev path. Fall through either order.
+    parent = Path(__file__).parent
+    for candidate in (parent / "runtime_data" / "backtest_report.json",
+                      parent / "data_cache" / "backtest_report.json"):
+        if candidate.exists():
+            path = candidate
+            break
+    else:
         raise HTTPException(status_code=404, detail="Backtest report not yet generated")
     try:
         import json as _json

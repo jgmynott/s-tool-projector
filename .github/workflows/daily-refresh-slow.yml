@@ -101,6 +101,17 @@ jobs:
       - name: Preflight (block on QC failures)
         run: python3 preflight.py || (echo "Preflight FAILED — not deploying"; exit 1)
 
+      # Mirror the runtime JSONs to runtime_data/ so they ship to Railway
+      # reliably. data_cache/ is excluded from the railway up tarball despite
+      # gitignore negation tricks (caught 2026-04-17 via a boot-log probe).
+      # runtime_data/ has no gitignore entry and is guaranteed to upload.
+      - name: Mirror artifacts to runtime_data
+        run: |
+          mkdir -p runtime_data
+          cp data_cache/backtest_report.json runtime_data/ 2>/dev/null || true
+          cp data_cache/feature_importance.json runtime_data/ 2>/dev/null || true
+          ls -la runtime_data/
+
       - name: Commit data artifacts
         run: |
           git config user.name "github-actions[bot]"
@@ -119,6 +130,7 @@ jobs:
               data_cache/sec_edgar/company_info.json \
               data_cache/sec_edgar/cik_map.json 2>/dev/null || true
           git add -f data_cache/profiles/*.json 2>/dev/null || true
+          git add runtime_data/*.json 2>/dev/null || true
 
           if git diff --staged --quiet; then
             echo "No artifact changes to commit"
