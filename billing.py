@@ -277,6 +277,53 @@ def _sync_subscription(
     )
 
 
+def resync_by_email(conn: sqlite3.Connection, clerk_user_id: str,
+                     email: str) -> dict:
+    """Look up a Stripe customer by email and relink them to this user.
+
+    Use case: Railway redeploys wipe the ephemeral users DB. When a paid
+    user signs back in, their row has no stripe_customer_id anymore, so
+    resync_by_customer can't run. This function queries Stripe for a
+    customer matching the user's email, relinks them, and then runs the
+    usual subscription resync — restoring their Strategist tier without
+    a support ticket.
+
+    Returns {matched: bool, tier, subscription_status}. If the Stripe
+    lookup finds no customer, sets subscription_status='no_stripe_match'
+    as a sentinel so we don't re-query on every subsequent request.
+    """
+    if not email:
+        return {"matched": False, "tier": "free", "subscription_status": None}
+    try:
+        customers = stripe.Customer.list(email=email, limit=5)
+    except stripe.error.StripeError as e:
+        log.warning("Stripe customer lookup by email failed for %s: %s", email, e)
+        return {"matched": False, "tier": "free", "subscription_status": None,
+                "error": str(e)}
+    data = _as_dict(customers).get("data") or []
+    if not data:
+        # No customer — record the "checked" sentinel so we don't keep
+        # hitting Stripe on every /api/me call for this user.
+        set_subscription(conn, clerk_user_id,
+                         subscription_id=None,
+                         status="no_stripe_match",
+                         tier="free")
+        return {"matched": False, "tier": "free",
+                "subscription_status": "no_stripe_match"}
+    # Take the first match (email should be unique per Stripe workspace).
+    cust = _as_dict(data[0])
+    cust_id = cust.get("id")
+    if not cust_id:
+        return {"matched": False, "tier": "free", "subscription_status": None}
+    set_stripe_customer(conn, clerk_user_id, cust_id)
+    log.info("Relinked clerk_user=%s to stripe_customer=%s via email lookup",
+             clerk_user_id, cust_id)
+    # Now re-use the existing customer-based resync.
+    result = resync_by_customer(conn, clerk_user_id)
+    result["matched"] = True
+    return result
+
+
 def resync_by_customer(conn: sqlite3.Connection, clerk_user_id: str) -> dict:
     """Force-resync tier by looking up the user's active subscription(s) on
     Stripe's side. Useful when the local DB never recorded a subscription_id

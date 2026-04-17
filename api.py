@@ -118,6 +118,30 @@ conn = init_db()
 users_conn = users_db.get_users_db()
 users_db.init_users_db(users_conn)
 
+# Log the DB path on boot so Railway deploy logs make it obvious whether
+# the USERS_DB_PATH env var is pointing at the mounted Volume or the
+# ephemeral container fs. If you see a non-`/data/...` path on Railway,
+# the Volume isn't wired up and every deploy will wipe paying users.
+log.info("users_db path: %s", users_db.USERS_DB_PATH)
+
+# On first boot after the Volume is attached, the file at /data/users.db
+# is empty even though we shipped real users before. Log a warning so we
+# notice and can run /api/_admin/backfill_emails + force_resync for
+# anyone with a stripe_customer_id.
+try:
+    _user_count = users_conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]
+    log.info("users_db row count on boot: %d", _user_count)
+    if _user_count == 0 and users_db.USERS_DB_PATH.startswith("/data/"):
+        log.warning(
+            "users_db at /data/%s is empty on boot — this is either the "
+            "first deploy with a Volume attached, or the Volume is fresh. "
+            "Paid users will re-materialise on their next /api/me hit but "
+            "will land as tier='free' until /api/billing/resync runs.",
+            users_db.USERS_DB_PATH.split("/", 2)[-1],
+        )
+except Exception as e:
+    log.warning("users_db row count probe failed: %s", e)
+
 STALE_HOURS = 18  # recompute if older than this
 
 # Paywall enforcement toggle. Off by default so scaffolding doesn't break the
@@ -449,6 +473,25 @@ def api_me(user: Optional[dict] = Depends(auth.optional_user)):
     if not user:
         return {"authenticated": False, "tier": "anonymous"}
     user_row = users_db.upsert_user(users_conn, user["user_id"], email=user.get("email"))
+
+    # Self-heal after a DB wipe. If this user has an email but no Stripe
+    # link yet AND no record of a prior check, look them up in Stripe
+    # once. If they were a paying customer before the wipe, their tier
+    # gets restored automatically. If they never paid, we record a
+    # sentinel so we don't re-query on every subsequent /api/me.
+    needs_resync = (
+        user.get("email")
+        and not user_row.get("stripe_customer_id")
+        and not user_row.get("subscription_status")
+        and users_db.effective_tier(user_row) == "free"
+    )
+    if needs_resync:
+        try:
+            billing.resync_by_email(users_conn, user["user_id"], user["email"])
+            user_row = users_db.get_user(users_conn, user["user_id"])
+        except Exception as e:
+            log.warning("resync_by_email failed for %s: %s", user["user_id"], e)
+
     quota = users_db.quota_for_user(user_row)
     used = users_db.projections_in_last_24h(users_conn, clerk_user_id=user["user_id"])
     return {
