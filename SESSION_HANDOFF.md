@@ -1,6 +1,83 @@
-# Session Handoff — 2026-04-16 (late morning)
+# Session Handoff — 2026-04-16 (evening update)
 
 > Resume with: "Read SESSION_HANDOFF.md and MEMORY.md then tell me where we left off."
+
+---
+
+## 🌙 Evening addendum — NN research + Alpaca plan (2026-04-16 ~22:00 ET)
+
+Late-session work while user slept. Committed to `main` as `619af59`.
+
+### Production changes already pushed
+
+- **Moonshot classifier NN** (`overnight_learn.py::_train_moonshot_nn`) — MLPClassifier trained on binary `realized_ret >= 1.0` label with class rebalancing.
+- **Ensemble stacker** (`overnight_learn.py::_train_ensemble`) — second-level MLP blending nn_score + moonshot_score + H7.
+- **Feature ablation** (`feature_ablation.py`) — systematically strips one feature at a time.
+- **Comprehensive backtest** (`overnight_backtest.py`) — reports lift at +10/+25/+50/+100/+200%, bootstrap CIs, regime-conditional, simulated portfolios.
+- **`/track-record` page** (`cloudflare/public/track-record/index.html`) + `/api/backtest-report` endpoint — public evidence page reading `data_cache/backtest_report.json`.
+- **Nightly workflow** now runs the new steps and commits the new JSON artifacts (`moonshot_scores.json`, `ensemble_scores.json`, `feature_importance.json`).
+- **Landing + footer nav** added Track record link.
+
+### Research findings (see `research/nn_findings_2026-04-16.md`)
+
+Seven experiments ran in 125s. Headline numbers on the recent-4 windows:
+
+| Test | Finding |
+|---|---|
+| Architecture sweep | Best: `mlp_(16, 8) alpha=0.01` — **67.5% hit rate at +100%**. Bigger networks overfit. |
+| Model-class shootout | **ExtraTreesRegressor beat MLP** (66.2% vs 62.5%), runs in 2s vs 5s. Worth replacing the MLP regressor with ET. |
+| Calibration | Top decile moonshot-prob: **27.3% realized +100% rate**. Bottom decile: 1.0%. Decile ranking is cleanly monotonic — classifier is well-calibrated even though overall Spearman is ~0. |
+| Threshold ladder | +100% lift **9.49x**, +200% lift **21.76x**, +300% lift **37.26x**, +500% lift **49.10x**. Selection quality INCREASES with threshold — good sign. |
+| Per-window consistency | 9 of 10 windows: hit_100 ≥ 35%. **2022-05 window fails** (5%). Model has one known bear-regime failure mode. |
+| Minimal-feature experiment | **3-feature model (`log_price`, `sigma`, `p90_ratio`) beat the 8-feature model** — 67.5% vs 62.5%. The engineered features (`asymmetry`, `vol_low/hi`) are dead weight. |
+| Hand-crafted only | Without `log_price`, hit rate collapses to 47.5%. **Price level IS the signal.** |
+
+### Alpaca integration plan — see `docs/alpaca_integration_plan.md`
+
+Full scoping doc for paper-trading the picks via Alpaca. Summary:
+
+- **Swing / position trading path** (matches what the NN actually does): 10–14 workdays to paper, 4–8 weeks of paper validation before real money.
+- **Day trading path**: different model + intraday pipeline. Not tonight's work.
+- **Phase 0 blockers** (must fix before any trading):
+  1. Split-adjustment bug in `data_cache/prices/` (HTZ/RUN)
+  2. Survivorship bias (delisted tickers missing from universe)
+  3. Out-of-sample holdout (never-touched window for final validation)
+  4. Transaction cost model in `overnight_backtest.py` (5 bps slippage, 1 bp commission)
+- **Phase 1**: `alpaca_broker.py` + `trade_executor.py` + `alpaca-paper.yml` workflow
+- **Phase 2**: position caps, drawdown halt, kill switch
+- **Phase 3**: daily paper-vs-backtest reconciliation + public `/track-record/live` equity curve
+
+### Tomorrow's priorities (ordered)
+
+1. **Add missing GitHub secrets** — `RAILWAY_TOKEN` and `CLOUDFLARE_API_TOKEN`. Without these the nightly pipeline still runs data jobs and commits artifacts, but deploy steps fail.
+2. **Review `research/nn_findings_2026-04-16.md`** — decide whether to:
+   - Switch the production NN to ExtraTreesRegressor (simpler, faster, higher lift)
+   - Drop the 5 dead-weight features from `overnight_learn.py`
+   - Both (likely answer)
+3. **Open Alpaca paper account** + add API keys as Railway env vars. Start Phase 1 of the plan.
+4. **Phase 0 Alpaca blockers**: start with split-adjustment fix since it also affects `/picks` accuracy today.
+
+### Open items from earlier in session (still pending)
+
+- Fix split-adjusted prices for HTZ, RUN (overlaps with Phase 0 above)
+- Regime classifier NN (dynamic tier weights based on market state)
+- Confidence NN UI integration (rescale 0-48 → 0-100 on /picks page)
+- Downside prediction NN (replace MC P10 with NN-learned drawdown)
+- PDF export for Pro tier
+- Weekly email performance report
+- Polygon backfill for sector + market cap (bypass FMP daily limit)
+- Users DB backup pipeline
+- Key rotation at providers (previously exposed in committed SESSION_HANDOFF)
+- CSP `unsafe-inline` removal
+- SQL f-string tighten in `signals_sec_edgar.py`
+- `/api/sentiment` + `/api/cached` rate limits
+
+### Background processes running at handoff time
+
+- None. Research suite completed. All work committed to `main` at `619af59`.
+
+---
+
 
 ## TL;DR
 
