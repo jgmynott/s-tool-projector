@@ -139,13 +139,30 @@ footer a { color: var(--text-mid); }
 
 <script>
 async function load() {
-  const res = await fetch('/api/backtest-report');
-  if (!res.ok) {
-    document.getElementById('content').innerHTML = '<div class="loading">Backtest report not yet available. Check back after the next nightly run (22:00 UTC).</div>';
+  // Fetch both in parallel: live scoreboard (picks_history, updated every
+  // pipeline run) + backtest report (static, refreshed nightly).
+  const authHeaders = async () => {
+    try { const t = await window.Clerk?.session?.getToken?.(); return t ? { Authorization: `Bearer ${t}` } : {}; } catch { return {}; }
+  };
+  const [liveRes, backtestRes] = await Promise.all([
+    fetch('/api/track-record?lookback_days=365', { headers: await authHeaders() }).catch(() => null),
+    fetch('/api/backtest-report').catch(() => null),
+  ]);
+  // liveRes may be 200 (strategist) or 402 (teaser with aggregate+summary);
+  // both shapes carry `aggregate` + `summary` which is all the scoreboard needs.
+  const live = liveRes ? await liveRes.json().catch(() => null) : null;
+
+  let backtest = null;
+  if (backtestRes && backtestRes.ok) {
+    backtest = await backtestRes.json().catch(() => null);
+  }
+  if (!backtest) {
+    const scoreboardOnly = renderScoreboard(live);
+    document.getElementById('content').innerHTML = scoreboardOnly +
+      '<div class="loading">Backtest report not yet available. Check back after the next nightly run.</div>';
     return;
   }
-  const r = await res.json();
-  renderAll(r);
+  renderAll(backtest, live);
 }
 
 function fmtPct(v, sign = true) {
@@ -163,7 +180,82 @@ function liftClass(v) {
   return 'lo';
 }
 
-function renderAll(r) {
+// Render the live scoreboard block from /api/track-record response
+// (works with either the 200 strategist payload or the 402 teaser —
+// both shapes carry `aggregate` + `summary`). Returns HTML string.
+function renderScoreboard(live) {
+  if (!live || !live.aggregate || !live.aggregate.n) {
+    // No matured picks yet — honest placeholder, don't fake numbers.
+    return `<section class="section">
+      <div class="section-eyebrow">Live scoreboard</div>
+      <h2 class="section-title">Live tracking starts once picks mature.</h2>
+      <p class="section-sub">Every pick published to <a href="/picks" style="color:var(--accent-lake);">/picks</a> is logged to a public ledger with its entry date and entry price. Once a pick has been out for at least 7 days the realized return is tracked against the live market. Come back after the first week of picks has matured.</p>
+    </section>`;
+  }
+  const agg = live.aggregate;
+  const sum = live.summary || {};
+  const fmtDate = (d) => d ? new Date(d).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '—';
+
+  const aggCards = `<section class="headline">
+    <div class="h-card">
+      <div class="label">Picks matured</div>
+      <div class="val">${agg.n.toLocaleString()}</div>
+      <div class="sub">From ${fmtDate(agg.earliest_pick_date)} · ${agg.total_picks_logged} total logged</div>
+    </div>
+    <div class="h-card">
+      <div class="label">Profitable rate</div>
+      <div class="val ${agg.hit_rate >= 0.5 ? 'pos' : 'neg'}">${(agg.hit_rate * 100).toFixed(1)}%</div>
+      <div class="sub">Share of matured picks above entry price</div>
+    </div>
+    <div class="h-card">
+      <div class="label">Mean realized return</div>
+      <div class="val ${agg.mean_return >= 0 ? 'pos' : 'neg'}">${fmtPct(agg.mean_return)}</div>
+      <div class="sub">Average across matured picks · no rebalancing</div>
+    </div>
+    <div class="h-card">
+      <div class="label">Median realized return</div>
+      <div class="val ${agg.median_return >= 0 ? 'pos' : 'neg'}">${fmtPct(agg.median_return)}</div>
+      <div class="sub">Typical pick, not skewed by outliers</div>
+    </div>
+  </section>`;
+
+  // Per-tier breakdown
+  const tiers = [
+    ['conservative', 'Conservative', 'Low volatility · quality'],
+    ['moderate',     'Moderate',     'Core · balanced'],
+    ['aggressive',   'Aggressive',   'High volatility · tactical'],
+    ['asymmetric',   'Asymmetric',   'Tail upside · speculative'],
+  ];
+  const tierRows = tiers.map(([k, label, sub]) => {
+    const b = sum[k] || { n: 0 };
+    if (!b.n) {
+      return `<tr><td class="label">${label}<div style="font-size:11px;color:var(--text-dim);font-weight:400;margin-top:2px;">${sub}</div></td><td colspan="4" style="color:var(--text-dim);font-style:italic;">No matured picks yet</td></tr>`;
+    }
+    const hitCls = b.hit_rate >= 0.5 ? 'pos' : '';
+    const meanCls = b.mean_return >= 0 ? 'pos' : 'neg';
+    const medCls = b.median_return >= 0 ? 'pos' : 'neg';
+    return `<tr>
+      <td class="label">${label}<div style="font-size:11px;color:var(--text-dim);font-weight:400;margin-top:2px;">${sub}</div></td>
+      <td>${b.n}</td>
+      <td class="${hitCls}">${(b.hit_rate * 100).toFixed(1)}%</td>
+      <td class="${meanCls}">${fmtPct(b.mean_return)}</td>
+      <td class="${medCls}">${fmtPct(b.median_return)}</td>
+    </tr>`;
+  }).join('');
+
+  return `<section class="section" style="margin-top:12px;">
+    <div class="section-eyebrow">Live scoreboard · real picks, real prices</div>
+    <h2 class="section-title">What the ranker has actually delivered.</h2>
+    <p class="section-sub">Every row below joins our published picks with today's prices. Nothing is retroactively adjusted. Only picks at least 7 days old count as <em>matured</em>.</p>
+    ${aggCards}
+    <table class="perf" style="margin-top:18px;">
+      <thead><tr><th>Tier</th><th>Matured picks</th><th>Profitable rate</th><th>Mean return</th><th>Median return</th></tr></thead>
+      <tbody>${tierRows}</tbody>
+    </table>
+  </section>`;
+}
+
+function renderAll(r, live) {
   const meta = document.getElementById('meta');
   const wr = r.window_range || [];
   meta.innerHTML = `
@@ -302,7 +394,19 @@ function renderAll(r) {
   const caveats = (r.notes || []).map(n => `<li>${n}</li>`).join('');
   const caveatHtml = caveats ? `<div class="caveats"><h3>Methodology &amp; caveats</h3><ul>${caveats}</ul></div>` : '';
 
-  document.getElementById('content').innerHTML = headHtml + disclosureHtml + tableHtml + regimeHtml + simHtml + caveatHtml;
+  // Live scoreboard leads — real picks against real prices — followed by
+  // the backtest validation (headHtml / disclosure / table / regime / sim).
+  // Backtest is the "how did we validate" supporting evidence; scoreboard
+  // is the "what has it done since" trust signal.
+  const scoreboardHtml = renderScoreboard(live);
+  const backtestEyebrow = `<section class="section" style="margin-top:48px;">
+    <div class="section-eyebrow">Backtest validation</div>
+    <h2 class="section-title">How the ranker was tested before going live.</h2>
+    <p class="section-sub">Walk-forward across ~22,000 ticker-windows, 2022-05 → 2024-08. Out-of-sample on 2024 data the model never saw in training. The honest bar, not the flattering one.</p>
+  </section>`;
+  document.getElementById('content').innerHTML =
+    scoreboardHtml + backtestEyebrow + headHtml + disclosureHtml +
+    tableHtml + regimeHtml + simHtml + caveatHtml;
 }
 
 load();

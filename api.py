@@ -338,20 +338,42 @@ def track_record(
         is_strategist = users_db.can_access_picks(user_row)
 
     from datetime import datetime as _dt, timedelta as _td
+    from pathlib import Path as _Path
+    import csv as _csv
     since = (_dt.utcnow().date() - _td(days=lookback_days)).isoformat()
 
     rows = get_picks_history(conn, tier=tier, since_date=since, limit=2000)
 
-    # Attach latest cached price + realized return
+    # Price source hierarchy:
+    #   1. Most-recent Close from data_cache/prices/<SYM>.csv  (updated by the
+    #      nightly yfinance refresh, freshest available)
+    #   2. projection cache current_price                       (lagging, but
+    #      always present for any symbol the engine has scanned)
+    # Falling back on (2) alone caused realized-return values to stop updating
+    # for tickers that weren't re-scanned in the current window.
+    _prices_dir = _Path(__file__).parent / "data_cache" / "prices"
     price_cache: dict[str, float | None] = {}
     def _latest_price(sym: str):
         if sym in price_cache:
             return price_cache[sym]
+        csv_path = _prices_dir / f"{sym}.csv"
+        if csv_path.exists():
+            try:
+                with csv_path.open() as fh:
+                    last = None
+                    for row in _csv.DictReader(fh):
+                        last = row
+                    if last and last.get("Close"):
+                        price_cache[sym] = float(last["Close"])
+                        return price_cache[sym]
+            except Exception:
+                pass
         p = get_projection(conn, sym, 252)
         price = p.get("current_price") if p else None
         price_cache[sym] = price
         return price
 
+    today = _dt.utcnow().date()
     for r in rows:
         cur = _latest_price(r["symbol"])
         r["current_price"] = cur
@@ -365,12 +387,22 @@ def track_record(
         else:
             r["realized_return"] = None
             r["toward_target_pct"] = None
+        # Days a pick has been held — lets the UI bucket by maturity.
+        try:
+            pd = _dt.fromisoformat(r["pick_date"][:10]).date()
+            r["days_held"] = (today - pd).days
+        except Exception:
+            r["days_held"] = None
 
-    # Summary by tier — only picks that had at least 7 days to play out
+    # Summary by tier — only picks that had at least 7 days to play out.
+    # "asymmetric" included for the live scoreboard; the backtest-level
+    # teasers historically only used three tiers because the asymmetric
+    # list is scored separately, but those picks go into picks_history
+    # just the same and their live results belong on the scoreboard.
     cutoff = (_dt.utcnow().date() - _td(days=7)).isoformat()
     matured = [r for r in rows if r["pick_date"] <= cutoff and r["realized_return"] is not None]
     summary: dict = {}
-    for tname in ("conservative", "moderate", "aggressive"):
+    for tname in ("conservative", "moderate", "aggressive", "asymmetric"):
         bucket = [r for r in matured if r["tier"] == tname]
         if not bucket:
             summary[tname] = {"n": 0}
@@ -387,13 +419,38 @@ def track_record(
             "hit_rate": round(hits / n, 3),
         }
 
+    # Aggregate scoreboard across all matured picks — the one-number
+    # trust headline on /track-record.
+    aggregate: dict = {"n": 0}
+    if matured:
+        rets = sorted(r["realized_return"] for r in matured)
+        n = len(rets)
+        median = rets[n // 2] if n % 2 else (rets[n // 2 - 1] + rets[n // 2]) / 2
+        mean = sum(rets) / n
+        hits = sum(1 for r in matured if r["realized_return"] > 0)
+        earliest = min(r["pick_date"] for r in rows) if rows else None
+        aggregate = {
+            "n": n,
+            "hit_rate": round(hits / n, 3),
+            "mean_return": round(mean, 4),
+            "median_return": round(median, 4),
+            "total_picks_logged": len(rows),
+            "earliest_pick_date": earliest,
+            "as_of": today.isoformat(),
+        }
+    scoreboard = {"summary": summary, "aggregate": aggregate}
+
     if not is_strategist:
+        # Aggregate + per-tier stats are OK to expose publicly — they are
+        # proof-of-edge, not personalized recommendations. Pick-level detail
+        # stays behind the paywall.
         return JSONResponse(
             status_code=402,
             content={
                 "error": "strategist_required",
                 "tier_required": "strategist",
-                "summary": summary,  # teaser: show the aggregate stats
+                "summary": summary,
+                "aggregate": aggregate,
                 "hint": "Full pick-by-pick track record is part of Strategist ($29/mo).",
             },
         )
@@ -402,6 +459,7 @@ def track_record(
         "lookback_days": lookback_days,
         "tier_filter": tier,
         "summary": summary,
+        "aggregate": aggregate,
         "count": len(rows),
         "picks": rows,
     }
