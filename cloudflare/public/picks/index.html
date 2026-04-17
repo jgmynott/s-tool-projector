@@ -498,6 +498,38 @@ footer a { color: var(--text-mid); }
 
 .tp-msg { font: 500 13px/1.5 'Inter'; color: var(--text-dim); font-style: italic; padding: 18px 2px; text-align: center; }
 
+/* Custom tooltip for pie/donut slices. Follows the cursor and shows the
+ * ticker, tier, dollar amount, % of portfolio, % of tier. Pointer-events
+ * disabled so the tooltip never intercepts the mouse. */
+.chart-tooltip {
+  position: fixed; z-index: 9999; pointer-events: none;
+  padding: 12px 14px;
+  background: rgba(11,16,6,0.96);
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.55);
+  font-family: 'Inter'; font-variant-numeric: tabular-nums;
+  min-width: 180px;
+  opacity: 0; transform: translateY(4px);
+  transition: opacity .12s ease, transform .12s ease;
+  backdrop-filter: blur(10px);
+}
+.chart-tooltip.visible { opacity: 1; transform: translateY(0); }
+.ct-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed rgba(155,161,185,0.22); }
+.ct-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+.ct-sym { font: 700 16px 'Inter'; color: var(--text-hi); letter-spacing: -0.015em; }
+.ct-tier { font: 600 10px 'Inter'; color: var(--text-dim); letter-spacing: 0.2em; text-transform: uppercase; margin-left: auto; }
+.ct-rows { display: flex; flex-direction: column; gap: 6px; }
+.ct-row { display: flex; justify-content: space-between; gap: 18px; font-size: 12.5px; }
+.ct-row .ct-label { color: var(--text-dim); }
+.ct-row .ct-value { color: var(--text-hi); font-weight: 600; }
+.ct-row .ct-value.big { font: 400 16px/1 'Crimson Text', Georgia, serif; color: var(--text-hi); letter-spacing: -0.01em; }
+
+/* Visual affordance: slice under cursor brightens slightly */
+.alloc-donut circle[data-sym], .mini-pie circle[data-sym] { cursor: pointer; transition: stroke-width .12s ease; }
+.alloc-donut.master circle[data-sym].hover { stroke-width: 8.5; }
+.mini-pie circle[data-sym].hover { stroke-width: 10.5; }
+
 @media (max-width: 920px) {
   .alloc-widget { padding: 24px; }
   .alloc-top { grid-template-columns: 1fr; gap: 24px; }
@@ -1097,16 +1129,18 @@ function renderMasterDonut(allTickers, total, center) {
     const visiblePct = Math.max(0.05, pct - GAP);
     const dashArr = `${visiblePct.toFixed(3)} ${(100 - visiblePct).toFixed(3)}`;
     const dashOff = (-offset).toFixed(3);
-    // Opacity 0.55-1.0 scaled to this ticker's rank within its tier.
     const tMax = tierMax[tk.tier] || tk.amt;
     const op = (0.55 + 0.45 * (tk.amt / tMax)).toFixed(2);
+    // Data attrs feed the custom hover tooltip. No <title> — native SVG
+    // tooltips are slow and OS-styled, the custom one is instant.
     const arc = `<circle cx="21" cy="21" r="15.9155" fill="transparent"
       stroke="${TIER_PALETTE[tk.tier]}" stroke-width="7"
       stroke-dasharray="${dashArr}" stroke-dashoffset="${dashOff}"
       stroke-opacity="${op}"
-      transform="rotate(-90 21 21)">
-      <title>${tk.sym} · ${TIER_LABELS[tk.tier]} · ${fmtUsd(tk.amt)}</title>
-    </circle>`;
+      transform="rotate(-90 21 21)"
+      data-sym="${tk.sym}" data-tier="${tk.tier}"
+      data-amt="${tk.amt.toFixed(2)}"
+      data-pct-total="${pct.toFixed(2)}"></circle>`;
     offset += pct;
     return arc;
   }).join('');
@@ -1150,9 +1184,10 @@ function renderTierPie(tier, entries) {
       stroke="${TIER_PALETTE[tier]}" stroke-width="9"
       stroke-dasharray="${dashArr}" stroke-dashoffset="${dashOff}"
       stroke-opacity="${op}"
-      transform="rotate(-90 21 21)">
-      <title>${e.sym} · ${fmtUsd(e.amt)} · ${((e.amt/tierTotal)*100).toFixed(1)}%</title>
-    </circle>`;
+      transform="rotate(-90 21 21)"
+      data-sym="${e.sym}" data-tier="${tier}"
+      data-amt="${e.amt.toFixed(2)}"
+      data-pct-tier="${pct.toFixed(2)}"></circle>`;
     offset += pct;
     return arc;
   }).join('');
@@ -1298,13 +1333,75 @@ function wireAllocControls(picksData, trackData) {
     localStorage.setItem('stool_alloc_total', String(ALLOC.totalUsd));
     localStorage.setItem('stool_alloc_profile', ALLOC.profile);
     computeAllocations(picksData);
-    // Re-render in place
     document.getElementById('content').innerHTML = renderPage(picksData, trackData);
     wireAllocControls(picksData, trackData);
+    wireChartTooltips();
   };
   total?.addEventListener('change', onChange);
   total?.addEventListener('input', onChange);
   profile?.addEventListener('change', onChange);
+}
+
+// Custom hover tooltip for pie/donut slices. Shows instantly on hover
+// with the ticker, tier, $ amount, % of portfolio, % of tier. Replaces
+// browser-native <title> which is slow and OS-styled.
+function wireChartTooltips() {
+  let tip = document.getElementById('chartTip');
+  if (!tip) {
+    tip = document.createElement('div');
+    tip.id = 'chartTip';
+    tip.className = 'chart-tooltip';
+    tip.innerHTML = `
+      <div class="ct-head">
+        <span class="ct-dot"></span>
+        <span class="ct-sym"></span>
+        <span class="ct-tier"></span>
+      </div>
+      <div class="ct-rows">
+        <div class="ct-row"><span class="ct-label">Amount</span><span class="ct-value big ct-amt"></span></div>
+        <div class="ct-row"><span class="ct-label">% of portfolio</span><span class="ct-value ct-pct-total"></span></div>
+        <div class="ct-row"><span class="ct-label">% of tier</span><span class="ct-value ct-pct-tier"></span></div>
+      </div>`;
+    document.body.appendChild(tip);
+  }
+
+  const tierTotals = ALLOC.byTier || {};
+  const portfolioTotal = ALLOC.totalUsd || 0;
+
+  const show = (circle, evt) => {
+    const sym   = circle.getAttribute('data-sym');
+    const tier  = circle.getAttribute('data-tier');
+    const amt   = parseFloat(circle.getAttribute('data-amt') || '0');
+    const tierTotal = tierTotals[tier] || 0;
+    const pctTotal = portfolioTotal > 0 ? (amt / portfolioTotal) * 100 : 0;
+    const pctTier  = tierTotal     > 0 ? (amt / tierTotal)     * 100 : 0;
+    const tierColor = TIER_PALETTE[tier] || '#5faac5';
+
+    tip.querySelector('.ct-dot').style.background = tierColor;
+    tip.querySelector('.ct-sym').textContent = sym;
+    tip.querySelector('.ct-tier').textContent = TIER_LABELS[tier] || tier;
+    tip.querySelector('.ct-amt').textContent = fmtUsd(amt);
+    tip.querySelector('.ct-pct-total').textContent = pctTotal.toFixed(2) + '%';
+    tip.querySelector('.ct-pct-tier').textContent  = pctTier.toFixed(1)  + '%';
+    circle.classList.add('hover');
+    tip.classList.add('visible');
+    positionTip(evt);
+  };
+  const hide = (circle) => { circle?.classList.remove('hover'); tip.classList.remove('visible'); };
+  const positionTip = (evt) => {
+    const w = tip.offsetWidth || 220;
+    const h = tip.offsetHeight || 140;
+    const x = Math.min(evt.clientX + 16, window.innerWidth - w - 12);
+    const y = Math.min(evt.clientY + 16, window.innerHeight - h - 12);
+    tip.style.left = x + 'px';
+    tip.style.top  = y + 'px';
+  };
+
+  document.querySelectorAll('circle[data-sym]').forEach(c => {
+    c.addEventListener('mouseenter', e => show(c, e));
+    c.addEventListener('mousemove',  e => positionTip(e));
+    c.addEventListener('mouseleave', () => hide(c));
+  });
 }
 
 // Tier section that opens a tab — splits picks into first-5 (always
@@ -1505,6 +1602,7 @@ async function load() {
 
   content.innerHTML = renderPage(picksData, trackData);
   wireAllocControls(picksData, trackData);
+  wireChartTooltips();
 }
 
 // Start the shared nav (handles pill + dark Clerk appearance) and hook the
