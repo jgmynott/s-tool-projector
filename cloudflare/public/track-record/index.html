@@ -322,6 +322,82 @@ function renderHonestBlock(honest, legacyBacktest) {
   return '';
 }
 
+// Internal — not currently surfaced on the page (user clarified the
+// priority is adding data sources to the model, not displaying them).
+// Kept for potential admin debug view.
+function renderDataFeeds(status) {
+  if (!status || !status.feeds) return '';
+  const f = status.feeds;
+  const fmtDT = (iso) => {
+    if (!iso) return '—';
+    try { return new Date(iso).toLocaleString(); } catch { return iso; }
+  };
+  const fmtN = (n) => (n == null) ? '—' : n.toLocaleString();
+  const statusPill = (s) => {
+    if (s === 'live')    return `<span class="pill live">● live</span>`;
+    if (s === 'pending') return `<span class="pill pending">◌ pending</span>`;
+    return `<span class="pill err">✗ error</span>`;
+  };
+
+  const si = f.short_interest_yf || {};
+  const ph = f.picks_history || {};
+  const sa = f.short_interest_ablation || {};
+
+  const rows = [];
+  rows.push(`<tr>
+    <td class="label">Short interest (yfinance)</td>
+    <td>${statusPill(si.status)}</td>
+    <td>${fmtN(si.symbols)} symbols</td>
+    <td>Snapshot ${si.last_snapshot_date || '—'}</td>
+    <td>${fmtDT(si.last_fetched_at)}</td>
+  </tr>`);
+  rows.push(`<tr>
+    <td class="label">Picks history ledger</td>
+    <td>${statusPill(ph.status)}</td>
+    <td>${fmtN(ph.rows)} picks · ${fmtN(ph.symbols)} names</td>
+    <td>${ph.earliest_pick_date || '—'} → ${ph.latest_pick_date || '—'}</td>
+    <td>every pipeline run</td>
+  </tr>`);
+  rows.push(`<tr>
+    <td class="label">Short-interest ablation</td>
+    <td>${statusPill(sa.status)}</td>
+    <td>${fmtN(sa.si_distinct_symbols)} symbols joined · ${sa.si_coverage_pct ?? '—'}% coverage</td>
+    <td>Run ${sa.run_date || '—'}</td>
+    <td>${sa.baseline_hit_100 != null ? `baseline hit_100 ${(sa.baseline_hit_100*100).toFixed(1)}%` : sa.note || '—'}</td>
+  </tr>`);
+
+  // Roadmap rows
+  const roadmap = (status.pipeline_roadmap || []).map(r => `<tr>
+    <td class="label">${r.source}</td>
+    <td><span class="pill queued">◔ queued</span></td>
+    <td colspan="3" style="color:var(--text-dim);">${r.key_present ? 'API key configured — wiring into the nightly pipeline next' : 'no API key set'}</td>
+  </tr>`).join('');
+
+  // Ablation deltas — inline below the table so we can quickly see
+  // which SI variant beats the baseline night-over-night.
+  let deltaBlock = '';
+  const deltas = sa.deltas_vs_baseline || {};
+  if (Object.keys(deltas).length) {
+    const items = Object.entries(deltas).map(([k, v]) => {
+      const pp = (v * 100).toFixed(1);
+      const cls = v > 0 ? 'pos' : v < 0 ? 'neg' : '';
+      return `<span class="delta-pill ${cls}">${k} <b>${v > 0 ? '+' : ''}${pp}pp</b></span>`;
+    }).join('');
+    deltaBlock = `<div class="deltas">Latest ablation deltas vs 8-feature baseline: ${items}</div>`;
+  }
+
+  return `<section class="section">
+    <div class="section-eyebrow">Data feeds · under the hood</div>
+    <h2 class="section-title">What's feeding the model <em>right now</em>.</h2>
+    <p class="section-sub">Every row is a live data source tracked by the nightly pipeline. The "snapshot" column is the most recent data we've actually ingested. "Queued" rows are sources with API keys ready but not yet wired into the training loop.</p>
+    <table class="perf data-feeds">
+      <thead><tr><th>Source</th><th>Status</th><th>Coverage</th><th>Snapshot</th><th>Last refresh</th></tr></thead>
+      <tbody>${rows.join('')}${roadmap}</tbody>
+    </table>
+    ${deltaBlock}
+  </section>`;
+}
+
 function renderAll(r, live, honest) {
   const meta = document.getElementById('meta');
   const wr = r.window_range || [];

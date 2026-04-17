@@ -310,6 +310,111 @@ def sentiment(
     return rows
 
 
+@app.get("/api/data-status")
+@limiter.limit("60/minute")
+def data_status(request: Request):
+    """Surface what's feeding the model — the answer to "what data are
+    you running on today?". Covers:
+      - short_interest_yf: yfinance short-interest snapshots
+      - picks_history: the public ledger of what was recommended
+      - most recent short-interest ablation run (from runtime_data/)
+      - wave 1 honest-audit generation timestamp
+    """
+    from pathlib import Path as _Path
+    import json as _json
+    parent = _Path(__file__).parent
+
+    out: dict = {"generated_at": int(__import__("time").time()), "feeds": {}}
+
+    # Short interest (yfinance)
+    try:
+        r = conn.execute(
+            """SELECT COUNT(*), COUNT(DISTINCT symbol), MAX(fetched_at),
+                      MAX(short_snapshot_date)
+               FROM short_interest_yf"""
+        ).fetchone()
+        out["feeds"]["short_interest_yf"] = {
+            "rows": r[0], "symbols": r[1],
+            "last_fetched_at": r[2],
+            "last_snapshot_date": r[3],
+            "source": "yfinance Ticker.info (shortPercentOfFloat, shortRatio)",
+            "refresh_cadence": "nightly",
+            "status": "live" if r[0] else "pending",
+        }
+    except Exception as e:
+        out["feeds"]["short_interest_yf"] = {"status": "error", "error": str(e)}
+
+    # Picks history ledger
+    try:
+        r = conn.execute(
+            "SELECT COUNT(*), COUNT(DISTINCT symbol), MAX(pick_date), MIN(pick_date) "
+            "FROM picks_history"
+        ).fetchone()
+        out["feeds"]["picks_history"] = {
+            "rows": r[0], "symbols": r[1],
+            "earliest_pick_date": r[3], "latest_pick_date": r[2],
+            "refresh_cadence": "every pipeline run (≥ daily)",
+            "status": "live" if r[0] else "pending",
+        }
+    except Exception as e:
+        out["feeds"]["picks_history"] = {"status": "error", "error": str(e)}
+
+    # Latest short-interest ablation result
+    si_abl_path = parent / "runtime_data" / "short_interest_ablation_latest.json"
+    if si_abl_path.exists():
+        try:
+            d = _json.loads(si_abl_path.read_text())
+            runs = d.get("runs", {})
+            baseline_hit = runs.get("base_8", {}).get("hit_100")
+            deltas = {}
+            for name, r in runs.items():
+                if name == "base_8":
+                    continue
+                if baseline_hit and r.get("hit_100") is not None:
+                    deltas[name] = round(r["hit_100"] - baseline_hit, 4)
+            out["feeds"]["short_interest_ablation"] = {
+                "run_date": d.get("run_date"),
+                "si_coverage_pct": d.get("si_coverage_pct"),
+                "si_rows_loaded": d.get("si_rows_loaded"),
+                "si_distinct_symbols": d.get("si_distinct_symbols"),
+                "baseline_hit_100": baseline_hit,
+                "deltas_vs_baseline": deltas,
+                "status": "live",
+            }
+        except Exception as e:
+            out["feeds"]["short_interest_ablation"] = {"status": "error", "error": str(e)}
+    else:
+        out["feeds"]["short_interest_ablation"] = {
+            "status": "pending",
+            "note": "first run lands after the next scheduled slow path (23:00 UTC)",
+        }
+
+    # Honest audit staleness
+    audit = parent / "runtime_data" / "wave1_honest_audit.json"
+    if audit.exists():
+        try:
+            d = _json.loads(audit.read_text())
+            out["feeds"]["honest_audit"] = {
+                "generated_at": d.get("generated_at"),
+                "universe_rows": d.get("universe_rows"),
+                "delisted_mid_window_pct": d.get("delisted_mid_window_pct"),
+                "illiquid_pct": d.get("illiquid_pct"),
+                "status": "live",
+            }
+        except Exception:
+            pass
+
+    # Roadmap teaser — data sources we haven't wired yet but have keys for
+    out["pipeline_roadmap"] = [
+        {"source": "Finnhub earnings calendar + recommendation trends",
+         "status": "queued", "key_present": bool(os.getenv("FINNHUB_API_KEY"))},
+        {"source": "Polygon options flow + put/call ratio",
+         "status": "queued", "key_present": bool(os.getenv("POLYGON_API_KEY"))},
+    ]
+
+    return out
+
+
 @app.get("/api/honest-audit")
 @limiter.limit("60/minute")
 def honest_audit(request: Request):

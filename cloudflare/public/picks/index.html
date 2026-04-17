@@ -661,6 +661,15 @@ window.switchTab = function(key) {
     panel.classList.toggle('active', panel.getAttribute('data-panel-key') === key);
   });
   localStorage.setItem('stool_picks_tab', key);
+  // Scroll the active tab panel into view — user explicitly asked
+  // for a jump to the picks for that tier so they don't have to hunt.
+  // Deferred one frame so the active-class toggle has already laid out.
+  requestAnimationFrame(() => {
+    const panel = document.querySelector(`[data-panel-key="${key}"]`);
+    if (panel) {
+      panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  });
 };
 
 // "Show remaining N picks" toggle — keeps each tab short by default, lets

@@ -81,6 +81,16 @@ jobs:
         run: |
           python3 -m signals_short_interest_yf --universe preferred --sleep 0.25 || true
 
+      # Finnhub earnings + analyst recommendations. Free tier = 60 req/min
+      # so we use 1.1s sleeps = ~10 min for preferred universe (~537
+      # tickers). Accumulates nightly; in a month we'll have a dense
+      # time-series per ticker to train on. One-shot snapshots today are
+      # already usable as "time to next earnings" + "last surprise %"
+      # features for near-term prediction.
+      - name: Finnhub earnings + recs refresh
+        run: |
+          python3 -m signals_earnings_finnhub --universe preferred --sleep 1.1 || true
+
       - name: Upside research sweep
         run: python3 upside_hunt.py || true
 
