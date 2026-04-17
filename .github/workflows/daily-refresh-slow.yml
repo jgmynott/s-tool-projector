@@ -63,13 +63,14 @@ jobs:
             engine-cache-fast-
             engine-cache-
 
-      # Russell-3000 long-tail refresh runs here, not in fast path, since
-      # the slow path has a 150-min budget and no tight deadline. Uses
-      # STALE_HOURS=18 so the ~600 SP500+NDX100+WSB symbols that fast
-      # already computed this cycle skip instantly.
-      - name: Russell 3000 long-tail refresh
-        run: |
-          python3 worker.py --all || echo "worker.py exited non-zero; continuing"
+      # Russell 3000 long-tail refresh was here but burned ~2 hours
+      # per run even with STALE_HOURS=18 caching, which starved the NN
+      # training + backtest + deploy steps that actually matter. Fast
+      # path at 20:00 UTC already refreshes the preferred universe
+      # (SP500 ∪ NDX100 ∪ WSB, ~537 symbols) — the picks the Strategist
+      # page actually surfaces. Long-tail staleness on the non-preferred
+      # Russell 3000 names is tolerable; we can add a weekly job later
+      # if/when it matters.
 
       - name: Upside research sweep
         run: python3 upside_hunt.py || true
