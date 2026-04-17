@@ -21,6 +21,7 @@ data_cache/
 phase_c_reproduction*.csv
 phase_c_reproduction*.md
 upside_hunt_results.csv
+upside_hunt_scored.csv
 upside_hunt_report.md
 
 # Overnight / ad-hoc run logs

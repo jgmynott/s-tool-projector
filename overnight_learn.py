@@ -161,6 +161,90 @@ def _train_confidence_nn(df: pd.DataFrame) -> tuple:
     return feat, final_model, scaler
 
 
+def _train_moonshot_nn(df: pd.DataFrame) -> tuple:
+    """Binary classifier trained on the +100% label.
+
+    The regression NN above predicts expected 12-month return — good for
+    ranking "will this move", weak at "will this double". This classifier
+    is trained directly on `realized_ret >= 1.0` with class rebalancing
+    (moonshots are ~5-10% of the universe) so its objective matches the
+    one users actually care about: find the few tickers that 2x.
+
+    Walk-forward: for each window, train on prior windows only, predict
+    on the target. Returns (feat_df_with_moonshot_score, final_model, scaler).
+    """
+    from sklearn.neural_network import MLPClassifier
+    from sklearn.preprocessing import StandardScaler
+
+    feat = _build_features(df)
+    feature_names = [
+        "log_price", "sigma", "p90_ratio", "p10_ratio", "asymmetry",
+        "vol_low", "vol_hi", "H7_ewma_p90",
+    ]
+    feat["moonshot_label"] = (feat["realized_ret"] >= 1.0).astype(int)
+
+    windows = sorted(feat["as_of"].unique())
+    if len(windows) < 3:
+        feat["moonshot_score"] = 0.0
+        return feat, None, None
+
+    def _balance(X, y, seed=42):
+        pos_idx = np.where(y == 1)[0]
+        neg_idx = np.where(y == 0)[0]
+        if len(pos_idx) == 0 or len(neg_idx) <= len(pos_idx):
+            return X, y
+        factor = len(neg_idx) // max(len(pos_idx), 1)
+        oversampled = np.tile(pos_idx, factor)
+        idx = np.concatenate([neg_idx, oversampled])
+        rng = np.random.default_rng(seed)
+        rng.shuffle(idx)
+        return X[idx], y[idx]
+
+    scores = np.zeros(len(feat))
+    for i, w in enumerate(windows):
+        if i == 0:
+            continue
+        train_mask = feat["as_of"].isin(windows[:i])
+        test_mask = feat["as_of"] == w
+        X_train = feat.loc[train_mask, feature_names].values
+        y_train = feat.loc[train_mask, "moonshot_label"].values
+        X_test = feat.loc[test_mask, feature_names].values
+        if len(X_train) < 200 or y_train.sum() < 10 or len(X_test) == 0:
+            continue
+        X_bal, y_bal = _balance(X_train, y_train)
+        scaler = StandardScaler()
+        X_bal_s = scaler.fit_transform(X_bal)
+        X_test_s = scaler.transform(X_test)
+        model = MLPClassifier(
+            hidden_layer_sizes=(32, 16), activation="relu",
+            max_iter=400, early_stopping=True, validation_fraction=0.15,
+            random_state=42, alpha=1e-3,
+        )
+        model.fit(X_bal_s, y_bal)
+        probs = model.predict_proba(X_test_s)
+        pos_col = int(np.where(model.classes_ == 1)[0][0]) if 1 in model.classes_ else None
+        if pos_col is None:
+            continue
+        scores[test_mask] = probs[:, pos_col]
+        log.info("Moonshot window %s: trained on %d rows (%d positives), predicted %d",
+                 w, len(X_bal), int(y_bal.sum()), len(X_test))
+
+    feat["moonshot_score"] = scores
+
+    X_all = feat[feature_names].values
+    y_all = feat["moonshot_label"].values
+    X_bal, y_bal = _balance(X_all, y_all)
+    scaler = StandardScaler()
+    X_bal_s = scaler.fit_transform(X_bal)
+    final_model = MLPClassifier(
+        hidden_layer_sizes=(32, 16), activation="relu",
+        max_iter=400, early_stopping=True, validation_fraction=0.15,
+        random_state=42, alpha=1e-3,
+    )
+    final_model.fit(X_bal_s, y_bal)
+    return feat, final_model, scaler
+
+
 def _train_nn(df: pd.DataFrame) -> tuple:
     """Walk-forward NN training — for each window, train only on prior
     windows, predict on the target window. Returns the per-row NN score
@@ -223,6 +307,71 @@ def _train_nn(df: pd.DataFrame) -> tuple:
     return feat, final_model, scaler
 
 
+def _train_ensemble(scored: pd.DataFrame) -> tuple:
+    """Second-level stacker: learns the best blend of walk-forward
+    base-model scores. Inputs are the OOS predictions produced by
+    _train_nn / _train_moonshot_nn / the hand-crafted H7 EWMA. Target
+    is realized_ret. Walk-forward on the same window axis.
+
+    Returns (scored_with_ensemble_score, final_stacker_model, scaler).
+    """
+    from sklearn.neural_network import MLPRegressor
+    from sklearn.preprocessing import StandardScaler
+
+    feat_cols = [c for c in ("nn_score", "moonshot_score", "H7_ewma_p90",
+                             "H9_full_stack") if c in scored.columns]
+    if len(feat_cols) < 2 or "realized_ret" not in scored.columns:
+        scored["ensemble_score"] = 0.0
+        return scored, None, None
+
+    work = scored[feat_cols + ["as_of", "realized_ret"]].copy()
+    work = work.fillna(0.0)
+
+    windows = sorted(work["as_of"].unique())
+    if len(windows) < 3:
+        scored["ensemble_score"] = 0.0
+        return scored, None, None
+
+    preds_out = np.zeros(len(work))
+    for i, w in enumerate(windows):
+        if i == 0:
+            continue
+        train_mask = work["as_of"].isin(windows[:i])
+        test_mask = work["as_of"] == w
+        X_train = work.loc[train_mask, feat_cols].values
+        y_train = np.clip(work.loc[train_mask, "realized_ret"].values, -0.95, 5.0)
+        X_test = work.loc[test_mask, feat_cols].values
+        if len(X_train) < 100 or len(X_test) == 0:
+            continue
+        scaler = StandardScaler()
+        X_tr_s = scaler.fit_transform(X_train)
+        X_te_s = scaler.transform(X_test)
+        model = MLPRegressor(
+            hidden_layer_sizes=(16, 8), activation="relu",
+            max_iter=300, early_stopping=True, validation_fraction=0.15,
+            random_state=42, alpha=1e-2,
+        )
+        model.fit(X_tr_s, y_train)
+        preds_out[test_mask] = model.predict(X_te_s)
+
+    # Shift so scores are positive for ranking (score_col > 0 filter).
+    preds_out = preds_out - preds_out.min() + 0.01
+    scored.loc[work.index, "ensemble_score"] = preds_out
+
+    # Final stacker on all data for today-scoring.
+    X_all = work[feat_cols].values
+    y_all = np.clip(work["realized_ret"].values, -0.95, 5.0)
+    scaler = StandardScaler()
+    X_all_s = scaler.fit_transform(X_all)
+    final_model = MLPRegressor(
+        hidden_layer_sizes=(16, 8), activation="relu",
+        max_iter=300, early_stopping=True, validation_fraction=0.15,
+        random_state=42, alpha=1e-2,
+    )
+    final_model.fit(X_all_s, y_all)
+    return scored, final_model, scaler
+
+
 def main():
     if not RESULTS_CSV.exists():
         log.error("%s missing — run upside_hunt.py first", RESULTS_CSV)
@@ -239,6 +388,27 @@ def main():
         scored["nn_score"] = 0.0
         final_model = None
 
+    # Moonshot classifier — binary NN trained specifically on the +100% label.
+    moon_model = moon_scaler = None
+    try:
+        moon_feat, moon_model, moon_scaler = _train_moonshot_nn(df)
+        # Both dfs derive from the same source with preserved row order.
+        if len(moon_feat) == len(scored) and "moonshot_score" in moon_feat.columns:
+            scored["moonshot_score"] = moon_feat["moonshot_score"].values
+        else:
+            scored["moonshot_score"] = 0.0
+    except Exception as e:
+        log.exception("Moonshot NN training failed: %s", e)
+        scored["moonshot_score"] = 0.0
+
+    # Ensemble stacker — blends walk-forward base scores into one.
+    ens_model = ens_scaler = None
+    try:
+        scored, ens_model, ens_scaler = _train_ensemble(scored)
+    except Exception as e:
+        log.exception("Ensemble stacker training failed: %s", e)
+        scored["ensemble_score"] = 0.0
+
     # Evaluate every method on the most recent year of windows only.
     recent_cutoff = sorted(scored["as_of"].unique())[-4:]  # last 4 windows
     recent = scored[scored["as_of"].isin(recent_cutoff)]
@@ -246,7 +416,7 @@ def main():
              list(recent_cutoff), len(recent))
 
     performance = {}
-    for m in HAND_METHODS + ["nn_score"]:
+    for m in HAND_METHODS + ["nn_score", "moonshot_score", "ensemble_score"]:
         performance[m] = _hit_rate(recent, m, top_n=20, threshold=1.0)
     # Also compute a baseline: hit rate across the entire recent universe
     uni = recent["realized_ret"] >= 1.0
@@ -280,6 +450,21 @@ def main():
     OUT_JSON.parent.mkdir(parents=True, exist_ok=True)
     OUT_JSON.write_text(json.dumps(out, indent=2, default=str))
     log.info("Wrote scoring decision to %s", OUT_JSON)
+
+    # Persist the scored df for downstream overnight_backtest.py. Contains
+    # the walk-forward nn_score / moonshot_score / ensemble_score columns
+    # the backtest needs to report NN-family lift alongside hand-crafted.
+    scored_csv = ROOT / "upside_hunt_scored.csv"
+    try:
+        keep_cols = [c for c in scored.columns
+                     if c in ("as_of", "symbol", "realized_ret",
+                              "nn_score", "moonshot_score", "ensemble_score")
+                     or c in HAND_METHODS]
+        scored[keep_cols].to_csv(scored_csv, index=False)
+        log.info("Wrote scored CSV → %s (%d rows, %d cols)",
+                 scored_csv, len(scored), len(keep_cols))
+    except Exception as e:
+        log.warning("Failed to write scored CSV: %s", e)
 
     # ── Confidence NN ── separate model, same feature set.
     # Predicts realized P50 error (MAPE). Confidence = 100 * (1 - clipped_mape).
@@ -344,6 +529,26 @@ def main():
                     log.info("Wrote %d NN scores for today using final model",
                              len(nn_today))
 
+                    # Moonshot probability scores (binary classifier).
+                    if moon_model is not None and moon_scaler is not None:
+                        try:
+                            X_today_m = moon_scaler.transform(np.array(rows))
+                            m_probs = moon_model.predict_proba(X_today_m)
+                            pos_col = int(np.where(moon_model.classes_ == 1)[0][0]) if 1 in moon_model.classes_ else None
+                            if pos_col is not None:
+                                moon_by_sym = {
+                                    s: round(float(p), 4)
+                                    for s, p in zip(syms, m_probs[:, pos_col].tolist())
+                                }
+                                (ROOT / "data_cache" / "moonshot_scores.json").write_text(
+                                    json.dumps(moon_by_sym, separators=(",", ":"))
+                                )
+                                log.info("Wrote %d moonshot probabilities (range %.3f..%.3f)",
+                                         len(moon_by_sym),
+                                         min(moon_by_sym.values()), max(moon_by_sym.values()))
+                        except Exception as e:
+                            log.warning("Moonshot today-scoring failed: %s", e)
+
                     # Confidence scores from the same feature set.
                     if conf_model is not None and conf_scaler is not None:
                         X_today_c = conf_scaler.transform(np.array(rows))
@@ -359,6 +564,41 @@ def main():
                         log.info("Wrote %d confidence-NN scores (range %.0f..%.0f)",
                                  len(conf_by_sym),
                                  min(conf_by_sym.values()), max(conf_by_sym.values()))
+
+                    # Ensemble stacker — feeds each ticker's base-model
+                    # today-scores through the stacker NN. Feature order
+                    # must match _train_ensemble feat_cols:
+                    # [nn_score, moonshot_score, H7_ewma_p90, H9_full_stack].
+                    if ens_model is not None and ens_scaler is not None:
+                        try:
+                            nn_today_path = ROOT / "data_cache" / "nn_scores.json"
+                            moon_today_path = ROOT / "data_cache" / "moonshot_scores.json"
+                            nn_today_d = json.loads(nn_today_path.read_text()) if nn_today_path.exists() else {}
+                            moon_today_d = json.loads(moon_today_path.read_text()) if moon_today_path.exists() else {}
+                            ens_rows, ens_syms = [], []
+                            for sym, a in asym.items():
+                                p90r = a.get("p90_ratio")
+                                if p90r is None:
+                                    continue
+                                nn_s = float(nn_today_d.get(sym, 0.0))
+                                m_s = float(moon_today_d.get(sym, 0.0))
+                                # H9 isn't computed live; use H7 (p90r) as proxy — stacker was trained with whatever was in scored.
+                                h9 = p90r
+                                ens_rows.append([nn_s, m_s, p90r, h9])
+                                ens_syms.append(sym)
+                            if ens_rows:
+                                X_ens = ens_scaler.transform(np.array(ens_rows))
+                                e_preds = ens_model.predict(X_ens)
+                                e_preds = e_preds - e_preds.min() + 0.01
+                                ens_by_sym = {s: round(float(p), 4) for s, p in zip(ens_syms, e_preds.tolist())}
+                                (ROOT / "data_cache" / "ensemble_scores.json").write_text(
+                                    json.dumps(ens_by_sym, separators=(",", ":"))
+                                )
+                                log.info("Wrote %d ensemble scores (range %.3f..%.3f)",
+                                         len(ens_by_sym),
+                                         min(ens_by_sym.values()), max(ens_by_sym.values()))
+                        except Exception as e:
+                            log.warning("Ensemble today-scoring failed: %s", e)
         except Exception as e:
             log.warning("Today-scoring step failed: %s", e)
 

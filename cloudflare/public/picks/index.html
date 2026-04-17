@@ -305,6 +305,50 @@ footer a { color: var(--text-mid); }
 
 .loading { padding: 64px 0; text-align: center; color: var(--text-dim); font-size: 14px; }
 
+/* Master collapse controls — row sitting above the first section. */
+.collapse-master { display: flex; gap: 10px; justify-content: flex-end; margin: 20px 0 -8px; }
+.collapse-master button {
+  padding: 8px 14px; border-radius: 999px;
+  background: transparent; color: var(--text-mid);
+  border: 1px solid var(--border); font: 500 12px 'Inter'; cursor: pointer;
+  transition: all .15s;
+}
+.collapse-master button:hover { color: var(--text-hi); border-color: var(--border-strong); background: rgba(95,170,197,0.08); }
+.collapse-master button.primary { color: var(--accent-lake); border-color: rgba(95,170,197,0.35); }
+
+/* Collapsible sections — wrap any heading + body in .collapsible and the
+ * inline button will toggle visibility. State persists per-section via
+ * localStorage so a user's preferences ride across sessions. */
+.collapsible { position: relative; }
+.collapse-btn {
+  position: absolute; top: 0; right: 0;
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 14px; border-radius: 999px;
+  background: rgba(95,170,197,0.08);
+  border: 1px solid var(--border);
+  color: var(--text-mid); font: 500 12px 'Inter';
+  cursor: pointer; transition: all .15s; z-index: 3;
+}
+.collapse-btn:hover { color: var(--text-hi); border-color: var(--border-strong); background: rgba(95,170,197,0.14); }
+.collapse-btn svg { width: 12px; height: 12px; transition: transform .2s; }
+.collapsible.collapsed .collapse-btn svg { transform: rotate(-90deg); }
+.collapsible.collapsed .collapse-body { display: none; }
+.collapsible .collapse-body { transition: opacity .2s; }
+/* When the parent section already has a tight header, position the button
+ * inside the section rather than absolutely, so it doesn't cover content. */
+.tier-section .collapse-btn,
+.asym-section .collapse-btn,
+.methodology .collapse-btn { top: 28px; right: 28px; }
+.diversification .collapse-btn,
+.trackrecord .collapse-btn,
+.alloc-widget .collapse-btn { top: 18px; right: 18px; }
+@media (max-width: 620px) {
+  .collapse-btn { padding: 6px 10px; font-size: 11px; }
+  .tier-section .collapse-btn,
+  .asym-section .collapse-btn,
+  .methodology .collapse-btn { top: 14px; right: 14px; }
+}
+
 /* ── Allocation widget ── */
 .alloc-widget {
   margin: 40px 0 24px; padding: 26px 28px;
@@ -411,6 +455,43 @@ const SECTOR_HINT = {
 const fmtPct = (v, sign = true) => v == null ? '—' : `${sign && v >= 0 ? '+' : ''}${(v*100).toFixed(1)}%`;
 const fmtMoney = (v) => v == null ? '—' : `$${Number(v).toFixed(2)}`;
 const fmtSharpe = (v) => v == null ? '—' : Number(v).toFixed(2);
+
+// Collapsible wrapper — wraps the body of a section with a toggle button.
+// Key identifies the section; state persists to localStorage. Renders the
+// initial state from storage so the page loads without a flash of the
+// expanded version.
+function collapsible(key, label, bodyHtml) {
+  const stored = localStorage.getItem(`stool_collapsed_${key}`);
+  const startCollapsed = stored === '1';
+  const cls = startCollapsed ? 'collapsible collapsed' : 'collapsible';
+  return `<div class="${cls}" data-collapse-key="${key}">
+    <button class="collapse-btn" type="button" onclick="toggleCollapsible('${key}')">
+      <span class="cb-label">${startCollapsed ? 'Show' : 'Hide'}</span> ${label}
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+    </button>
+    <div class="collapse-body">${bodyHtml}</div>
+  </div>`;
+}
+
+window.toggleCollapsible = function(key) {
+  const el = document.querySelector(`[data-collapse-key="${key}"]`);
+  if (!el) return;
+  const nowCollapsed = !el.classList.contains('collapsed');
+  el.classList.toggle('collapsed', nowCollapsed);
+  localStorage.setItem(`stool_collapsed_${key}`, nowCollapsed ? '1' : '0');
+  const lbl = el.querySelector('.cb-label');
+  if (lbl) lbl.textContent = nowCollapsed ? 'Show' : 'Hide';
+};
+
+window.setAllCollapsed = function(collapsed) {
+  document.querySelectorAll('[data-collapse-key]').forEach(el => {
+    const key = el.getAttribute('data-collapse-key');
+    el.classList.toggle('collapsed', collapsed);
+    localStorage.setItem(`stool_collapsed_${key}`, collapsed ? '1' : '0');
+    const lbl = el.querySelector('.cb-label');
+    if (lbl) lbl.textContent = collapsed ? 'Show' : 'Hide';
+  });
+};
 
 async function authHeaders() {
   try { const t = await window.Clerk?.session?.getToken?.(); return t ? { Authorization: `Bearer ${t}` } : {}; } catch { return {}; }
@@ -960,14 +1041,27 @@ function renderPage(picksData, trackData) {
   const tiered = ['conservative','moderate','aggressive']
     .flatMap(t => (grouped[t] || []).slice(0, 10));
   computeAllocations(picksData);
+
+  // Wrap every major section in a collapsible. Keys are stable so state
+  // persists across reloads. Tier sections use their own section wrapper
+  // already, so we wrap the outer .tier-section element.
   const tierSections = ['conservative', 'moderate', 'aggressive']
-    .map(t => renderTierSection(t, (grouped[t] || []).slice(0, 10))).join('');
-  return renderAllocWidget()
-       + renderTrackRecord(trackData?.summary)
-       + renderAsymmetricTier(picksData.asymmetric_picks || [])
-       + renderPortfolioSignal(tiered, picksData)
+    .map(t => collapsible(`tier_${t}`, TIER_COPY[t].label,
+                          renderTierSection(t, (grouped[t] || []).slice(0, 10))))
+    .join('');
+
+  const masterControls = `<div class="collapse-master">
+      <button onclick="setAllCollapsed(false)">Expand all</button>
+      <button class="primary" onclick="setAllCollapsed(true)">Collapse all</button>
+    </div>`;
+
+  return masterControls
+       + collapsible('alloc', 'Allocation', renderAllocWidget())
+       + collapsible('track', 'Track record', renderTrackRecord(trackData?.summary))
+       + collapsible('asym',  'Asymmetric', renderAsymmetricTier(picksData.asymmetric_picks || []))
+       + collapsible('signal', 'Portfolio signal', renderPortfolioSignal(tiered, picksData))
        + tierSections
-       + renderMethodology(picksData);
+       + collapsible('method', 'Methodology', renderMethodology(picksData));
 }
 
 async function load() {

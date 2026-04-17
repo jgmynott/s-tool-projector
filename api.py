@@ -268,6 +268,27 @@ def sentiment(
     return rows
 
 
+@app.get("/api/backtest-report")
+@limiter.limit("60/minute")
+def backtest_report(request: Request):
+    """Serve the nightly backtest report as JSON.
+
+    The file is written by overnight_backtest.py after each refresh and
+    contains the provable-performance evidence the /track-record page
+    renders: hit-rate distributions, lift vs baseline, regime-conditional
+    performance, simulated-portfolio stats, bootstrap confidence
+    intervals. Cached, cheap to serve.
+    """
+    path = Path(__file__).parent / "data_cache" / "backtest_report.json"
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="Backtest report not yet generated")
+    try:
+        import json as _json
+        return _json.loads(path.read_text())
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Report parse error: {e}")
+
+
 @app.get("/api/track-record")
 @limiter.limit("30/minute")
 def track_record(
