@@ -1,0 +1,148 @@
+# S-Tool — Slow path (NN training + backtest + re-deploy)
+#
+# Runs at 23:00 UTC weekdays, ~3 hours after the fast path has landed today's
+# picks. Does the heavy research: upside_hunt sweep, NN training, feature
+# ablation, honest backtest. Then re-scores today's asymmetric picks with
+# fresh NN, re-scans the portfolio, and redeploys so track-record and picks
+# reflect the latest models.
+#
+# The engine cache restore-keys pattern picks up whatever the fast path left
+# behind (prices, SEC cache, projector_cache.db), so we don't re-fetch data.
+#
+# Required secrets: FMP_API_KEY, FINNHUB_API_KEY, POLYGON_API_KEY, FRED_API_KEY,
+#   ALPHA_VANTAGE_API_KEY, RAILWAY_TOKEN, CLOUDFLARE_API_TOKEN
+
+name: nightly-pipeline-slow
+
+permissions:
+  contents: write
+
+on:
+  schedule:
+    - cron: "0 23 * * 1-5"
+  workflow_dispatch:
+
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    env:
+      FMP_API_KEY:         ${{ secrets.FMP_API_KEY }}
+      FINNHUB_API_KEY:     ${{ secrets.FINNHUB_API_KEY }}
+      POLYGON_API_KEY:     ${{ secrets.POLYGON_API_KEY }}
+      FRED_API_KEY:        ${{ secrets.FRED_API_KEY }}
+      ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install deps
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install scikit-learn yfinance
+
+      - name: Restore engine cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            projector_cache.db
+            data_cache/prices
+            data_cache/sec_edgar
+          key: engine-cache-slow-${{ github.run_id }}
+          restore-keys: |
+            engine-cache-fast-
+            engine-cache-
+
+      - name: Upside research sweep
+        run: python3 upside_hunt.py || true
+
+      - name: Nightly NN training
+        run: python3 -W ignore overnight_learn.py || true
+
+      # Re-score today's picks with the freshly trained NN.
+      - name: Asymmetric scoring with fresh NN
+        run: python3 enrich_asymmetric.py --workers 6 || true
+
+      - name: Feature ablation study
+        run: python3 -W ignore feature_ablation.py || true
+
+      - name: Comprehensive backtest report
+        run: python3 overnight_backtest.py || true
+
+      - name: Final portfolio scan (fresh NN scores)
+        run: |
+          python3 - << 'PY'
+          from db import init_db
+          from portfolio_scanner import scan_universe, save_picks
+          conn = init_db()
+          results = scan_universe(conn)
+          save_picks(results, conn=conn)
+          PY
+
+      - name: Preflight (block on QC failures)
+        run: python3 preflight.py || (echo "Preflight FAILED — not deploying"; exit 1)
+
+      - name: Commit data artifacts
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -f portfolio_picks.json
+          git add -f \
+              data_cache/asymmetric_scores.json \
+              data_cache/nn_scores.json \
+              data_cache/confidence_nn_scores.json \
+              data_cache/moonshot_scores.json \
+              data_cache/ensemble_scores.json \
+              data_cache/feature_importance.json \
+              data_cache/production_scorer.json \
+              data_cache/market_caps.json \
+              data_cache/backtest_report.json \
+              data_cache/sec_edgar/company_info.json \
+              data_cache/sec_edgar/cik_map.json 2>/dev/null || true
+          git add -f data_cache/profiles/*.json 2>/dev/null || true
+
+          if git diff --staged --quiet; then
+            echo "No artifact changes to commit"
+          else
+            git commit -m "chore(nightly-slow): refresh NN + backtest $(date -u +%Y-%m-%dT%H:%MZ)"
+            git pull --rebase || true
+            git push
+          fi
+
+      - name: Save engine cache
+        uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: |
+            projector_cache.db
+            data_cache/prices
+            data_cache/sec_edgar
+          key: engine-cache-slow-${{ github.run_id }}
+
+      - name: Deploy frontend (Cloudflare)
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          workingDirectory: cloudflare
+          command: deploy
+
+      - name: Install Railway CLI
+        run: |
+          curl -fsSL https://railway.com/install.sh | sh
+          echo "$HOME/.railway/bin" >> $GITHUB_PATH
+
+      - name: Deploy backend (Railway)
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          railway up --detach --service api

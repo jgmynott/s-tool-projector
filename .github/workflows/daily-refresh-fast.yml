@@ -1,0 +1,150 @@
+# S-Tool — Fast path (data refresh + picks deploy)
+#
+# Runs at 20:00 UTC weekdays — ~30 min after US market close. Refreshes
+# projections, enrichment, and rescans the portfolio so the live site gets
+# today's picks while the model scores are still yesterday's. Heavy compute
+# (NN training, feature ablation, backtest) runs in daily-refresh-slow.yml
+# at 23:00 UTC, which then re-scores and re-deploys.
+#
+# Required secrets: FMP_API_KEY, FINNHUB_API_KEY, POLYGON_API_KEY, FRED_API_KEY,
+#   ALPHA_VANTAGE_API_KEY, RAILWAY_TOKEN, CLOUDFLARE_API_TOKEN
+
+name: nightly-pipeline-fast
+
+permissions:
+  contents: write
+
+on:
+  schedule:
+    - cron: "0 20 * * 1-5"
+  workflow_dispatch:
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      FMP_API_KEY:         ${{ secrets.FMP_API_KEY }}
+      FINNHUB_API_KEY:     ${{ secrets.FINNHUB_API_KEY }}
+      POLYGON_API_KEY:     ${{ secrets.POLYGON_API_KEY }}
+      FRED_API_KEY:        ${{ secrets.FRED_API_KEY }}
+      ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install deps
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install scikit-learn yfinance
+
+      - name: Restore engine cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            projector_cache.db
+            data_cache/prices
+            data_cache/sec_edgar
+          key: engine-cache-fast-${{ github.run_id }}
+          restore-keys: |
+            engine-cache-
+
+      - name: Smoke-test providers
+        run: python3 data_providers.py
+
+      - name: Refresh projections
+        run: |
+          python3 worker.py --all || echo "worker.py exited non-zero; continuing"
+
+      - name: Market-cap + avg-volume enrichment
+        run: python3 enrich_marketcaps.py --workers 6 || true
+
+      - name: FMP profile enrichment (fills 250/day, grows over time)
+        run: python3 enrich_profiles.py --workers 4 || true
+
+      - name: SEC EDGAR fundamentals
+        run: |
+          python3 - << 'PY'
+          import sqlite3, signals_sec_edgar
+          conn = sqlite3.connect("projector_cache.db")
+          signals_sec_edgar.init_sec_fundamentals_table(conn)
+          syms = [r[0] for r in conn.execute(
+              "SELECT DISTINCT symbol FROM projections").fetchall()]
+          signals_sec_edgar.refresh_universe(syms)
+          PY
+
+      # EWMA fallback scoring so picks ship even when no fresh NN yet today.
+      # Slow path re-runs this with freshly trained NN before re-deploying.
+      - name: Today's asymmetric scoring (EWMA fallback)
+        run: python3 enrich_asymmetric.py --workers 6 || true
+
+      - name: Final portfolio scan
+        run: |
+          python3 - << 'PY'
+          from db import init_db
+          from portfolio_scanner import scan_universe, save_picks
+          conn = init_db()
+          results = scan_universe(conn)
+          save_picks(results, conn=conn)
+          PY
+
+      - name: Preflight (block on QC failures)
+        run: python3 preflight.py || (echo "Preflight FAILED — not deploying"; exit 1)
+
+      - name: Commit data artifacts
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -f portfolio_picks.json
+          git add -f \
+              data_cache/asymmetric_scores.json \
+              data_cache/market_caps.json \
+              data_cache/sec_edgar/company_info.json \
+              data_cache/sec_edgar/cik_map.json 2>/dev/null || true
+          git add -f data_cache/profiles/*.json 2>/dev/null || true
+
+          if git diff --staged --quiet; then
+            echo "No artifact changes to commit"
+          else
+            git commit -m "chore(nightly-fast): refresh picks + enrichment $(date -u +%Y-%m-%dT%H:%MZ)"
+            git pull --rebase || true
+            git push
+          fi
+
+      - name: Save engine cache
+        uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: |
+            projector_cache.db
+            data_cache/prices
+            data_cache/sec_edgar
+          key: engine-cache-fast-${{ github.run_id }}
+
+      - name: Deploy frontend (Cloudflare)
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          workingDirectory: cloudflare
+          command: deploy
+
+      - name: Install Railway CLI
+        run: |
+          curl -fsSL https://railway.com/install.sh | sh
+          echo "$HOME/.railway/bin" >> $GITHUB_PATH
+
+      - name: Deploy backend (Railway)
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          railway up --detach --service api

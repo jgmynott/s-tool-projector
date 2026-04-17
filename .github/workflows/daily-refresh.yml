@@ -1,12 +1,9 @@
-# S-Tool — Nightly End-to-End Pipeline
+# S-Tool — Legacy single-shot pipeline (SUPERSEDED 2026-04-17)
 #
-# Every night the site self-refreshes: fresh projections, fresh
-# fundamentals, fresh NN training, fresh picks, fresh deploy. No manual
-# step needed.
-#
-# Trigger order:
-#   22:00 UTC weekdays  — full pipeline (post-close so forward data is clean)
-#   Also: workflow_dispatch for on-demand refresh
+# Replaced by daily-refresh-fast.yml (20:00 UTC, data + deploy) and
+# daily-refresh-slow.yml (23:00 UTC, NN training + backtest + re-deploy).
+# Kept here for manual dispatch / rollback. Schedule disabled; to restore
+# the old single-run behaviour re-enable the cron below.
 #
 # Required secrets (Settings → Secrets and variables → Actions):
 #   FMP_API_KEY
@@ -17,16 +14,16 @@
 #   RAILWAY_TOKEN            (for backend redeploy; generate at railway.com/account/tokens)
 #   CLOUDFLARE_API_TOKEN     (scope: Workers Scripts:Edit — create at dash.cloudflare.com/profile/api-tokens)
 
-name: nightly-pipeline
+name: nightly-pipeline-legacy
 
 permissions:
   contents: write
 
 on:
-  schedule:
-    # Post-close + settled (22:00 UTC = 18:00 ET). Gives the market an
-    # hour to print final prints before we rebuild the engine state.
-    - cron: "0 22 * * 1-5"
+  # Schedule intentionally disabled — fast+slow workflows cover the cron.
+  # To re-enable the legacy single-run, uncomment the line below.
+  # schedule:
+  #   - cron: "0 22 * * 1-5"
   workflow_dispatch:
 
 jobs:
