@@ -406,25 +406,26 @@ footer a { color: var(--text-mid); }
 .aw-sub { font: 500 14px/1.55 'Inter'; color: var(--text-mid); max-width: 48ch; }
 .aw-sub b { color: var(--text-hi); }
 
-.alloc-donut { position: relative; width: 260px; height: 260px; flex-shrink: 0; }
+.alloc-donut { position: relative; flex-shrink: 0; }
+.alloc-donut.master { width: 320px; height: 320px; }
 .alloc-donut svg { width: 100%; height: 100%; display: block; }
 .alloc-donut .dt-center {
   position: absolute; inset: 0;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  pointer-events: none; text-align: center; padding: 0 18px;
+  pointer-events: none; text-align: center; padding: 0 22px;
 }
 .alloc-donut .dt-total {
-  font: 400 38px/1 'Crimson Text', Georgia, serif;
+  font: 400 46px/1 'Crimson Text', Georgia, serif;
   letter-spacing: -0.022em; color: var(--text-hi);
   font-variant-numeric: tabular-nums;
 }
 .alloc-donut .dt-sub {
-  font: 600 10px 'Inter'; color: var(--text-dim);
-  letter-spacing: 0.22em; text-transform: uppercase; margin-top: 10px;
+  font: 600 10px 'Inter'; color: var(--accent-lake);
+  letter-spacing: 0.22em; text-transform: uppercase; margin-top: 12px;
 }
 .alloc-donut .dt-caption {
-  font: 500 11px/1.35 'Inter'; color: var(--text-mid);
-  margin-top: 8px; max-width: 18ch;
+  font: 500 11.5px/1.4 'Inter'; color: var(--text-mid);
+  margin-top: 8px; max-width: 20ch;
 }
 
 .alloc-controls { display: flex; flex-direction: column; gap: 14px; min-width: 200px; }
@@ -439,96 +440,78 @@ footer a { color: var(--text-mid); }
 }
 .alloc-control input:focus, .alloc-control select:focus { outline: none; border-color: var(--accent-lake); }
 
-/* Composition grid — one row per tier, full-width. Each row shows the
- * tier header (name + % + $) and a flex-wrapped strip of ticker chips
- * with each ticker's own dollar allocation. Never clips — chips wrap. */
-.alloc-composition { display: flex; flex-direction: column; gap: 14px; border-top: 1px solid var(--border); padding-top: 24px; }
-.alloc-comp-title { font: 600 11px 'Inter'; color: var(--accent-lake); letter-spacing: 0.24em; text-transform: uppercase; }
-.alloc-row {
-  display: flex; flex-direction: column; gap: 10px;
-  padding: 16px 20px;
-  border: 1px solid var(--border); border-radius: 12px;
-  background: rgba(11,16,6,0.35);
+/* ── Per-tier pie grid ──
+ * Four cards, each with a mini donut chart of that tier's intra-tier
+ * allocation plus a bar-chart legend of every ticker sorted by size.
+ * Desktop: 4 columns. Tablet: 2 columns. Mobile: 1 column. */
+.tier-pies-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px;
+  border-top: 1px solid var(--border); padding-top: 28px;
 }
-.alloc-row.ar-empty { opacity: 0.5; }
-.ar-header {
-  display: grid; grid-template-columns: auto 1fr auto auto;
-  gap: 14px; align-items: baseline;
+@media (max-width: 1100px) { .tier-pies-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 620px)  { .tier-pies-grid { grid-template-columns: 1fr; } }
+
+.tp-card {
+  padding: 20px;
+  border: 1px solid var(--border); border-radius: 14px;
+  background: linear-gradient(180deg, rgba(11,16,6,0.55), rgba(2,40,52,0.08));
+  display: flex; flex-direction: column; gap: 14px;
+  transition: border-color .15s, transform .15s;
 }
-.ar-dot { width: 12px; height: 12px; border-radius: 3px; align-self: center; }
-.ar-name-col { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
-.ar-name { font: 600 15px 'Inter'; color: var(--text-hi); letter-spacing: -0.01em; }
-.ar-sub { font: 500 11px 'Inter'; color: var(--text-dim); letter-spacing: 0.04em; }
-.ar-pct { font: 600 18px 'Crimson Text', Georgia, serif; color: var(--text-mid); font-variant-numeric: tabular-nums; min-width: 52px; text-align: right; }
-.ar-dollar { font: 600 18px 'Crimson Text', Georgia, serif; color: var(--text-hi); font-variant-numeric: tabular-nums; min-width: 90px; text-align: right; }
-/* Treemap: each ticker is a tile sized proportionally to its dollar
- * allocation. Tiles are flex items with flex-grow = amount so widths
- * auto-distribute by weight. Tier color lives in a left accent strip
- * so the tier-grouping is visible without colored backgrounds fighting
- * the text. Minimum basis keeps small tiles readable. */
-.ar-treemap {
-  display: flex; flex-wrap: wrap; gap: 6px;
-  padding-top: 14px; border-top: 1px dashed var(--border);
+.tp-card:hover { border-color: var(--border-strong); }
+.tp-card.tp-empty { opacity: 0.55; }
+.tp-head {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  gap: 12px; padding-bottom: 14px; border-bottom: 1px dashed var(--border);
 }
-.tm-tile {
-  flex-grow: var(--weight, 1);
-  flex-basis: 110px;
-  min-height: 68px;
-  padding: 10px 12px 10px 14px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, rgba(255,255,255,0.02), rgba(11,16,6,0.55));
-  border: 1px solid var(--border);
-  border-left: 3px solid var(--tier-color, var(--accent-lake));
-  display: flex; flex-direction: column; justify-content: space-between; gap: 4px;
-  transition: transform .15s ease, border-color .15s, box-shadow .15s;
-  position: relative;
-  min-width: 0;
+.tp-head-left { display: flex; gap: 10px; align-items: center; min-width: 0; }
+.tp-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+.tp-name { font: 600 15px 'Inter'; color: var(--text-hi); letter-spacing: -0.01em; }
+.tp-sub { font: 500 10px 'Inter'; color: var(--text-dim); letter-spacing: 0.1em; text-transform: uppercase; margin-top: 2px; }
+.tp-head-right { text-align: right; font-variant-numeric: tabular-nums; }
+.tp-pct { font: 600 13px 'Inter'; color: var(--text-mid); }
+.tp-dollar { font: 400 22px/1 'Crimson Text', Georgia, serif; color: var(--text-hi); letter-spacing: -0.02em; margin-top: 4px; }
+
+.tp-pie-wrap { display: flex; justify-content: center; padding: 6px 0 2px; }
+.mini-pie { width: 140px; height: 140px; display: block; }
+
+.tp-legend {
+  display: flex; flex-direction: column; gap: 4px;
+  padding-top: 8px; border-top: 1px dashed var(--border);
+  max-height: 240px; overflow-y: auto;
 }
-.tm-tile:hover {
-  transform: translateY(-1px);
-  border-color: var(--border-strong);
-  border-left-color: var(--tier-color);
-  box-shadow: 0 6px 18px rgba(2,40,52,0.22);
-}
-.tm-sym {
-  font: 700 16px 'Inter'; color: var(--text-hi);
-  letter-spacing: -0.015em; line-height: 1;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.tm-amt {
-  font: 400 18px/1 'Crimson Text', Georgia, serif;
-  color: var(--text-hi); font-variant-numeric: tabular-nums;
-  letter-spacing: -0.01em;
-}
-.tm-pct {
-  font: 500 10px 'Inter'; color: var(--text-dim);
-  letter-spacing: 0.08em; text-transform: uppercase;
+.tp-legend::-webkit-scrollbar { width: 4px; }
+.tp-legend::-webkit-scrollbar-thumb { background: rgba(155,161,185,0.25); border-radius: 2px; }
+.tp-legend-row {
+  display: grid; grid-template-columns: 46px 1fr auto;
+  align-items: center; gap: 10px;
+  padding: 5px 2px;
   font-variant-numeric: tabular-nums;
 }
-.tm-tile.tm-zero { opacity: 0.45; }
-.tm-tile.tm-zero .tm-amt { color: var(--text-dim); }
-.ar-empty-msg { font: 500 13px 'Inter'; color: var(--text-dim); font-style: italic; padding: 10px 2px 0; }
+.tp-lg-sym { font: 700 12px 'Inter'; color: var(--text-hi); letter-spacing: -0.01em; }
+.tp-lg-bar {
+  height: 7px; border-radius: 3px;
+  background: linear-gradient(90deg, var(--c) var(--w, 0%), rgba(155,161,185,0.08) var(--w, 0%));
+  min-width: 0;
+}
+.tp-lg-amt { font: 600 12px 'Inter'; color: var(--text-mid); }
+
+.tp-msg { font: 500 13px/1.5 'Inter'; color: var(--text-dim); font-style: italic; padding: 18px 2px; text-align: center; }
 
 @media (max-width: 920px) {
   .alloc-widget { padding: 24px; }
   .alloc-top { grid-template-columns: 1fr; gap: 24px; }
-  .alloc-donut { justify-self: center; width: 240px; height: 240px; }
-  .alloc-donut .dt-total { font-size: 34px; }
+  .alloc-donut.master { justify-self: center; width: 280px; height: 280px; }
+  .alloc-donut .dt-total { font-size: 40px; }
   .alloc-controls { flex-direction: row; flex-wrap: wrap; min-width: 0; }
   .alloc-controls .alloc-control { flex: 1; min-width: 140px; }
 }
 @media (max-width: 540px) {
   .alloc-widget { padding: 20px; }
-  .alloc-donut { width: 220px; height: 220px; }
-  .alloc-donut .dt-total { font-size: 30px; }
-  .alloc-row { padding: 14px; }
-  .ar-header { grid-template-columns: auto 1fr auto; gap: 10px; }
-  .ar-pct { display: none; }
-  .ar-dollar { font-size: 16px; min-width: 70px; }
-  .ar-name { font-size: 14px; }
-  .tm-tile { flex-basis: 90px; min-height: 62px; padding: 9px 10px 9px 12px; }
-  .tm-sym { font-size: 14px; }
-  .tm-amt { font-size: 16px; }
+  .alloc-donut.master { width: 240px; height: 240px; }
+  .alloc-donut .dt-total { font-size: 34px; }
+  .mini-pie { width: 130px; height: 130px; }
+  .tp-card { padding: 16px; }
 }
 
 .pc-alloc, .asym-alloc {
@@ -1090,24 +1073,40 @@ const TIER_PALETTE = {
   asymmetric:   '#d2ddea',
 };
 
-// SVG donut chart. Uses the r=15.9155 trick so circumference = 100 —
-// each segment's stroke-dasharray equals its percent directly. Thicker
-// ring than v1 (6.5 vs 4.5) because the donut is larger and a thin ring
-// at 260px reads as a circle-outline rather than a chart. Per-segment
-// labels were removed — percentages and dollars live in the composition
-// rows below, which fit any data volume and breakpoint.
-function renderDonut(profile, center) {
-  const tiers = ['conservative','moderate','aggressive','asymmetric'];
+// Master donut: one arc per individual ticker across ALL risk tiers.
+// Arcs are grouped contiguously by tier (conservative → moderate →
+// aggressive → asymmetric) so tier colors form clean bands, and the
+// intra-tier stroke-opacity variation shows which ticker inside a band
+// carries the most weight. r=15.9155 makes the circumference exactly
+// 100, so each arc's stroke-dasharray segment in percent maps 1:1 to
+// its share of the total portfolio.
+function renderMasterDonut(allTickers, total, center) {
+  const GAP = 0.25;  // tiny gap between adjacent slices for visual separation
   let offset = 0;
-  const arcs = tiers.map(t => {
-    const pct = (profile[t] || 0) * 100;
-    if (pct <= 0) { offset += 0; return ''; }
-    const dashArr = `${pct.toFixed(3)} ${(100 - pct).toFixed(3)}`;
+  const safeTotal = Math.max(1e-6, total);
+
+  // Precompute per-tier max so opacity scales inside each tier.
+  const tierMax = {};
+  for (const tk of allTickers) {
+    if (tk.amt > (tierMax[tk.tier] || 0)) tierMax[tk.tier] = tk.amt;
+  }
+
+  const arcs = allTickers.map(tk => {
+    const pct = (tk.amt / safeTotal) * 100;
+    if (pct <= 0) return '';
+    const visiblePct = Math.max(0.05, pct - GAP);
+    const dashArr = `${visiblePct.toFixed(3)} ${(100 - visiblePct).toFixed(3)}`;
     const dashOff = (-offset).toFixed(3);
+    // Opacity 0.55-1.0 scaled to this ticker's rank within its tier.
+    const tMax = tierMax[tk.tier] || tk.amt;
+    const op = (0.55 + 0.45 * (tk.amt / tMax)).toFixed(2);
     const arc = `<circle cx="21" cy="21" r="15.9155" fill="transparent"
-      stroke="${TIER_PALETTE[t]}" stroke-width="6.5"
+      stroke="${TIER_PALETTE[tk.tier]}" stroke-width="7"
       stroke-dasharray="${dashArr}" stroke-dashoffset="${dashOff}"
-      transform="rotate(-90 21 21)"/>`;
+      stroke-opacity="${op}"
+      transform="rotate(-90 21 21)">
+      <title>${tk.sym} · ${TIER_LABELS[tk.tier]} · ${fmtUsd(tk.amt)}</title>
+    </circle>`;
     offset += pct;
     return arc;
   }).join('');
@@ -1120,24 +1119,62 @@ function renderDonut(profile, center) {
        </div>`
     : '';
 
-  return `<div class="alloc-donut">
-    <svg viewBox="0 0 42 42" aria-label="Allocation by tier">
+  return `<div class="alloc-donut master">
+    <svg viewBox="0 0 42 42" aria-label="Portfolio composition by ticker">
       <circle cx="21" cy="21" r="15.9155" fill="transparent"
-        stroke="rgba(155,161,185,0.08)" stroke-width="6.5"/>
+        stroke="rgba(155,161,185,0.08)" stroke-width="7"/>
       ${arcs}
     </svg>
     ${centerHtml}
   </div>`;
 }
 
+// Mini pie for a single tier — shows the intra-tier distribution across
+// that tier's ~10 tickers. Same r=15.9155 trick; thicker stroke because
+// the pie is small and each slice needs physical weight to read at 140px.
+function renderTierPie(tier, entries) {
+  if (!entries.length) return '';
+  const tierTotal = entries.reduce((s, e) => s + e.amt, 0);
+  if (tierTotal <= 0) return '';
+  const maxAmt = Math.max(...entries.map(e => e.amt), 1e-6);
+  const GAP = 0.5;
+  let offset = 0;
+  const arcs = entries.map(e => {
+    const pct = (e.amt / tierTotal) * 100;
+    if (pct <= 0) return '';
+    const visiblePct = Math.max(0.1, pct - GAP);
+    const dashArr = `${visiblePct.toFixed(3)} ${(100 - visiblePct).toFixed(3)}`;
+    const dashOff = (-offset).toFixed(3);
+    const op = (0.5 + 0.5 * (e.amt / maxAmt)).toFixed(2);
+    const arc = `<circle cx="21" cy="21" r="15.9155" fill="transparent"
+      stroke="${TIER_PALETTE[tier]}" stroke-width="9"
+      stroke-dasharray="${dashArr}" stroke-dashoffset="${dashOff}"
+      stroke-opacity="${op}"
+      transform="rotate(-90 21 21)">
+      <title>${e.sym} · ${fmtUsd(e.amt)} · ${((e.amt/tierTotal)*100).toFixed(1)}%</title>
+    </circle>`;
+    offset += pct;
+    return arc;
+  }).join('');
+  return `<svg class="mini-pie" viewBox="0 0 42 42" aria-label="${TIER_LABELS[tier]} allocation">
+    <circle cx="21" cy="21" r="15.9155" fill="transparent"
+      stroke="rgba(155,161,185,0.06)" stroke-width="9"/>
+    ${arcs}
+  </svg>`;
+}
+
+const TIER_LABELS = {
+  conservative: 'Conservative',
+  moderate: 'Moderate',
+  aggressive: 'Aggressive',
+  asymmetric: 'Asymmetric',
+};
+
 function renderAllocWidget(picksData) {
   const profile = RISK_PROFILES[ALLOC.profile] || RISK_PROFILES.balanced;
   const total = ALLOC.totalUsd || 0;
   const tiers = ['conservative','moderate','aggressive','asymmetric'];
 
-  // Bucket today's picks by tier so we can list their tickers per slice.
-  // Standard tiers come from picksData.picks (flat list with p.tier);
-  // asymmetric is a separate top-level array.
   const byTier = { conservative: [], moderate: [], aggressive: [] };
   for (const p of picksData.picks || []) {
     if (byTier[p.tier] && byTier[p.tier].length < 10) byTier[p.tier].push(p);
@@ -1150,12 +1187,6 @@ function renderAllocWidget(picksData) {
     asymmetric:   asymPicks,
   };
 
-  const LABELS = {
-    conservative: 'Conservative',
-    moderate:     'Moderate',
-    aggressive:   'Aggressive',
-    asymmetric:   'Asymmetric',
-  };
   const SUBS = {
     conservative: 'Low vol · quality',
     moderate:     'Core · balanced',
@@ -1163,81 +1194,85 @@ function renderAllocWidget(picksData) {
     asymmetric:   'Tail upside · speculative',
   };
 
-  // Build one row per tier. Ticker chips show the dollar allocation
-  // computed by computeAllocations — sorted descending so the biggest
-  // single-name positions land on the left. Chips wrap; no clipping.
-  const rows = tiers.map(t => {
+  // Assemble every per-ticker allocation into a single flat list, grouped
+  // by tier in canonical order (conservative → asymmetric) and sorted by
+  // $ descending within each tier. The master donut reads this directly:
+  // one arc per ticker, tier colors forming contiguous bands.
+  const allTickers = [];
+  const tierEntries = {};
+  for (const t of tiers) {
     const share = profile[t] || 0;
     const dollars = total * share;
     const picks = tierPicks[t] || [];
-    const emptyCls = share === 0 ? ' ar-empty' : '';
-    const pickN = picks.length;
-
-    let treemapHtml;
-    if (share === 0) {
-      treemapHtml = `<div class="ar-empty-msg">Not allocated in the ${profile.label} profile.</div>`;
-    } else if (!pickN) {
-      treemapHtml = `<div class="ar-empty-msg">No ${LABELS[t].toLowerCase()} picks in today's scan.</div>`;
-    } else {
-      const entries = picks.map(p => {
-        const amt = ALLOC.byPick?.[`${p.symbol}|${t}`] || 0;
-        return { sym: p.symbol, amt };
-      }).sort((a, b) => b.amt - a.amt);
-      // Proportional weights drive flex-grow. Clamp minimum to 1 so the
-      // smallest tile still gets visible real estate; the natural ratio
-      // is preserved by the relative magnitudes.
-      const maxAmt = Math.max(1, ...entries.map(e => e.amt));
-      treemapHtml = entries.map(e => {
-        const zeroCls = e.amt <= 0 ? ' tm-zero' : '';
-        const weight = Math.max(1, (e.amt / maxAmt) * 100);
-        const pctOfTier = dollars > 0 ? Math.round((e.amt / dollars) * 100) : 0;
-        return `<div class="tm-tile${zeroCls}"
-             style="--weight:${weight.toFixed(1)};--tier-color:${TIER_PALETTE[t]};"
-             title="${e.sym} — ${fmtUsd(e.amt)} (${pctOfTier}% of ${LABELS[t]})">
-          <div class="tm-sym">${e.sym}</div>
-          <div>
-            <div class="tm-amt">${fmtUsd(e.amt)}</div>
-            <div class="tm-pct">${pctOfTier}% of tier</div>
-          </div>
-        </div>`;
-      }).join('');
-    }
-
-    const pickCountLabel = share === 0
-      ? `${pickN} pick${pickN === 1 ? '' : 's'} in today's scan`
-      : pickN
-        ? `${pickN} pick${pickN === 1 ? '' : 's'} sized by confidence &times; inverse volatility`
-        : '0 picks available today';
-
-    return `<div class="alloc-row${emptyCls}">
-      <div class="ar-header">
-        <span class="ar-dot" style="background:${TIER_PALETTE[t]};"></span>
-        <div class="ar-name-col">
-          <div class="ar-name">${LABELS[t]}</div>
-          <div class="ar-sub">${SUBS[t]} &middot; ${pickCountLabel}</div>
-        </div>
-        <div class="ar-pct">${Math.round(share * 100)}%</div>
-        <div class="ar-dollar">${share > 0 ? fmtUsd(dollars) : '$0'}</div>
-      </div>
-      <div class="ar-treemap">${treemapHtml}</div>
-    </div>`;
-  }).join('');
+    const entries = picks.map(p => ({
+      sym: p.symbol, tier: t,
+      amt: ALLOC.byPick?.[`${p.symbol}|${t}`] || 0,
+    })).sort((a, b) => b.amt - a.amt);
+    tierEntries[t] = { share, dollars, entries, pickN: picks.length };
+    for (const e of entries) if (e.amt > 0) allTickers.push(e);
+  }
 
   const opts = Object.entries(RISK_PROFILES).map(([key, cfg]) =>
     `<option value="${key}" ${ALLOC.profile === key ? 'selected' : ''}>${cfg.label}</option>`).join('');
 
-  const donutHtml = renderDonut(profile, {
+  const masterDonutHtml = renderMasterDonut(allTickers, total, {
     total: fmtUsd(total),
     label: profile.label,
-    caption: profile.sub,
+    caption: `${allTickers.length} names · ${profile.sub}`,
   });
+
+  // Per-tier cards: mini pie + header with tier name/%/$ + the top tickers
+  // listed below the pie. Every tier gets its own chart so the user can
+  // actually see intra-tier distribution, not just tier-level totals.
+  const tierCards = tiers.map(t => {
+    const { share, dollars, entries, pickN } = tierEntries[t];
+    const emptyCls = share === 0 ? ' tp-empty' : '';
+
+    let bodyHtml;
+    if (share === 0) {
+      bodyHtml = `<div class="tp-msg">Not allocated in the ${profile.label} profile.</div>`;
+    } else if (!pickN) {
+      bodyHtml = `<div class="tp-msg">No picks in today's scan.</div>`;
+    } else {
+      const pieHtml = renderTierPie(t, entries);
+      // Legend: every ticker, rows sorted by $. Compact enough that all
+      // 10 fit without overflow. Dollar column is tabular-num aligned.
+      const legendRows = entries.map(e => {
+        const pctTier = dollars > 0 ? (e.amt / dollars) * 100 : 0;
+        return `<div class="tp-legend-row">
+          <span class="tp-lg-sym">${e.sym}</span>
+          <span class="tp-lg-bar" style="--w:${pctTier.toFixed(1)}%;--c:${TIER_PALETTE[t]};"></span>
+          <span class="tp-lg-amt">${fmtUsd(e.amt)}</span>
+        </div>`;
+      }).join('');
+      bodyHtml = `<div class="tp-pie-wrap">${pieHtml}</div>
+                  <div class="tp-legend">${legendRows}</div>`;
+    }
+
+    return `<div class="tp-card${emptyCls}">
+      <div class="tp-head">
+        <div class="tp-head-left">
+          <span class="tp-dot" style="background:${TIER_PALETTE[t]};"></span>
+          <div>
+            <div class="tp-name">${TIER_LABELS[t]}</div>
+            <div class="tp-sub">${SUBS[t]}</div>
+          </div>
+        </div>
+        <div class="tp-head-right">
+          <div class="tp-pct">${Math.round(share * 100)}%</div>
+          <div class="tp-dollar">${share > 0 ? fmtUsd(dollars) : '$0'}</div>
+        </div>
+      </div>
+      ${bodyHtml}
+    </div>`;
+  }).join('');
 
   return `<div class="alloc-widget">
     <div class="alloc-top">
-      ${donutHtml}
+      ${masterDonutHtml}
       <div class="alloc-intro">
         <div class="aw-title">Allocation &middot; build your book</div>
-        <div class="aw-sub"><b>${profile.label}</b>: ${profile.sub}. Each tier below shows the tickers that compose its slice and the dollar amount allocated to each name.</div>
+        <div class="aw-sub"><b>${profile.label}</b>: ${profile.sub}. Every arc above is one ticker, sized by its dollar allocation and colored by risk tier. Per-tier detail below.</div>
       </div>
       <div class="alloc-controls">
         <div class="alloc-control">
@@ -1250,10 +1285,7 @@ function renderAllocWidget(picksData) {
         </div>
       </div>
     </div>
-    <div class="alloc-composition">
-      <div class="alloc-comp-title">Composition by tier</div>
-      ${rows}
-    </div>
+    <div class="tier-pies-grid">${tierCards}</div>
   </div>`;
 }
 
