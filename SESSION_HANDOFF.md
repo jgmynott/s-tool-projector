@@ -74,7 +74,72 @@ Full scoping doc for paper-trading the picks via Alpaca. Summary:
 
 ### Background processes running at handoff time
 
-- None. Research suite completed. All work committed to `main` at `619af59`.
+- None. Both v3 (12 min) and v4 (0.4 min) completed overnight. All reports on the `nn-research` branch.
+
+### Deep research v2 + v3 findings at a glance
+
+**v2 winner** — `et_300_14_20` (ExtraTrees, 300 trees, max_depth=14, min_samples_leaf=20):
+- Hit rate at +100%: **71.3%** (v1's best MLP was 62.5%)
+- Bootstrap 95% CI: **[0.693, 0.702]** — very tight
+- Seed stability: 0.698 ± 0.012, Jaccard 0.938
+- Perturbation robustness: 0.696 ± 0.017, Jaccard 0.898
+- **Actionable: promote ET over MLP in `overnight_learn.py`** — higher lift, faster, more stable
+
+**v2 surprise** — MLP actively regressed on the extended 16-feature set (56.2% vs 62.5% base). MLPs need more regularization when features expand; ET handles it natively.
+
+**Research branch**: `nn-research` (pushed). Not merged.
+
+### v3 findings (12-min run) — `research/deep_findings_v3_2026-04-16.md`
+
+- **Phase A cross-threshold**: training on higher thresholds (+200%, +300%) gives tighter picks but same winners — no specialization benefit.
+- **Phase B per-sector**: only 4 sectors had enough data (>500 rows); none beat the universal model. Healthcare was the best per-sector (30.0%).
+- **Phase C stacking**: 5-model stacker + simple average both ~matched the best individual ET. No stacking benefit.
+- **Phase D classifier vs regressor**: near identical. Calibration is clean but Spearman correlation with realized returns is low (~0).
+- **Phase E regime-conditional**: couldn't test properly — no labeled "bear" window in our data, so specialization is only feasible for bull/choppy.
+- **Phase F permutation importance** (THE CRITICAL FINDING):
+  - `log_price` drop = **+0.505** (removing it cuts hit rate in half)
+  - Every other feature <0.06 drop
+  - The model's entire edge is price level → raised v4's alpha vs small-cap-premium question
+- **Phase G expanded grid** (300 configs): top config `et_n100_d22_l8_mfNone_bsTrue` at 72.5% hit rate. Marginal improvement on v2's 71.3%.
+
+### v4 findings (24-sec run) — THE HONESTY ROUND — `research/deep_findings_v4_2026-04-17.md`
+
+Started from v3's permutation finding. Asked: *is this real alpha or just small-cap premium?*
+
+- **Phase I price-controlled**: **Median within-quintile lift = 3.49x.** The model does add value within each price bucket:
+  - Quintile 1 (smallest): 4.78x lift (65% vs 13.6% baseline)
+  - Quintile 5 (largest): 3.55x lift (3.7% vs 1.1% baseline)
+  - Even at the top end there's real signal, just in absolute terms small.
+- **Phase J excess-return labeling**: 0.700 vs 0.713 control — regime effect isn't the dominant driver.
+- **Phase K size-neutral (THE DEVASTATING FINDING)**: When forced to pick 4 per price quintile, hit rate **drops from 71.3% to 32.5%**. Unconstrained composition: **79/80 picks from the smallest-price quintile.** More than half the headline lift is the small-cap tilt.
+- **Phase L year-OOS (train ≤2023, test 2024)**: **60% hit rate, 11.44x lift, +479.6% mean.** This is the cleanest out-of-sample test and it holds up.
+- **Phase M interactions**: explicit log_price × sigma etc. features don't help; ET handles interactions natively.
+
+### Honest bottom line for the user
+
+1. **Real alpha exists** (Phase I within-quintile lift of 3.49x, Phase L year-OOS of 11.44x).
+2. **But the headline 71% number is inflated** by the model's concentration in the smallest price quintile. Expect ~35-40% hit rate in production with any reasonable size diversification.
+3. **The model would trade like a small-cap factor strategy** — high volatility, high drawdown, occasional spectacular winners. Position sizing must account for this.
+4. **For the /track-record page**: change the headline claim from "71% hit rate at +100%" to something honest like "3.5x lift vs random selection across all size buckets, 11x lift in clean out-of-sample test." Less dramatic, more truthful.
+5. **Before Alpaca paper trading**: must address size concentration — either cap small-cap allocation or use size-neutral picks, or both. Otherwise you're just running a levered small-cap ETF.
+
+### Files changed tonight (overnight autonomous work)
+
+- `nn_research_suite.py` (125s first-pass)
+- `deep_research_v2.py` (52 min v2 batch) — on `nn-research` branch
+- `deep_research_v3.py` (in progress) — still on `main` until final commit
+- `research/nn_findings_2026-04-16.md` — v1 report (main)
+- `research/deep_findings_v2_2026-04-16.md` — v2 report (nn-research)
+- `research/deep_findings_v3_<date>.md` — v3 report (pending)
+- `upside_hunt_extended.csv` — 22k rows × 24 columns (gitignored, regenerable)
+
+### To pick up in the morning
+
+1. `git checkout main` — you're currently on `nn-research` since overnight ended there
+2. Read `research/deep_findings_v2_*.md` and `research/deep_findings_v3_*.md`
+3. Decide whether to promote ExtraTrees into `overnight_learn.py` (strong evidence yes)
+4. Review Alpaca integration plan in `docs/alpaca_integration_plan.md`
+5. Add `RAILWAY_TOKEN` + `CLOUDFLARE_API_TOKEN` GitHub secrets (still missing)
 
 ---
 

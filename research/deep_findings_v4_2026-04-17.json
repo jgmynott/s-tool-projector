@@ -1,0 +1,141 @@
+{
+  "started_at": 1776423455.439211,
+  "date": "2026-04-17",
+  "preceded_by": [
+    "deep_findings_v2",
+    "deep_findings_v3"
+  ],
+  "phases": {
+    "I_price_controlled": {
+      "status": "completed",
+      "elapsed_s": 7.1,
+      "quintiles": {
+        "quintile_1": {
+          "n_rows": 4448,
+          "n_picks": 80,
+          "within_bucket_baseline": 0.1360161870503597,
+          "model_hit_rate": 0.65,
+          "model_lift": 4.778842975206612,
+          "mean_return": 5.576559072455561,
+          "elapsed_s": 1.5
+        },
+        "quintile_2": {
+          "n_rows": 4442,
+          "n_picks": 80,
+          "within_bucket_baseline": 0.04660063034669068,
+          "model_hit_rate": 0.1625,
+          "model_lift": 3.4870772946859905,
+          "mean_return": 0.3827260641327008,
+          "elapsed_s": 1.3
+        },
+        "quintile_3": {
+          "n_rows": 4441,
+          "n_picks": 80,
+          "within_bucket_baseline": 0.029497860842152668,
+          "model_hit_rate": 0.1,
+          "model_lift": 3.390076335877863,
+          "mean_return": 0.3977997068821614,
+          "elapsed_s": 1.3
+        },
+        "quintile_4": {
+          "n_rows": 4442,
+          "n_picks": 80,
+          "within_bucket_baseline": 0.024763619990995047,
+          "model_hit_rate": 0.0625,
+          "model_lift": 2.5238636363636364,
+          "mean_return": 0.31889695473050506,
+          "elapsed_s": 1.3
+        },
+        "quintile_5": {
+          "n_rows": 4445,
+          "n_picks": 80,
+          "within_bucket_baseline": 0.010573678290213724,
+          "model_hit_rate": 0.0375,
+          "model_lift": 3.546542553191489,
+          "mean_return": 0.20225050747897874,
+          "elapsed_s": 1.3
+        }
+      },
+      "median_within_quintile_lift": 3.4870772946859905,
+      "interpretation": "Strong within-quintile lift \u2192 model has alpha beyond small-cap beta. Lift near 1.0 \u2192 the edge IS the small-cap premium."
+    },
+    "J_excess_return": {
+      "status": "completed",
+      "elapsed_s": 5.3,
+      "excess_labeled": {
+        "hit_rate_at_100_abs": 0.7,
+        "hit_rate_at_50_excess": 0.75,
+        "mean_absolute_return": 5.737221301012031
+      },
+      "absolute_labeled_control": {
+        "hit_rate_at_100": 0.7125,
+        "mean_return": 5.796205710668192
+      },
+      "interpretation": "If excess-labeled hit rate holds near the absolute rate, the model captures regime-independent alpha. If it collapses, the model is mostly picking up high-beta names during bull windows."
+    },
+    "K_size_neutral": {
+      "status": "completed",
+      "elapsed_s": 2.8,
+      "unconstrained": {
+        "n": 80,
+        "hit_rate_100": 0.7125,
+        "hit_rate_200": 0.525,
+        "mean_return": 5.796205710668192,
+        "median_return": 2.6201282578524228
+      },
+      "size_neutral": {
+        "n": 80,
+        "hit_rate_100": 0.325,
+        "hit_rate_200": 0.2,
+        "mean_return": 2.4963791852149613,
+        "median_return": 0.3147252005411
+      },
+      "unconstrained_quintile_composition": {
+        "quintile_1": 79,
+        "quintile_2": 1,
+        "quintile_3": 0,
+        "quintile_4": 0,
+        "quintile_5": 0
+      },
+      "interpretation": "If size-neutral rate is close to unconstrained, the model has edge across all sizes. If it drops sharply, most of the edge concentrates in one (small-cap) quintile."
+    },
+    "L_year_oos": {
+      "status": "completed",
+      "elapsed_s": 0.4,
+      "train_rows": 15431,
+      "test_rows": 6787,
+      "test_windows": 3,
+      "hit_rate_100": 0.6,
+      "mean_return": 4.795619116240444,
+      "baseline_rate": 0.05245321939001031,
+      "lift": 11.43876404494382,
+      "interpretation": "This is the cleanest OOS test possible: no 2024 data ever seen during training/tuning. If lift holds here near the recent-4-window numbers, the model generalizes. If it collapses, prior reports were at least partially overfit."
+    },
+    "M_interactions": {
+      "status": "completed",
+      "elapsed_s": 6.1,
+      "base": {
+        "hit_rate": 0.7125,
+        "mean_return": 5.796205710668192,
+        "n_features": 16
+      },
+      "with_interactions": {
+        "hit_rate": 0.675,
+        "mean_return": 5.747205090208857,
+        "n_features": 23,
+        "interaction_features": [
+          "lp_x_sigma",
+          "lp_x_mom_20d",
+          "lp_x_mom_60d",
+          "lp_x_mom_180d",
+          "lp_x_realized_vol_60d",
+          "lp_x_beta_180d",
+          "lp_x_high_52w_ratio"
+        ]
+      },
+      "interpretation": "Tree ensembles already capture nonlinear interactions internally. If explicit interaction features don't help, it's because the ET is already doing this work. If they DO help, the ET wasn't finding them \u2014 informs future feature engineering priorities."
+    }
+  },
+  "completed_at": 1776423477.164317,
+  "total_runtime_min": 0.4
+}
