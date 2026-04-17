@@ -144,17 +144,20 @@ async function load() {
   const authHeaders = async () => {
     try { const t = await window.Clerk?.session?.getToken?.(); return t ? { Authorization: `Bearer ${t}` } : {}; } catch { return {}; }
   };
-  const [liveRes, backtestRes] = await Promise.all([
+  const [liveRes, backtestRes, honestRes] = await Promise.all([
     fetch('/api/track-record?lookback_days=365', { headers: await authHeaders() }).catch(() => null),
     fetch('/api/backtest-report').catch(() => null),
+    fetch('/api/honest-audit').catch(() => null),
   ]);
-  // liveRes may be 200 (strategist) or 402 (teaser with aggregate+summary);
-  // both shapes carry `aggregate` + `summary` which is all the scoreboard needs.
   const live = liveRes ? await liveRes.json().catch(() => null) : null;
 
   let backtest = null;
   if (backtestRes && backtestRes.ok) {
     backtest = await backtestRes.json().catch(() => null);
+  }
+  let honest = null;
+  if (honestRes && honestRes.ok) {
+    honest = await honestRes.json().catch(() => null);
   }
   if (!backtest) {
     const scoreboardOnly = renderScoreboard(live);
@@ -162,7 +165,7 @@ async function load() {
       '<div class="loading">Backtest report not yet available. Check back after the next nightly run.</div>';
     return;
   }
-  renderAll(backtest, live);
+  renderAll(backtest, live, honest);
 }
 
 function fmtPct(v, sign = true) {
@@ -255,7 +258,71 @@ function renderScoreboard(live) {
   </section>`;
 }
 
-function renderAll(r, live) {
+// Build the honest-audit block — replaces the prior size-neutral cards
+// with the Wave 1 "after liquidity + tx-cost" numbers. Falls back to the
+// legacy honest_metrics when the audit isn't available yet.
+function renderHonestBlock(honest, legacyBacktest) {
+  // Prefer Wave 1 audit (liquidity + tx costs applied)
+  const nn = honest?.scorers?.nn_score;
+  if (nn) {
+    const overall = nn.overall?.E_all_three;
+    const oos = nn.oos_2024?.E_all_three;
+    const pub = nn.overall?.A_published;
+    if (overall && oos && pub) {
+      return `<section class="headline">
+        <div class="h-card">
+          <div class="label">Hit rate at +100% — honest</div>
+          <div class="val pos">${(overall.hit_100 * 100).toFixed(1)}%</div>
+          <div class="sub">Top 20 per window, after liquidity + 1.5% costs. As-published was ${(pub.hit_100*100).toFixed(1)}%.</div>
+        </div>
+        <div class="h-card">
+          <div class="label">Lift vs baseline — honest</div>
+          <div class="val pos">${fmtLift(overall.lift)}</div>
+          <div class="sub">Baseline ${(overall.baseline_hit_100*100).toFixed(2)}% of any tradeable ticker doubles. Our top-20 clears ~9&times; that.</div>
+        </div>
+        <div class="h-card">
+          <div class="label">2024 out-of-sample hit rate</div>
+          <div class="val pos">${(oos.hit_100 * 100).toFixed(1)}%</div>
+          <div class="sub">Trained only on prior windows. 2024 was never seen during training — same liquidity + cost filters applied.</div>
+        </div>
+        <div class="h-card">
+          <div class="label">2024 OOS lift</div>
+          <div class="val pos">${fmtLift(oos.lift)}</div>
+          <div class="sub">Signal strengthens on unseen data, survives the realism bar.</div>
+        </div>
+      </section>`;
+    }
+  }
+  // Fallback: legacy honest_metrics from backtest_report
+  const honestLegacy = legacyBacktest?.honest_metrics;
+  if (honestLegacy?.size_neutral_hit_100 != null) {
+    return `<section class="headline">
+      <div class="h-card">
+        <div class="label">Size-controlled +100% hit rate</div>
+        <div class="val pos">${(honestLegacy.size_neutral_hit_100 * 100).toFixed(1)}%</div>
+        <div class="sub">4 picks per price quintile, 20 total. Eliminates small-cap concentration.</div>
+      </div>
+      <div class="h-card">
+        <div class="label">Within-quintile lift</div>
+        <div class="val pos">${fmtLift(honestLegacy.within_quintile_lift_median)}</div>
+        <div class="sub">Median lift vs baseline, computed per price quintile.</div>
+      </div>
+      <div class="h-card">
+        <div class="label">${honestLegacy.year_oos_test_year} OOS hit rate</div>
+        <div class="val pos">${(honestLegacy.year_oos_hit_100 * 100).toFixed(1)}%</div>
+        <div class="sub">Train on all prior windows; test only on ${honestLegacy.year_oos_test_year}.</div>
+      </div>
+      <div class="h-card">
+        <div class="label">${honestLegacy.year_oos_test_year} OOS lift</div>
+        <div class="val pos">${fmtLift(honestLegacy.year_oos_lift)}</div>
+        <div class="sub">Baseline ${(honestLegacy.year_oos_baseline * 100).toFixed(1)}%. Lift survives the clean holdout.</div>
+      </div>
+    </section>`;
+  }
+  return '';
+}
+
+function renderAll(r, live, honest) {
   const meta = document.getElementById('meta');
   const wr = r.window_range || [];
   meta.innerHTML = `
@@ -265,32 +332,33 @@ function renderAll(r, live) {
     <span>Generated ${new Date((r.generated_at || 0) * 1000).toLocaleString()}</span>
   `;
 
-  // Lead with honest, size-controlled metrics. Unconstrained top-N rates
-  // are inflated by small-cap concentration so we publish the numbers that
-  // survive portfolio-realistic diversification.
-  const honest = r.honest_metrics || null;
-  let headHtml = '';
-  if (honest && honest.size_neutral_hit_100 != null) {
+  // Lead with honest, tradeable metrics (Wave 1 audit: liquidity floor
+  // + 1.5% transaction costs). Falls back to legacy size-neutral cards
+  // when the audit JSON isn't yet available.
+  let headHtml = renderHonestBlock(honest, r);
+  // Prior code path kept below for when neither audit nor legacy exists.
+  const _legacy = r.honest_metrics || null;
+  if (!headHtml && _legacy && _legacy.size_neutral_hit_100 != null) {
     headHtml = `<section class="headline">
       <div class="h-card">
         <div class="label">Size-controlled +100% hit rate</div>
-        <div class="val pos">${(honest.size_neutral_hit_100 * 100).toFixed(1)}%</div>
+        <div class="val pos">${(_legacy.size_neutral_hit_100 * 100).toFixed(1)}%</div>
         <div class="sub">4 picks per price quintile, 20 total. Eliminates small-cap concentration.</div>
       </div>
       <div class="h-card">
         <div class="label">Within-quintile lift</div>
-        <div class="val pos">${fmtLift(honest.within_quintile_lift_median)}</div>
-        <div class="sub">Median lift vs baseline, computed per price quintile. Shows selection edge at every size.</div>
+        <div class="val pos">${fmtLift(_legacy.within_quintile_lift_median)}</div>
+        <div class="sub">Median lift vs baseline, computed per price quintile.</div>
       </div>
       <div class="h-card">
-        <div class="label">${honest.year_oos_test_year} out-of-sample hit rate</div>
-        <div class="val pos">${(honest.year_oos_hit_100 * 100).toFixed(1)}%</div>
-        <div class="sub">Train on all prior windows; test only on ${honest.year_oos_test_year}. Never-seen-during-tuning data.</div>
+        <div class="label">${_legacy.year_oos_test_year} out-of-sample hit rate</div>
+        <div class="val pos">${(_legacy.year_oos_hit_100 * 100).toFixed(1)}%</div>
+        <div class="sub">Train on all prior windows; test only on ${_legacy.year_oos_test_year}.</div>
       </div>
       <div class="h-card">
-        <div class="label">${honest.year_oos_test_year} OOS lift vs baseline</div>
-        <div class="val pos">${fmtLift(honest.year_oos_lift)}</div>
-        <div class="sub">Baseline ${(honest.year_oos_baseline * 100).toFixed(1)}%. Lift survives the clean holdout.</div>
+        <div class="label">${_legacy.year_oos_test_year} OOS lift vs baseline</div>
+        <div class="val pos">${fmtLift(_legacy.year_oos_lift)}</div>
+        <div class="sub">Baseline ${(_legacy.year_oos_baseline * 100).toFixed(1)}%.</div>
       </div>
     </section>`;
   } else {
@@ -317,7 +385,7 @@ function renderAll(r, live) {
   // Explicit honest-disclosure block explaining the gap between size-neutral
   // and unconstrained numbers.
   let disclosureHtml = '';
-  if (honest && honest.within_quintile_details) {
+  if (_legacy && _legacy.within_quintile_details) {
     const ensembleMethod = r.methods?.ensemble_score || r.methods?.nn_score;
     const uncRate = ensembleMethod?.thresholds?.['+100%']?.rate;
     const uncLift = ensembleMethod?.thresholds?.['+100%']?.lift;

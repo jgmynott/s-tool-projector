@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>s-tool — picks that double at 11× the baseline</title>
-<meta name="description" content="Backtested across 22,218 ticker-windows. Our top 20 picks doubled at 11× the random-picking baseline. Every pick logged publicly for live verification." />
+<title>s-tool — picks that double at nearly 9× the baseline, tradeable</title>
+<meta name="description" content="Backtested across 22,218 ticker-windows, filtered for tradeable liquidity and transaction costs. Top 20 picks doubled at 8.7× the random-picking baseline. Every pick logged publicly." />
 <link rel="canonical" href="https://s-tool.io/" />
-<meta property="og:title" content="s-tool — picks that double at 11× the baseline" />
-<meta property="og:description" content="Russell 3000 ranked nightly. Validated on out-of-sample 2024 data. Every pick tracked in a public ledger." />
+<meta property="og:title" content="s-tool — picks that double at nearly 9× the baseline" />
+<meta property="og:description" content="Russell 3000 ranked nightly. Validated out-of-sample. Filtered for liquidity and round-trip costs. Every pick tracked in a public ledger." />
 <meta property="og:image" content="https://s-tool.io/img/og-abstract.jpg" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
@@ -246,9 +246,9 @@ footer a:hover { color: var(--text-hi); }
 
 <header class="hero">
   <div class="container">
-    <span class="eyebrow hero-eyebrow">Proof, not promises</span>
-    <h1 class="hero-headline">Our picks double at <em>11× the rate</em> of random stock picking.</h1>
-    <p class="hero-sub">Backtested across 22,218 ticker-windows on the Russell 3000. On out-of-sample 2024 data the model never saw, the signal strengthened, not weakened. Every pick is logged publicly for live verification.</p>
+    <span class="eyebrow hero-eyebrow">Proof, not promises &middot; after liquidity + costs</span>
+    <h1 class="hero-headline">Our picks double at <em>nearly 9×</em> the rate of random stock picking.</h1>
+    <p class="hero-sub">Backtested across 22,218 ticker-windows on the Russell 3000. Filtered for tradeable liquidity (&dollar;500k+ average daily turnover) and round-trip transaction costs (1.5%) — the honest bar, not the flattering one. Every pick is logged publicly for live verification.</p>
     <div class="hero-ctas">
       <a href="/picks" class="btn">See today's picks &rarr;</a>
       <a href="/track-record" class="btn ghost">See the validation</a>
@@ -259,13 +259,13 @@ footer a:hover { color: var(--text-hi); }
         <div class="cc-label">Random stock from the Russell 3000</div>
         <div class="cc-big">1 in 20</div>
         <div class="cc-mid">chance of doubling over the next year</div>
-        <div class="cc-sub">4.95% base rate across 22,218 observations</div>
+        <div class="cc-sub">4.26% base rate after liquidity filter</div>
       </div>
       <div class="compare-card model">
         <div class="cc-label">Top 20 picks from our model</div>
-        <div class="cc-big">11 in 20</div>
+        <div class="cc-big">7 in 20</div>
         <div class="cc-mid">doubled in the following year</div>
-        <div class="cc-sub">55.0% realized rate on top-ranked picks</div>
+        <div class="cc-sub">37.0% hit rate after liquidity + 1.5% round-trip costs</div>
       </div>
     </div>
   </div>
@@ -283,19 +283,19 @@ footer a:hover { color: var(--text-hi); }
       <div class="check-card">
         <div class="ck-label">Works across every company size</div>
         <div class="ck-big">8.45&times; lift</div>
-        <div class="ck-body">Median lift versus baseline measured <em>within</em> each market-cap quintile. Holds from the smallest to the largest 20% of the Russell 3000. Not a small-cap premium in disguise.</div>
+        <div class="ck-body">Median lift versus baseline measured <em>within</em> each market-cap quintile. Holds from the smallest to the largest 20% of the Russell 3000 — not a small-cap premium in disguise.</div>
       </div>
 
       <div class="check-card">
         <div class="ck-label">Tested on unseen 2024 data</div>
-        <div class="ck-big">68% doubled</div>
-        <div class="ck-body">Out-of-sample (OOS) 2024 hit rate. The model was trained only on prior windows — 2024 was a clean holdout. The signal strengthened rather than weakened on unseen data.</div>
+        <div class="ck-big">62% doubled</div>
+        <div class="ck-body">Out-of-sample (OOS) 2024 hit rate <em>after</em> the same liquidity and cost filters. The model was trained only on prior windows — 2024 was a clean holdout, and the signal strengthens rather than weakens on unseen data (12.8&times; lift).</div>
       </div>
 
       <div class="check-card">
-        <div class="ck-label">Beats simple rules by 5&times;</div>
-        <div class="ck-big">11.1&times; vs 2.0&times;</div>
-        <div class="ck-body">Our model's lift compared to the best hand-crafted heuristic we tried. The difference is the machine-learned layer, not the raw projections.</div>
+        <div class="ck-label">Beats simple rules by 4&times;</div>
+        <div class="ck-big">8.7&times; vs 2.0&times;</div>
+        <div class="ck-body">Our model's honest lift compared to the best hand-crafted heuristic we tried. The difference is the machine-learned layer, not the raw projections.</div>
       </div>
     </div>
 

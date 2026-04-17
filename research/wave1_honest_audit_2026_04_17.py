@@ -214,23 +214,85 @@ def main() -> None:
         "scorers": {},
     }
 
+    # Sub-window: 2024 out-of-sample — same split our backtest report
+    # uses. Lets us publish an honest OOS lift alongside the overall.
+    out["as_of_dt"] = pd.to_datetime(out["as_of"])
+    oos_mask = out["as_of_dt"].dt.year == 2024
+    out_oos = out[oos_mask].copy()
+    log.info("2024 OOS subset: %d rows across %d windows",
+             len(out_oos), out_oos["as_of"].nunique() if len(out_oos) else 0)
+
     for scorer in ("nn_score", "ensemble_score"):
-        scorer_block: dict = {"variants": {}}
-        for v_name, kw in variants.items():
-            picks = pick_stats(out, scorer, top_n=TOP_N, **kw)
-            baseline = universe_baseline(out,
-                                          realized_col=kw["realized_col"],
-                                          liquidity_floor=kw["liquidity_floor"],
-                                          tx_cost=kw["tx_cost"])
-            picks["baseline_hit_100"] = round(baseline, 4)
-            picks["lift"] = round(picks["hit_100"] / baseline, 3) \
-                if baseline > 0 and picks.get("n") else None
-            scorer_block["variants"][v_name] = picks
-            log.info("%s %-15s n=%s hit=%s mean=%s baseline=%s lift=%s",
-                     scorer, v_name, picks.get("n"), picks.get("hit_100"),
-                     picks.get("mean_return"), round(baseline, 4),
-                     picks.get("lift"))
+        scorer_block: dict = {"overall": {}, "oos_2024": {}}
+        for section, sub in (("overall", out), ("oos_2024", out_oos)):
+            if len(sub) == 0:
+                continue
+            for v_name, kw in variants.items():
+                picks = pick_stats(sub, scorer, top_n=TOP_N, **kw)
+                baseline = universe_baseline(sub,
+                                              realized_col=kw["realized_col"],
+                                              liquidity_floor=kw["liquidity_floor"],
+                                              tx_cost=kw["tx_cost"])
+                picks["baseline_hit_100"] = round(baseline, 4)
+                picks["lift"] = round(picks["hit_100"] / baseline, 3) \
+                    if baseline > 0 and picks.get("n") else None
+                scorer_block[section][v_name] = picks
+                log.info("%s %-8s %-15s n=%s hit=%s mean=%s baseline=%s lift=%s",
+                         scorer, section, v_name, picks.get("n"),
+                         picks.get("hit_100"),
+                         picks.get("mean_return"), round(baseline, 4),
+                         picks.get("lift"))
         report["scorers"][scorer] = scorer_block
+
+    # ── Wave 2.1 — Top-N curve (honest filters applied) ────────────
+    # Investors ask "what if I only take top 5?" or "top 50?" — show it.
+    log.info("building top-N curve (honest filters)")
+    topn_curve: dict = {}
+    for scorer in ("nn_score", "ensemble_score"):
+        topn_curve[scorer] = {}
+        for n in (5, 10, 20, 50, 100):
+            stats = pick_stats(out, scorer, top_n=n,
+                                realized_col="realized_ret_surv",
+                                liquidity_floor=LIQUIDITY_FLOOR,
+                                tx_cost=TX_COST)
+            baseline = universe_baseline(out,
+                                          realized_col="realized_ret_surv",
+                                          liquidity_floor=LIQUIDITY_FLOOR,
+                                          tx_cost=TX_COST)
+            stats["lift"] = round(stats["hit_100"] / baseline, 3) \
+                if baseline > 0 and stats.get("n") else None
+            topn_curve[scorer][f"top_{n}"] = stats
+            log.info("  %s top_%d  hit=%s lift=%s n=%s",
+                     scorer, n, stats.get("hit_100"), stats.get("lift"),
+                     stats.get("n"))
+    report["top_n_curve_honest"] = topn_curve
+
+    # ── Wave 2.2 — Wilson 95% CI on every published hit rate ─────
+    # The OOS "68% doubled" sounds precise but n=40-60 gives a wide
+    # band. Publish it so investors can't be surprised.
+    def wilson(p: float, n: int, z: float = 1.96) -> tuple[float, float]:
+        if n == 0:
+            return 0.0, 0.0
+        denom = 1 + z * z / n
+        centre = (p + z * z / (2 * n)) / denom
+        half = (z * ((p * (1 - p) + z * z / (4 * n)) / n) ** 0.5) / denom
+        return max(0.0, centre - half), min(1.0, centre + half)
+
+    # Walk every variant we've recorded and add a wilson_95_lo/hi pair.
+    for _scorer, sb in report["scorers"].items():
+        for _section, variants_map in sb.items():
+            for _v, stats in variants_map.items():
+                if stats.get("n"):
+                    lo, hi = wilson(stats["hit_100"], stats["n"])
+                    stats["wilson_95_lo"] = round(lo, 4)
+                    stats["wilson_95_hi"] = round(hi, 4)
+    # Top-N curve too
+    for _scorer, curve in topn_curve.items():
+        for _n_key, stats in curve.items():
+            if stats.get("n"):
+                lo, hi = wilson(stats["hit_100"], stats["n"])
+                stats["wilson_95_lo"] = round(lo, 4)
+                stats["wilson_95_hi"] = round(hi, 4)
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(report, indent=2))

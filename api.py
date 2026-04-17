@@ -310,6 +310,27 @@ def sentiment(
     return rows
 
 
+@app.get("/api/honest-audit")
+@limiter.limit("60/minute")
+def honest_audit(request: Request):
+    """Wave 1 honest audit — survivorship + liquidity + transaction costs
+    applied to our published rankings. Served as a second-layer overlay
+    over /api/backtest-report so the site can quote tradeable numbers,
+    not the pre-filter ones. File lives at runtime_data/ to guarantee
+    it ships via railway up (see gitignore history)."""
+    parent = Path(__file__).parent
+    for candidate in (parent / "runtime_data" / "wave1_honest_audit.json",
+                      parent / "data_cache"   / "wave1_honest_audit.json"):
+        if candidate.exists():
+            import json as _json
+            try:
+                return _json.loads(candidate.read_text())
+            except Exception as e:
+                raise HTTPException(status_code=500,
+                                     detail=f"Honest-audit parse error: {e}")
+    raise HTTPException(status_code=404, detail="Honest audit not yet generated")
+
+
 @app.get("/api/backtest-report")
 @limiter.limit("60/minute")
 def backtest_report(request: Request):

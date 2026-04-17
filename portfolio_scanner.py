@@ -515,17 +515,41 @@ def _tier_rank(tier: str) -> int:
     return {"conservative": 0, "moderate": 1, "aggressive": 2}.get(tier, 3)
 
 
+TIER_MIN_DOLLAR_VOLUME = 500_000  # $500k avg daily turnover floor
+
+def _liquid(pick: dict) -> bool:
+    """$500k avg daily turnover floor. Applied to every tier so we don't
+    recommend names a Strategist can't actually buy at their position
+    size. Matches the filter already enforced on the asymmetric tier —
+    investor-diligence Wave 1 alignment (2026-04-17)."""
+    v = pick.get("avg_volume") or 0
+    p = pick.get("current_price") or 0
+    # Only filter when we have both; missing data (new ticker, no enrichment
+    # yet) passes through rather than silently dropping.
+    if not v or not p:
+        return True
+    return v * p >= TIER_MIN_DOLLAR_VOLUME
+
+
 def get_picks(tier: str | None = None, results: list[dict] | None = None) -> list[dict]:
     """Return top N picks per tier from cached scan results.
 
     If *results* is None, loads from portfolio_picks.json.
     If *tier* is specified, returns only that tier's top picks.
+    Picks below the liquidity floor are dropped; the tier ranker fills
+    from deeper in the list.
     """
     if results is None:
         results = load_cached_picks()
         if results is None:
             # No cache — compute on the fly
             results = scan_universe()
+
+    # Apply tradeable-liquidity floor across every tier (matches what
+    # the asymmetric tier has always done). Honest-audit Wave 1 showed
+    # unfiltered picks gave a hit-rate ~12pp lift from names users
+    # couldn't actually buy at scale.
+    results = [r for r in results if _liquid(r)]
 
     if tier:
         tier = tier.lower()
