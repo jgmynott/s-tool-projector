@@ -23,6 +23,7 @@ from pathlib import Path
 
 from db import init_db, save_picks_history
 from signals_sec_edgar import get_fundamentals_signal, load_company_info
+from rationale_builder import RationaleBuilder
 import enrich_profiles
 import enrich_marketcaps
 
@@ -167,122 +168,6 @@ def _confidence_label(score: int) -> str:
     return "Speculative"
 
 
-def _build_rationale(sec_sig: dict | None, pick: dict | None = None) -> str:
-    """Always return a substantive thesis sentence.
-
-    Three-tier construction:
-      (1) Standout SEC metrics — the "wow" case, same as before
-          ("Revenue +56% YoY · 82% gross margin · 32% op margin").
-      (2) Routine SEC metrics — if filings exist but nothing stood out,
-          describe what IS there in prose, because concrete mediocrity is
-          still signal ("Steady 11% op margin · 4% revenue growth · net
-          cash positive"). Never a blank disclaimer.
-      (3) Engine-only narrative — for tickers without EDGAR coverage,
-          describe the forward-stats case directly from projection data
-          ("Projected 14% upside · Sharpe 0.38 · bottom-tercile volatility
-          — low-drawdown candidate").
-
-    The /picks page now never shows a generic "no standout" line.
-    """
-    standout: list[str] = []
-    routine: list[str] = []
-
-    if sec_sig:
-        g = sec_sig.get("revenue_yoy_growth")
-        if g is not None:
-            if g >= 0.20:
-                standout.append(f"Revenue +{g:.0%} YoY")
-            elif g <= -0.08:
-                standout.append(f"Revenue {g:+.0%} YoY")
-            elif -0.08 < g < 0.20:
-                routine.append(f"{g:+.0%} revenue growth")
-
-        gm = sec_sig.get("gross_margin")
-        if gm is not None:
-            if gm >= 0.55:
-                standout.append(f"{gm:.0%} gross margin")
-            elif gm >= 0.20:
-                routine.append(f"{gm:.0%} gross margin")
-
-        opm = sec_sig.get("operating_margin")
-        if opm is not None:
-            if opm >= 0.25:
-                standout.append(f"{opm:.0%} op margin")
-            elif opm >= 0.05:
-                routine.append(f"{opm:.0%} op margin")
-            elif opm < 0:
-                routine.append("operating losses")
-
-        fcf = sec_sig.get("fcf_to_revenue")
-        if fcf is not None:
-            if fcf >= 0.15:
-                standout.append(f"{fcf:.0%} FCF/sales")
-            elif fcf >= 0.05:
-                routine.append(f"{fcf:.0%} FCF yield")
-            elif fcf < 0:
-                routine.append("cash-burn")
-
-        bb = sec_sig.get("buyback_intensity")
-        if bb is not None:
-            if bb >= 0.05:
-                standout.append(f"{bb:.0%} returned via buybacks")
-            elif bb >= 0.01:
-                routine.append(f"modest buybacks ({bb:.0%} of sales)")
-
-        nd = sec_sig.get("net_debt_change_pct")
-        if nd is not None:
-            if nd <= -0.15:
-                standout.append("deleveraging")
-            elif nd >= 0.25:
-                standout.append("leveraging up")
-            elif -0.15 < nd < 0.25:
-                routine.append("stable balance sheet")
-
-    # Tier 1: standout — lead with those
-    if standout:
-        return " · ".join(standout[:3])
-
-    # Tier 2: routine metrics — compose prose. If only one metric is
-    # available, pad with the engine narrative so the thesis still feels
-    # substantive; otherwise join the concrete filings-derived items.
-    if routine:
-        if len(routine) >= 2:
-            body = ", ".join(routine[:3])
-            return f"Latest filings: {body[0].upper() + body[1:]}"
-        if pick:
-            er = pick.get("expected_return") or 0
-            body = f"{routine[0]} per latest filings · model projects {er*100:+.0f}% to P50 target"
-            return body[0].upper() + body[1:]
-        return f"Latest filings: {routine[0]}"
-
-    # Tier 3: engine-only narrative — lead with the model's view, stated
-    # confidently. We do NOT apologize for the absence of SEC commentary —
-    # the engine signal is itself a valid reason to surface the pick.
-    if pick:
-        er = pick.get("expected_return") or 0
-        sharpe = pick.get("sharpe_proxy") or 0
-        vol = pick.get("risk") or 0
-        er_desc = (
-            f"Model projects +{er*100:.0f}% to 1-year P50 target" if er >= 0.10 else
-            f"Model projects {er*100:+.0f}% to P50 target"
-        )
-        sharpe_desc = (
-            f"Sharpe {sharpe:.2f}, top-quartile risk-adjusted"
-                if sharpe >= 0.30 else
-            f"Sharpe {sharpe:.2f}, positive but noise-adjacent"
-                if sharpe >= 0.10 else
-            f"Sharpe {sharpe:.2f} — position-size carefully"
-        )
-        vol_desc = (
-            f"{vol*100:.0f}% projected vol (low-tercile)" if vol < 0.25 else
-            f"{vol*100:.0f}% projected vol (mid-tercile)" if vol < 0.45 else
-            f"{vol*100:.0f}% projected vol (high-tercile — tactical only)"
-        )
-        return f"{er_desc} · {sharpe_desc} · {vol_desc}"
-
-    return "Ranked on projection-engine signal."
-
-
 def scan_universe(conn=None) -> list[dict]:
     """Scan all cached projections and return ranked, tiered results.
 
@@ -424,7 +309,8 @@ def scan_universe(conn=None) -> list[dict]:
                 "net_debt_change_pct": sec_sig.get("net_debt_change_pct") if sec_sig else None,
                 "score": sec_sig.get("raw_score") if sec_sig else None,
             } if sec_sig else None,
-            "rationale": _build_rationale(sec_sig, engine_stats),
+            # rationale built in a batch pass after ranking — see below
+            "rationale": "",
             "confidence": confidence["score"],
             "confidence_label": _confidence_label(confidence["score"]),
             "confidence_components": confidence["components"],
@@ -494,6 +380,15 @@ def scan_universe(conn=None) -> list[dict]:
 
     # Sort each tier by sharpe_proxy descending
     scored.sort(key=lambda x: (-_tier_rank(x["tier"]), -x["sharpe_proxy"]))
+
+    # Build differentiated buy-side theses in ranked order so top picks
+    # get first claim on their natural primary driver. The builder
+    # enforces the max-2-per-driver and max-2-per-phrase rules across
+    # the whole batch. Any pick that saturates its primary falls back
+    # to the next-strongest driver rather than repeating a used phrase.
+    _rationale = RationaleBuilder()
+    for entry in scored:
+        entry["rationale"] = _rationale.build(entry, entry.get("sec_fundamentals"))
 
     elapsed = time.time() - t0
     log.info(

@@ -1,114 +1,130 @@
-# Session Handoff — 2026-04-17 (second handoff, post-redesign)
+# Session Handoff — 2026-04-17 (evening, post honest-audit + docs sweep)
 
-> Resume with: "Read SESSION_HANDOFF.md and MEMORY.md then tell me where we left off."
-
-Previous handoff (now superseded): the session before this one finished, documented its own mistakes, and exited. This session picked up the P0 item from that handoff — the `/picks` redesign — and shipped it.
+> **Resume with:** `Read SESSION_HANDOFF.md and MEMORY.md, then check the backfill + regen background jobs and tell me where we left off.`
 
 ---
 
-## ✅ What got done this session
+## 🏃 Background jobs that should still be running
 
-**Commit:** `f231cc2` — `redesign(picks): in-page tabs + numeric donut allocator, drop Wild/sleeve`
+Two Python processes were left running when the previous session ended:
 
-Single-file change: `cloudflare/public/picks/index.html` (+404 / -197 lines).
-
-### UI changes on `/picks`
-
-1. **In-page tab nav.** Four pills (Conservative / Moderate / Aggressive / Asymmetric) nested in the container below the allocator. Not sticky — never conflicts with top site nav. Each tab shows `[color dot] Name` on row one and `N picks · $X,XXX` on row two, so the nav carries its own numbers. Active-tab state persists to `localStorage.stool_picks_tab`.
-2. **Numeric donut allocator.** Replaces the horizontal-bar allocation viz. SVG donut (4 segments, rotated so 12 o'clock is the start) with each arc labelled by its own percentage (slices ≥ 8% only, to avoid unreadable labels). Center shows `$total · PROFILE NAME`. Right side is a composition table where every row is `[dot] TierName | sub-description | N picks available | PCT% | $DOLLARS` — every element is numeric.
-3. **Dropped the Wild risk profile.** User flagged it as "aligns to nothing." Legacy `localStorage.stool_alloc_profile === 'wild'` auto-migrates to `'aggressive'`.
-4. **Stripped "sleeve" copy everywhere.** Asymmetric tab blurb now reads "High-variance — size each name small." Profile subs use "allocation" instead of "sleeve." `TIER_COPY.aggressive.blurb` says "Tactical set — size small per name."
-5. **Top-5 per tab with Show-remaining toggle.** Each tab renders 5 cards then a pill button "Show remaining N picks →". Overflow cards are in the DOM with `data-overflow="1"`, hidden via CSS (`.tab-panel:not(.show-all) [data-overflow] { display: none; }`) — no JS re-render.
-6. **Deleted dead functions.** Old `renderTierSection` + `renderAsymmetricTier` + `collapsible` / `toggleCollapsible` / `setAllCollapsed` are gone. Old CSS for `.collapsible`, `.collapse-btn`, `.collapse-master`, `.alloc-bar`, `.alloc-legend`, `div-bar` removed.
-
-### What was verified locally
-
-Used a preview harness: copied `index.html` to `/tmp/picks-preview/`, injected a `fetch` mock that reads `portfolio_picks.json` for `/api/picks`, mocked Clerk + STNav, served via `python3 -m http.server 8899`, screenshotted with headless Chrome.
-
-- ✅ Desktop 1800×1600: donut renders, 4 segments in correct proportions, center `$10,000 BALANCED`, composition table shows Conservative 40% $4,000 / Moderate 35% $3,500 / Aggressive 20% $2,000 / Asymmetric 5% $500, tabs show correct counts + dollars.
-- ✅ Mobile 390×3800: donut stacks above table, controls drop to 2-col row, tabs wrap to 2×2 grid, pick cards render single-column. No overlaps.
-- ✅ Donut labels align with segments after I fixed the 3-o'clock-vs-12-o'clock mismatch (added `transform="rotate(-90 21 21)"` on segment circles).
-
-### What is NOT yet verified
-
-- **Live site behind Clerk auth.** I could only hit the gate path from the local preview. The full logged-in Strategist render has only been tested against local mock JSON, not the Railway API response. The JSON shapes match (preflight confirms all expected fields present) so this should work, but eyeball verification is still owed.
-- **Deploy has not run.** Nightly pipeline (run `24563292177`) was on step 7/22 when I committed. It won't pick up `f231cc2` since it checked out an earlier SHA. For live changes you need either (a) manual `cd cloudflare && wrangler deploy`, or (b) the next nightly cycle at 22:00 UTC.
-- **Race caveat with pipeline:** pipeline's own commit step (step 18) will land data-file updates only (`portfolio_picks.json`, `backtest_report.json`, CSVs); HTML files aren't in that commit, so there's no merge conflict with `f231cc2`. Safe to push anytime.
-
----
-
-## 🎯 Current product state
-
-### Live on `s-tool.io` as of 2026-04-17 ~08:30 ET
-
-| Layer | Version | Notes |
+| Job | Purpose | Expected finish |
 |---|---|---|
-| Cloudflare Worker `s-tool-site` | **b0e467c7** (prior session) | `/picks` still showing the pre-redesign collapsibles. Deploy `f231cc2` to see the new version. |
-| Railway API | unchanged from prior session | Still serves `backtest_report.json` without `honest_metrics` until the running pipeline finishes. |
-| `main` branch head | **f231cc2** (local, unpushed at handoff write time — check `git log origin/main..HEAD`) | `/picks` redesign |
-| Pipeline run `24563292177` | in progress (step 7/22 as of 08:30) | Will commit fresh picks + run NN training + deploy to Railway + Cloudflare. Cloudflare deploy uses the pipeline's checked-out SHA, NOT `f231cc2`. |
+| `backfill_prices_historical.py --target-start 2015-01-01 --sleep 1.2` | Extending all 2,272 price CSVs back to 2015-01-02 via yfinance | ~90–120 min from 2026-04-17 17:33 local |
+| `regenerate_training_set.py` (log: `/tmp/regen_main.log`) | Polls until ≥ 85% of tickers have history to 2015-01-15, then chains `upside_hunt.py → overnight_learn.py → overnight_backtest.py → research/wave1_honest_audit_2026_04_17.py` | ~3 h end-to-end once backfill finishes |
 
-### Data state
-- `portfolio_picks.json` — 30 picks + 10 asymmetric, today's scan from 00:15 UTC. Pipeline will overwrite with fresh scan when it finishes.
-- `backtest_report.json` — still pre-`honest_metrics` until pipeline completes.
+**First thing to do:** `ps aux | grep -E "(backfill_prices|regenerate_training)" | grep -v grep` and `tail -50 /tmp/regen_main.log`.
 
----
+- If both dead + no regen logs in `/tmp/regen_*.log` → backfill failed; investigate and restart.
+- If backfill done + regen running → let it run.
+- If regen complete → four new artifacts to commit (below).
 
-## 🔨 What the next session should do
+### Bug fixed mid-session (don't re-introduce)
 
-### Immediate (if the redesign isn't already live)
-1. Check `git log origin/main..HEAD` — if `f231cc2` is unpushed, push it.
-2. `cd cloudflare && wrangler deploy` to push the new `/picks` to prod.
-3. Take mobile + desktop screenshots of the live page logged in as Strategist. Confirm:
-   - Four tab pills render with correct counts and dollars for the selected risk profile
-   - Donut segments are labelled with percentages, center shows `$10,000 BALANCED`
-   - Switching tabs hides/shows the right panels
-   - "Show remaining N picks" button reveals hidden picks when clicked
-   - Changing risk profile updates the donut + table live
-4. Report back to user with screenshots. Per user's standing guidance: do NOT claim done before the user has verified via screenshot.
-
-### Follow-up polish candidates (user did not ask for these — confirm before doing)
-- **Session-length tab persistence is localStorage only**, so across devices the tab resets. If user wants cross-device, push to user prefs API.
-- **Donut slices < 8% have no label.** Only asymmetric at 5% in the Balanced profile hits this. An on-hover tooltip or a small outside-arc label could handle it, but the composition table already shows the number.
-- **Tab overflow on narrow screens.** At 390px tabs wrap to 2×2; below 420px they remain 2×2 (grid-template-columns: 1fr 1fr). Test at 320px (iPhone SE) — might need a horizontal scroll treatment if a 2-col 4-row ends up ugly.
-- **Portfolio signal block duplicates info.** "Top conviction", "biggest projected upside", "best expected return" each name a ticker. If you want, make each a tappable chip that jumps to the right tab + scrolls the card into view.
-
-### Still pending from prior handoff (not touched this session)
-- P1: Verify `/track-record` renders `honest_metrics` after pipeline completes
-- P2: Alpaca integration Phase 0 (split-adjustment bug, survivorship, OOS holdout, tx-cost model)
-- P3: Regime classifier NN, confidence NN rescale 0-48 → 0-100, downside NN, PDF export, weekly email, Polygon backfill, users DB backup, rotate exposed keys, CSP `unsafe-inline` removal, SQL f-string tighten in `signals_sec_edgar.py`, rate limits on `/api/sentiment` + `/api/cached`
+`regenerate_training_set.py` originally had `TARGET_START = "2015-01-01"` — but yfinance's first trading day of 2015 is Jan 2, so `first <= target` was always False and the poller would hang forever. Changed to `"2015-01-15"`. If you see a similar check elsewhere, apply the same fix.
 
 ---
 
-## 📁 Files touched this session
+## ✅ What got shipped today
 
-**Committed (`f231cc2`):**
-- `cloudflare/public/picks/index.html` — the redesign
+### Wave 1 honest audit (live on prod)
+- `/api/honest-audit` serves `runtime_data/wave1_honest_audit.json`
+- Landing page + `/track-record` show **37% hit / 8.7× lift / +145% mean** (overall, 2022-24) and **61.7% / 12.8× / +331%** (2024 OOS)
+- Filters applied: $500k ADV liquidity floor + 1.5% round-trip tx cost + survivorship mid-window check
+- Published with pre-filter delta (55% → 37%) documented openly in `docs/honest-metrics.md`
 
-**Untracked (ignore / clean up if desired):**
-- `.wrangler/`, `cloudflare/.wrangler/` — local wrangler state
-- `upside_hunt_extended.csv` — leftover from a prior run
-- `/tmp/picks-preview/` — local preview harness (delete any time)
-- `/tmp/picks-shots/` — screenshots (delete any time)
+### Wave 2
+- Top-N curve (top-5 46%, top-10 45%, top-20 37%, top-50 26%, top-100 20%)
+- Wilson 95% CIs attached to every hit-rate variant
+- 2024 OOS (n=60) spans roughly 48%–74% at 95%
+
+### Four new data sources wired into nightly slow path
+| Feed | Table | Script |
+|---|---|---|
+| yfinance short interest (shortPctFloat, shortRatio, MoM delta) | `short_interest_yf` | `signals_short_interest_yf.py` |
+| yfinance 38 fundamental/technical ratios | `ratios_yf` | `signals_ratios_yf.py` |
+| Finnhub earnings + analyst trend | `earnings_finnhub` | `signals_earnings_finnhub.py` |
+| Finnhub `/stock/metric` (27 multi-year ratios) | `metrics_finnhub` | `signals_metrics_finnhub.py` |
+
+Nightly ablation: `research/nightly_short_interest_ablation.py` writes dated JSONs to `runtime_data/short_interest_ablation_<date>.json`. Auto-promotion logic not yet built — ablations require manual review before features go into `FEATURE_COLS`.
+
+### Pipeline split (stable for 2+ days)
+- `daily-refresh-fast.yml` — 20:00 UTC, 45 min cap, `worker.py --preferred` (~537 tickers)
+- `daily-refresh-slow.yml` — 23:00 UTC, 150 min cap, full research + NN retrain + backtest
+
+### Docs refreshed
+- `README.md` — full rewrite, honest numbers in hero table
+- `docs/deployment.md` — Railway project-vs-account token gotcha, Volume setup, gitignore pattern
+- `docs/data-sources.md` — NEW, every feed catalogued
+- `docs/honest-metrics.md` — NEW, Wave 1+2 methodology
+
+Committed in `d02e586`.
+
+Linear S-88 updated with evening notes. Notion page `33cf521450a7812abfcdecf323b00da4` updated.
 
 ---
 
-## 🚨 Standing rules (reinforced, did not break this session)
+## 📋 When regen completes
 
-1. Never overwrite `portfolio_picks.json` from a local script without a `len(scored) > 100` guard — the prior session's burn is documented in memory.
-2. Don't claim "mobile fix done" without user-verified screenshots. This session's screenshots are from a local fetch-mock; the live Strategist view is **not yet verified**.
-3. No jargon — "sleeve", "tactical tilt", "WILD" are banned. This session removed all of those.
-4. Every visual must carry numbers. The new donut + composition table is compliant; the tab pills are compliant; the portfolio signal text is compliant. If you add anything new, verify.
-5. `python3 preflight.py` before every deploy. Preflight passed at commit time with 3 pre-existing warnings (market_cap coverage, sector coverage, users DB 403 — all inherited).
+```bash
+# Verify artifacts look sane
+jq '.scorers.nn_score.overall.E_all_three' runtime_data/wave1_honest_audit.json
+jq '.honest_metrics.year_oos_hit_100' runtime_data/backtest_report.json
+wc -l upside_hunt_results.csv  # should be 3-4× larger than the 2022-24-only version
 
----
+# Commit + push
+git add upside_hunt_results.csv upside_hunt_scored.csv \
+        runtime_data/backtest_report.json \
+        runtime_data/wave1_honest_audit.json \
+        data_cache/*.json
+git commit -m "data: regenerate training set 2016-2024 (35 windows, +2021 continuity)"
+git push
 
-## Current git state
-
+# Kick a slow run to re-deploy artifacts + rebuild NN against the expanded set
+gh workflow run daily-refresh-slow.yml --ref main
 ```
-main @ f231cc2 — redesign(picks): in-page tabs + numeric donut allocator, drop Wild/sleeve
-  (check push status with: git log origin/main..HEAD)
-nn-research @ aa71e02 (pushed, unchanged this session)
-```
 
-Pipeline: `gh run view 24563292177 --repo jgmynott/s-tool-projector`
+Numbers to watch after regen:
+- **2018 Q4 / 2020 / 2022 regime coverage** now in the training set — expect the overall honest hit rate to shift (could go down if tech-bear windows hurt, up if 2021 continuity helps). Either direction is fine — ship the honest number.
+- Re-run `research/wave1_honest_audit_2026_04_17.py` if the chained step failed but upside_hunt + backtest succeeded.
+
+---
+
+## 🎯 Active backlog
+
+**Pending from previous sessions:**
+- `#9` — verify live `/picks` renders asymmetric tier with 10 tickers (user verification still owed)
+- `#14` — next-session new-data-source research per Linear S-88 consolidation
+
+**Queued data sources (keys configured, not yet wired):**
+- Polygon options flow — `/v3/snapshot/options/<symbol>`, 5 req/min free tier → top-100 tickers only
+- SEC Form 4 insider transactions — bulk feed, free
+- 13F institutional ownership — SEC quarterly, free
+
+**Wave 3 skeletons (deferred, documented):**
+- Universe-level survivorship (needs historical IWV constituents — paid data or iShares filings)
+- Asymmetric tier standalone backtest + 95% CI publication
+- Walk-forward window-overlap methodology note
+- Auto-promotion of ablation-validated features into `FEATURE_COLS`
+
+---
+
+## 🚫 Do NOT
+
+- Re-add Russell 3000 long-tail to slow path — two past runs timed out before deploy. If needed, weekly workflow, not nightly.
+- Commit `data_cache/prices/` or `data_cache/sec_edgar/facts/` — heavy, already gitignored. Runtime JSONs belong in `runtime_data/`.
+- Reference "Medallion" anywhere in copy (trademark).
+- Quote pricing from memory — always WebFetch first.
+- Publish methodology recipes (parameter values, method names, provider shopping lists) on the public site. Philosophy + stats only.
+- Ship UI changes without the 7-page mobile eyeball sweep (320–480px) + hover/click/scroll/resize interaction QC.
+
+---
+
+## 📍 Current product state (2026-04-17 EOD)
+
+- **Live:** https://s-tool.io
+- **Stack:** Cloudflare Worker + Railway FastAPI + Clerk + Stripe + SQLite (Volume-persisted users.db)
+- **Nightly:** Fast 20:00 UTC + Slow 23:00 UTC, both auto-deploy on green
+- **Honest numbers:** 37% / 8.7× / +145% (pre-regen). Will refresh once `regen_main.log` shows `REGEN COMPLETE`.
+- **Tiers comped manually:** `kevinrvandelden@gmail.com` (hard-coded in `users_db.py`)
+- **Last commit:** `d02e586` (docs)

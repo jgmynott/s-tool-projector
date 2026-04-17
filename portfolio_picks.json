@@ -41,7 +41,7 @@
         "net_debt_change_pct": 0.2058025155990161,
         "score": 0.0237
       },
-      "rationale": "69% gross margin \u00b7 28% op margin",
+      "rationale": "The 28% operating margin is the moat \u2014 pricing power that survives cycle rotation is the rarest asset on a ranked screen, for a balance-sheet business.",
       "confidence": 43,
       "confidence_label": "Moderate conviction",
       "confidence_components": {
@@ -90,7 +90,7 @@
         "net_debt_change_pct": -0.16103235187204654,
         "score": 0.1557
       },
-      "rationale": "17% FCF/sales \u00b7 9% returned via buybacks \u00b7 deleveraging",
+      "rationale": "Balance-sheet repair is doing the work: net debt down 16% year-on-year while the operating line is holding 25%. Multiple expansion tends to follow the arithmetic, for a capital-goods name.",
       "confidence": 58,
       "confidence_label": "Moderate conviction",
       "confidence_components": {
@@ -139,7 +139,7 @@
         "net_debt_change_pct": 0.6676221335992024,
         "score": -0.0311
       },
-      "rationale": "26% FCF/sales \u00b7 18% returned via buybacks \u00b7 leveraging up",
+      "rationale": "Cash machine: 26% FCF-to-sales funds a 18% capital return \u2014 the buyback is the by-product of a business that converts revenue to cash faster than it can reinvest it, for a balance-sheet business.",
       "confidence": 42,
       "confidence_label": "Moderate conviction",
       "confidence_components": {
@@ -188,7 +188,7 @@
         "net_debt_change_pct": 0.1809248394424026,
         "score": 0.0351
       },
-      "rationale": "Revenue +36% YoY",
+      "rationale": "Top-line is accelerating at 36% year-on-year, and the gross-margin line (\u2014) is holding through the growth \u2014 the sequence that typically precedes a re-rate.",
       "confidence": 47,
       "confidence_label": "Moderate conviction",
       "confidence_components": {
@@ -237,7 +237,7 @@
         "net_debt_change_pct": -0.11653439412447827,
         "score": 0.1419
       },
-      "rationale": "16% FCF/sales \u00b7 13% returned via buybacks",
+      "rationale": "12% revenue growth on a 18% operating margin frame \u2014 the durable-growth profile, where the model rewards consistency over slope.",
       "confidence": 57,
       "confidence_label": "Moderate conviction",
       "confidence_components": {
@@ -286,7 +286,7 @@
         "net_debt_change_pct": null,
         "score": 0.2
       },
-      "rationale": "49% op margin \u00b7 16% FCF/sales \u00b7 16% returned via buybacks",
+      "rationale": "General Electric Co runs at 55% gross and 49% operating \u2014 the margin stack compounders defend through cycles, and the reason this name prices like a franchise rather than a ticker.",
       "confidence": 63,
       "confidence_label": "Solid conviction",
       "confidence_components": {
@@ -335,7 +335,7 @@
         "net_debt_change_pct": 0.23530113297555158,
         "score": 0.0363
       },
-      "rationale": "8% returned via buybacks",
+      "rationale": "Free-cash conversion at 13% of revenue is the quiet specialist skill here \u2014 the number earnings-based screens miss but the buy side eventually notices.",
       "confidence": 44,
       "confidence_label": "Moderate conviction",
       "confidence_components": {
@@ -384,7 +384,7 @@
         "net_debt_change_pct": -0.08682907882359214,
         "score": 0.0385
       },
-      "rationale": "Latest filings: +11% revenue growth, stable balance sheet",
+      "rationale": "Distribution is skewed right: the 90th percentile of the 1-year forward lands at 2.1\u00d7 current, against a 1.1\u00d7 floor \u2014 the coiled-spring profile the asymmetric tier is designed to surface.",
       "confidence": 44,
       "confidence_label": "Moderate conviction",
       "confidence_components": {
@@ -433,7 +433,7 @@
         "net_debt_change_pct": null,
         "score": 0.1146
       },
-      "rationale": "35% op margin",
+      "rationale": "14% revenue growth on a 35% operating margin frame \u2014 the durable-growth profile, where the model rewards consistency over slope.",
       "confidence": 56,
       "confidence_label": "Moderate conviction",
       "confidence_components": {
@@ -482,7 +482,7 @@
         "net_debt_change_pct": -0.14472435965004743,
         "score": 0.0777
       },
-      "rationale": "Latest filings: +5% revenue growth, 15% FCF yield, modest buybacks (4% of sales)",
+      "rationale": "Free-cash conversion at 15% of revenue is the quiet specialist skill here \u2014 the number earnings-based screens miss but the buy side eventually notices.",
       "confidence": 58,
       "confidence_label": "Moderate conviction",
       "confidence_components": {
@@ -515,7 +515,7 @@
       "avg_volume": null,
       "asymmetric": null,
       "sec_fundamentals": null,
-      "rationale": "Model projects +20% to 1-year P50 target \u00b7 Sharpe 0.57, top-quartile risk-adjusted \u00b7 34% projected vol (mid-tercile)",
+      "rationale": "Engine ranks this in the top quintile on a combined expected-return (+20%) and Sharpe (0.57) read \u2014 a purely statistical surface, sized for that.",
       "confidence": 40,
       "confidence_label": "Moderate conviction",
       "confidence_components": {
@@ -564,7 +564,7 @@
         "net_debt_change_pct": -0.4116897856488454,
         "score": 0.3362
       },
-      "rationale": "55% op margin \u00b7 63% FCF/sales \u00b7 12% returned via buybacks",
+      "rationale": "Balance-sheet repair is doing the work: net debt down 41% year-on-year while the operating line is holding 55%. Multiple expansion tends to follow the arithmetic, for a tech name.",
       "confidence": 75,
       "confidence_label": "Solid conviction",
       "confidence_components": {
@@ -613,7 +613,7 @@
         "net_debt_change_pct": null,
         "score": 0.0695
       },
-      "rationale": "Latest filings: +19% revenue growth, 36% gross margin, 15% op margin",
+      "rationale": "Distribution is skewed right: the 90th percentile of the 1-year forward lands at 4.6\u00d7 current, against a 0.7\u00d7 floor \u2014 the coiled-spring profile the asymmetric tier is designed to surface.",
       "confidence": 47,
       "confidence_label": "Moderate conviction",
       "confidence_components": {
@@ -653,7 +653,7 @@
         "computed_at": 1776383887.122657
       },
       "sec_fundamentals": null,
-      "rationale": "Model projects +17% to 1-year P50 target \u00b7 Sharpe 0.49, top-quartile risk-adjusted \u00b7 34% projected vol (mid-tercile)",
+      "rationale": "Engine ranks this in the top quintile on a combined expected-return (+17%) and Sharpe (0.49) read \u2014 a purely statistical surface, sized for that.",
       "confidence": 39,
       "confidence_label": "Speculative",
       "confidence_components": {
@@ -702,7 +702,7 @@
         "net_debt_change_pct": 0.011789915097754051,
         "score": 0.0236
       },
-      "rationale": "Latest filings: +5% revenue growth, modest buybacks (2% of sales), stable balance sheet",
+      "rationale": "Projection-only thesis: +18% to P50, Sharpe 0.49, 38% volatility \u2014 the model kept it; the narrative is yet to catch up.",
       "confidence": 42,
       "confidence_label": "Moderate conviction",
       "confidence_components": {
@@ -751,7 +751,7 @@
         "net_debt_change_pct": -0.33482956936456726,
         "score": 0.2426
       },
-      "rationale": "42% op margin \u00b7 27% FCF/sales \u00b7 deleveraging",
+      "rationale": "The 42% operating margin is the moat \u2014 pricing power that survives cycle rotation is the rarest asset on a ranked screen.",
       "confidence": 66,
       "confidence_label": "Solid conviction",
       "confidence_components": {
@@ -793,7 +793,7 @@
         "net_debt_change_pct": -0.0974488987482174,
         "score": 0.042
       },
-      "rationale": "Latest filings: +1% revenue growth, 25% gross margin, 6% op margin",
+      "rationale": "Projection-only thesis: +18% to P50, Sharpe 0.45, 40% volatility \u2014 the model kept it; the narrative is yet to catch up.",
       "confidence": 41,
       "confidence_label": "Moderate conviction",
       "confidence_components": {
@@ -842,7 +842,7 @@
         "net_debt_change_pct": -0.01781895937277263,
         "score": 0.0301
       },
-      "rationale": "Latest filings: +5% revenue growth, modest buybacks (4% of sales), stable balance sheet",
+      "rationale": "Ranked on model output alone \u2014 +18% expected return against 41% realized vol. The Sharpe proxy of 0.44 is why it clears the filter.",
       "confidence": 38,
       "confidence_label": "Speculative",
       "confidence_components": {
@@ -891,7 +891,7 @@
         "net_debt_change_pct": -0.6133907285781657,
         "score": 0.2217
       },
-      "rationale": "27% op margin \u00b7 6% returned via buybacks \u00b7 deleveraging",
+      "rationale": "Aggressive capital return: 6% of revenue routed through buybacks \u2014 a float-reduction thesis you can model before you model the operations.",
       "confidence": 60,
       "confidence_label": "Solid conviction",
       "confidence_components": {
@@ -940,7 +940,7 @@
         "net_debt_change_pct": 2.8493445284109424,
         "score": -0.0742
       },
-      "rationale": "36% returned via buybacks \u00b7 leveraging up",
+      "rationale": "Aggressive capital return: 36% of revenue routed through buybacks \u2014 a float-reduction thesis you can model before you model the operations.",
       "confidence": 34,
       "confidence_label": "Speculative",
       "confidence_components": {
@@ -982,7 +982,7 @@
         "net_debt_change_pct": -1.1856443217171015,
         "score": 0.2
       },
-      "rationale": "deleveraging",
+      "rationale": "The model prices +38% to the P50 target at Sharpe 0.70 \u2014 without a filings-side catalyst, the engine-only signal is the reason this name is on the list.",
       "confidence": 63,
       "confidence_label": "Solid conviction",
       "confidence_components": {
@@ -1024,7 +1024,7 @@
         "net_debt_change_pct": null,
         "score": 0.0123
       },
-      "rationale": "+3% revenue growth per latest filings \u00b7 model projects +37% to P50 target",
+      "rationale": "The model prices +37% to the P50 target at Sharpe 0.69 \u2014 without a filings-side catalyst, the engine-only signal is the reason this name is on the list.",
       "confidence": 41,
       "confidence_label": "Moderate conviction",
       "confidence_components": {
@@ -1073,7 +1073,7 @@
         "net_debt_change_pct": null,
         "score": 0.0506
       },
-      "rationale": "Latest filings: +11% revenue growth, 25% op margin, cash-burn",
+      "rationale": "Ranked on model output alone \u2014 +36% expected return against 54% realized vol. The Sharpe proxy of 0.67 is why it clears the filter.",
       "confidence": 46,
       "confidence_label": "Moderate conviction",
       "confidence_components": {
@@ -1115,7 +1115,7 @@
         "net_debt_change_pct": null,
         "score": 0.0651
       },
-      "rationale": "Revenue +22% YoY",
+      "rationale": "No filings-side signal this pass; the ranker holds it on engine Sharpe (0.62) and a +45% P50 expectation.",
       "confidence": 48,
       "confidence_label": "Moderate conviction",
       "confidence_components": {
@@ -1157,7 +1157,7 @@
         "net_debt_change_pct": null,
         "score": 0.1991
       },
-      "rationale": "Revenue +60% YoY \u00b7 18% FCF/sales \u00b7 6% returned via buybacks",
+      "rationale": "Top-line is accelerating at 60% year-on-year, and the gross-margin line (\u2014) is holding through the growth \u2014 the sequence that typically precedes a re-rate, inside a healthcare pipeline story.",
       "confidence": 63,
       "confidence_label": "Solid conviction",
       "confidence_components": {
@@ -1206,7 +1206,7 @@
         "net_debt_change_pct": null,
         "score": 0.0621
       },
-      "rationale": "9% returned via buybacks",
+      "rationale": "No filings-side signal this pass; the ranker holds it on engine Sharpe (0.60) and a +32% P50 expectation.",
       "confidence": 47,
       "confidence_label": "Moderate conviction",
       "confidence_components": {
@@ -1255,7 +1255,7 @@
         "net_debt_change_pct": 1.1140976412506858,
         "score": -0.2495
       },
-      "rationale": "Revenue -23% YoY \u00b7 leveraging up",
+      "rationale": "Engine ranks this in the top quintile on a combined expected-return (+42%) and Sharpe (0.58) read \u2014 a purely statistical surface, sized for that.",
       "confidence": 40,
       "confidence_label": "Moderate conviction",
       "confidence_components": {
@@ -1304,7 +1304,7 @@
         "net_debt_change_pct": -0.2886539816772375,
         "score": 0.0458
       },
-      "rationale": "deleveraging",
+      "rationale": "Still pre-profit at the operating line (-4%), but -5% revenue growth is the signal \u2014 the question is margin slope, not demand.",
       "confidence": 44,
       "confidence_label": "Moderate conviction",
       "confidence_components": {
@@ -1344,7 +1344,7 @@
         "computed_at": 1776383887.528596
       },
       "sec_fundamentals": null,
-      "rationale": "Model projects +27% to 1-year P50 target \u00b7 Sharpe 0.48, top-quartile risk-adjusted \u00b7 57% projected vol (high-tercile \u2014 tactical only)",
+      "rationale": "Projection-only thesis: +27% to P50, Sharpe 0.48, 57% volatility \u2014 the model kept it; the narrative is yet to catch up.",
       "confidence": 38,
       "confidence_label": "Speculative",
       "confidence_components": {
@@ -1377,7 +1377,7 @@
       "avg_volume": 1687990.0,
       "asymmetric": null,
       "sec_fundamentals": null,
-      "rationale": "Model projects +40% to 1-year P50 target \u00b7 Sharpe 0.48, top-quartile risk-adjusted \u00b7 83% projected vol (high-tercile \u2014 tactical only)",
+      "rationale": "Ranked on model output alone \u2014 +40% expected return against 83% realized vol. The Sharpe proxy of 0.48 is why it clears the filter.",
       "confidence": 38,
       "confidence_label": "Speculative",
       "confidence_components": {
@@ -1419,7 +1419,7 @@
         "computed_at": 1776383885.015334
       },
       "sec_fundamentals": null,
-      "rationale": "Model projects +8% to P50 target \u00b7 Sharpe 0.23, positive but noise-adjacent \u00b7 33% projected vol (mid-tercile)",
+      "rationale": "No filings-side signal this pass; the ranker holds it on engine Sharpe (0.23) and a +8% P50 expectation.",
       "confidence": 19,
       "confidence_label": "Speculative",
       "confidence_components": {
@@ -1460,7 +1460,7 @@
         "computed_at": 1776383885.3194208
       },
       "sec_fundamentals": null,
-      "rationale": "Model projects +7% to P50 target \u00b7 Sharpe 0.15, positive but noise-adjacent \u00b7 46% projected vol (high-tercile \u2014 tactical only)",
+      "rationale": "Engine ranks this in the top quintile on a combined expected-return (+7%) and Sharpe (0.15) read \u2014 a purely statistical surface, sized for that.",
       "confidence": 12,
       "confidence_label": "Speculative",
       "confidence_components": {
@@ -1510,7 +1510,7 @@
         "net_debt_change_pct": -0.0861743202168734,
         "score": 0.0709
       },
-      "rationale": "Latest filings: -1% revenue growth, 44% gross margin, 14% op margin",
+      "rationale": "Projection-only thesis: +3% to P50, Sharpe 0.05, 51% volatility \u2014 the model kept it; the narrative is yet to catch up.",
       "confidence": 13,
       "confidence_label": "Speculative",
       "confidence_components": {
@@ -1560,7 +1560,7 @@
         "net_debt_change_pct": null,
         "score": 0.0751
       },
-      "rationale": "15% FCF/sales",
+      "rationale": "Ranked on model output alone \u2014 +4% expected return against 63% realized vol. The Sharpe proxy of 0.07 is why it clears the filter.",
       "confidence": 14,
       "confidence_label": "Speculative",
       "confidence_components": {
@@ -1610,7 +1610,7 @@
         "net_debt_change_pct": -0.22443490860354626,
         "score": -0.0243
       },
-      "rationale": "Revenue -10% YoY \u00b7 7% returned via buybacks \u00b7 deleveraging",
+      "rationale": "Revenue is down 10% but the balance sheet is tightening (22% less net debt) \u2014 the sequence that distinguishes a turnaround from a value trap.",
       "confidence": 21,
       "confidence_label": "Speculative",
       "confidence_components": {
@@ -1660,7 +1660,7 @@
         "net_debt_change_pct": 0.12585723898693635,
         "score": 0.0565
       },
-      "rationale": "Revenue +45% YoY",
+      "rationale": "Still pre-profit at the operating line (-4%), but 45% revenue growth is the signal \u2014 the question is margin slope, not demand.",
       "confidence": 34,
       "confidence_label": "Speculative",
       "confidence_components": {
@@ -1710,7 +1710,7 @@
         "net_debt_change_pct": -0.1768173264269333,
         "score": -0.1903
       },
-      "rationale": "69% gross margin \u00b7 deleveraging",
+      "rationale": "69% gross margin is the structural tell \u2014 a level sustained only by pricing power that most of the universe does not have.",
       "confidence": 7,
       "confidence_label": "Speculative",
       "confidence_components": {
@@ -1760,7 +1760,7 @@
         "net_debt_change_pct": -1.835730960943908,
         "score": -0.1654
       },
-      "rationale": "deleveraging",
+      "rationale": "No filings-side signal this pass; the ranker holds it on engine Sharpe (0.12) and a +4% P50 expectation.",
       "confidence": 10,
       "confidence_label": "Speculative",
       "confidence_components": {
@@ -1810,7 +1810,7 @@
         "net_debt_change_pct": 0.14279809878073982,
         "score": -0.0308
       },
-      "rationale": "Latest filings: -1% revenue growth, stable balance sheet",
+      "rationale": "Engine ranks this in the top quintile on a combined expected-return (+6%) and Sharpe (0.09) read \u2014 a purely statistical surface, sized for that.",
       "confidence": 7,
       "confidence_label": "Speculative",
       "confidence_components": {
@@ -1860,7 +1860,7 @@
         "net_debt_change_pct": -0.04581064297315372,
         "score": 0.0909
       },
-      "rationale": "Revenue +21% YoY \u00b7 5% returned via buybacks",
+      "rationale": "Projection-only thesis: +13% to P50, Sharpe 0.24, 52% volatility \u2014 the model kept it; the narrative is yet to catch up.",
       "confidence": 30,
       "confidence_label": "Speculative",
       "confidence_components": {
