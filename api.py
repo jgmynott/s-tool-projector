@@ -124,6 +124,24 @@ users_db.init_users_db(users_conn)
 # the Volume isn't wired up and every deploy will wipe paying users.
 log.info("users_db path: %s", users_db.USERS_DB_PATH)
 
+# Deploy-time diagnostic: what's actually under /app/data_cache/ at
+# startup? Tells us whether the runtime JSONs the API endpoints rely on
+# actually shipped via `railway up`, or were stripped by .gitignore.
+try:
+    import os as _os
+    _dc = Path(__file__).parent / "data_cache"
+    if _dc.exists():
+        _top = sorted(_os.listdir(_dc))[:30]
+        log.info("data_cache/ top entries (first 30): %s", _top)
+        _btr = _dc / "backtest_report.json"
+        log.info("backtest_report.json present: %s size: %s",
+                 _btr.exists(),
+                 _btr.stat().st_size if _btr.exists() else 0)
+    else:
+        log.warning("data_cache/ directory missing at %s", _dc)
+except Exception as _e:
+    log.warning("data_cache probe failed: %s", _e)
+
 # On first boot after the Volume is attached, the file at /data/users.db
 # is empty even though we shipped real users before. Log a warning so we
 # notice and can run /api/_admin/backfill_emails + force_resync for
