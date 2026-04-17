@@ -319,7 +319,7 @@ footer a { color: var(--text-mid); }
 /* Collapsible sections — wrap any heading + body in .collapsible and the
  * inline button will toggle visibility. State persists per-section via
  * localStorage so a user's preferences ride across sessions. */
-.collapsible { position: relative; }
+.collapsible { position: relative; margin-bottom: 2px; }
 .collapse-btn {
   position: absolute; top: 0; right: 0;
   display: inline-flex; align-items: center; gap: 6px;
@@ -334,6 +334,25 @@ footer a { color: var(--text-mid); }
 .collapsible.collapsed .collapse-btn svg { transform: rotate(-90deg); }
 .collapsible.collapsed .collapse-body { display: none; }
 .collapsible .collapse-body { transition: opacity .2s; }
+
+/* When collapsed, the body is hidden so the absolute button would float
+ * into the next section. Pin the collapsible to a minimum header height
+ * and render the button as a full-width bar so sections can't overlap. */
+.collapsible.collapsed {
+  min-height: 52px; margin: 14px 0 18px;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background: rgba(255,255,255,0.01);
+}
+.collapsible.collapsed .collapse-btn {
+  position: static;
+  width: 100%; justify-content: space-between;
+  margin: 8px 0;
+  padding: 12px 18px;
+  background: transparent; border: none;
+  font-weight: 600; color: var(--text-hi); font-size: 13px;
+}
+
 /* When the parent section already has a tight header, position the button
  * inside the section rather than absolutely, so it doesn't cover content. */
 .tier-section .collapse-btn,
@@ -347,6 +366,12 @@ footer a { color: var(--text-mid); }
   .tier-section .collapse-btn,
   .asym-section .collapse-btn,
   .methodology .collapse-btn { top: 14px; right: 14px; }
+  /* On mobile, the collapsed bar takes full width and sits inline always. */
+  .collapsible.collapsed { min-height: 48px; margin: 10px 0 12px; }
+  .collapsible.collapsed .collapse-btn { font-size: 12px; padding: 10px 14px; }
+  /* Master-controls row wraps on narrow screens. */
+  .collapse-master { flex-wrap: wrap; justify-content: stretch; }
+  .collapse-master button { flex: 1; min-width: 0; }
 }
 
 /* ── Allocation widget ── */

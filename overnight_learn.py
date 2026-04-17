@@ -164,16 +164,12 @@ def _train_confidence_nn(df: pd.DataFrame) -> tuple:
 def _train_moonshot_nn(df: pd.DataFrame) -> tuple:
     """Binary classifier trained on the +100% label.
 
-    The regression NN above predicts expected 12-month return — good for
-    ranking "will this move", weak at "will this double". This classifier
-    is trained directly on `realized_ret >= 1.0` with class rebalancing
-    (moonshots are ~5-10% of the universe) so its objective matches the
-    one users actually care about: find the few tickers that 2x.
-
-    Walk-forward: for each window, train on prior windows only, predict
-    on the target. Returns (feat_df_with_moonshot_score, final_model, scaler).
+    Uses ExtraTreesClassifier with balanced class weights. v2 research
+    showed ET dominated MLP for the regression task at 71.3% vs 62.5%;
+    the same pattern holds for classification and ET supports class_weight
+    natively (MLPClassifier doesn't). Config matches the regressor.
     """
-    from sklearn.neural_network import MLPClassifier
+    from sklearn.ensemble import ExtraTreesClassifier
     from sklearn.preprocessing import StandardScaler
 
     feat = _build_features(df)
@@ -215,10 +211,9 @@ def _train_moonshot_nn(df: pd.DataFrame) -> tuple:
         scaler = StandardScaler()
         X_bal_s = scaler.fit_transform(X_bal)
         X_test_s = scaler.transform(X_test)
-        model = MLPClassifier(
-            hidden_layer_sizes=(32, 16), activation="relu",
-            max_iter=400, early_stopping=True, validation_fraction=0.15,
-            random_state=42, alpha=1e-3,
+        model = ExtraTreesClassifier(
+            n_estimators=300, max_depth=14, min_samples_leaf=20,
+            n_jobs=-1, random_state=42,
         )
         model.fit(X_bal_s, y_bal)
         probs = model.predict_proba(X_test_s)
@@ -236,20 +231,23 @@ def _train_moonshot_nn(df: pd.DataFrame) -> tuple:
     X_bal, y_bal = _balance(X_all, y_all)
     scaler = StandardScaler()
     X_bal_s = scaler.fit_transform(X_bal)
-    final_model = MLPClassifier(
-        hidden_layer_sizes=(32, 16), activation="relu",
-        max_iter=400, early_stopping=True, validation_fraction=0.15,
-        random_state=42, alpha=1e-3,
+    final_model = ExtraTreesClassifier(
+        n_estimators=300, max_depth=14, min_samples_leaf=20,
+        n_jobs=-1, random_state=42,
     )
     final_model.fit(X_bal_s, y_bal)
     return feat, final_model, scaler
 
 
 def _train_nn(df: pd.DataFrame) -> tuple:
-    """Walk-forward NN training — for each window, train only on prior
-    windows, predict on the target window. Returns the per-row NN score
-    attached to df + the final model/scaler."""
-    from sklearn.neural_network import MLPRegressor
+    """Walk-forward training — for each window, train only on prior windows,
+    predict on the target window. Uses ExtraTreesRegressor (v2 research
+    winner at 71.3% +100% hit rate; MLP peaked at 62.5%). Faster training
+    and more stable across seeds/perturbations.
+
+    Config `n_estimators=300, max_depth=14, min_samples_leaf=20` is the
+    v2 hyperparameter search winner. See research/deep_findings_v2_*.md."""
+    from sklearn.ensemble import ExtraTreesRegressor
     from sklearn.preprocessing import StandardScaler
 
     feat = _build_features(df)
@@ -259,15 +257,14 @@ def _train_nn(df: pd.DataFrame) -> tuple:
     ]
     windows = sorted(feat["as_of"].unique())
     if len(windows) < 3:
-        log.warning("Not enough windows (%d) for walk-forward NN training", len(windows))
+        log.warning("Not enough windows (%d) for walk-forward training", len(windows))
         feat["nn_score"] = 0.0
         return feat, None, None
 
     nn_scores = np.zeros(len(feat))
-    # Walk-forward: for each window t, train on 1..t-1, predict t
     for i, w in enumerate(windows):
         if i == 0:
-            continue  # no history to train on
+            continue
         train_mask = feat["as_of"].isin(windows[:i])
         test_mask = feat["as_of"] == w
         X_train = feat.loc[train_mask, feature_names].values
@@ -275,33 +272,27 @@ def _train_nn(df: pd.DataFrame) -> tuple:
         X_test = feat.loc[test_mask, feature_names].values
         if len(X_train) < 100 or len(X_test) == 0:
             continue
-        # Clip targets to a sane range — outliers can dominate regression.
-        y_train = np.clip(y_train, -0.95, 5.0)
         scaler = StandardScaler()
         X_train_s = scaler.fit_transform(X_train)
         X_test_s = scaler.transform(X_test)
-        model = MLPRegressor(
-            hidden_layer_sizes=(32, 16), activation="relu",
-            max_iter=300, early_stopping=True, validation_fraction=0.15,
-            random_state=42, alpha=1e-3,
+        model = ExtraTreesRegressor(
+            n_estimators=300, max_depth=14, min_samples_leaf=20,
+            n_jobs=-1, random_state=42,
         )
         model.fit(X_train_s, y_train)
         preds = model.predict(X_test_s)
-        # Shift predictions so they rank positively (score_col > 0 filter).
         nn_scores[test_mask] = preds - preds.min() + 0.01
         log.info("Window %s trained on %d rows, predicted on %d rows",
                  w, len(X_train), len(X_test))
 
     feat["nn_score"] = nn_scores
-    # Also train a "final" model on all data for the current-day scoring call.
     X_all = feat[feature_names].values
-    y_all = np.clip(feat["realized_ret"].values, -0.95, 5.0)
+    y_all = feat["realized_ret"].values
     scaler = StandardScaler()
     X_all_s = scaler.fit_transform(X_all)
-    final_model = MLPRegressor(
-        hidden_layer_sizes=(32, 16), activation="relu",
-        max_iter=300, early_stopping=True, validation_fraction=0.15,
-        random_state=42, alpha=1e-3,
+    final_model = ExtraTreesRegressor(
+        n_estimators=300, max_depth=14, min_samples_leaf=20,
+        n_jobs=-1, random_state=42,
     )
     final_model.fit(X_all_s, y_all)
     return feat, final_model, scaler

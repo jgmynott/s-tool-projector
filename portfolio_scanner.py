@@ -32,6 +32,17 @@ PICKS_PATH = Path(__file__).parent / "portfolio_picks.json"
 HORIZON = 252  # standard 1-year horizon
 TOP_N = 10     # picks per tier
 
+# Asymmetric tier: number of picks + size diversification.
+# Research (v4 Phase K) showed unconstrained top-20 had 79/80 picks in
+# the smallest log_price quintile — the headline 71% hit rate was driven
+# more by the small-cap premium than by real stock-selection alpha.
+# Within-quintile lift was still 3.49x, so we preserve model rankings
+# but enforce diversification across price buckets.
+ASYM_TOP_N = 20                    # total asymmetric picks surfaced
+ASYM_SIZE_BUCKETS = 5              # split by current-price quintile
+ASYM_PICKS_PER_BUCKET = 4          # 4 × 5 buckets = ASYM_TOP_N
+SIZE_NEUTRAL_ASYMMETRIC = True     # flip to False for legacy unconstrained behavior
+
 # Lazy-loaded SEC company-info map. Refreshed on every scan_universe call
 # — cheap (disk cache) after the first hit.
 _COMPANY_INFO: dict[str, dict] | None = None
@@ -583,7 +594,41 @@ def save_picks(results: list[dict], conn=None) -> None:
             continue
         asym_eligible.append((score, r))
     asym_eligible.sort(key=lambda sr: -sr[0])
-    asym_picks = [r for _, r in asym_eligible[:TOP_N]]
+
+    # Size-neutral bucketing: group by log_price quintile, take top-K per
+    # bucket. Prevents the model from concentrating all picks in the
+    # smallest-cap names (which v4 research showed inflated headline
+    # numbers 2×). Picks within each bucket are still sorted by model score.
+    if SIZE_NEUTRAL_ASYMMETRIC and len(asym_eligible) >= ASYM_SIZE_BUCKETS * 2:
+        import math
+        prices = sorted(
+            (math.log(max(r.get("current_price") or 1.0, 0.01)), score, r)
+            for score, r in asym_eligible
+        )
+        n = len(prices)
+        bucket_size = n // ASYM_SIZE_BUCKETS
+        buckets: list[list[tuple]] = [[] for _ in range(ASYM_SIZE_BUCKETS)]
+        for i, (_, score, r) in enumerate(prices):
+            # Last bucket absorbs any remainder.
+            b = min(i // bucket_size, ASYM_SIZE_BUCKETS - 1)
+            buckets[b].append((score, r))
+        # Within each bucket, sort by model score desc and take top K.
+        asym_picks = []
+        bucket_picks_count = []
+        for b in buckets:
+            b.sort(key=lambda sr: -sr[0])
+            kept = b[:ASYM_PICKS_PER_BUCKET]
+            asym_picks.extend(r for _, r in kept)
+            bucket_picks_count.append(len(kept))
+        log.info(
+            "Size-neutral asymmetric picks: %d total across %d price buckets "
+            "(%s per bucket)",
+            len(asym_picks), ASYM_SIZE_BUCKETS, bucket_picks_count,
+        )
+    else:
+        asym_picks = [r for _, r in asym_eligible[:ASYM_TOP_N]]
+        log.info("Unconstrained asymmetric picks: %d", len(asym_picks))
+
     for p in asym_picks:
         # Mark these specifically as asymmetric tier so the UI can show a
         # separate section. We DON'T mutate their original tier — they

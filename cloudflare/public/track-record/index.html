@@ -123,8 +123,8 @@ footer a { color: var(--text-mid); }
 <header class="hero">
   <div class="container">
     <div class="eyebrow">Evidence</div>
-    <h1 class="title">What the engine <em>actually</em> does.</h1>
-    <p class="subtitle">We run the scoring functions that power <a href="/picks" style="color:var(--accent-lake);">/picks</a> against ~22,000 historical ticker-windows across 2022-2024. Every top pick is scored by realized 12-month return — walk-forward, out-of-sample, with bootstrap confidence intervals on the numbers below. Updated nightly.</p>
+    <h1 class="title">Results, <em>size-controlled</em>.</h1>
+    <p class="subtitle">Every scoring function that powers <a href="/picks" style="color:var(--accent-lake);">/picks</a> is walk-forward validated across ~22,000 historical ticker-windows. The headline numbers below control for size concentration and use a clean out-of-sample year — the honest bar, not the flattering one.</p>
     <div class="meta-row" id="meta"></div>
   </div>
 </header>
@@ -173,36 +173,69 @@ function renderAll(r) {
     <span>Generated ${new Date((r.generated_at || 0) * 1000).toLocaleString()}</span>
   `;
 
-  // Pick the best method for headline stats — currently H7 by convention
-  // (the one the /picks page serves when the NN isn't available).
-  const headline = r.methods?.H7_ewma_p90 || r.methods?.H9_full_stack || null;
+  // Lead with honest, size-controlled metrics. Unconstrained top-N rates
+  // are inflated by small-cap concentration so we publish the numbers that
+  // survive portfolio-realistic diversification.
+  const honest = r.honest_metrics || null;
   let headHtml = '';
-  if (headline) {
-    const hit100 = headline.thresholds?.['+100%'] || {};
-    const hit50  = headline.thresholds?.['+50%']  || {};
-    const hit25  = headline.thresholds?.['+25%']  || {};
+  if (honest && honest.size_neutral_hit_100 != null) {
     headHtml = `<section class="headline">
       <div class="h-card">
-        <div class="label">Top-pick mean return</div>
-        <div class="val ${headline.mean_return >= 0 ? 'pos' : 'neg'}">${fmtPct(headline.mean_return)}</div>
-        <div class="sub">Average 12-mo return across all top-${headline.n_picks / r.window_count | 0} picks per window</div>
+        <div class="label">Size-controlled +100% hit rate</div>
+        <div class="val pos">${(honest.size_neutral_hit_100 * 100).toFixed(1)}%</div>
+        <div class="sub">4 picks per price quintile, 20 total. Eliminates small-cap concentration.</div>
       </div>
       <div class="h-card">
-        <div class="label">+100% hit rate</div>
-        <div class="val pos">${(hit100.rate * 100).toFixed(1)}%</div>
-        <div class="sub"><b style="color:var(--text-hi);">${fmtLift(hit100.lift)}</b> vs universe baseline ${(hit100.baseline_rate * 100).toFixed(1)}%</div>
+        <div class="label">Within-quintile lift</div>
+        <div class="val pos">${fmtLift(honest.within_quintile_lift_median)}</div>
+        <div class="sub">Median lift vs baseline, computed per price quintile. Shows selection edge at every size.</div>
       </div>
       <div class="h-card">
-        <div class="label">+50% hit rate</div>
-        <div class="val pos">${(hit50.rate * 100).toFixed(1)}%</div>
-        <div class="sub"><b style="color:var(--text-hi);">${fmtLift(hit50.lift)}</b> vs baseline ${(hit50.baseline_rate * 100).toFixed(1)}%</div>
+        <div class="label">${honest.year_oos_test_year} out-of-sample hit rate</div>
+        <div class="val pos">${(honest.year_oos_hit_100 * 100).toFixed(1)}%</div>
+        <div class="sub">Train on all prior windows; test only on ${honest.year_oos_test_year}. Never-seen-during-tuning data.</div>
       </div>
       <div class="h-card">
-        <div class="label">+25% hit rate</div>
-        <div class="val pos">${(hit25.rate * 100).toFixed(1)}%</div>
-        <div class="sub"><b style="color:var(--text-hi);">${fmtLift(hit25.lift)}</b> vs baseline ${(hit25.baseline_rate * 100).toFixed(1)}%</div>
+        <div class="label">${honest.year_oos_test_year} OOS lift vs baseline</div>
+        <div class="val pos">${fmtLift(honest.year_oos_lift)}</div>
+        <div class="sub">Baseline ${(honest.year_oos_baseline * 100).toFixed(1)}%. Lift survives the clean holdout.</div>
       </div>
     </section>`;
+  } else {
+    // Fallback: legacy headline using H7 when honest_metrics aren't populated
+    // (e.g., early nightly runs before the NN/ensemble columns are filled).
+    const headline = r.methods?.H7_ewma_p90 || null;
+    if (headline) {
+      const hit100 = headline.thresholds?.['+100%'] || {};
+      headHtml = `<section class="headline">
+        <div class="h-card">
+          <div class="label">+100% hit rate</div>
+          <div class="val pos">${(hit100.rate * 100).toFixed(1)}%</div>
+          <div class="sub">${fmtLift(hit100.lift)} vs baseline. Pre-size-adjustment.</div>
+        </div>
+        <div class="h-card">
+          <div class="label">Top-pick mean return</div>
+          <div class="val ${headline.mean_return >= 0 ? 'pos' : 'neg'}">${fmtPct(headline.mean_return)}</div>
+          <div class="sub">Average 12-mo return across all top picks.</div>
+        </div>
+      </section>`;
+    }
+  }
+
+  // Explicit honest-disclosure block explaining the gap between size-neutral
+  // and unconstrained numbers.
+  let disclosureHtml = '';
+  if (honest && honest.within_quintile_details) {
+    const ensembleMethod = r.methods?.ensemble_score || r.methods?.nn_score;
+    const uncRate = ensembleMethod?.thresholds?.['+100%']?.rate;
+    const uncLift = ensembleMethod?.thresholds?.['+100%']?.lift;
+    if (uncRate) {
+      disclosureHtml = `<section class="section">
+        <div class="section-eyebrow">Why these numbers, not the flattering ones</div>
+        <h2 class="section-title">The unconstrained model concentrates in small-caps.</h2>
+        <p class="section-sub">If we let the model pick whatever it wants, it reports a <b style="color:var(--text-hi);">${(uncRate * 100).toFixed(0)}%</b> hit rate at +100% with <b style="color:var(--text-hi);">${fmtLift(uncLift)}</b> lift. That's largely the small-cap premium: ~80% of its unconstrained picks concentrate in the smallest price quintile. Our v4 research controls for this by either forcing size diversification or using a clean out-of-sample year — the honest numbers above. They are smaller but represent what a size-diversified Strategist portfolio would realistically have returned.</p>
+      </section>`;
+    }
   }
 
   // Full threshold table
@@ -269,7 +302,7 @@ function renderAll(r) {
   const caveats = (r.notes || []).map(n => `<li>${n}</li>`).join('');
   const caveatHtml = caveats ? `<div class="caveats"><h3>Methodology &amp; caveats</h3><ul>${caveats}</ul></div>` : '';
 
-  document.getElementById('content').innerHTML = headHtml + tableHtml + regimeHtml + simHtml + caveatHtml;
+  document.getElementById('content').innerHTML = headHtml + disclosureHtml + tableHtml + regimeHtml + simHtml + caveatHtml;
 }
 
 load();

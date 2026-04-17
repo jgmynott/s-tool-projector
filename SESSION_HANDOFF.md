@@ -148,7 +148,7 @@ Backtested momentum, value, and quality (low-beta) factors across 2022–2024. *
 | Value (earnings yield) | 26.33% | S0.06 | **+0.42pp worse** | −0.2pp |
 | Quality (low-beta) | 27.09% | S0.06 | **+0.63pp worse** | +0.6pp |
 
-**Conclusion:** engine stays tilt-free. Portfolio-level intelligence (ranking across the universe) is the product differentiator, not drift tilts. Medallion-caliber alpha still requires signals nobody else has tested.
+**Conclusion:** engine stays tilt-free. Portfolio-level intelligence (ranking across the universe) is the product differentiator, not drift tilts. Uncommon-data alpha still requires signals nobody else has tested. (Don't use "Medallion" in any user-facing copy — trademark belongs to Renaissance Technologies.)
 
 ## Key files (new this session)
 
