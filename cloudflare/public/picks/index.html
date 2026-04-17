@@ -23,6 +23,7 @@
   --radius-lg: 22px; --radius-md: 16px; --radius-sm: 10px;
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { overflow-x: hidden; }
 body {
   font-family: 'Inter', sans-serif;
   background: radial-gradient(1200px 600px at 20% -10%, rgba(10,101,119,0.20), transparent 60%),
@@ -316,59 +317,42 @@ footer a { color: var(--text-mid); }
 .collapse-master button:hover { color: var(--text-hi); border-color: var(--border-strong); background: rgba(95,170,197,0.08); }
 .collapse-master button.primary { color: var(--accent-lake); border-color: rgba(95,170,197,0.35); }
 
-/* Collapsible sections — wrap any heading + body in .collapsible and the
- * inline button will toggle visibility. State persists per-section via
- * localStorage so a user's preferences ride across sessions. */
-.collapsible { position: relative; margin-bottom: 2px; }
+/* Collapsible sections — full-width header bar pattern. The button sits
+ * at the top of each section in normal flow (never absolute), so there's
+ * no way for sections to stack or overlap. Works identically on desktop
+ * and mobile; simpler + more robust than the previous absolute-positioned
+ * pattern. */
+.collapsible { margin: 16px 0; }
+.collapsible + .collapsible { margin-top: 10px; }
 .collapse-btn {
-  position: absolute; top: 0; right: 0;
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 8px 14px; border-radius: 999px;
-  background: rgba(95,170,197,0.08);
+  display: flex; align-items: center; justify-content: space-between;
+  width: 100%;
+  padding: 12px 18px;
+  border-radius: 12px;
+  background: rgba(95,170,197,0.06);
   border: 1px solid var(--border);
-  color: var(--text-mid); font: 500 12px 'Inter';
-  cursor: pointer; transition: all .15s; z-index: 3;
+  color: var(--text-hi); font: 600 13px 'Inter';
+  cursor: pointer; transition: all .15s;
+  margin-bottom: 10px;
 }
-.collapse-btn:hover { color: var(--text-hi); border-color: var(--border-strong); background: rgba(95,170,197,0.14); }
-.collapse-btn svg { width: 12px; height: 12px; transition: transform .2s; }
+.collapse-btn:hover { border-color: var(--border-strong); background: rgba(95,170,197,0.12); }
+.collapse-btn .cb-label { color: var(--text-mid); font-weight: 500; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; margin-right: 10px; }
+.collapse-btn .cb-title { flex: 1; text-align: left; }
+.collapse-btn svg { width: 14px; height: 14px; transition: transform .2s; color: var(--accent-lake); flex-shrink: 0; }
 .collapsible.collapsed .collapse-btn svg { transform: rotate(-90deg); }
 .collapsible.collapsed .collapse-body { display: none; }
 .collapsible .collapse-body { transition: opacity .2s; }
 
-/* When collapsed, the body is hidden so the absolute button would float
- * into the next section. Pin the collapsible to a minimum header height
- * and render the button as a full-width bar so sections can't overlap. */
-.collapsible.collapsed {
-  min-height: 52px; margin: 14px 0 18px;
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
-  background: rgba(255,255,255,0.01);
-}
-.collapsible.collapsed .collapse-btn {
-  position: static;
-  width: 100%; justify-content: space-between;
-  margin: 8px 0;
-  padding: 12px 18px;
-  background: transparent; border: none;
-  font-weight: 600; color: var(--text-hi); font-size: 13px;
+/* Visible connection between header and its body — remove the bottom
+ * corner radius when expanded so the two visually connect. */
+.collapsible:not(.collapsed) .collapse-btn {
+  border-bottom-left-radius: 0; border-bottom-right-radius: 0;
+  border-bottom: none;
 }
 
-/* When the parent section already has a tight header, position the button
- * inside the section rather than absolutely, so it doesn't cover content. */
-.tier-section .collapse-btn,
-.asym-section .collapse-btn,
-.methodology .collapse-btn { top: 28px; right: 28px; }
-.diversification .collapse-btn,
-.trackrecord .collapse-btn,
-.alloc-widget .collapse-btn { top: 18px; right: 18px; }
 @media (max-width: 620px) {
-  .collapse-btn { padding: 6px 10px; font-size: 11px; }
-  .tier-section .collapse-btn,
-  .asym-section .collapse-btn,
-  .methodology .collapse-btn { top: 14px; right: 14px; }
-  /* On mobile, the collapsed bar takes full width and sits inline always. */
-  .collapsible.collapsed { min-height: 48px; margin: 10px 0 12px; }
-  .collapsible.collapsed .collapse-btn { font-size: 12px; padding: 10px 14px; }
+  .collapse-btn { padding: 11px 14px; font-size: 12px; }
+  .collapse-btn .cb-label { font-size: 11px; }
   /* Master-controls row wraps on narrow screens. */
   .collapse-master { flex-wrap: wrap; justify-content: stretch; }
   .collapse-master button { flex: 1; min-width: 0; }
@@ -491,7 +475,8 @@ function collapsible(key, label, bodyHtml) {
   const cls = startCollapsed ? 'collapsible collapsed' : 'collapsible';
   return `<div class="${cls}" data-collapse-key="${key}">
     <button class="collapse-btn" type="button" onclick="toggleCollapsible('${key}')">
-      <span class="cb-label">${startCollapsed ? 'Show' : 'Hide'}</span> ${label}
+      <span class="cb-label">${startCollapsed ? 'Show' : 'Hide'}</span>
+      <span class="cb-title">${label}</span>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
     </button>
     <div class="collapse-body">${bodyHtml}</div>

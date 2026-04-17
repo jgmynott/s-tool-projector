@@ -92,6 +92,28 @@ nav { position: sticky; top: 0; z-index: 50; backdrop-filter: blur(12px); backgr
 /* Footer */
 footer { border-top: 1px solid var(--border); padding: 40px 32px; text-align: center; color: var(--text-dim); font-size: 13px; }
 footer a { color: var(--text-mid); }
+
+/* Mobile responsiveness — tighten padding, allow nav-links to wrap, scale
+ * headings down. At <480 the secondary FAQ/Pricing links collapse since
+ * they'd wrap otherwise. */
+@media (max-width: 720px) {
+    .nav-row { padding: 14px 20px; gap: 12px; flex-wrap: wrap; }
+    .nav-links { gap: 16px; font-size: 13px; }
+    .article { padding: 48px 20px 72px; }
+    .article h2 { font-size: 24px; padding-top: 28px; margin: 40px 0 16px; }
+    .article h3 { font-size: 16px; margin: 24px 0 10px; }
+    .article p, .article .lead { font-size: 16px; }
+    .article .lead { margin-bottom: 40px; }
+    .formula-box { padding: 20px 18px; font-size: 17px; }
+    .signal-table { font-size: 13px; }
+    .signal-table th, .signal-table td { padding: 8px 8px; }
+    .callout { padding: 16px 18px; }
+}
+@media (max-width: 480px) {
+    .nav-links { gap: 12px; font-size: 12px; }
+    .nav-links a:nth-child(4), .nav-links a:nth-child(5) { display: none; }
+    .article h1 { font-size: 30px; }
+}
 </style>
 </head>
 <body>

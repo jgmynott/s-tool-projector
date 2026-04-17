@@ -447,8 +447,12 @@ def main():
     # the backtest needs to report NN-family lift alongside hand-crafted.
     scored_csv = ROOT / "upside_hunt_scored.csv"
     try:
+        # Keep raw feature columns too so downstream (overnight_backtest)
+        # can compute size-neutral and year-OOS metrics which need the
+        # current-price and projection columns.
         keep_cols = [c for c in scored.columns
                      if c in ("as_of", "symbol", "realized_ret",
+                              "current", "p10", "p90", "sigma", "sector",
                               "nn_score", "moonshot_score", "ensemble_score")
                      or c in HAND_METHODS]
         scored[keep_cols].to_csv(scored_csv, index=False)
