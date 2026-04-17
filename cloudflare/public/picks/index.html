@@ -550,14 +550,14 @@ footer a { color: var(--text-mid); }
   .alloc-widget { padding: 24px; }
   .alloc-top { grid-template-columns: 1fr; gap: 24px; }
   .alloc-donut.master { justify-self: center; width: 280px; height: 280px; }
-  .alloc-donut .dt-total { font-size: 40px; }
+  /* dt-total font-size intentionally not overridden here — renderMasterDonut
+   * sets it inline, viewport-aware, based on the formatted string length. */
   .alloc-controls { flex-direction: row; flex-wrap: wrap; min-width: 0; }
   .alloc-controls .alloc-control { flex: 1; min-width: 140px; }
 }
 @media (max-width: 540px) {
   .alloc-widget { padding: 20px; }
   .alloc-donut.master { width: 240px; height: 240px; }
-  .alloc-donut .dt-total { font-size: 34px; }
   .mini-pie { width: 130px; height: 130px; }
   .tp-card { padding: 16px; }
 }
@@ -1164,10 +1164,23 @@ function renderMasterDonut(allTickers, total, center) {
   // Wrap center text in a width-constrained inner div so long profile
   // captions never overflow behind the donut ring. The .dt-inner at 58%
   // sits entirely inside the donut's negative space.
+  // Center total scales down when the formatted string gets long AND
+  // when the viewport is small. "$10,000,000" at 46pt overflows the
+  // inner 58%-wide zone on desktop; same string at 40pt overflows the
+  // 240px mobile donut even harder. Combine length + viewport scaling.
+  const _totalStr = (center && center.total) || '';
+  const _totalLen = _totalStr.replace(/[^\d$.,]/g, '').length;
+  const _vw = (typeof window !== 'undefined' && window.innerWidth) || 1200;
+  const _baseMax = _vw < 540 ? 32 : _vw < 920 ? 38 : 46;
+  const _scale = _totalLen > 11 ? 0.55
+               : _totalLen > 9  ? 0.68
+               : _totalLen > 7  ? 0.82
+               : 1.00;
+  const _totalFontPx = Math.max(18, Math.round(_baseMax * _scale));
   const centerHtml = center
     ? `<div class="dt-center">
          <div class="dt-inner">
-           <div class="dt-total">${center.total}</div>
+           <div class="dt-total" style="font-size:${_totalFontPx}px;">${center.total}</div>
            <div class="dt-sub">${center.label}</div>
            ${center.caption ? `<div class="dt-caption">${center.caption}</div>` : ''}
          </div>
