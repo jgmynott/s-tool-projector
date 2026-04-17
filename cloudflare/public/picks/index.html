@@ -332,86 +332,130 @@ footer a { color: var(--text-mid); }
   .track-link-row .tl-cta { align-self: stretch; text-align: center; }
 }
 
-/* Master collapse controls — row sitting above the first section. */
-.collapse-master { display: flex; gap: 10px; justify-content: flex-end; margin: 20px 0 -8px; }
-.collapse-master button {
-  padding: 8px 14px; border-radius: 999px;
-  background: transparent; color: var(--text-mid);
-  border: 1px solid var(--border); font: 500 12px 'Inter'; cursor: pointer;
-  transition: all .15s;
+/* ── In-page tab nav (Conservative / Moderate / Aggressive / Asymmetric) ──
+ * Sits in normal page flow below the allocator. NOT sticky — never
+ * conflicts with the top site nav. Each tab is a button carrying the
+ * tier label + a number ($ + pick count) so the tab itself earns its
+ * space numerically. */
+.picks-tabs {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+  padding: 8px;
+  border: 1px solid var(--border); border-radius: 16px;
+  background: rgba(11,16,6,0.4);
+  margin: 40px 0 28px;
 }
-.collapse-master button:hover { color: var(--text-hi); border-color: var(--border-strong); background: rgba(95,170,197,0.08); }
-.collapse-master button.primary { color: var(--accent-lake); border-color: rgba(95,170,197,0.35); }
-
-/* Collapsible sections — full-width header bar pattern. The button sits
- * at the top of each section in normal flow (never absolute), so there's
- * no way for sections to stack or overlap. Works identically on desktop
- * and mobile; simpler + more robust than the previous absolute-positioned
- * pattern. */
-.collapsible { margin: 16px 0; }
-.collapsible + .collapsible { margin-top: 10px; }
-.collapse-btn {
-  display: flex; align-items: center; justify-content: space-between;
-  width: 100%;
-  padding: 12px 18px;
-  border-radius: 12px;
-  background: rgba(95,170,197,0.06);
-  border: 1px solid var(--border);
-  color: var(--text-hi); font: 600 13px 'Inter';
-  cursor: pointer; transition: all .15s;
-  margin-bottom: 10px;
+.picks-tabs .pt-btn {
+  padding: 14px 16px;
+  border: 1px solid transparent; border-radius: 12px;
+  background: transparent;
+  color: var(--text-mid);
+  cursor: pointer;
+  font-family: 'Inter';
+  text-align: left;
+  transition: background .15s, border-color .15s, color .15s, transform .15s;
+  display: flex; flex-direction: column; gap: 6px; min-width: 0;
 }
-.collapse-btn:hover { border-color: var(--border-strong); background: rgba(95,170,197,0.12); }
-.collapse-btn .cb-label { color: var(--text-mid); font-weight: 500; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; margin-right: 10px; }
-.collapse-btn .cb-title { flex: 1; text-align: left; }
-.collapse-btn svg { width: 14px; height: 14px; transition: transform .2s; color: var(--accent-lake); flex-shrink: 0; }
-.collapsible.collapsed .collapse-btn svg { transform: rotate(-90deg); }
-.collapsible.collapsed .collapse-body { display: none; }
-.collapsible .collapse-body { transition: opacity .2s; }
-
-/* Visible connection between header and its body — remove the bottom
- * corner radius when expanded so the two visually connect. */
-.collapsible:not(.collapsed) .collapse-btn {
-  border-bottom-left-radius: 0; border-bottom-right-radius: 0;
-  border-bottom: none;
+.picks-tabs .pt-btn:hover {
+  background: rgba(95,170,197,0.08);
+  color: var(--text-hi);
 }
-
-@media (max-width: 620px) {
-  .collapse-btn { padding: 11px 14px; font-size: 12px; }
-  .collapse-btn .cb-label { font-size: 11px; }
-  /* Master-controls row wraps on narrow screens. */
-  .collapse-master { flex-wrap: wrap; justify-content: stretch; }
-  .collapse-master button { flex: 1; min-width: 0; }
+.picks-tabs .pt-btn.active {
+  background: var(--bg-card);
+  border-color: var(--border-strong);
+  color: var(--text-hi);
+  box-shadow: 0 8px 32px rgba(2,40,52,0.25);
+}
+.pt-btn .pt-head { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.pt-btn .pt-dot { width: 9px; height: 9px; border-radius: 2px; flex-shrink: 0; }
+.pt-btn .pt-name { font: 600 14px 'Inter'; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pt-btn .pt-meta { font: 500 12px 'Inter'; color: var(--text-dim); font-variant-numeric: tabular-nums; padding-left: 19px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pt-btn.active .pt-meta { color: var(--text-mid); }
+@media (max-width: 720px) {
+  .picks-tabs { grid-template-columns: repeat(2, 1fr); padding: 6px; gap: 6px; margin: 28px 0 20px; }
+  .picks-tabs .pt-btn { padding: 11px 12px; }
+  .pt-btn .pt-name { font-size: 13px; }
+  .pt-btn .pt-meta { font-size: 11px; padding-left: 17px; }
+}
+@media (max-width: 420px) {
+  .picks-tabs { grid-template-columns: 1fr 1fr; }
 }
 
-/* ── Allocation widget ── */
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+/* Overflow picks hidden until the user clicks "Show remaining" — keeps
+ * each tab tight on first render. */
+.tab-panel:not(.show-all) [data-overflow] { display: none; }
+
+/* ── Allocation widget (donut + numeric composition table + controls) ──
+ * Replaced the horizontal bar viz with an SVG donut where every arc
+ * carries its own percentage, plus a side-by-side composition table so
+ * every row tells the user how much money goes into each tier. */
 .alloc-widget {
-  margin: 40px 0 24px; padding: 26px 28px;
+  margin: 28px 0 0; padding: 32px;
   border: 1px solid var(--border); border-radius: var(--radius-md);
   background: linear-gradient(180deg, var(--bg-surface), rgba(2,40,52,0.12));
-  display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: center;
+  display: grid; grid-template-columns: auto 1fr auto; gap: 36px; align-items: center;
 }
-.alloc-widget .aw-title { font: 600 11px 'Inter'; color: var(--accent-lake); letter-spacing: 0.24em; text-transform: uppercase; margin-bottom: 10px; }
-.alloc-widget .aw-sub { font: 500 14px 'Inter'; color: var(--text-mid); max-width: 60ch; line-height: 1.5; }
-.alloc-controls { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
-.alloc-control { display: flex; flex-direction: column; gap: 6px; }
-.alloc-control label { font: 600 10px 'Inter'; color: var(--text-dim); letter-spacing: 0.18em; text-transform: uppercase; }
+.aw-title { font: 600 11px 'Inter'; color: var(--accent-lake); letter-spacing: 0.24em; text-transform: uppercase; margin-bottom: 10px; }
+.aw-sub { font: 500 13.5px/1.5 'Inter'; color: var(--text-mid); max-width: 42ch; }
+.aw-sub b { color: var(--text-hi); }
+
+.alloc-donut { position: relative; width: 200px; height: 200px; flex-shrink: 0; }
+.alloc-donut svg { width: 100%; height: 100%; display: block; }
+.alloc-donut .dt-center {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  pointer-events: none; text-align: center;
+}
+.alloc-donut .dt-total {
+  font: 400 30px/1 'Crimson Text', Georgia, serif;
+  letter-spacing: -0.02em; color: var(--text-hi);
+  font-variant-numeric: tabular-nums;
+}
+.alloc-donut .dt-sub {
+  font: 600 10px 'Inter'; color: var(--text-dim);
+  letter-spacing: 0.2em; text-transform: uppercase; margin-top: 8px;
+}
+
+.alloc-table { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.alloc-row {
+  display: grid; grid-template-columns: 12px 1fr auto auto; gap: 14px;
+  align-items: center; padding: 12px 16px;
+  border: 1px solid var(--border); border-radius: 10px;
+  background: rgba(11,16,6,0.35);
+  font-family: 'Inter';
+}
+.alloc-row .ar-dot { width: 10px; height: 10px; border-radius: 3px; }
+.alloc-row .ar-name { font: 500 14px 'Inter'; color: var(--text-hi); }
+.alloc-row .ar-sub { font: 500 11px 'Inter'; color: var(--text-dim); display: block; margin-top: 2px; letter-spacing: 0.04em; }
+.alloc-row .ar-pct { font: 500 13px 'Inter'; color: var(--text-mid); font-variant-numeric: tabular-nums; min-width: 44px; text-align: right; }
+.alloc-row .ar-dollar { font: 600 14px 'Inter'; color: var(--text-hi); font-variant-numeric: tabular-nums; min-width: 80px; text-align: right; }
+.alloc-row.ar-empty { opacity: 0.4; }
+
+.alloc-controls { display: flex; flex-direction: column; gap: 14px; min-width: 180px; }
+.alloc-control label { display: block; font: 600 10px 'Inter'; color: var(--text-dim); letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 6px; }
 .alloc-control input, .alloc-control select {
-  padding: 10px 14px; background: rgba(11,16,6,0.5);
+  width: 100%;
+  padding: 10px 14px;
+  background: rgba(11,16,6,0.5);
   border: 1px solid var(--border-strong); border-radius: 10px;
-  font: 500 15px 'Inter'; color: var(--text-hi); min-width: 140px;
+  font: 500 15px 'Inter'; color: var(--text-hi);
+  font-variant-numeric: tabular-nums;
 }
 .alloc-control input:focus, .alloc-control select:focus { outline: none; border-color: var(--accent-lake); }
-.alloc-bar {
-  display: flex; width: 100%; height: 14px; border-radius: 999px;
-  overflow: hidden; background: rgba(155,161,185,0.10);
-  margin-top: 16px;
+
+@media (max-width: 920px) {
+  .alloc-widget { grid-template-columns: 1fr; gap: 24px; padding: 24px; }
+  .alloc-donut { justify-self: center; }
+  .alloc-controls { min-width: 0; flex-direction: row; flex-wrap: wrap; }
+  .alloc-controls .alloc-control { flex: 1; min-width: 140px; }
 }
-.alloc-bar > span { display: block; height: 100%; transition: width 0.3s; }
-.alloc-legend { display: flex; flex-wrap: wrap; gap: 14px 22px; margin-top: 12px; font: 500 13px 'Inter'; color: var(--text-mid); }
-.alloc-legend .al-item { display: inline-flex; align-items: center; gap: 8px; }
-.alloc-legend .al-dot { width: 10px; height: 10px; border-radius: 3px; }
-.alloc-legend .al-amt { color: var(--text-hi); font-variant-numeric: tabular-nums; font-weight: 600; }
+@media (max-width: 540px) {
+  .alloc-widget { padding: 20px; }
+  .alloc-row { padding: 10px 12px; grid-template-columns: 10px 1fr auto auto; gap: 10px; }
+  .alloc-row .ar-name { font-size: 13px; }
+  .alloc-row .ar-dollar { font-size: 13px; min-width: 70px; }
+}
 
 .pc-alloc, .asym-alloc {
   margin-top: 10px; padding: 8px 12px; border-radius: 8px;
@@ -422,7 +466,17 @@ footer a { color: var(--text-mid); }
 .pc-alloc::before, .asym-alloc::before {
   content: "◆"; font-size: 10px; opacity: 0.7;
 }
-@media (max-width: 760px) { .alloc-widget { grid-template-columns: 1fr; } }
+
+/* "Show remaining" toggle at the foot of each tab panel. */
+.show-all-row { display: flex; justify-content: center; margin: 20px 0 8px; }
+.show-all-btn {
+  padding: 10px 22px; border-radius: 999px;
+  background: transparent; color: var(--accent-lake);
+  border: 1px solid rgba(95,170,197,0.35);
+  font: 500 13px 'Inter'; cursor: pointer;
+  transition: all .15s;
+}
+.show-all-btn:hover { background: rgba(95,170,197,0.10); color: var(--text-hi); border-color: var(--accent-lake); }
 </style>
 <script async
   data-clerk-publishable-key="pk_test_Zmx1ZW50LW1vbGUtNzEuY2xlcmsuYWNjb3VudHMuZGV2JA"
@@ -472,7 +526,7 @@ footer a { color: var(--text-mid); }
 const TIER_COPY = {
   conservative: { label: 'Conservative', blurb: 'Low-volatility names with positive expected return and quality fundamentals. Built for capital preservation.' },
   moderate:     { label: 'Moderate',     blurb: 'Mid-volatility tercile. Balanced risk with positive expected return. Core allocation.' },
-  aggressive:   { label: 'Aggressive',   blurb: 'Highest projected volatility with the largest expected moves either direction. Tactical sleeve.' },
+  aggressive:   { label: 'Aggressive',   blurb: 'Highest projected volatility with the largest expected moves either direction. Tactical set — size small per name.' },
 };
 
 const SECTOR_HINT = {
@@ -491,42 +545,32 @@ const fmtPct = (v, sign = true) => v == null ? '—' : `${sign && v >= 0 ? '+' :
 const fmtMoney = (v) => v == null ? '—' : `$${Number(v).toFixed(2)}`;
 const fmtSharpe = (v) => v == null ? '—' : Number(v).toFixed(2);
 
-// Collapsible wrapper — wraps the body of a section with a toggle button.
-// Key identifies the section; state persists to localStorage. Renders the
-// initial state from storage so the page loads without a flash of the
-// expanded version.
-function collapsible(key, label, bodyHtml) {
-  const stored = localStorage.getItem(`stool_collapsed_${key}`);
-  const startCollapsed = stored === '1';
-  const cls = startCollapsed ? 'collapsible collapsed' : 'collapsible';
-  return `<div class="${cls}" data-collapse-key="${key}">
-    <button class="collapse-btn" type="button" onclick="toggleCollapsible('${key}')">
-      <span class="cb-label">${startCollapsed ? 'Show' : 'Hide'}</span>
-      <span class="cb-title">${label}</span>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-    </button>
-    <div class="collapse-body">${bodyHtml}</div>
-  </div>`;
-}
-
-window.toggleCollapsible = function(key) {
-  const el = document.querySelector(`[data-collapse-key="${key}"]`);
-  if (!el) return;
-  const nowCollapsed = !el.classList.contains('collapsed');
-  el.classList.toggle('collapsed', nowCollapsed);
-  localStorage.setItem(`stool_collapsed_${key}`, nowCollapsed ? '1' : '0');
-  const lbl = el.querySelector('.cb-label');
-  if (lbl) lbl.textContent = nowCollapsed ? 'Show' : 'Hide';
+// ── Tab navigation helpers ──
+// `switchTab(key)` swaps the active pill + the visible panel. Active tab
+// persists to localStorage so a return visit opens where you left off.
+window.switchTab = function(key) {
+  document.querySelectorAll('[data-tab-key]').forEach(btn => {
+    btn.classList.toggle('active', btn.getAttribute('data-tab-key') === key);
+  });
+  document.querySelectorAll('[data-panel-key]').forEach(panel => {
+    panel.classList.toggle('active', panel.getAttribute('data-panel-key') === key);
+  });
+  localStorage.setItem('stool_picks_tab', key);
 };
 
-window.setAllCollapsed = function(collapsed) {
-  document.querySelectorAll('[data-collapse-key]').forEach(el => {
-    const key = el.getAttribute('data-collapse-key');
-    el.classList.toggle('collapsed', collapsed);
-    localStorage.setItem(`stool_collapsed_${key}`, collapsed ? '1' : '0');
-    const lbl = el.querySelector('.cb-label');
-    if (lbl) lbl.textContent = collapsed ? 'Show' : 'Hide';
-  });
+// "Show remaining N picks" toggle — keeps each tab short by default, lets
+// the user reveal the long tail inline without leaving the page.
+window.toggleShowAll = function(tier) {
+  const panel = document.querySelector(`[data-panel-key="${tier}"]`);
+  if (!panel) return;
+  panel.classList.toggle('show-all');
+  const btn = panel.querySelector('.show-all-btn');
+  if (btn) {
+    const hidden = panel.querySelectorAll('[data-overflow]').length;
+    btn.textContent = panel.classList.contains('show-all')
+      ? 'Show top 5 only'
+      : `Show remaining ${hidden} picks →`;
+  }
 };
 
 async function authHeaders() {
@@ -784,46 +828,15 @@ function renderPortfolioSignal(allPicks, picksData) {
   const topUpsideRatio = topUpside?.asymmetric?.p90_ratio
     || (topUpside?.p90 && topUpside?.current_price ? topUpside.p90 / topUpside.current_price : null);
 
-  // Tier distribution chart — visual cue for the portfolio's risk posture.
-  const byTier = { conservative: 0, moderate: 0, aggressive: 0 };
-  for (const p of allPicks) byTier[p.tier] = (byTier[p.tier] || 0) + 1;
-  const palette = { conservative: '#6ee7b7', moderate: '#5FAAC5', aggressive: '#f5d58f' };
-  const segments = ['conservative','moderate','aggressive'].map(t => {
-    const w = total ? (byTier[t] / total) * 100 : 0;
-    if (!w) return '';
-    return `<span style="width:${w}%;background:${palette[t]};" title="${TIER_COPY[t].label}: ${byTier[t]} pick${byTier[t]>1?'s':''}"></span>`;
-  }).join('');
-  const legend = ['conservative','moderate','aggressive'].map(t => {
-    if (!byTier[t]) return '';
-    const pct = Math.round((byTier[t] / total) * 100);
-    return `<span class="legend-item"><span class="legend-dot" style="background:${palette[t]};"></span>${TIER_COPY[t].label} <span class="legend-pct">${byTier[t]} &middot; ${pct}%</span></span>`;
-  }).filter(Boolean).join('');
-
   const fmtPctS = (v) => v == null ? '—' : `${v >= 0 ? '+' : ''}${(v*100).toFixed(1)}%`;
-  return `<div class="diversification">
+  // Title + sub only. The per-tier distribution viz lives in the donut
+  // below; the tab pills show pick counts. No redundant bar here.
+  return `<div class="diversification" style="grid-template-columns:1fr;">
     <div>
       <div class="div-title">Today's book: <em style="color:var(--accent-lake);font-style:normal;">${total}</em> picks &middot; median expected <em style="color:#6ee7b7;font-style:normal;">${fmtPctS(median)}</em></div>
       <div class="div-sub">Top conviction: <b style="color:var(--text-hi);">${topConf?.symbol || '—'}</b> at ${topConf?.confidence || 0}/100. Biggest projected upside: <b style="color:var(--text-hi);">${topUpside?.symbol || '—'}</b> &middot; ${topUpsideRatio ? topUpsideRatio.toFixed(1) + 'x P90' : '—'}. Best expected return: <b style="color:var(--text-hi);">${best?.symbol || '—'}</b> &middot; ${fmtPctS(best?.expected_return)}.</div>
-      <div class="div-legend">${legend}</div>
     </div>
-    <div class="div-bar">${segments}</div>
   </div>`;
-}
-
-function renderTierSection(tier, picks) {
-  if (!picks.length) return '';
-  const cards = picks.map(renderPickCard).join('');
-  const sectorStrip = renderSectorStrip(picks);
-  return `<section class="tier-section">
-    <div class="tier-head">
-      <div style="min-width:0;flex:1;">
-        <div class="tier-name">${TIER_COPY[tier].label} <span class="tier-count">${picks.length} ${picks.length === 1 ? 'pick' : 'picks'}</span></div>
-        ${sectorStrip}
-      </div>
-      <div class="tier-blurb">${TIER_COPY[tier].blurb}</div>
-    </div>
-    <div class="pick-grid">${cards}</div>
-  </section>`;
 }
 
 function renderMethodology(data) {
@@ -925,43 +938,23 @@ function renderAsymCard(p, rank) {
   </div>`;
 }
 
-function renderAsymmetricTier(picks) {
-  if (!picks || picks.length === 0) return '';
-  const cards = picks.map((p, i) => renderAsymCard(p, i + 1)).join('');
-  // Summary stats across the asymmetric ten
-  const avgP90 = picks.reduce((s, p) => s + (p.asymmetric?.p90_ratio || 0), 0) / picks.length;
-  const avgP10 = picks.reduce((s, p) => s + (p.asymmetric?.p10_ratio || 0), 0) / picks.length;
-  return `<section class="asym-section">
-    <div class="asym-head">
-      <div>
-        <div style="font:600 11px 'Inter';color:var(--accent-lake);letter-spacing:0.24em;text-transform:uppercase;margin-bottom:14px;">Asymmetric Upside</div>
-        <h2 class="asym-tier">Names the engine thinks could <em>multiply</em>.</h2>
-        <p class="asym-blurb">Ranked by our <b>self-training asymmetric-upside model</b> &mdash; a scoring function that <b>retrains every night</b> on the most recent realized-return data, picking whichever signal combination has been identifying 100%+ movers out-of-sample in the current regime. Filtered for real liquidity so every name is actually investable. Every pick carries its own <b>honest P10 downside</b>. High-variance sleeve; size accordingly.</p>
-      </div>
-      <div class="asym-stats">
-        <div><div class="s-val">${avgP90.toFixed(1)}x</div><div class="s-label">Avg P90</div></div>
-        <div><div class="s-val">${avgP10.toFixed(2)}x</div><div class="s-label">Avg P10</div></div>
-        <div><div class="s-val">${picks.length}</div><div class="s-label">Names</div></div>
-      </div>
-    </div>
-    <div class="asym-grid">${cards}</div>
-  </section>`;
-}
-
 // ── Allocation engine ──
 // Risk profile = tier-level weights. Within each tier, weight by
 // (confidence × 1/vol) so conviction-rich, low-vol picks get more capital.
 const RISK_PROFILES = {
-  defensive:  { conservative: 0.60, moderate: 0.30, aggressive: 0.10, asymmetric: 0.00, label: 'Defensive',  sub: 'Capital preservation — minimal asymmetric sleeve' },
-  balanced:   { conservative: 0.40, moderate: 0.35, aggressive: 0.20, asymmetric: 0.05, label: 'Balanced',   sub: 'Core 75/25; small speculative sleeve' },
-  aggressive: { conservative: 0.20, moderate: 0.30, aggressive: 0.30, asymmetric: 0.20, label: 'Aggressive', sub: 'Tilt to vol and tail; 20% asymmetric' },
-  wild:       { conservative: 0.10, moderate: 0.20, aggressive: 0.30, asymmetric: 0.40, label: 'Wild',       sub: '40% asymmetric sleeve — not for the faint of heart' },
+  defensive:  { conservative: 0.60, moderate: 0.30, aggressive: 0.10, asymmetric: 0.00, label: 'Defensive',  sub: 'Capital preservation — no asymmetric allocation' },
+  balanced:   { conservative: 0.40, moderate: 0.35, aggressive: 0.20, asymmetric: 0.05, label: 'Balanced',   sub: 'Core 75/25 with a small 5% asymmetric allocation' },
+  aggressive: { conservative: 0.20, moderate: 0.30, aggressive: 0.30, asymmetric: 0.20, label: 'Aggressive', sub: 'Tilt to volatility and tail — 20% asymmetric' },
 };
 
 // In-memory allocation state; read from localStorage on load.
+// Legacy 'wild' profile was removed 2026-04-17 — migrate to 'aggressive'.
+const _storedProfile = localStorage.getItem('stool_alloc_profile');
+const _profile = (_storedProfile === 'wild') ? 'aggressive' : (_storedProfile || 'balanced');
+if (_storedProfile === 'wild') localStorage.setItem('stool_alloc_profile', 'aggressive');
 let ALLOC = {
   totalUsd: Number(localStorage.getItem('stool_alloc_total') || 10000),
-  profile:  localStorage.getItem('stool_alloc_profile') || 'balanced',
+  profile:  _profile,
   byPick:   {},      // sym → dollars
   byTier:   {},      // tier → dollars
 };
@@ -1015,30 +1008,129 @@ function fmtUsd(v) {
   return `$${v.toFixed(0)}`;
 }
 
-function renderAllocWidget() {
+// Tier → palette colour. Shared by donut, composition rows, tab dots.
+const TIER_PALETTE = {
+  conservative: '#6ee7b7',
+  moderate:     '#5FAAC5',
+  aggressive:   '#f5d58f',
+  asymmetric:   '#d2ddea',
+};
+
+// SVG donut chart. Uses the r=15.9155 trick so circumference = 100 —
+// each segment's stroke-dasharray equals its percent directly. Every
+// arc also carries a text label showing its own %, so the visual is
+// not a number-less bar chart.
+function renderDonut(profile, center) {
+  const tiers = ['conservative','moderate','aggressive','asymmetric'];
+  let offset = 0;
+  const arcs = tiers.map(t => {
+    const pct = (profile[t] || 0) * 100;
+    if (pct <= 0) return { t, pct, html: '', labelHtml: '' };
+    // stroke-dasharray is "segment gap". Starting position shifted by
+    // -offset so segments daisy-chain. Circumference = 100.
+    const dashArr = `${pct.toFixed(3)} ${(100 - pct).toFixed(3)}`;
+    const dashOff = (-offset).toFixed(3);
+    // Rotate each segment -90° about the center so the stroke starts at
+    // 12 o'clock instead of the SVG default 3 o'clock — matches user
+    // expectations for a pie chart (top → right → bottom → left).
+    const arc = `<circle cx="21" cy="21" r="15.9155" fill="transparent"
+      stroke="${TIER_PALETTE[t]}" stroke-width="4.5"
+      stroke-dasharray="${dashArr}" stroke-dashoffset="${dashOff}"
+      transform="rotate(-90 21 21)"/>`;
+
+    // Label at the midpoint of the arc, in polar coords with 12 o'clock
+    // as 0 and clockwise positive (matching the segment rotation above).
+    const midPct = offset + pct / 2;
+    const theta = (midPct / 100) * 2 * Math.PI - Math.PI / 2;
+    const labelR = 15.9155; // text sits on the stroke path
+    const x = 21 + labelR * Math.cos(theta);
+    const y = 21 + labelR * Math.sin(theta);
+    // Only label slices >= 8% — smaller slices are unreadable inline.
+    const labelHtml = pct >= 8
+      ? `<text x="${x.toFixed(2)}" y="${y.toFixed(2)}"
+            text-anchor="middle" dominant-baseline="central"
+            fill="#0B1006" font-family="Inter" font-size="3.2" font-weight="700">${Math.round(pct)}%</text>`
+      : '';
+
+    offset += pct;
+    return { t, pct, html: arc, labelHtml };
+  });
+
+  const arcsHtml = arcs.map(a => a.html).join('');
+  const labelsHtml = arcs.map(a => a.labelHtml).join('');
+  const centerHtml = center
+    ? `<div class="dt-center">
+         <div class="dt-total">${center.total}</div>
+         <div class="dt-sub">${center.label}</div>
+       </div>`
+    : '';
+
+  return `<div class="alloc-donut">
+    <svg viewBox="0 0 42 42" aria-label="Allocation by tier">
+      <circle cx="21" cy="21" r="15.9155" fill="transparent"
+        stroke="rgba(155,161,185,0.08)" stroke-width="4.5"/>
+      ${arcsHtml}
+      ${labelsHtml}
+    </svg>
+    ${centerHtml}
+  </div>`;
+}
+
+function renderAllocWidget(picksData) {
   const profile = RISK_PROFILES[ALLOC.profile] || RISK_PROFILES.balanced;
   const total = ALLOC.totalUsd || 0;
-  const palette = { conservative:'#6ee7b7', moderate:'#5FAAC5', aggressive:'#f5d58f', asymmetric:'#d2ddea' };
-  const segments = ['conservative','moderate','aggressive','asymmetric'].map(t => {
-    const w = profile[t] * 100;
-    if (!w) return '';
-    return `<span style="width:${w}%;background:${palette[t]};"></span>`;
+  const tiers = ['conservative','moderate','aggressive','asymmetric'];
+
+  // Per-tier pick counts from today's scan (capped at 10 per tier).
+  const pickCounts = { conservative: 0, moderate: 0, aggressive: 0 };
+  for (const p of picksData.picks || []) {
+    if (pickCounts[p.tier] != null && pickCounts[p.tier] < 10) pickCounts[p.tier]++;
+  }
+  pickCounts.asymmetric = Math.min(10, (picksData.asymmetric_picks || []).length);
+
+  const LABELS = {
+    conservative: 'Conservative',
+    moderate:     'Moderate',
+    aggressive:   'Aggressive',
+    asymmetric:   'Asymmetric',
+  };
+  const SUBS = {
+    conservative: 'Low vol · quality',
+    moderate:     'Core · balanced',
+    aggressive:   'High vol · tactical',
+    asymmetric:   'Tail upside · speculative',
+  };
+
+  const rows = tiers.map(t => {
+    const share = profile[t] || 0;
+    const dollars = total * share;
+    const pickN = pickCounts[t] || 0;
+    const emptyCls = share === 0 ? ' ar-empty' : '';
+    return `<div class="alloc-row${emptyCls}">
+      <span class="ar-dot" style="background:${TIER_PALETTE[t]};"></span>
+      <div style="min-width:0;">
+        <div class="ar-name">${LABELS[t]}</div>
+        <div class="ar-sub">${SUBS[t]} &middot; ${pickN} pick${pickN === 1 ? '' : 's'} available</div>
+      </div>
+      <div class="ar-pct">${Math.round(share * 100)}%</div>
+      <div class="ar-dollar">${share > 0 ? fmtUsd(dollars) : '—'}</div>
+    </div>`;
   }).join('');
-  const legend = ['conservative','moderate','aggressive','asymmetric'].map(t => {
-    const share = profile[t];
-    if (!share) return '';
-    return `<span class="al-item"><span class="al-dot" style="background:${palette[t]};"></span>${t[0].toUpperCase()+t.slice(1)} <span class="al-amt">${fmtUsd(total * share)}</span></span>`;
-  }).filter(Boolean).join('');
 
   const opts = Object.entries(RISK_PROFILES).map(([key, cfg]) =>
     `<option value="${key}" ${ALLOC.profile === key ? 'selected' : ''}>${cfg.label}</option>`).join('');
 
+  const donutHtml = renderDonut(profile, {
+    total: fmtUsd(total),
+    label: profile.label,
+  });
+
   return `<div class="alloc-widget">
+    ${donutHtml}
     <div>
       <div class="aw-title">Allocation &middot; build your book</div>
-      <div class="aw-sub">Set a dollar size and a risk profile &mdash; the engine computes per-pick weights weighted by confidence and inverse volatility. <b style="color:var(--text-hi);">${profile.label}</b>: ${profile.sub}.</div>
-      <div class="alloc-bar">${segments}</div>
-      <div class="alloc-legend">${legend}</div>
+      <div class="aw-sub" style="margin-bottom:16px;"><b>${profile.label}</b>: ${profile.sub}. Per-pick weights inside each tier use confidence &times; inverse volatility.</div>
+      <div class="alloc-table">${rows}</div>
     </div>
     <div class="alloc-controls">
       <div class="alloc-control">
@@ -1071,6 +1163,126 @@ function wireAllocControls(picksData, trackData) {
   profile?.addEventListener('change', onChange);
 }
 
+// Tier section that opens a tab — splits picks into first-5 (always
+// visible) and overflow (data-overflow="1", hidden until "Show remaining"
+// is clicked). Matches the existing pick-grid layout.
+function renderTabTierBody(tier, picks) {
+  if (!picks.length) {
+    return `<div class="loading">No ${tier} picks in today's scan.</div>`;
+  }
+  const visible = picks.slice(0, 5);
+  const overflow = picks.slice(5);
+  const sectorStrip = renderSectorStrip(picks);
+  const visibleCards = visible.map(renderPickCard).join('');
+  const overflowCards = overflow.map(p => {
+    // Mark overflow pick cards with data-overflow so CSS can hide them by
+    // default. Same card shape as the visible ones.
+    return renderPickCard(p).replace(
+      '<div class="pick-card">',
+      '<div class="pick-card" data-overflow="1">'
+    );
+  }).join('');
+  const showAll = overflow.length
+    ? `<div class="show-all-row">
+         <button class="show-all-btn" type="button" onclick="toggleShowAll('${tier}')">
+           Show remaining ${overflow.length} pick${overflow.length === 1 ? '' : 's'} &rarr;
+         </button>
+       </div>`
+    : '';
+  return `<section class="tier-section">
+    <div class="tier-head">
+      <div style="min-width:0;flex:1;">
+        <div class="tier-name">${TIER_COPY[tier].label} <span class="tier-count">${picks.length} ${picks.length === 1 ? 'pick' : 'picks'}</span></div>
+        ${sectorStrip}
+      </div>
+      <div class="tier-blurb">${TIER_COPY[tier].blurb}</div>
+    </div>
+    <div class="pick-grid">${visibleCards}${overflowCards}</div>
+    ${showAll}
+  </section>`;
+}
+
+// Same idea for the asymmetric tab — 5 visible cards, rest hidden until
+// the toggle is flipped. Uses the existing asym card design.
+function renderTabAsymBody(picks) {
+  if (!picks || !picks.length) {
+    return `<div class="loading">No asymmetric picks in today's scan.</div>`;
+  }
+  const visible = picks.slice(0, 5);
+  const overflow = picks.slice(5);
+  const avgP90 = picks.reduce((s, p) => s + (p.asymmetric?.p90_ratio || 0), 0) / picks.length;
+  const avgP10 = picks.reduce((s, p) => s + (p.asymmetric?.p10_ratio || 0), 0) / picks.length;
+  const visibleCards = visible.map((p, i) => renderAsymCard(p, i + 1)).join('');
+  const overflowCards = overflow.map((p, i) => {
+    return renderAsymCard(p, i + 6).replace(
+      '<div class="asym-card">',
+      '<div class="asym-card" data-overflow="1">'
+    );
+  }).join('');
+  const showAll = overflow.length
+    ? `<div class="show-all-row">
+         <button class="show-all-btn" type="button" onclick="toggleShowAll('asymmetric')">
+           Show remaining ${overflow.length} pick${overflow.length === 1 ? '' : 's'} &rarr;
+         </button>
+       </div>`
+    : '';
+  return `<section class="asym-section">
+    <div class="asym-head">
+      <div>
+        <div style="font:600 11px 'Inter';color:var(--accent-lake);letter-spacing:0.24em;text-transform:uppercase;margin-bottom:14px;">Asymmetric Upside</div>
+        <h2 class="asym-tier">Names the engine thinks could <em>multiply</em>.</h2>
+        <p class="asym-blurb">Ranked by our <b>self-training asymmetric-upside model</b> &mdash; a scoring function that <b>retrains every night</b> on the most recent realized-return data, picking whichever signal combination has been identifying 100%+ movers out-of-sample in the current regime. Filtered for real liquidity so every name is actually investable. Every pick carries its own <b>honest P10 downside</b>. High-variance &mdash; <b>size each name small</b>.</p>
+      </div>
+      <div class="asym-stats">
+        <div><div class="s-val">${avgP90.toFixed(1)}x</div><div class="s-label">Avg P90</div></div>
+        <div><div class="s-val">${avgP10.toFixed(2)}x</div><div class="s-label">Avg P10</div></div>
+        <div><div class="s-val">${picks.length}</div><div class="s-label">Names</div></div>
+      </div>
+    </div>
+    <div class="asym-grid">${visibleCards}${overflowCards}</div>
+    ${showAll}
+  </section>`;
+}
+
+// Pill tab row — shows tier name, pick count, allocated dollars. Every
+// tab itself is numeric so the nav earns its space.
+function renderPicksTabs(picksData) {
+  const tiers = [
+    { key: 'conservative', label: 'Conservative' },
+    { key: 'moderate',     label: 'Moderate' },
+    { key: 'aggressive',   label: 'Aggressive' },
+    { key: 'asymmetric',   label: 'Asymmetric' },
+  ];
+  const grouped = {};
+  for (const p of picksData.picks || []) (grouped[p.tier] = grouped[p.tier] || []).push(p);
+  const asymPicks = picksData.asymmetric_picks || [];
+
+  const stored = localStorage.getItem('stool_picks_tab');
+  const firstAvailable = tiers.find(t => {
+    if (t.key === 'asymmetric') return asymPicks.length > 0;
+    return (grouped[t.key] || []).length > 0;
+  })?.key || 'conservative';
+  const activeKey = tiers.some(t => t.key === stored) ? stored : firstAvailable;
+
+  const btns = tiers.map(t => {
+    const count = t.key === 'asymmetric'
+      ? Math.min(10, asymPicks.length)
+      : Math.min(10, (grouped[t.key] || []).length);
+    const budget = ALLOC.byTier?.[t.key] || 0;
+    const active = t.key === activeKey ? ' active' : '';
+    const dollarStr = budget > 0 ? fmtUsd(budget) : '$0';
+    return `<button class="pt-btn${active}" type="button"
+      data-tab-key="${t.key}" onclick="switchTab('${t.key}')">
+      <div class="pt-head">
+        <span class="pt-dot" style="background:${TIER_PALETTE[t.key]};"></span>
+        <span class="pt-name">${t.label}</span>
+      </div>
+      <div class="pt-meta">${count} pick${count === 1 ? '' : 's'} &middot; ${dollarStr}</div>
+    </button>`;
+  }).join('');
+  return { html: `<nav class="picks-tabs" role="tablist">${btns}</nav>`, activeKey };
+}
+
 function renderPage(picksData, trackData) {
   const grouped = {};
   for (const p of picksData.picks) (grouped[p.tier] = grouped[p.tier] || []).push(p);
@@ -1093,29 +1305,24 @@ function renderPage(picksData, trackData) {
          <a class="tl-cta" href="/track-record">See full backtest &rarr;</a>
        </div>`;
 
-  // Tier sections — keep collapsible so long-form lists can be folded, but
-  // default to EXPANDED so content is visible on first load.
-  const tierSections = ['conservative', 'moderate', 'aggressive']
-    .map(t => {
-      const picks = (grouped[t] || []).slice(0, 10);
-      const tierBudget = ALLOC.byTier?.[t];
-      const label = tierBudget
-        ? `${TIER_COPY[t].label} &middot; ${fmtUsd(tierBudget)}`
-        : TIER_COPY[t].label;
-      return collapsible(`tier_${t}`, label, renderTierSection(t, picks));
-    })
-    .join('');
+  const tabs = renderPicksTabs(picksData);
+  const tierPanels = ['conservative','moderate','aggressive'].map(t => {
+    const picks = (grouped[t] || []).slice(0, 10);
+    const activeCls = t === tabs.activeKey ? ' active' : '';
+    return `<div class="tab-panel${activeCls}" data-panel-key="${t}">${renderTabTierBody(t, picks)}</div>`;
+  }).join('');
+  const asymActive = tabs.activeKey === 'asymmetric' ? ' active' : '';
+  const asymPanel = `<div class="tab-panel${asymActive}" data-panel-key="asymmetric">${renderTabAsymBody(picksData.asymmetric_picks || [])}</div>`;
 
-  // Layout: hero (always-visible signal + allocation), compact evidence link,
-  // asymmetric sleeve (collapsible), the three tiers, then methodology.
   return `<section class="hero-block">
             ${renderPortfolioSignal(tiered, picksData)}
-            ${renderAllocWidget()}
+            ${renderAllocWidget(picksData)}
           </section>
           ${trackBlock}
-          ${collapsible('asym', 'Asymmetric sleeve', renderAsymmetricTier(picksData.asymmetric_picks || []))}
-          ${tierSections}
-          ${collapsible('method', 'Methodology', renderMethodology(picksData))}`;
+          ${tabs.html}
+          ${tierPanels}
+          ${asymPanel}
+          ${renderMethodology(picksData)}`;
 }
 
 async function load() {
