@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>FAQ — s-tool</title>
+<meta name="description" content="Frequently asked questions about s-tool's projection engine, signal methodology, pricing, and data handling." />
+<link rel="canonical" href="https://s-tool.io/faq" />
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230A6577'/%3E%3Cpath d='M16 44 L24 32 L34 38 L48 18' stroke='%23D2DDEA' stroke-width='4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/shared/nav.css" />
+<style>
+:root {
+  --bg-deepest: #0B1006; --bg-base: #111512; --bg-surface: #1F232D;
+  --bg-card: #28303B; --accent-deep: #022834; --accent-alpine: #0A6577;
+  --accent-lake: #5FAAC5; --text-hi: #EDECE6; --text-mid: #9BA1B9;
+  --text-dim: #6B7382; --border: rgba(155,161,185,0.16);
+  --border-strong: rgba(95,170,197,0.35);
+  --radius-md: 16px; --radius-sm: 10px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Inter', sans-serif; background: var(--bg-deepest); color: var(--text-hi); line-height: 1.55; -webkit-font-smoothing: antialiased; }
+a { color: inherit; text-decoration: none; }
+.container { max-width: 1180px; margin: 0 auto; padding: 0 32px; }
+
+nav { position: sticky; top: 0; z-index: 50; backdrop-filter: blur(14px); background: rgba(11,16,6,0.82); border-bottom: 1px solid var(--border); }
+.nav-row { display: flex; align-items: center; justify-content: space-between; padding: 18px 0; gap: 24px; }
+.logo { display: flex; align-items: center; gap: 10px; font: 700 18px 'Inter'; letter-spacing: -0.04em; color: var(--text-hi); }
+.logo-mark { width: 28px; height: 28px; border-radius: 7px; background: linear-gradient(135deg, var(--accent-deep), var(--accent-alpine), var(--accent-lake)); display: flex; align-items: center; justify-content: center; }
+.nav-center { display: flex; gap: 28px; font: 500 14px 'Inter'; color: var(--text-mid); }
+.nav-center a:hover { color: var(--text-hi); }
+.nav-center a.active { color: var(--text-hi); border-bottom: 1px solid var(--accent-lake); padding-bottom: 2px; }
+.nav-end { display: flex; align-items: center; gap: 14px; min-width: 120px; justify-content: flex-end; }
+/* user-pill + dropdown live in /shared/nav.css */
+.signin-btn { font: 500 14px 'Inter'; color: var(--text-hi); border: 1px solid var(--border-strong); padding: 9px 18px; border-radius: 999px; cursor: pointer; background: transparent; }
+.signin-btn:hover { background: rgba(95,170,197,0.08); }
+@media (max-width: 800px) { .nav-center { gap: 18px; } .nav-center a { font-size: 13px; } }
+@media (max-width: 620px) { .nav-center a:nth-child(4), .nav-center a:nth-child(5) { display: none; } }
+
+header.page-hero { padding: 80px 0 40px; }
+.eyebrow { font: 600 11px 'Inter'; color: var(--accent-lake); letter-spacing: 0.24em; text-transform: uppercase; display: inline-block; margin-bottom: 20px; }
+.title { font-family: 'Crimson Text', Georgia, serif; font-size: clamp(40px, 5.2vw, 60px); font-weight: 400; line-height: 1.04; letter-spacing: -0.022em; }
+.title em { font-style: italic; color: var(--accent-lake); }
+.subtitle { color: var(--text-mid); font-size: 18px; max-width: 60ch; margin-top: 20px; }
+
+.faq-wrap { padding: 24px 0 96px; }
+.faq-list { max-width: 860px; margin-top: 24px; }
+.faq-item { padding: 28px 0; border-bottom: 1px solid var(--border); }
+.faq-item h3 { font-family: 'Crimson Text', serif; font-weight: 400; font-size: 24px; line-height: 1.25; letter-spacing: -0.01em; margin-bottom: 12px; color: var(--text-hi); }
+.faq-item p { color: var(--text-mid); font-size: 16px; line-height: 1.65; max-width: 70ch; }
+.faq-item p + p { margin-top: 12px; }
+
+footer { border-top: 1px solid var(--border); padding: 40px 32px; text-align: center; color: var(--text-dim); font-size: 13px; margin-top: 80px; }
+footer a { color: var(--text-mid); }
+</style>
+<script async
+  data-clerk-publishable-key="pk_test_Zmx1ZW50LW1vbGUtNzEuY2xlcmsuYWNjb3VudHMuZGV2JA"
+  src="https://fluent-mole-71.clerk.accounts.dev/npm/@clerk/clerk-js@5/dist/clerk.browser.js"
+  crossorigin="anonymous"
+></script>
+<script defer src="/shared/nav.js"></script>
+</head>
+<body>
+
+<nav>
+  <div class="container nav-row">
+    <a href="/" class="logo"><span class="logo-mark"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#EDECE6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 18 9 12 13 16 21 4"></polyline></svg></span><span>s-tool</span></a>
+    <div class="nav-center">
+      <a href="/app">App</a>
+      <a href="/picks">Picks</a>
+      <a href="/how">How</a>
+      <a href="/pricing">Pricing</a>
+      <a href="/faq" class="active">FAQ</a>
+    </div>
+    <div class="nav-end" id="navEnd">
+      <button class="signin-btn" onclick="window.Clerk?.openSignIn?.({afterSignInUrl:'/faq'})">Sign in</button>
+    </div>
+  </div>
+</nav>
+
+<header class="page-hero">
+  <div class="container">
+    <div class="eyebrow">FAQ</div>
+    <h1 class="title">Questions worth <em>answering</em>.</h1>
+    <p class="subtitle">The things people actually ask before and after they sign up. If something's missing, email hello@s-tool.io.</p>
+  </div>
+</header>
+
+<main class="faq-wrap">
+  <div class="container">
+    <div class="faq-list">
+      <div class="faq-item"><h3>Is this investment advice?</h3><p>No. Projections are statistical outputs, not recommendations. Every ticker shows its projection range and the model's historical error on that symbol so you can judge the bands yourself.</p></div>
+      <div class="faq-item"><h3>Where does the data come from?</h3><p>Standard US-equity price history, point-in-time regulatory filings, macroeconomic reference series, and institutional-positioning data from public sources. The Russell 3000 universe is refreshed daily.</p></div>
+      <div class="faq-item"><h3>Why kill the sentiment signal?</h3><p>Because it failed. Rigorous out-of-sample testing across thousands of symbols and hundreds of rolling windows showed negligible edge post-2023, with worse hit rates. We don't ship dead tilts &mdash; even if they once were useful. See the "How" page for the full signal graveyard.</p></div>
+      <div class="faq-item"><h3>What's the difference between Pro and Strategist?</h3><p>Pro ($8/mo) is for running projections on the full Russell 3000 yourself — 10 a day, with PDF export. Strategist ($29/mo) is the portfolio layer: we rank the universe nightly, attach SEC filings to each pick, and track realized returns. Pro = the tool. Strategist = the intelligence.</p></div>
+      <div class="faq-item"><h3>Can I cancel anytime?</h3><p>Yes. Stripe, month-to-month, no contract. Cancel from your account portal &mdash; access continues through the end of the billing period, then reverts to Free.</p></div>
+      <div class="faq-item"><h3>How is my data handled?</h3><p>Email + Stripe customer ID are stored in a private database, never committed to source. The projection cache is open and shared (no PII). We don't sell or share user data, and we don't train models on what you click.</p></div>
+      <div class="faq-item"><h3>How often do picks refresh?</h3><p>Nightly. The daily scan runs at 11:00 UTC (after US post-close refresh), projects every ticker in the universe, applies QC filters (no negative-ER picks, no noise-adjacent Sharpe), and publishes. Historical picks are logged to a ledger so realized returns can be computed on each.</p></div>
+      <div class="faq-item"><h3>What's the track record?</h3><p>Live on the <a href="/picks" style="color:var(--accent-lake);">Picks page</a>. Returns are computed from each pick's entry price (day it was first published) versus the latest cached price. Only picks with at least 7 days of aging count toward the stats.</p></div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div>&copy; 2026 s-tool.io &middot; <a href="/">Home</a> &middot; <a href="/app">App</a> &middot; <a href="/picks">Picks</a> &middot; <a href="/how">How</a> &middot; <a href="/pricing">Pricing</a> &middot; Not investment advice.</div>
+</footer>
+
+<script>
+async function authHeaders() {
+  try { const t = await window.Clerk?.session?.getToken?.(); return t ? { Authorization: `Bearer ${t}` } : {}; } catch { return {}; }
+}
+// Shared nav in /shared/nav.js handles pill + dropdown + dark Clerk modal.
+(function wait() {
+  if (!window.STNav?.init) { setTimeout(wait, 50); return; }
+  window.STNav.init({ signInRedirect: '/faq' });
+})();
+</script>
+</body>
+</html>

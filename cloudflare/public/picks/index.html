@@ -3,252 +3,1024 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Portfolio picks — s-tool</title>
-<meta name="description" content="Risk-tiered stock picks from a nightly scan of the Russell 3000, ranked by forward Sharpe proxy. Strategist tier." />
+<title>Portfolio intelligence — s-tool</title>
+<meta name="description" content="Ranked portfolio intelligence from a nightly full-universe scan. Strategist tier only." />
 <link rel="canonical" href="https://s-tool.io/picks" />
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230A6577'/%3E%3Cpath d='M16 44 L24 32 L34 38 L48 18' stroke='%23D2DDEA' stroke-width='4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/shared/nav.css" />
 <style>
 :root {
-    --bg-deepest: #0B1006; --bg-base: #111512; --bg-surface: #1F232D;
-    --bg-card: #28303B; --accent-deep: #022834; --accent-alpine: #0A6577;
-    --accent-lake: #5FAAC5; --text-hi: #EDECE6; --text-mid: #9BA1B9;
-    --text-dim: #6B7382; --border: rgba(155,161,185,0.16);
-    --border-strong: rgba(95,170,197,0.35);
-    --radius-md: 16px; --radius-sm: 10px;
+  --bg-deepest: #0B1006; --bg-base: #111512; --bg-surface: #1A1F1B;
+  --bg-card: #1F2722; --bg-card-hi: #232D28;
+  --accent-deep: #022834; --accent-alpine: #0A6577; --accent-lake: #5FAAC5;
+  --text-hi: #EDECE6; --text-mid: #9BA1B9; --text-dim: #6B7382;
+  --border: rgba(155,161,185,0.14);
+  --border-strong: rgba(95,170,197,0.30);
+  --pos: #6ee7b7; --neg: #fca5a5; --caution: #f5d58f;
+  --radius-lg: 22px; --radius-md: 16px; --radius-sm: 10px;
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: 'Inter', sans-serif; background: var(--bg-deepest); color: var(--text-hi); line-height: 1.55; -webkit-font-smoothing: antialiased; }
+body {
+  font-family: 'Inter', sans-serif;
+  background: radial-gradient(1200px 600px at 20% -10%, rgba(10,101,119,0.20), transparent 60%),
+              radial-gradient(900px 500px at 85% -8%, rgba(2,40,52,0.28), transparent 70%),
+              var(--bg-deepest);
+  color: var(--text-hi); line-height: 1.55;
+  -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+}
 a { color: inherit; text-decoration: none; }
-.container { max-width: 1180px; margin: 0 auto; padding: 0 32px; }
+.container { max-width: 1240px; margin: 0 auto; padding: 0 32px; }
 
-nav { position: sticky; top: 0; z-index: 50; backdrop-filter: blur(12px); background: rgba(11,16,6,0.75); border-bottom: 1px solid var(--border); }
-.nav-row { display: flex; align-items: center; justify-content: space-between; padding: 18px 0; }
+/* ── Nav ──────────────────────────────────────────────────────── */
+nav { position: sticky; top: 0; z-index: 50; backdrop-filter: blur(14px); background: rgba(11,16,6,0.82); border-bottom: 1px solid var(--border); }
+.nav-row { display: flex; align-items: center; justify-content: space-between; padding: 18px 0; gap: 24px; }
 .logo { display: flex; align-items: center; gap: 10px; font: 700 18px 'Inter'; letter-spacing: -0.04em; color: var(--text-hi); }
 .logo-mark { width: 28px; height: 28px; border-radius: 7px; background: linear-gradient(135deg, var(--accent-deep), var(--accent-alpine), var(--accent-lake)); display: flex; align-items: center; justify-content: center; }
-.nav-links { display: flex; gap: 24px; font: 500 14px 'Inter'; color: var(--text-mid); }
-.nav-links a:hover { color: var(--text-hi); }
+.nav-center { display: flex; gap: 28px; font: 500 14px 'Inter'; color: var(--text-mid); }
+.nav-center a:hover { color: var(--text-hi); }
+.nav-center a.active { color: var(--text-hi); border-bottom: 1px solid var(--accent-lake); padding-bottom: 2px; }
+.nav-end { display: flex; align-items: center; gap: 14px; min-width: 120px; justify-content: flex-end; }
+/* user-pill + dropdown live in /shared/nav.css */
+.signin-btn { font: 500 14px 'Inter'; color: var(--text-hi); border: 1px solid var(--border-strong); padding: 9px 18px; border-radius: 999px; cursor: pointer; background: transparent; }
+.signin-btn:hover { background: rgba(95,170,197,0.08); }
 
-header.hero { padding: 72px 0 56px; }
-.eyebrow { font: 600 11px 'Inter'; color: var(--accent-lake); letter-spacing: 0.22em; text-transform: uppercase; margin-bottom: 20px; display: inline-block; }
-.title { font-family: 'Crimson Text', Georgia, serif; font-size: clamp(36px, 5vw, 56px); font-weight: 400; line-height: 1.08; letter-spacing: -0.02em; }
+/* ── Hero ─────────────────────────────────────────────────────── */
+header.hero { padding: 80px 0 40px; }
+.eyebrow { font: 600 11px 'Inter'; color: var(--accent-lake); letter-spacing: 0.24em; text-transform: uppercase; display: inline-block; margin-bottom: 22px; }
+.title { font-family: 'Crimson Text', Georgia, serif; font-size: clamp(40px, 5.2vw, 64px); font-weight: 400; line-height: 1.04; letter-spacing: -0.022em; }
 .title em { font-style: italic; color: var(--accent-lake); }
-.subtitle { color: var(--text-mid); font-size: 17px; margin-top: 20px; max-width: 60ch; }
-.scan-meta { color: var(--text-dim); font-size: 13px; margin-top: 16px; }
+.subtitle { color: var(--text-mid); font-size: 18px; max-width: 62ch; margin-top: 22px; line-height: 1.55; }
+.scan-meta { margin-top: 28px; display: flex; flex-wrap: wrap; gap: 10px 22px; font: 500 13px 'Inter'; color: var(--text-dim); }
+.scan-meta .meta-item { display: inline-flex; align-items: center; gap: 8px; }
+.scan-meta .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--pos); box-shadow: 0 0 10px rgba(110,231,183,0.6); }
+.scan-meta .dot.waiting { background: var(--caution); }
 
-/* Gate card for non-Strategists */
-.gate { padding: 48px 40px; border: 1px solid var(--border-strong); border-radius: 24px; background: linear-gradient(180deg, var(--bg-surface), rgba(2,40,52,0.3)); margin: 48px 0; }
-.gate h2 { font-family: 'Crimson Text', serif; font-weight: 600; font-size: 32px; line-height: 1.15; margin-bottom: 14px; }
-.gate p { color: var(--text-mid); font-size: 16px; max-width: 62ch; margin-bottom: 24px; }
+/* ── Track record dashboard ──────────────────────────────────── */
+.trackrecord { margin: 48px 0 72px; }
+.section-eyebrow { font: 600 11px 'Inter'; color: var(--accent-lake); letter-spacing: 0.20em; text-transform: uppercase; margin-bottom: 12px; }
+.section-title { font-family: 'Crimson Text', serif; font-size: 28px; font-weight: 400; line-height: 1.2; color: var(--text-hi); margin-bottom: 28px; }
+.section-title .muted { color: var(--text-mid); font-style: italic; }
+.tr-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.tr-card { padding: 28px 28px 24px; border: 1px solid var(--border); border-radius: var(--radius-md); background: linear-gradient(180deg, var(--bg-surface), rgba(2,40,52,0.10)); }
+.tr-tier { font: 600 11px 'Inter'; color: var(--accent-lake); letter-spacing: 0.22em; text-transform: uppercase; margin-bottom: 14px; }
+.tr-big { font: 400 48px/1 'Crimson Text', Georgia, serif; color: var(--text-hi); letter-spacing: -0.022em; }
+.tr-big.pos { color: var(--pos); } .tr-big.neg { color: var(--neg); }
+.tr-bigsub { font: 500 14px 'Inter'; color: var(--text-mid); margin-top: 10px; }
+.tr-bigsub .hit-pill { display: inline-block; padding: 2px 10px; border-radius: 999px; background: rgba(95,170,197,0.12); color: var(--accent-lake); font-size: 12px; margin-left: 6px; }
+.tr-waiting { font: 400 15px/1.5 'Crimson Text', Georgia, serif; color: var(--text-mid); font-style: italic; padding-top: 4px; }
+@media (max-width: 820px) { .tr-grid { grid-template-columns: 1fr; } }
+
+/* ── Tier sections ───────────────────────────────────────────── */
+.tier-section { margin: 72px 0; }
+.tier-head { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 12px 24px; margin-bottom: 28px; padding-bottom: 18px; border-bottom: 1px solid var(--border); }
+.tier-name { font-family: 'Crimson Text', serif; font-size: 36px; font-weight: 400; letter-spacing: -0.015em; }
+.tier-name em { color: var(--accent-lake); font-style: italic; }
+.tier-count { font: 500 13px 'Inter'; color: var(--text-dim); margin-left: 14px; }
+.tier-blurb { color: var(--text-mid); font-size: 15px; max-width: 58ch; line-height: 1.55; }
+
+/* ── Pick cards ──────────────────────────────────────────────── */
+.pick-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+@media (max-width: 920px) { .pick-grid { grid-template-columns: 1fr; } }
+.pick-card {
+  padding: 26px 28px 24px; border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+  transition: border-color .2s, transform .2s, box-shadow .2s;
+}
+.pick-card:hover { border-color: var(--border-strong); background: var(--bg-card-hi); transform: translateY(-1px); box-shadow: 0 10px 40px rgba(2,40,52,0.35); }
+
+.pc-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 22px; }
+.pc-id { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1; }
+.pc-ticker-row { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.pc-sym { font: 700 28px 'Inter'; letter-spacing: -0.025em; color: var(--text-hi); }
+.pc-name { font: 500 15px 'Inter'; color: var(--text-hi); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 28ch; }
+.pc-meta { display: flex; align-items: center; gap: 10px; font: 400 13px 'Inter'; color: var(--text-mid); flex-wrap: wrap; }
+.pc-meta .dot-sep { color: var(--border); }
+.size-pill { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 999px; font: 600 10px 'Inter'; letter-spacing: 0.08em; text-transform: uppercase; }
+.size-pill.neutral { background: rgba(95,170,197,0.10); color: var(--accent-lake); }
+.size-pill.caution { background: rgba(245,213,143,0.12); color: #f5d58f; }
+.size-pill.warn { background: rgba(252,165,165,0.14); color: #fca5a5; }
+.pc-badge {
+  font: 600 10px 'Inter'; letter-spacing: 0.14em; text-transform: uppercase;
+  padding: 6px 10px; border-radius: 6px;
+  background: rgba(95,170,197,0.10); color: var(--accent-lake);
+  white-space: nowrap;
+}
+
+/* Confidence badge — prominent top-right element on each card */
+.pc-conf { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; min-width: 92px; }
+.pc-conf-num {
+  font: 500 34px/1 'Crimson Text', Georgia, serif;
+  letter-spacing: -0.02em; font-variant-numeric: tabular-nums;
+  color: var(--text-hi);
+  position: relative; padding-right: 22px;
+}
+.pc-conf-num::after {
+  content: '/100';
+  position: absolute; right: 0; top: 58%;
+  font: 500 11px 'Inter'; color: var(--text-dim); letter-spacing: 0;
+}
+.pc-conf-num.conf-high { color: #6ee7b7; }
+.pc-conf-num.conf-mid  { color: #c7d96b; }
+.pc-conf-num.conf-low  { color: var(--text-mid); }
+.pc-conf-label {
+  font: 600 10px 'Inter'; color: var(--accent-lake);
+  letter-spacing: 0.16em; text-transform: uppercase;
+  text-align: right; white-space: nowrap;
+}
+.pc-conf-bar {
+  width: 92px; height: 4px; border-radius: 2px;
+  background: rgba(155,161,185,0.18); overflow: hidden;
+}
+.pc-conf-bar > span {
+  display: block; height: 100%; border-radius: 2px;
+  background: linear-gradient(90deg, var(--accent-alpine), var(--accent-lake));
+}
+.pc-conf-break {
+  display: none;
+  position: absolute; right: 0; top: 100%; margin-top: 8px; z-index: 10;
+  background: var(--bg-card-hi); border: 1px solid var(--border-strong);
+  border-radius: 8px; padding: 10px 12px; min-width: 180px;
+  font: 500 11px 'Inter'; color: var(--text-mid);
+}
+.pc-conf:hover .pc-conf-break { display: block; }
+.pc-conf { position: relative; }
+.pc-conf-break .brk-row { display: flex; justify-content: space-between; padding: 2px 0; }
+.pc-conf-break .brk-row span:last-child { color: var(--text-hi); font-variant-numeric: tabular-nums; }
+
+.pc-hero { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 18px 0 20px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.pc-hero .h-item { text-align: left; }
+.pc-hero .h-label { font: 600 10px 'Inter'; color: var(--text-dim); letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 6px; }
+.pc-hero .h-val { font: 400 28px/1 'Crimson Text', Georgia, serif; letter-spacing: -0.02em; color: var(--text-hi); }
+.pc-hero .h-val.pos { color: var(--pos); } .pc-hero .h-val.neg { color: var(--neg); }
+
+.pc-thesis { padding: 22px 0 18px; }
+.pc-thesis-eyebrow { font: 600 10px 'Inter'; color: var(--accent-lake); letter-spacing: 0.20em; text-transform: uppercase; display: inline-block; margin-bottom: 10px; }
+.pc-thesis-body {
+  font-family: 'Crimson Text', Georgia, serif; font-weight: 400;
+  font-size: 19px; line-height: 1.52; color: var(--text-hi);
+  max-width: 58ch;
+}
+.pc-thesis-body.empty { color: var(--text-mid); font-style: italic; }
+
+.pc-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px 16px; padding-top: 18px; border-top: 1px solid var(--border); }
+.pc-stat { }
+.pc-stat .s-label { font: 600 10px 'Inter'; color: var(--text-dim); letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 4px; }
+.pc-stat .s-val { font: 500 15px 'Inter'; color: var(--text-hi); font-variant-numeric: tabular-nums; }
+.pc-stat .s-val.pos { color: var(--pos); } .pc-stat .s-val.neg { color: var(--neg); }
+.pc-stat .s-val.dim { color: var(--text-mid); }
+
+.pc-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 18px; margin-top: 18px; border-top: 1px solid var(--border); font: 500 12px 'Inter'; color: var(--text-dim); }
+.pc-foot a { color: var(--accent-lake); }
+.pc-foot a:hover { color: var(--text-hi); }
+
+/* Gate (for non-Strategist) */
+.gate { padding: 56px 48px; border: 1px solid var(--border-strong); border-radius: var(--radius-lg); background: linear-gradient(180deg, var(--bg-surface), rgba(2,40,52,0.3)); margin: 56px 0; }
+.gate h2 { font-family: 'Crimson Text', serif; font-weight: 400; font-size: 36px; letter-spacing: -0.01em; line-height: 1.12; margin-bottom: 14px; }
+.gate h2 em { color: var(--accent-lake); font-style: italic; }
+.gate p { color: var(--text-mid); font-size: 16px; max-width: 64ch; margin-bottom: 28px; line-height: 1.55; }
 .btn { display: inline-flex; align-items: center; gap: 8px; padding: 14px 26px; border-radius: 999px; font: 500 15px/1 'Inter'; cursor: pointer; transition: all .2s; border: 1px solid transparent; text-decoration: none; white-space: nowrap; background: var(--accent-lake); color: var(--bg-deepest); }
 .btn:hover { background: #82c1d6; transform: translateY(-1px); }
 .btn.ghost { background: transparent; color: var(--text-hi); border-color: var(--border-strong); }
 .btn.ghost:hover { background: rgba(95,170,197,0.08); border-color: var(--accent-lake); }
-
-/* Pick tables */
-.tier-section { margin: 48px 0; }
-.tier-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
-.tier-name { font-family: 'Crimson Text', serif; font-size: 28px; font-weight: 600; }
-.tier-name .pill { font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.12em; padding: 4px 10px; border-radius: 999px; margin-left: 12px; text-transform: uppercase; background: rgba(95,170,197,0.14); color: var(--accent-lake); vertical-align: middle; }
-.tier-meta { color: var(--text-mid); font-size: 13px; }
-table.picks { width: 100%; border-collapse: collapse; font-size: 14px; }
-table.picks th { text-align: left; font: 600 11px 'Inter'; color: var(--text-dim); letter-spacing: 0.12em; text-transform: uppercase; padding: 10px 12px; border-bottom: 1px solid var(--border); }
-table.picks td { padding: 12px; border-bottom: 1px dashed var(--border); color: var(--text-mid); }
-table.picks td.sym { color: var(--text-hi); font-weight: 600; font-size: 15px; }
-table.picks td.num { text-align: right; font-variant-numeric: tabular-nums; }
-table.picks td.pos { color: #6ee7b7; }
-table.picks td.neg { color: #fca5a5; }
-table.picks tr.pick-row > td { border-bottom: none; padding-bottom: 6px; }
-table.picks tr.rationale-row > td { padding-top: 0; padding-bottom: 14px; border-bottom: 1px dashed var(--border); color: var(--accent-lake); font-family: 'Crimson Text', serif; font-size: 13px; font-style: italic; }
-table.picks tr.rationale-row td.rat-indent { padding-left: 12px; }
 .teaser { filter: blur(6px); pointer-events: none; user-select: none; }
 
-.disclaimer { margin-top: 64px; padding: 20px 24px; background: rgba(10,101,119,0.1); border-left: 3px solid var(--accent-alpine); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; color: var(--text-mid); font-size: 14px; }
+/* ── Methodology ─────────────────────────────────────────────── */
+.methodology {
+  margin: 80px 0 32px; padding: 32px 36px;
+  border: 1px solid var(--border); border-radius: var(--radius-md);
+  background: rgba(10,101,119,0.06);
+}
+.methodology h3 { font-family: 'Crimson Text', serif; font-size: 22px; font-weight: 400; letter-spacing: -0.01em; margin-bottom: 12px; }
+.methodology p { color: var(--text-mid); font-size: 15px; line-height: 1.62; max-width: 74ch; margin-bottom: 10px; }
+.methodology .kicker { font: 600 10px 'Inter'; color: var(--accent-lake); letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 8px; }
+.methodology b { color: var(--text-hi); }
 
-footer { border-top: 1px solid var(--border); padding: 40px 32px; text-align: center; color: var(--text-dim); font-size: 13px; margin-top: 80px; }
+/* Sector diversification — shown in each tier header */
+.sector-strip { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; font: 500 12px 'Inter'; }
+.sector-strip .sector-label { color: var(--text-dim); letter-spacing: 0.14em; text-transform: uppercase; font: 600 10px 'Inter'; }
+.sector-pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: rgba(95,170,197,0.07); border: 1px solid var(--border); color: var(--text-mid); }
+.sector-pill .sp-count { color: var(--text-hi); font-variant-numeric: tabular-nums; font-weight: 600; }
+.sector-pill.sp-heavy { background: rgba(245,213,143,0.10); border-color: rgba(245,213,143,0.35); color: #f5d58f; }
+.sector-pill.sp-heavy .sp-count { color: #f5d58f; }
+.sector-warn {
+  margin-top: 14px; padding: 12px 16px; border-radius: var(--radius-sm);
+  background: rgba(245,213,143,0.08); border-left: 3px solid #f5d58f;
+  color: var(--text-mid); font: 500 13px 'Inter'; line-height: 1.5;
+}
+.sector-warn b { color: #f5d58f; font-weight: 600; }
+
+/* Portfolio-level diversification banner (sits above the three tier sections) */
+.diversification {
+  margin: 0 0 40px; padding: 24px 28px; border-radius: var(--radius-md);
+  border: 1px solid var(--border); background: var(--bg-surface);
+  display: grid; grid-template-columns: 1fr auto; gap: 20px; align-items: center;
+}
+.diversification .div-title { font-family: 'Crimson Text', serif; font-size: 20px; line-height: 1.25; color: var(--text-hi); margin-bottom: 6px; }
+.diversification .div-sub { font: 500 13px 'Inter'; color: var(--text-mid); line-height: 1.55; }
+.diversification .div-bar { display: flex; width: 220px; height: 10px; border-radius: 999px; overflow: hidden; background: rgba(155,161,185,0.12); }
+.diversification .div-bar > span { display: block; height: 100%; }
+.diversification .div-legend { display: flex; flex-wrap: wrap; gap: 10px 18px; margin-top: 14px; font: 500 12px 'Inter'; color: var(--text-mid); }
+.diversification .legend-item { display: inline-flex; align-items: center; gap: 6px; }
+.diversification .legend-dot { display: inline-block; width: 8px; height: 8px; border-radius: 2px; }
+.diversification .legend-pct { color: var(--text-hi); font-variant-numeric: tabular-nums; }
+@keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+@media (max-width: 720px) { .diversification { grid-template-columns: 1fr; } .diversification .div-bar { width: 100%; } }
+
+/* ── Asymmetric tier — H7 EWMA-vol scoring, 2.02x backtest lift ── */
+.asym-section {
+  margin: 72px 0 88px;
+  padding: 40px 40px 32px;
+  border: 1px solid rgba(95,170,197,0.35);
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(ellipse 80% 60% at 30% 0%, rgba(10,101,119,0.22), transparent 70%),
+    linear-gradient(180deg, rgba(31,39,34,0.6), rgba(2,40,52,0.35));
+  position: relative;
+}
+.asym-section::before {
+  content: "";
+  position: absolute; inset: 0;
+  background-image: radial-gradient(circle at 80% 20%, rgba(95,170,197,0.08), transparent 50%);
+  border-radius: inherit;
+  pointer-events: none;
+}
+.asym-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; flex-wrap: wrap; margin-bottom: 32px; }
+.asym-head > div:first-child { flex: 1; min-width: 0; }
+.asym-tier { font-family: 'Crimson Text', serif; font-size: 42px; font-weight: 400; letter-spacing: -0.02em; color: var(--text-hi); }
+.asym-tier em { color: var(--accent-lake); font-style: italic; }
+.asym-blurb { color: var(--text-mid); font-size: 15.5px; line-height: 1.55; max-width: 72ch; margin-top: 14px; }
+.asym-blurb b { color: var(--text-hi); }
+.asym-stats { display: flex; gap: 24px; padding: 18px 22px; border: 1px solid var(--border); border-radius: var(--radius-md); background: rgba(11,16,6,0.35); }
+.asym-stats .s-val { font: 400 26px/1 'Crimson Text', serif; color: var(--text-hi); letter-spacing: -0.02em; }
+.asym-stats .s-label { font: 600 10px 'Inter'; color: var(--text-dim); letter-spacing: 0.2em; text-transform: uppercase; margin-top: 6px; }
+
+.asym-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+@media (max-width: 920px) { .asym-grid { grid-template-columns: 1fr; } }
+
+.asym-card {
+  padding: 24px 26px 22px;
+  border: 1px solid var(--border); border-radius: var(--radius-md);
+  background: var(--bg-card);
+  transition: border-color .2s, transform .2s;
+}
+.asym-card:hover { border-color: var(--accent-lake); transform: translateY(-1px); }
+.asym-card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+.asym-card-ticker { display: flex; align-items: baseline; gap: 10px; }
+.asym-card-sym { font: 700 22px 'Inter'; color: var(--text-hi); letter-spacing: -0.02em; }
+.asym-card-name { font: 500 13px 'Inter'; color: var(--text-mid); max-width: 28ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.asym-card-rank { font: 600 11px 'Inter'; color: var(--accent-lake); letter-spacing: 0.18em; text-transform: uppercase; }
+
+.asym-band { padding: 14px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.asym-band .bcol { text-align: left; }
+.asym-band .bcol.hi { text-align: right; }
+.asym-band .bcol.mid { text-align: center; }
+.asym-band .lbl { font: 600 9px 'Inter'; color: var(--text-dim); letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 6px; }
+.asym-band .val { font: 400 22px/1 'Crimson Text', serif; letter-spacing: -0.02em; }
+.asym-band .val.up { color: #6ee7b7; }
+.asym-band .val.down { color: #fca5a5; }
+.asym-band .val.mid { color: var(--text-hi); }
+.asym-band .sub { font: 500 11px 'Inter'; color: var(--text-mid); margin-top: 4px; }
+
+.asym-thesis { padding: 14px 0 6px; font-family: 'Crimson Text', serif; font-size: 15px; line-height: 1.5; color: var(--text-hi); max-width: 56ch; }
+.asym-thesis-eyebrow { font: 600 9px 'Inter'; color: var(--accent-lake); letter-spacing: 0.18em; text-transform: uppercase; display: inline-block; margin-bottom: 8px; }
+
+.asym-risk {
+  margin-top: 12px; padding: 8px 12px; border-radius: 6px;
+  font: 500 11px 'Inter'; display: inline-flex; align-items: center; gap: 6px;
+}
+.asym-risk.binary  { background: rgba(252,165,165,0.14); color: #fca5a5; }
+.asym-risk.severe  { background: rgba(252,165,165,0.10); color: #fca5a5; }
+.asym-risk.meaningful { background: rgba(245,213,143,0.12); color: #f5d58f; }
+.asym-risk.limited { background: rgba(110,231,183,0.10); color: #6ee7b7; }
+
+.asym-foot { margin-top: 14px; display: flex; justify-content: space-between; align-items: center; font: 500 12px 'Inter'; color: var(--text-dim); }
+.asym-foot a { color: var(--accent-lake); }
+
+footer { border-top: 1px solid var(--border); padding: 48px 32px; text-align: center; color: var(--text-dim); font-size: 13px; margin-top: 80px; }
 footer a { color: var(--text-mid); }
 
-@media (max-width: 900px) {
-  table.picks th.col-sharpe, table.picks td.col-sharpe,
-  table.picks th.col-gross,  table.picks td.col-gross { display: none; }
+.loading { padding: 64px 0; text-align: center; color: var(--text-dim); font-size: 14px; }
+
+/* ── Allocation widget ── */
+.alloc-widget {
+  margin: 40px 0 24px; padding: 26px 28px;
+  border: 1px solid var(--border); border-radius: var(--radius-md);
+  background: linear-gradient(180deg, var(--bg-surface), rgba(2,40,52,0.12));
+  display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: center;
 }
-@media (max-width: 700px) {
-  table.picks th.col-current, table.picks td.col-current { display: none; }
+.alloc-widget .aw-title { font: 600 11px 'Inter'; color: var(--accent-lake); letter-spacing: 0.24em; text-transform: uppercase; margin-bottom: 10px; }
+.alloc-widget .aw-sub { font: 500 14px 'Inter'; color: var(--text-mid); max-width: 60ch; line-height: 1.5; }
+.alloc-controls { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+.alloc-control { display: flex; flex-direction: column; gap: 6px; }
+.alloc-control label { font: 600 10px 'Inter'; color: var(--text-dim); letter-spacing: 0.18em; text-transform: uppercase; }
+.alloc-control input, .alloc-control select {
+  padding: 10px 14px; background: rgba(11,16,6,0.5);
+  border: 1px solid var(--border-strong); border-radius: 10px;
+  font: 500 15px 'Inter'; color: var(--text-hi); min-width: 140px;
 }
+.alloc-control input:focus, .alloc-control select:focus { outline: none; border-color: var(--accent-lake); }
+.alloc-bar {
+  display: flex; width: 100%; height: 14px; border-radius: 999px;
+  overflow: hidden; background: rgba(155,161,185,0.10);
+  margin-top: 16px;
+}
+.alloc-bar > span { display: block; height: 100%; transition: width 0.3s; }
+.alloc-legend { display: flex; flex-wrap: wrap; gap: 14px 22px; margin-top: 12px; font: 500 13px 'Inter'; color: var(--text-mid); }
+.alloc-legend .al-item { display: inline-flex; align-items: center; gap: 8px; }
+.alloc-legend .al-dot { width: 10px; height: 10px; border-radius: 3px; }
+.alloc-legend .al-amt { color: var(--text-hi); font-variant-numeric: tabular-nums; font-weight: 600; }
+
+.pc-alloc, .asym-alloc {
+  margin-top: 10px; padding: 8px 12px; border-radius: 8px;
+  background: rgba(95,170,197,0.08); color: var(--accent-lake);
+  font: 600 13px 'Inter'; font-variant-numeric: tabular-nums;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.pc-alloc::before, .asym-alloc::before {
+  content: "◆"; font-size: 10px; opacity: 0.7;
+}
+@media (max-width: 760px) { .alloc-widget { grid-template-columns: 1fr; } }
 </style>
 <script async
   data-clerk-publishable-key="pk_test_Zmx1ZW50LW1vbGUtNzEuY2xlcmsuYWNjb3VudHMuZGV2JA"
   src="https://fluent-mole-71.clerk.accounts.dev/npm/@clerk/clerk-js@5/dist/clerk.browser.js"
   crossorigin="anonymous"
 ></script>
+<script defer src="/shared/nav.js"></script>
 </head>
 <body>
 
 <nav>
-    <div class="container nav-row">
-        <a href="/" class="logo"><span class="logo-mark"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#EDECE6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 18 9 12 13 16 21 4"></polyline></svg></span><span>s-tool</span></a>
-        <div class="nav-links">
-            <a href="/">Home</a>
-            <a href="/app">App</a>
-            <a href="/how">How it works</a>
-            <a href="/#pricing">Pricing</a>
-        </div>
+  <div class="container nav-row">
+    <a href="/" class="logo"><span class="logo-mark"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#EDECE6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 18 9 12 13 16 21 4"></polyline></svg></span><span>s-tool</span></a>
+    <div class="nav-center">
+      <a href="/app">App</a>
+      <a href="/picks" class="active">Picks</a>
+      <a href="/how">How</a>
+      <a href="/pricing">Pricing</a>
+      <a href="/faq">FAQ</a>
     </div>
+    <div class="nav-end" id="navEnd">
+      <button class="signin-btn" onclick="window.Clerk?.openSignIn?.({afterSignInUrl:'/picks'})">Sign in</button>
+    </div>
+  </div>
 </nav>
 
 <header class="hero">
-    <div class="container">
-        <div class="eyebrow">Strategist tier &middot; Portfolio picks</div>
-        <h1 class="title serif">Risk-tiered picks from a <em>full-universe</em> scan.</h1>
-        <p class="subtitle">Every night we run the engine on all 2,609 Russell 3000 tickers, rank by forward Sharpe proxy (expected return &divide; projected volatility), and bucket into three risk tiers. These are ranked outputs of an honest projection engine &mdash; not tips, not calls, not alpha claims. You judge the model's MAPE per ticker yourself.</p>
-        <div class="scan-meta" id="scanMeta">Loading&hellip;</div>
+  <div class="container">
+    <div class="eyebrow">Strategist &middot; Portfolio intelligence</div>
+    <h1 class="title">A <em>ranked portfolio</em> of the names your projection engine finds — not the names everyone already owns.</h1>
+    <p class="subtitle">Every night we rank every ticker in the Russell 3000, bucket by projected volatility, filter out mega-caps and index constituents, attach point-in-time SEC EDGAR fundamentals, and publish the top picks here. Then we track every pick's realized return so you can see whether the model actually earns its $29.</p>
+    <div class="scan-meta" id="scanMeta">
+      <span class="meta-item"><span class="dot"></span><span>loading…</span></span>
     </div>
+  </div>
 </header>
 
-<main class="container" id="content"></main>
+<main class="container" id="content">
+  <div class="loading">Fetching the latest scan&hellip;</div>
+</main>
 
 <footer>
-    <div>&copy; 2026 s-tool.io &nbsp;&middot;&nbsp; <a href="/">Home</a> &nbsp;&middot;&nbsp; <a href="/app">App</a> &nbsp;&middot;&nbsp; Not investment advice.</div>
+  <div>&copy; 2026 s-tool.io &nbsp;&middot;&nbsp; <a href="/">Home</a> &nbsp;&middot;&nbsp; <a href="/app">App</a> &nbsp;&middot;&nbsp; <a href="/how">How it works</a> &nbsp;&middot;&nbsp; Not investment advice.</div>
 </footer>
 
 <script>
 const TIER_COPY = {
-    conservative: { label: 'Conservative', blurb: 'Lower projected volatility, positive expected return, quality screened.' },
-    moderate:     { label: 'Moderate',     blurb: 'Balanced vol and expected return; middle-tercile of projected volatility.' },
-    aggressive:   { label: 'Aggressive',   blurb: 'Higher projected volatility with the largest expected returns.' },
+  conservative: { label: 'Conservative', blurb: 'Low-volatility names with positive expected return and quality fundamentals. Built for capital preservation.' },
+  moderate:     { label: 'Moderate',     blurb: 'Mid-volatility tercile. Balanced risk with positive expected return. Core allocation.' },
+  aggressive:   { label: 'Aggressive',   blurb: 'Highest projected volatility with the largest expected moves either direction. Tactical sleeve.' },
 };
 
-function fmtPct(v) {
-    if (v === null || v === undefined) return '&mdash;';
-    const n = v * 100;
-    return `${n >= 0 ? '+' : ''}${n.toFixed(1)}%`;
-}
-function fmtSharpe(v) {
-    return (v === null || v === undefined) ? '—' : v.toFixed(2);
-}
+const SECTOR_HINT = {
+  PLTR: 'Software · Analytics', COIN: 'Financials · Crypto', SOFI: 'Financials · Fintech',
+  NFLX: 'Media · Streaming', AVGO: 'Semis · Infrastructure', MU: 'Semis · Memory',
+  AMD: 'Semis · Compute', INTC: 'Semis · Compute', NVDA: 'Semis · AI',
+  GS: 'Financials · Banking', JPM: 'Financials · Banking', BAC: 'Financials · Banking',
+  CVX: 'Energy · Integrated', XOM: 'Energy · Integrated',
+  AAPL: 'Tech · Consumer', MSFT: 'Tech · Enterprise', GOOGL: 'Tech · Platform',
+  META: 'Tech · Platform', AMZN: 'Tech · Platform',
+  TSLA: 'Auto · EV', AMC: 'Consumer · Entertainment', GME: 'Consumer · Retail',
+  DIS: 'Media · Entertainment', NKE: 'Consumer · Apparel',
+};
+
+const fmtPct = (v, sign = true) => v == null ? '—' : `${sign && v >= 0 ? '+' : ''}${(v*100).toFixed(1)}%`;
+const fmtMoney = (v) => v == null ? '—' : `$${Number(v).toFixed(2)}`;
+const fmtSharpe = (v) => v == null ? '—' : Number(v).toFixed(2);
 
 async function authHeaders() {
-    try { const t = await window.Clerk?.session?.getToken?.(); return t ? { Authorization: `Bearer ${t}` } : {}; } catch { return {}; }
+  try { const t = await window.Clerk?.session?.getToken?.(); return t ? { Authorization: `Bearer ${t}` } : {}; } catch { return {}; }
 }
 
 async function startCheckout(tier) {
-    tier = tier || 'strategist';
-    if (!window.Clerk?.session) return window.Clerk?.openSignIn({ afterSignInUrl: '/picks' });
-    try {
-        const res = await fetch(`/api/billing/checkout?tier=${encodeURIComponent(tier)}`, { method: 'POST', headers: await authHeaders() });
-        if (!res.ok) throw new Error((await res.json().catch(()=>({}))).detail || `HTTP ${res.status}`);
-        const { checkout_url } = await res.json();
-        location.href = checkout_url;
-    } catch (e) { alert(`Checkout failed: ${e.message}`); }
+  tier = tier || 'strategist';
+  if (!window.Clerk?.session) return window.Clerk?.openSignIn({ afterSignInUrl: '/picks' });
+  try {
+    const res = await fetch(`/api/billing/checkout?tier=${encodeURIComponent(tier)}`, { method: 'POST', headers: await authHeaders() });
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || `HTTP ${res.status}`);
+    const { checkout_url } = await res.json();
+    location.href = checkout_url;
+  } catch (e) { alert(`Checkout failed: ${e.message}`); }
+}
+
+// Nav pill + dropdown + dark-themed Clerk modal are handled by /shared/nav.js.
+// We still need a local refreshNavPill() reference because the load() loop
+// below calls it whenever picks data refreshes. Delegate to the shared impl.
+async function refreshNavPill() { return window.STNav?.refreshPill?.(); }
+
+function renderTrackRecord(summary) {
+  const cards = ['conservative','moderate','aggressive'].map(t => {
+    const s = (summary && summary[t]) || { n: 0 };
+    if (!s.n) {
+      return `<div class="tr-card">
+          <div class="tr-tier">${TIER_COPY[t].label}</div>
+          <div class="tr-waiting">Track record starts once picks mature (7d+). Cards refresh as they land.</div>
+      </div>`;
+    }
+    const cls = s.median_return >= 0 ? 'pos' : 'neg';
+    const hit = `${(s.hit_rate*100).toFixed(0)}%`;
+    return `<div class="tr-card">
+        <div class="tr-tier">${TIER_COPY[t].label}</div>
+        <div class="tr-big ${cls}">${fmtPct(s.median_return)}</div>
+        <div class="tr-bigsub">median realized &middot; <span class="hit-pill">${hit} hit</span> &middot; n=${s.n}</div>
+    </div>`;
+  }).join('');
+  return `<section class="trackrecord">
+      <div class="section-eyebrow">Live track record</div>
+      <h2 class="section-title">How the picks have actually done. <span class="muted">Realized returns on matured names.</span></h2>
+      <div class="tr-grid">${cards}</div>
+  </section>`;
+}
+
+// Per-pick footer line. Rotates between useful unique facts rather than
+// repeating "Source: SEC EDGAR" on every card. Order of preference:
+//   1. 80% projection band ($P10 → $P90) — most scannable at-a-glance
+//   2. SEC filing period-end + form type — shows fundamentals freshness
+//   3. Market cap, if we got it from FMP
+//   4. Absolute fallback (should never hit in normal data)
+function footerText(p) {
+  const fmtMoney = (v) => v == null ? '—' : (v >= 100 ? `$${Math.round(v)}` : `$${Number(v).toFixed(2)}`);
+  // Prefer the 80% band as percent moves from current price — more
+  // scannable than raw $ and more honest than ±% of P50.
+  if (p.p10 != null && p.p90 != null && p.current_price) {
+    const lo = (p.p10 - p.current_price) / p.current_price;
+    const hi = (p.p90 - p.current_price) / p.current_price;
+    const fp = (v) => `${v >= 0 ? '+' : ''}${Math.round(v*100)}%`;
+    return `1y 80% band &nbsp;<b style="color:var(--text-hi);font-weight:500;">${fp(lo)} → ${fp(hi)}</b> &nbsp;(${fmtMoney(p.p10)}–${fmtMoney(p.p90)})`;
+  }
+  const sec = p.sec_fundamentals || {};
+  if (sec.as_of) {
+    const form = sec.form || 'filing';
+    return `Fundamentals as of ${sec.as_of} · ${form}`;
+  }
+  const mc = p.fundamentals?.market_cap;
+  if (mc) {
+    const bn = mc / 1e9;
+    return `Market cap ~$${bn >= 10 ? bn.toFixed(0) : bn.toFixed(1)}B`;
+  }
+  return 'Ranked by projection-engine Sharpe proxy';
+}
+
+function sizeTier(mktCap) {
+  if (!mktCap) return null;
+  const bn = mktCap / 1e9;
+  if (bn >= 200) return 'Mega';
+  if (bn >= 10)  return 'Large';
+  if (bn >= 2)   return 'Mid';
+  if (bn >= 0.25) return 'Small';
+  return 'Micro';
+}
+
+function formatMktCap(mktCap) {
+  if (!mktCap) return null;
+  const bn = mktCap / 1e9;
+  if (bn >= 100) return `$${Math.round(bn)}B`;
+  if (bn >= 10)  return `$${bn.toFixed(1)}B`;
+  if (bn >= 1)   return `$${bn.toFixed(2)}B`;
+  if (bn >= 0.01) return `$${Math.round(bn*1000)}M`;
+  return `$${Math.round(mktCap/1e6)}M`;
+}
+
+function renderPickCard(p) {
+  const sec = p.sec_fundamentals || {};
+  const erClass = (p.expected_return ?? 0) >= 0 ? 'pos' : 'neg';
+  const yoy = sec.revenue_yoy_growth;
+  const companyName = p.company_name || (SECTOR_HINT[p.symbol]?.split(' · ')[0]) || '';
+  const sector = p.sector || 'Equity';
+  const industry = p.industry || '';
+  // Prefer top-level market_cap (yfinance cache, high coverage) with
+  // legacy fundamentals.market_cap as fallback.
+  const mktCap = p.market_cap ?? p.fundamentals?.market_cap;
+  const size = sizeTier(mktCap);
+  const capStr = formatMktCap(mktCap);
+  const avgVol = p.avg_volume;
+  const thesis = p.rationale ? `${p.rationale}.` : 'Ranked on projection-engine signal.';
+  const thesisClass = '';
+  const stats = [
+    { l: 'Rev YoY',       v: fmtPct(sec.revenue_yoy_growth), pos: (sec.revenue_yoy_growth ?? 0) >= 0 },
+    { l: 'Gross margin',  v: fmtPct(sec.gross_margin, false) },
+    { l: 'Op margin',     v: fmtPct(sec.operating_margin, false) },
+    { l: 'FCF / sales',   v: fmtPct(sec.fcf_to_revenue, false) },
+    { l: 'Buyback / sales', v: fmtPct(sec.buyback_intensity, false) },
+    { l: 'Net debt Δ',    v: fmtPct(sec.net_debt_change_pct), pos: (sec.net_debt_change_pct ?? 0) < 0 /* deleveraging good */ },
+    { l: 'Sharpe proxy',  v: fmtSharpe(p.sharpe_proxy) },
+    { l: 'Proj. vol',     v: fmtPct(p.risk, false) },
+  ];
+  const statsHtml = stats.map(s => `
+      <div class="pc-stat">
+        <div class="s-label">${s.l}</div>
+        <div class="s-val ${s.v === '—' ? 'dim' : (s.pos === true ? 'pos' : s.pos === false ? 'neg' : '')}">${s.v}</div>
+      </div>`).join('');
+
+  // Meta row: sector · industry · size-tier · market cap.
+  // Market cap is the liquidity proxy — a Strategist buying a micro-cap
+  // needs to know they'll move the price; a mega-cap can absorb size.
+  const metaBits = [];
+  if (sector && sector !== 'Equity') metaBits.push(sector);
+  if (industry && industry !== sector) metaBits.push(industry);
+  let sizeBadge = '';
+  if (size) {
+    const tone = size === 'Micro' ? 'warn' : size === 'Small' ? 'caution' : 'neutral';
+    sizeBadge = `<span class="size-pill ${tone}" title="${size}-cap${capStr ? ' · ' + capStr : ''}">${size}${capStr ? ` &middot; ${capStr}` : ''}</span>`;
+  }
+  const metaHtml = (metaBits.length || sizeBadge)
+    ? `<div class="pc-meta">
+         ${metaBits.map((b, i) => `${i > 0 ? '<span class="dot-sep">·</span>' : ''}<span>${b}</span>`).join('')}
+         ${sizeBadge ? (metaBits.length ? '<span class="dot-sep">·</span>' : '') + sizeBadge : ''}
+       </div>`
+    : '';
+
+  const conf = Math.max(0, Math.min(100, Number(p.confidence ?? 0)));
+  const confClass = conf >= 70 ? 'conf-high' : conf >= 45 ? 'conf-mid' : 'conf-low';
+  const confLabel = p.confidence_label || (conf >= 70 ? 'High conviction' : conf >= 45 ? 'Solid' : 'Speculative');
+  const comp = p.confidence_components || {};
+  const confBreakdown = `
+    <div class="pc-conf-break">
+      <div class="brk-row"><span>Risk-adjusted</span><span>${(comp.risk_adjusted ?? 0).toFixed(0)}/40</span></div>
+      <div class="brk-row"><span>Fundamentals</span><span>${(comp.fundamentals ?? 0).toFixed(0)}/35</span></div>
+      <div class="brk-row"><span>Model tightness</span><span>${(comp.model_tightness ?? 0).toFixed(0)}/25</span></div>
+    </div>`;
+
+  return `<div class="pick-card">
+    <div class="pc-head">
+      <div class="pc-id">
+        <div class="pc-ticker-row">
+          <span class="pc-sym">${p.symbol}</span>
+          ${companyName ? `<span class="pc-name">${companyName}</span>` : ''}
+        </div>
+        ${metaHtml}
+      </div>
+      <div class="pc-conf">
+        <div class="pc-conf-num ${confClass}">${conf}</div>
+        <div class="pc-conf-label">${confLabel}</div>
+        <div class="pc-conf-bar"><span style="width:${conf}%;"></span></div>
+        ${confBreakdown}
+      </div>
+    </div>
+    <div class="pc-hero">
+      <div class="h-item"><div class="h-label">Current</div><div class="h-val">${fmtMoney(p.current_price)}</div></div>
+      <div class="h-item"><div class="h-label">P50 target · 1y</div><div class="h-val">${fmtMoney(p.p50_target)}</div></div>
+      <div class="h-item"><div class="h-label">Expected</div><div class="h-val ${erClass}">${fmtPct(p.expected_return)}</div></div>
+    </div>
+    <div class="pc-thesis">
+      <div class="pc-thesis-eyebrow">Thesis</div>
+      <div class="pc-thesis-body ${thesisClass}">${thesis}</div>
+    </div>
+    <div class="pc-stats">${statsHtml}</div>
+    ${(() => {
+      const allocKey = `${p.symbol}|${p.tier}`;
+      const amt = ALLOC.byPick?.[allocKey];
+      return amt ? `<div class="pc-alloc">Allocate ${fmtUsd(amt)}</div>` : '';
+    })()}
+    <div class="pc-foot">
+      <span>${footerText(p)}</span>
+      <a href="/app?ticker=${encodeURIComponent(p.symbol)}">Open full projection &rarr;</a>
+    </div>
+  </div>`;
+}
+
+// Sector normalization — collapse GICS variants so the pills stay tight.
+const SECTOR_SHORT = {
+  'Financial Services': 'Financials',
+  'Communication Services': 'Communications',
+  'Consumer Cyclical': 'Consumer Cyclical',
+  'Consumer Defensive': 'Consumer Staples',
+  'Basic Materials': 'Materials',
+  'Real Estate': 'Real Estate',
+};
+
+function shortSector(s) {
+  if (!s) return 'Unclassified';
+  return SECTOR_SHORT[s] || s;
+}
+
+function tallySectors(picks) {
+  const counts = new Map();
+  for (const p of picks) {
+    const s = shortSector(p.sector);
+    counts.set(s, (counts.get(s) || 0) + 1);
+  }
+  // Sort descending by count, then alpha for ties.
+  return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+}
+
+function renderSectorStrip(picks, heavyThreshold = 0.40) {
+  const tally = tallySectors(picks);
+  if (!tally.length) return '';
+  const classified = tally.filter(([s]) => s !== 'Unclassified');
+  const classifiedTotal = classified.reduce((a, [, c]) => a + c, 0);
+  // If fewer than a third of this tier's picks are classified, hide the
+  // sector mix entirely — a row of "Unclassified" pills is worse than
+  // nothing. Falls back gracefully as FMP coverage fills nightly.
+  if (classifiedTotal < picks.length * 0.33) return '';
+  const pills = classified.map(([sector, count]) => {
+    const share = count / classifiedTotal;
+    const cls = share >= heavyThreshold ? 'sp-heavy' : '';
+    return `<span class="sector-pill ${cls}"><span>${sector}</span><span class="sp-count">${count}</span></span>`;
+  }).join('');
+  const topShare = classified[0][1] / classifiedTotal;
+  const topSector = classified[0][0];
+  const warn = topShare >= heavyThreshold
+    ? `<div class="sector-warn"><b>Concentration flag:</b> ${Math.round(topShare*100)}% of this tier is in ${topSector}. A taker of all ${classifiedTotal} classified picks would be overweight — trim or substitute if your portfolio is already heavy there.</div>`
+    : '';
+  return `<div class="sector-strip"><span class="sector-label">Sector mix</span>${pills}</div>${warn}`;
+}
+
+function renderPortfolioSignal(allPicks, picksData) {
+  if (!allPicks.length) return '';
+  const total = allPicks.length;
+  // Always-available engine data — no external API dependencies, so these
+  // stats never render in a "data pending" state.
+  const returns = allPicks.map(p => p.expected_return).filter(v => v != null).sort((a, b) => a - b);
+  const median = returns.length ? returns[Math.floor(returns.length / 2)] : 0;
+  const best = allPicks.reduce((b, p) => (p.expected_return || 0) > (b.expected_return || 0) ? p : b, allPicks[0]);
+  const topConf = allPicks.reduce((b, p) => (p.confidence || 0) > (b.confidence || 0) ? p : b, allPicks[0]);
+  const topUpside = allPicks.reduce((b, p) => {
+    const r = p.asymmetric?.p90_ratio || (p.p90 ? p.p90 / p.current_price : 0);
+    const br = b.asymmetric?.p90_ratio || (b.p90 ? b.p90 / b.current_price : 0);
+    return r > br ? p : b;
+  }, allPicks[0]);
+  const topUpsideRatio = topUpside?.asymmetric?.p90_ratio
+    || (topUpside?.p90 && topUpside?.current_price ? topUpside.p90 / topUpside.current_price : null);
+
+  // Tier distribution chart — visual cue for the portfolio's risk posture.
+  const byTier = { conservative: 0, moderate: 0, aggressive: 0 };
+  for (const p of allPicks) byTier[p.tier] = (byTier[p.tier] || 0) + 1;
+  const palette = { conservative: '#6ee7b7', moderate: '#5FAAC5', aggressive: '#f5d58f' };
+  const segments = ['conservative','moderate','aggressive'].map(t => {
+    const w = total ? (byTier[t] / total) * 100 : 0;
+    if (!w) return '';
+    return `<span style="width:${w}%;background:${palette[t]};" title="${TIER_COPY[t].label}: ${byTier[t]} pick${byTier[t]>1?'s':''}"></span>`;
+  }).join('');
+  const legend = ['conservative','moderate','aggressive'].map(t => {
+    if (!byTier[t]) return '';
+    const pct = Math.round((byTier[t] / total) * 100);
+    return `<span class="legend-item"><span class="legend-dot" style="background:${palette[t]};"></span>${TIER_COPY[t].label} <span class="legend-pct">${byTier[t]} &middot; ${pct}%</span></span>`;
+  }).filter(Boolean).join('');
+
+  const fmtPctS = (v) => v == null ? '—' : `${v >= 0 ? '+' : ''}${(v*100).toFixed(1)}%`;
+  return `<div class="diversification">
+    <div>
+      <div class="div-title">Today's book: <em style="color:var(--accent-lake);font-style:normal;">${total}</em> picks &middot; median expected <em style="color:#6ee7b7;font-style:normal;">${fmtPctS(median)}</em></div>
+      <div class="div-sub">Top conviction: <b style="color:var(--text-hi);">${topConf?.symbol || '—'}</b> at ${topConf?.confidence || 0}/100. Biggest projected upside: <b style="color:var(--text-hi);">${topUpside?.symbol || '—'}</b> &middot; ${topUpsideRatio ? topUpsideRatio.toFixed(1) + 'x P90' : '—'}. Best expected return: <b style="color:var(--text-hi);">${best?.symbol || '—'}</b> &middot; ${fmtPctS(best?.expected_return)}.</div>
+      <div class="div-legend">${legend}</div>
+    </div>
+    <div class="div-bar">${segments}</div>
+  </div>`;
+}
+
+function renderTierSection(tier, picks) {
+  if (!picks.length) return '';
+  const cards = picks.map(renderPickCard).join('');
+  const sectorStrip = renderSectorStrip(picks);
+  return `<section class="tier-section">
+    <div class="tier-head">
+      <div style="min-width:0;flex:1;">
+        <div class="tier-name">${TIER_COPY[tier].label} <span class="tier-count">${picks.length} ${picks.length === 1 ? 'pick' : 'picks'}</span></div>
+        ${sectorStrip}
+      </div>
+      <div class="tier-blurb">${TIER_COPY[tier].blurb}</div>
+    </div>
+    <div class="pick-grid">${cards}</div>
+  </section>`;
+}
+
+function renderMethodology(data) {
+  return `<section class="methodology">
+    <div class="kicker">Methodology</div>
+    <h3>How the picks work</h3>
+    <p><b>Universe.</b> Nightly scan of the broad US equity universe. Mega-caps and index constituents are filtered &mdash; this list surfaces names you may not already own.</p>
+    <p><b>Ranking.</b> Each ticker runs through our proprietary stochastic projection model, then through a scoring function calibrated to the tier. Conservative/Moderate/Aggressive bucket by projected volatility with a positive-return + quality filter. Asymmetric picks are ranked separately under our <a href="/how">volatility-regime-adaptive model</a> to target the upside tail.</p>
+    <p><b>Thesis.</b> Each pick carries a point-in-time context line derived from the latest regulatory filings &mdash; growth, margin, free-cash-flow, and balance-sheet direction. When nothing stands out in the filings, the thesis reflects the price dynamics instead, honestly.</p>
+    <p><b>Track record.</b> Every pick is logged to an immutable ledger on pick date. Realized return is computed against the entry price every night. Only picks that have had at least 7 days to age count toward the stats above &mdash; we'd rather show a small honest sample than an impressive one you can't trust.</p>
+  </section>`;
 }
 
 function renderGate(data) {
-    const teaserRows = (data.teaser || []).reduce((acc, t) => {
-        (acc[t.tier] = acc[t.tier] || []).push(t.symbol);
-        return acc;
-    }, {});
-    const teaserHtml = Object.entries(teaserRows).map(([tier, syms]) => `
-        <div style="margin-bottom:14px;"><span class="tier-name" style="font-size:18px;">${TIER_COPY[tier]?.label || tier}</span>
-            <div class="teaser" style="margin-top:8px;color:var(--text-hi);font-family:'Crimson Text',serif;font-size:20px;">${syms.join(' · ')}</div>
-        </div>`).join('');
-    return `
-        <div class="gate">
-            <div class="eyebrow" style="margin-bottom:14px;">Unlock with Strategist</div>
-            <h2>See the full ranked list.</h2>
-            <p>Strategist ($29/mo) unlocks the full 30-ticker list across all three risk tiers, with expected returns, projected volatility, and Sharpe proxy per ticker. Pro tier covers projections &mdash; Strategist adds portfolio-level intelligence on top.</p>
-            <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;">
-                <button class="btn" onclick="startCheckout('strategist')">Upgrade to Strategist &mdash; $29/mo</button>
-                <a href="/#pricing" class="btn ghost">Compare tiers</a>
-            </div>
-            <div style="margin-top:36px;padding-top:28px;border-top:1px solid var(--border);">
-                <div style="font:600 11px 'Inter';color:var(--text-dim);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:14px;">Preview &mdash; today's top 3 per bucket</div>
-                ${teaserHtml}
-            </div>
-        </div>`;
+  const teaserRows = (data.teaser || []).reduce((acc, t) => {
+    (acc[t.tier] = acc[t.tier] || []).push(t.symbol); return acc;
+  }, {});
+  const teaserHtml = Object.entries(teaserRows).map(([tier, syms]) => `
+    <div style="margin-bottom:18px;">
+      <div style="font:600 11px 'Inter';color:var(--accent-lake);letter-spacing:0.2em;text-transform:uppercase;margin-bottom:10px;">${TIER_COPY[tier]?.label || tier}</div>
+      <div class="teaser" style="color:var(--text-hi);font-family:'Crimson Text',serif;font-size:22px;">${syms.join(' · ')}</div>
+    </div>`).join('');
+  const trackSummary = data.summary ? renderTrackRecord(data.summary) : '';
+  return `
+    ${trackSummary}
+    <div class="gate">
+      <div class="eyebrow" style="margin-bottom:14px;">Strategist &middot; $29/mo</div>
+      <h2>The full list, the full <em>thesis</em>, and the track record.</h2>
+      <p>Strategist unlocks the ranked list across all three risk tiers, with every pick's SEC-filed fundamentals, 1-year P50 target, expected return, and the daily realized-return ledger that makes the engine falsifiable.</p>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;">
+        <button class="btn" onclick="startCheckout('strategist')">Upgrade to Strategist &mdash; $29/mo</button>
+        <a href="/pricing" class="btn ghost">Compare tiers</a>
+      </div>
+      <div style="margin-top:40px;padding-top:28px;border-top:1px solid var(--border);">
+        <div style="font:600 11px 'Inter';color:var(--text-dim);letter-spacing:0.14em;text-transform:uppercase;margin-bottom:16px;">Today's picks — top 3 per tier</div>
+        ${teaserHtml}
+      </div>
+    </div>`;
 }
 
-function renderPicks(data) {
-    const grouped = {};
-    for (const p of data.picks) {
-        (grouped[p.tier] = grouped[p.tier] || []).push(p);
-    }
-    const sections = ['conservative', 'moderate', 'aggressive'].map(tier => {
-        const rows = (grouped[tier] || []).slice(0, 10);
-        if (!rows.length) return '';
-        const body = rows.map(p => {
-            const sec = p.sec_fundamentals || {};
-            const yoy = sec.revenue_yoy_growth;
-            const gm  = sec.gross_margin;
-            const pickRow = `
-                <tr class="pick-row">
-                    <td class="sym">${p.symbol}</td>
-                    <td class="num ${(p.expected_return ?? 0) >= 0 ? 'pos' : 'neg'}">${fmtPct(p.expected_return)}</td>
-                    <td class="num col-sharpe">${fmtSharpe(p.sharpe_proxy)}</td>
-                    <td class="num ${(yoy ?? 0) >= 0 ? 'pos' : 'neg'}">${fmtPct(yoy)}</td>
-                    <td class="num col-gross">${fmtPct(gm)}</td>
-                    <td class="num col-current" style="color:var(--text-mid);">$${(p.current_price ?? 0).toFixed(2)}</td>
-                    <td class="num" style="color:var(--text-hi);">$${(p.p50_target ?? 0).toFixed(2)}</td>
-                </tr>`;
-            const ratRow = p.rationale
-                ? `<tr class="rationale-row"><td colspan="7" class="rat-indent">${p.rationale}</td></tr>`
-                : `<tr class="rationale-row"><td colspan="7" class="rat-indent" style="color:var(--text-dim);font-style:normal;">&nbsp;</td></tr>`;
-            return pickRow + ratRow;
-        }).join('');
-        return `
-            <section class="tier-section">
-                <div class="tier-header">
-                    <div>
-                        <div class="tier-name">${TIER_COPY[tier].label}<span class="pill">${rows.length} picks</span></div>
-                        <div class="tier-meta" style="margin-top:4px;">${TIER_COPY[tier].blurb}</div>
-                    </div>
-                </div>
-                <table class="picks">
-                    <thead><tr>
-                        <th>Symbol</th>
-                        <th style="text-align:right;">Exp. return</th>
-                        <th class="col-sharpe" style="text-align:right;">Sharpe</th>
-                        <th style="text-align:right;">Rev YoY</th>
-                        <th class="col-gross" style="text-align:right;">Gross margin</th>
-                        <th class="col-current" style="text-align:right;">Current</th>
-                        <th style="text-align:right;">P50 target</th>
-                    </tr></thead>
-                    <tbody>${body}</tbody>
-                </table>
-            </section>`;
-    }).join('');
-    const disclaimer = `<div class="disclaimer"><b>Not investment advice.</b> Picks are ranked outputs of a Monte Carlo + mean-reversion projection engine running on cached price + fundamentals. The rationale line surfaces the most notable SEC EDGAR fundamentals per ticker; an empty line means no metric stood out. Every projection shows its own MAPE &mdash; use that to judge the bands. Past projection accuracy is not indicative of future performance.</div>`;
-    return sections + disclaimer;
+function riskBand(p10Ratio) {
+  if (p10Ratio == null) return { cls: 'meaningful', label: 'Downside uncertain' };
+  if (p10Ratio >= 0.70) return { cls: 'limited',     label: `Limited downside — P10 at ${Math.round((1-p10Ratio)*100)}% loss` };
+  if (p10Ratio >= 0.40) return { cls: 'meaningful',  label: `Meaningful downside — P10 at ${Math.round((1-p10Ratio)*100)}% loss` };
+  if (p10Ratio >= 0.20) return { cls: 'severe',      label: `Severe downside — P10 at ${Math.round((1-p10Ratio)*100)}% loss` };
+  return { cls: 'binary', label: `Binary outcome — P10 at ${Math.round((1-p10Ratio)*100)}% loss` };
+}
+
+function renderAsymCard(p, rank) {
+  const asym = p.asymmetric || {};
+  const p90 = asym.p90_ratio; const p10 = asym.p10_ratio; const p50 = asym.p50_ratio;
+  const fmtMult = (v) => v == null ? '—' : `${v.toFixed(2)}x`;
+  const fmtMove = (v) => v == null ? '—' : `${v >= 1 ? '+' : ''}${Math.round((v-1)*100)}%`;
+  const risk = riskBand(p10);
+  const sector = p.sector || 'Equity';
+  const mcap = p.market_cap ?? p.fundamentals?.market_cap;
+  const size = sizeTier(mcap);
+  const sizeStr = size ? `${size}-cap${formatMktCap(mcap) ? ` · ${formatMktCap(mcap)}` : ''}` : '';
+  const thesis = p.rationale ? `${p.rationale}.` : 'Price dynamics carry the case — no standout SEC metric this quarter.';
+
+  return `<div class="asym-card">
+    <div class="asym-card-head">
+      <div class="asym-card-ticker">
+        <span class="asym-card-sym">${p.symbol}</span>
+        <span class="asym-card-name">${p.company_name || ''}</span>
+      </div>
+      <span class="asym-card-rank">#${rank} &middot; Upside score ${fmtMult(p90)}</span>
+    </div>
+    <div class="asym-band">
+      <div class="bcol">
+        <div class="lbl">Downside · P10</div>
+        <div class="val down">${fmtMove(p10)}</div>
+        <div class="sub">${fmtMult(p10)} of current</div>
+      </div>
+      <div class="bcol mid">
+        <div class="lbl">Median · P50</div>
+        <div class="val mid">${fmtMove(p50)}</div>
+        <div class="sub">${fmtMult(p50)} of current</div>
+      </div>
+      <div class="bcol hi">
+        <div class="lbl">Upside · P90</div>
+        <div class="val up">${fmtMove(p90)}</div>
+        <div class="sub">${fmtMult(p90)} of current</div>
+      </div>
+    </div>
+    <div class="asym-thesis">
+      <div class="asym-thesis-eyebrow">Thesis</div>
+      ${thesis}
+    </div>
+    <div class="asym-risk ${risk.cls}">${risk.label}</div>
+    ${(() => {
+      const amt = ALLOC.byPick?.[`${p.symbol}|asymmetric`];
+      return amt ? `<div class="asym-alloc">Allocate ${fmtUsd(amt)}</div>` : '';
+    })()}
+    <div class="asym-foot">
+      <span>${sector}${sizeStr ? ' · ' + sizeStr : ''}</span>
+      <a href="/app?ticker=${encodeURIComponent(p.symbol)}">Full projection &rarr;</a>
+    </div>
+  </div>`;
+}
+
+function renderAsymmetricTier(picks) {
+  if (!picks || picks.length === 0) return '';
+  const cards = picks.map((p, i) => renderAsymCard(p, i + 1)).join('');
+  // Summary stats across the asymmetric ten
+  const avgP90 = picks.reduce((s, p) => s + (p.asymmetric?.p90_ratio || 0), 0) / picks.length;
+  const avgP10 = picks.reduce((s, p) => s + (p.asymmetric?.p10_ratio || 0), 0) / picks.length;
+  return `<section class="asym-section">
+    <div class="asym-head">
+      <div>
+        <div style="font:600 11px 'Inter';color:var(--accent-lake);letter-spacing:0.24em;text-transform:uppercase;margin-bottom:14px;">Asymmetric Upside</div>
+        <h2 class="asym-tier">Names the engine thinks could <em>multiply</em>.</h2>
+        <p class="asym-blurb">Ranked by our <b>self-training asymmetric-upside model</b> &mdash; a scoring function that <b>retrains every night</b> on the most recent realized-return data, picking whichever signal combination has been identifying 100%+ movers out-of-sample in the current regime. Filtered for real liquidity so every name is actually investable. Every pick carries its own <b>honest P10 downside</b>. High-variance sleeve; size accordingly.</p>
+      </div>
+      <div class="asym-stats">
+        <div><div class="s-val">${avgP90.toFixed(1)}x</div><div class="s-label">Avg P90</div></div>
+        <div><div class="s-val">${avgP10.toFixed(2)}x</div><div class="s-label">Avg P10</div></div>
+        <div><div class="s-val">${picks.length}</div><div class="s-label">Names</div></div>
+      </div>
+    </div>
+    <div class="asym-grid">${cards}</div>
+  </section>`;
+}
+
+// ── Allocation engine ──
+// Risk profile = tier-level weights. Within each tier, weight by
+// (confidence × 1/vol) so conviction-rich, low-vol picks get more capital.
+const RISK_PROFILES = {
+  defensive:  { conservative: 0.60, moderate: 0.30, aggressive: 0.10, asymmetric: 0.00, label: 'Defensive',  sub: 'Capital preservation — minimal asymmetric sleeve' },
+  balanced:   { conservative: 0.40, moderate: 0.35, aggressive: 0.20, asymmetric: 0.05, label: 'Balanced',   sub: 'Core 75/25; small speculative sleeve' },
+  aggressive: { conservative: 0.20, moderate: 0.30, aggressive: 0.30, asymmetric: 0.20, label: 'Aggressive', sub: 'Tilt to vol and tail; 20% asymmetric' },
+  wild:       { conservative: 0.10, moderate: 0.20, aggressive: 0.30, asymmetric: 0.40, label: 'Wild',       sub: '40% asymmetric sleeve — not for the faint of heart' },
+};
+
+// In-memory allocation state; read from localStorage on load.
+let ALLOC = {
+  totalUsd: Number(localStorage.getItem('stool_alloc_total') || 10000),
+  profile:  localStorage.getItem('stool_alloc_profile') || 'balanced',
+  byPick:   {},      // sym → dollars
+  byTier:   {},      // tier → dollars
+};
+
+function tierWeight(pick) {
+  // Intra-tier weight: confidence × (1 / vol) with a floor so zero-conf
+  // picks still get a non-zero share.
+  const c = Math.max(5, pick.confidence ?? 30);
+  const v = Math.max(0.05, pick.risk ?? 0.3);
+  return c / v;
+}
+
+function computeAllocations(picksData) {
+  const profile = RISK_PROFILES[ALLOC.profile] || RISK_PROFILES.balanced;
+  const dollars = Math.max(0, Number(ALLOC.totalUsd) || 0);
+  const byPick = {};
+  const byTier = { conservative: 0, moderate: 0, aggressive: 0, asymmetric: 0 };
+
+  const grouped = { conservative: [], moderate: [], aggressive: [] };
+  for (const p of picksData.picks) if (grouped[p.tier]) grouped[p.tier].push(p);
+  for (const t of ['conservative','moderate','aggressive']) grouped[t] = grouped[t].slice(0, 10);
+  const asymPicks = (picksData.asymmetric_picks || []).slice(0, 10);
+
+  const tiers = [
+    { name: 'conservative', picks: grouped.conservative },
+    { name: 'moderate',     picks: grouped.moderate },
+    { name: 'aggressive',   picks: grouped.aggressive },
+    { name: 'asymmetric',   picks: asymPicks },
+  ];
+  for (const t of tiers) {
+    const share = profile[t.name] || 0;
+    const tierBudget = dollars * share;
+    byTier[t.name] = tierBudget;
+    if (tierBudget <= 0 || !t.picks.length) continue;
+    const weights = t.picks.map(tierWeight);
+    const wsum = weights.reduce((a, b) => a + b, 0) || 1;
+    t.picks.forEach((p, i) => {
+      // Key asymmetric by `symbol + _asym` to avoid collision with same-symbol
+      // standard pick. Display reads `${sym}|${tier}`.
+      const key = `${p.symbol}|${t.name}`;
+      byPick[key] = (byPick[key] || 0) + tierBudget * (weights[i] / wsum);
+    });
+  }
+  ALLOC.byPick = byPick;
+  ALLOC.byTier = byTier;
+}
+
+function fmtUsd(v) {
+  if (v == null || !isFinite(v)) return '—';
+  if (v >= 1000) return `$${Math.round(v).toLocaleString()}`;
+  return `$${v.toFixed(0)}`;
+}
+
+function renderAllocWidget() {
+  const profile = RISK_PROFILES[ALLOC.profile] || RISK_PROFILES.balanced;
+  const total = ALLOC.totalUsd || 0;
+  const palette = { conservative:'#6ee7b7', moderate:'#5FAAC5', aggressive:'#f5d58f', asymmetric:'#d2ddea' };
+  const segments = ['conservative','moderate','aggressive','asymmetric'].map(t => {
+    const w = profile[t] * 100;
+    if (!w) return '';
+    return `<span style="width:${w}%;background:${palette[t]};"></span>`;
+  }).join('');
+  const legend = ['conservative','moderate','aggressive','asymmetric'].map(t => {
+    const share = profile[t];
+    if (!share) return '';
+    return `<span class="al-item"><span class="al-dot" style="background:${palette[t]};"></span>${t[0].toUpperCase()+t.slice(1)} <span class="al-amt">${fmtUsd(total * share)}</span></span>`;
+  }).filter(Boolean).join('');
+
+  const opts = Object.entries(RISK_PROFILES).map(([key, cfg]) =>
+    `<option value="${key}" ${ALLOC.profile === key ? 'selected' : ''}>${cfg.label}</option>`).join('');
+
+  return `<div class="alloc-widget">
+    <div>
+      <div class="aw-title">Allocation &middot; build your book</div>
+      <div class="aw-sub">Set a dollar size and a risk profile &mdash; the engine computes per-pick weights weighted by confidence and inverse volatility. <b style="color:var(--text-hi);">${profile.label}</b>: ${profile.sub}.</div>
+      <div class="alloc-bar">${segments}</div>
+      <div class="alloc-legend">${legend}</div>
+    </div>
+    <div class="alloc-controls">
+      <div class="alloc-control">
+        <label>Portfolio size</label>
+        <input type="number" id="allocTotal" min="100" step="500" value="${total}" />
+      </div>
+      <div class="alloc-control">
+        <label>Risk profile</label>
+        <select id="allocProfile">${opts}</select>
+      </div>
+    </div>
+  </div>`;
+}
+
+function wireAllocControls(picksData, trackData) {
+  const total = document.getElementById('allocTotal');
+  const profile = document.getElementById('allocProfile');
+  const onChange = () => {
+    ALLOC.totalUsd = Math.max(0, Number(total.value) || 0);
+    ALLOC.profile = profile.value;
+    localStorage.setItem('stool_alloc_total', String(ALLOC.totalUsd));
+    localStorage.setItem('stool_alloc_profile', ALLOC.profile);
+    computeAllocations(picksData);
+    // Re-render in place
+    document.getElementById('content').innerHTML = renderPage(picksData, trackData);
+    wireAllocControls(picksData, trackData);
+  };
+  total?.addEventListener('change', onChange);
+  total?.addEventListener('input', onChange);
+  profile?.addEventListener('change', onChange);
+}
+
+function renderPage(picksData, trackData) {
+  const grouped = {};
+  for (const p of picksData.picks) (grouped[p.tier] = grouped[p.tier] || []).push(p);
+  const tiered = ['conservative','moderate','aggressive']
+    .flatMap(t => (grouped[t] || []).slice(0, 10));
+  computeAllocations(picksData);
+  const tierSections = ['conservative', 'moderate', 'aggressive']
+    .map(t => renderTierSection(t, (grouped[t] || []).slice(0, 10))).join('');
+  return renderAllocWidget()
+       + renderTrackRecord(trackData?.summary)
+       + renderAsymmetricTier(picksData.asymmetric_picks || [])
+       + renderPortfolioSignal(tiered, picksData)
+       + tierSections
+       + renderMethodology(picksData);
 }
 
 async function load() {
-    const res = await fetch('/api/picks', { headers: await authHeaders() });
-    const data = await res.json().catch(() => null);
-    const scanMeta = document.getElementById('scanMeta');
-    const content = document.getElementById('content');
-    if (res.status === 402 && data && data.error === 'strategist_required') {
-        scanMeta.textContent = data.scan_age_hours != null ? `Scan age: ${data.scan_age_hours.toFixed(1)}h` : 'Scan pending overnight refresh';
-        content.innerHTML = renderGate(data);
-        return;
-    }
-    if (res.status === 404) {
-        scanMeta.textContent = '';
-        content.innerHTML = `<div class="gate"><h2>The overnight scan hasn't run yet.</h2><p>Picks refresh after the daily cron at 10:00 UTC (6am ET). Check back then &mdash; or <a href="/app" style="color:var(--accent-lake);">try an individual projection</a> in the meantime.</p></div>`;
-        return;
-    }
-    if (!res.ok || !data) {
-        scanMeta.textContent = '';
-        content.innerHTML = `<div class="gate"><h2>Couldn't load picks.</h2><p>Please refresh in a moment.</p></div>`;
-        return;
-    }
-    scanMeta.textContent = data.scan_age_hours != null ? `Scan refreshed ${data.scan_age_hours.toFixed(1)}h ago · ${data.count} picks across 3 tiers` : `${data.count} picks across 3 tiers`;
-    content.innerHTML = renderPicks(data);
+  const content = document.getElementById('content');
+  const scanMeta = document.getElementById('scanMeta');
+
+  const [picksRes, trackRes] = await Promise.all([
+    fetch('/api/picks', { headers: await authHeaders() }),
+    fetch('/api/track-record?lookback_days=90', { headers: await authHeaders() }),
+  ]);
+  const picksData = await picksRes.json().catch(() => null);
+  const trackData = await trackRes.json().catch(() => null);
+
+  if (picksRes.status === 402 && picksData?.error === 'strategist_required') {
+    scanMeta.innerHTML = `<span class="meta-item"><span class="dot waiting"></span><span>Scan last updated ${picksData.scan_age_hours != null ? picksData.scan_age_hours.toFixed(1) + 'h ago' : 'recently'}</span></span>
+      <span class="meta-item">Upgrade to see the full list</span>`;
+    content.innerHTML = renderGate({ ...picksData, summary: trackData?.summary });
+    return;
+  }
+  if (picksRes.status === 404) {
+    scanMeta.innerHTML = '';
+    content.innerHTML = `<div class="gate"><h2>Overnight scan hasn't run yet.</h2><p>Picks refresh after the daily cron at 10:00 UTC (6am ET). Check back then — or <a href="/app" style="color:var(--accent-lake);">try an individual projection</a> in the meantime.</p></div>`;
+    return;
+  }
+  if (!picksRes.ok || !picksData) {
+    scanMeta.innerHTML = '';
+    content.innerHTML = `<div class="gate"><h2>Couldn't load picks.</h2><p>Refresh in a moment.</p></div>`;
+    return;
+  }
+
+  const scanAge = picksData.scan_age_hours != null ? `${picksData.scan_age_hours.toFixed(1)}h ago` : 'recent';
+  scanMeta.innerHTML = `
+    <span class="meta-item"><span class="dot"></span><span>Last scan ${scanAge}</span></span>
+    <span class="meta-item">${picksData.count} picks across 3 tiers</span>
+    <span class="meta-item">1-year horizon · nightly refresh</span>`;
+
+  content.innerHTML = renderPage(picksData, trackData);
+  wireAllocControls(picksData, trackData);
 }
 
-(function waitForClerk() {
-    if (!window.Clerk?.load) { setTimeout(waitForClerk, 100); return; }
-    window.Clerk.load().then(() => { load(); window.Clerk.addListener(() => load()); });
+// Start the shared nav (handles pill + dark Clerk appearance) and hook the
+// picks-specific `load()` call on Clerk auth changes.
+(function () {
+  const wait = () => {
+    if (!window.STNav?.init) return setTimeout(wait, 50);
+    window.STNav.init({ signInRedirect: '/picks' });
+    const loop = () => {
+      if (!window.Clerk?.load) return setTimeout(loop, 80);
+      window.Clerk.load().then(() => { load(); window.Clerk.addListener(load); });
+    };
+    loop();
+  };
+  wait();
 })();
 </script>
 </body>

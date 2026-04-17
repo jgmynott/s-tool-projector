@@ -113,29 +113,93 @@ def _get_json(url: str, timeout: int = 30) -> dict | None:
 
 def load_cik_map(refresh: bool = False) -> dict[str, str]:
     """Return {ticker: 10-digit-zero-padded CIK}. Cached to disk."""
+    info = load_company_info(refresh=refresh)
+    return {t: v["cik"] for t, v in info.items()}
+
+
+COMPANY_INFO_PATH = CACHE_DIR / "company_info.json"
+
+
+def load_company_info(refresh: bool = False) -> dict[str, dict]:
+    """Return {ticker: {cik, name}} from SEC's company_tickers.json.
+
+    SEC's registrant titles are SCREAMING CASE ("APPLE INC") so we also
+    store a display-friendly title-cased version. This is the fastest +
+    freest source of company names — no API key, cached locally after
+    first fetch, covers every US registrant.
+    """
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
-    if CIK_MAP_PATH.exists() and not refresh:
+    if COMPANY_INFO_PATH.exists() and not refresh:
         try:
-            return json.loads(CIK_MAP_PATH.read_text())
+            return json.loads(COMPANY_INFO_PATH.read_text())
         except json.JSONDecodeError:
             pass
 
-    log.info("Fetching SEC CIK↔ticker map")
+    log.info("Fetching SEC CIK↔ticker↔name map")
     data = _get_json(TICKERS_URL)
     if not data:
         raise RuntimeError("SEC company_tickers.json unreachable")
 
-    # Format: { "0": {"cik_str": 320193, "ticker": "AAPL", "title": "..."}, ... }
-    mapping: dict[str, str] = {}
+    out: dict[str, dict] = {}
     for entry in data.values():
         ticker = str(entry.get("ticker", "")).strip().upper()
         cik_int = entry.get("cik_str")
+        title = str(entry.get("title", "")).strip()
         if ticker and cik_int is not None:
-            mapping[ticker] = f"{int(cik_int):010d}"
+            out[ticker] = {
+                "cik": f"{int(cik_int):010d}",
+                "name": _titlecase_company(title),
+            }
+    COMPANY_INFO_PATH.write_text(json.dumps(out, separators=(",", ":")))
+    # Also refresh cik-only file for anything still reading it.
+    CIK_MAP_PATH.write_text(json.dumps({t: v["cik"] for t, v in out.items()},
+                                        separators=(",", ":")))
+    log.info("Company info map: %d tickers", len(out))
+    return out
 
-    CIK_MAP_PATH.write_text(json.dumps(mapping, separators=(",", ":")))
-    log.info("CIK map: %d tickers", len(mapping))
-    return mapping
+
+# Words that should stay uppercase or have non-standard casing when we
+# title-case SEC's all-caps registrant names.
+_KEEP_UPPER = {"ABM", "ADT", "AES", "AMD", "AMN", "AMP", "AOL", "AON", "AT&T",
+               "ATT", "BJ", "BP", "CBRE", "CDW", "CF", "CGI", "CMS", "CNA",
+               "CVS", "DBD", "DDOG", "DTE", "EA", "EMC", "EPR", "ETF", "EV",
+               "F5", "FMC", "GE", "GLW", "GP", "GPI", "GS", "HCA", "HCP", "HP",
+               "HPE", "HPQ", "IBM", "IDCC", "IFF", "IRM", "ITT", "JPM", "KKR",
+               "KLA", "LLY", "LQ", "LUV", "MBT", "MGM", "MMM", "MOS", "MSI",
+               "NASDAQ", "NCR", "NET", "NYSE", "PCG", "PPG", "PPL", "PRU",
+               "REIT", "RV", "SEC", "SL", "SLM", "TD", "TFC", "TJX", "TPG",
+               "TV", "UK", "US", "USA", "UTX", "VF", "VMC", "VRT", "WRK",
+               "XTO", "YUM"}
+_SMALL_WORDS = {"and", "or", "of", "the", "for", "to", "at", "in", "on",
+                "a", "an", "de", "la"}
+
+
+def _titlecase_company(s: str) -> str:
+    """Convert SEC all-caps titles to presentation-ready mixed case.
+
+    Rules:
+      * Preserve known acronyms ("IBM", "JPM") — full list above.
+      * Lowercase small filler words except as first word ("Bank of America").
+      * Title-case anything else, including compound names like "MCDONALD'S".
+    """
+    if not s:
+        return s
+    parts = s.split()
+    out = []
+    for i, w in enumerate(parts):
+        stripped = w.strip(",./()&")
+        if stripped.upper() in _KEEP_UPPER:
+            out.append(w.upper())
+        elif stripped.lower() in _SMALL_WORDS and i > 0:
+            out.append(stripped.lower())
+        else:
+            # Keep dots in corp suffixes: INC. → Inc.
+            out.append(w.capitalize())
+    joined = " ".join(out)
+    # Common suffix fixes
+    joined = joined.replace(" Corp.", " Corp").replace(" Inc.", " Inc") \
+                    .replace(" Co.", " Co").replace(" Ltd.", " Ltd")
+    return joined
 
 
 def cik_for(symbol: str, mapping: dict[str, str] | None = None) -> str | None:

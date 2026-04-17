@@ -81,6 +81,29 @@ CREATE TABLE IF NOT EXISTS sentiment_daily (
 CREATE INDEX IF NOT EXISTS idx_proj_symbol ON projections(symbol);
 CREATE INDEX IF NOT EXISTS idx_proj_date ON projections(run_date);
 CREATE INDEX IF NOT EXISTS idx_sent_ticker ON sentiment_daily(ticker);
+
+-- Daily snapshot of the Strategist portfolio picks. One row per
+-- (symbol, pick_date) — nightly worker inserts the top ranked picks so we
+-- can retrospectively compute realized return, hit rate, and Sharpe by
+-- tier. This is the ledger that gives /picks credibility.
+CREATE TABLE IF NOT EXISTS picks_history (
+    pick_date        TEXT    NOT NULL,   -- ISO date of the scan run
+    symbol           TEXT    NOT NULL,
+    tier             TEXT    NOT NULL,   -- conservative / moderate / aggressive
+    entry_price      REAL    NOT NULL,   -- current_price at pick time
+    p50_target       REAL    NOT NULL,   -- median 1-yr projection
+    expected_return  REAL    NOT NULL,   -- (p50-current)/current
+    risk             REAL,
+    sharpe_proxy     REAL,
+    horizon_days     INTEGER DEFAULT 252,
+    rationale        TEXT,
+    sec_fundamentals_json TEXT,
+    created_at       TEXT    NOT NULL,
+    PRIMARY KEY (pick_date, symbol)
+);
+CREATE INDEX IF NOT EXISTS idx_picks_hist_date ON picks_history(pick_date);
+CREATE INDEX IF NOT EXISTS idx_picks_hist_symbol ON picks_history(symbol);
+CREATE INDEX IF NOT EXISTS idx_picks_hist_tier ON picks_history(tier);
 """
 
 
@@ -212,3 +235,84 @@ def get_sentiment(
         (ticker.upper(), lookback_days),
     ).fetchall()
     return [dict(r) for r in rows]
+
+
+# ── Picks history ──
+
+def save_picks_history(conn: sqlite3.Connection, picks: list[dict],
+                        pick_date: str | None = None) -> int:
+    """Insert one row per pick into picks_history for the given date.
+
+    Idempotent on (pick_date, symbol): re-running the same day's scan
+    overwrites the row with the latest values rather than duplicating.
+    Returns the number of rows written.
+    """
+    if pick_date is None:
+        pick_date = datetime.now(timezone.utc).date().isoformat()
+    created_at = datetime.now(timezone.utc).isoformat()
+    n = 0
+    for p in picks:
+        sec_json = None
+        if p.get("sec_fundamentals"):
+            try:
+                sec_json = json.dumps(p["sec_fundamentals"])
+            except (TypeError, ValueError):
+                sec_json = None
+        conn.execute(
+            """INSERT OR REPLACE INTO picks_history
+               (pick_date, symbol, tier, entry_price, p50_target,
+                expected_return, risk, sharpe_proxy, horizon_days,
+                rationale, sec_fundamentals_json, created_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (
+                pick_date,
+                p["symbol"].upper(),
+                p.get("tier"),
+                p.get("current_price"),
+                p.get("p50_target"),
+                p.get("expected_return"),
+                p.get("risk"),
+                p.get("sharpe_proxy"),
+                p.get("horizon_days", 252),
+                p.get("rationale"),
+                sec_json,
+                created_at,
+            ),
+        )
+        n += 1
+    conn.commit()
+    return n
+
+
+def get_picks_history(
+    conn: sqlite3.Connection,
+    tier: str | None = None,
+    symbol: str | None = None,
+    since_date: str | None = None,
+    limit: int = 500,
+) -> list[dict]:
+    """Fetch historical picks, newest first. Caller supplies current prices
+    separately if realized returns are needed — we don't price here to keep
+    this hot-path fast."""
+    sql = "SELECT * FROM picks_history"
+    conds, args = [], []
+    if tier:
+        conds.append("tier = ?"); args.append(tier)
+    if symbol:
+        conds.append("symbol = ?"); args.append(symbol.upper())
+    if since_date:
+        conds.append("pick_date >= ?"); args.append(since_date)
+    if conds:
+        sql += " WHERE " + " AND ".join(conds)
+    sql += " ORDER BY pick_date DESC, symbol ASC LIMIT ?"
+    args.append(limit)
+    rows = conn.execute(sql, args).fetchall()
+    out = []
+    for r in rows:
+        d = dict(r)
+        if d.get("sec_fundamentals_json"):
+            try: d["sec_fundamentals"] = json.loads(d["sec_fundamentals_json"])
+            except (json.JSONDecodeError, TypeError): d["sec_fundamentals"] = None
+        d.pop("sec_fundamentals_json", None)
+        out.append(d)
+    return out

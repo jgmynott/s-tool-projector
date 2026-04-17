@@ -1,42 +1,50 @@
-# S-Tool Projector — Daily Refresh Cron
+# S-Tool — Nightly End-to-End Pipeline
 #
-# Refreshes the projection cache and signal data on a tiered schedule:
-#   * Every market day at 07:00 ET (11:00 UTC) — pre-open signal refresh
-#   * Every market day at 16:30 ET (20:30 UTC) — post-close projection re-run
+# Every night the site self-refreshes: fresh projections, fresh
+# fundamentals, fresh NN training, fresh picks, fresh deploy. No manual
+# step needed.
 #
-# Jobs run sequentially (signal-refresh first, then projector-rerun) so the
-# projections incorporate the freshest signals.
+# Trigger order:
+#   22:00 UTC weekdays  — full pipeline (post-close so forward data is clean)
+#   Also: workflow_dispatch for on-demand refresh
 #
-# Secrets required in the repo settings (Settings → Secrets and variables → Actions):
-#   FMP_API_KEY, FINNHUB_API_KEY, POLYGON_API_KEY, FRED_API_KEY, ALPHA_VANTAGE_API_KEY
-#
-# The cache DB is committed back to main on each successful run so the
-# deployed frontend stays warm. If/when we move to D1 this step becomes a
-# remote DB write.
+# Required secrets (Settings → Secrets and variables → Actions):
+#   FMP_API_KEY
+#   FINNHUB_API_KEY
+#   POLYGON_API_KEY
+#   FRED_API_KEY
+#   ALPHA_VANTAGE_API_KEY
+#   RAILWAY_TOKEN            (for backend redeploy; generate at railway.com/account/tokens)
+#   CLOUDFLARE_API_TOKEN     (scope: Workers Scripts:Edit — create at dash.cloudflare.com/profile/api-tokens)
 
-name: daily-refresh
+name: nightly-pipeline
 
-# Both jobs commit/push cache artifacts back to main. GITHUB_TOKEN defaults to
-# read-only on public repos, so grant contents:write at the workflow level.
 permissions:
   contents: write
 
 on:
   schedule:
-    # Pre-open (11:00 UTC = 07:00 ET) — refresh signals
-    - cron: "0 11 * * 1-5"
-    # Post-close (20:30 UTC = 16:30 ET) — recompute projections
-    - cron: "30 20 * * 1-5"
-  workflow_dispatch:   # allow manual trigger from GitHub UI
+    # Post-close + settled (22:00 UTC = 18:00 ET). Gives the market an
+    # hour to print final prints before we rebuild the engine state.
+    - cron: "0 22 * * 1-5"
+  workflow_dispatch:
 
 jobs:
   refresh:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 90
+    env:
+      FMP_API_KEY:         ${{ secrets.FMP_API_KEY }}
+      FINNHUB_API_KEY:     ${{ secrets.FINNHUB_API_KEY }}
+      POLYGON_API_KEY:     ${{ secrets.POLYGON_API_KEY }}
+      FRED_API_KEY:        ${{ secrets.FRED_API_KEY }}
+      ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}
+
     steps:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0    # full history so rebase on push is clean
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -48,76 +56,144 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install -r requirements.txt
+          # Extras the new pipeline needs beyond requirements.txt
+          pip install scikit-learn yfinance
 
+      # projector_cache.db grows past GitHub's 100MB file limit when the
+      # full universe is populated, so we cache it between runs rather
+      # than commit it. Same for the price csvs under data_cache/prices/.
+      - name: Restore engine cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            projector_cache.db
+            data_cache/prices
+            data_cache/sec_edgar
+          key: engine-cache-${{ github.run_id }}
+          restore-keys: |
+            engine-cache-
+
+      # ── STEP 1: smoke-test external providers ─────────────────────
       - name: Smoke-test providers
-        env:
-          FMP_API_KEY:        ${{ secrets.FMP_API_KEY }}
-          FINNHUB_API_KEY:    ${{ secrets.FINNHUB_API_KEY }}
-          POLYGON_API_KEY:    ${{ secrets.POLYGON_API_KEY }}
-          FRED_API_KEY:       ${{ secrets.FRED_API_KEY }}
         run: python3 data_providers.py
 
-      - name: Refresh S&P 500 + Nasdaq 100 projections
-        env:
-          FMP_API_KEY:        ${{ secrets.FMP_API_KEY }}
-          FINNHUB_API_KEY:    ${{ secrets.FINNHUB_API_KEY }}
-          POLYGON_API_KEY:    ${{ secrets.POLYGON_API_KEY }}
-          FRED_API_KEY:       ${{ secrets.FRED_API_KEY }}
-          ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}
-        run: python3 worker.py
-
-      - name: Refresh Public Pulse snapshots for top watchlist
-        env:
-          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+      # ── STEP 2: refresh projections (full Russell 3000) ───────────
+      # worker.py --all iterates the IWV universe; STALE_HOURS inside
+      # skips anything computed within the last 18h so daily runtime
+      # stays under an hour.
+      - name: Refresh projections
         run: |
-          # Take a fresh live snapshot of the top-20 tickers — populates the
-          # DataManager cache for instant response on dashboard hits.
-          for sym in AAPL MSFT GOOGL AMZN NVDA META TSLA SPY QQQ JPM \
-                     BAC V WMT DIS NFLX KO PEP NKE SBUX MCD; do
-            echo "── $sym ──"
-            python3 public_pulse.py snapshot "$sym" --fast || true
-            sleep 6   # respect GDELT 5s rate limit
-          done
+          python3 worker.py --all || echo "worker.py exited non-zero; continuing"
 
-      - name: Commit cache updates
+      # ── STEP 3: enrichment layer (cache-based, idempotent) ────────
+      - name: Market-cap + avg-volume enrichment
+        run: python3 enrich_marketcaps.py --workers 6 || true
+
+      - name: FMP profile enrichment (fills 250/day, grows over time)
+        run: python3 enrich_profiles.py --workers 4 || true
+
+      - name: SEC EDGAR fundamentals
+        run: |
+          python3 - << 'PY'
+          import sqlite3, signals_sec_edgar
+          conn = sqlite3.connect("projector_cache.db")
+          signals_sec_edgar.init_sec_fundamentals_table(conn)
+          syms = [r[0] for r in conn.execute(
+              "SELECT DISTINCT symbol FROM projections").fetchall()]
+          signals_sec_edgar.refresh_universe(syms)
+          PY
+
+      # ── STEP 4: research harness + NN training ────────────────────
+      # upside_hunt rebuilds the (ticker×window→realized_return) ground
+      # truth. overnight_learn trains both the asymmetric scorer and
+      # confidence model against the latest ground truth, writing the
+      # winning scorer + today's NN scores into data_cache/.
+      - name: Upside research sweep
+        run: python3 upside_hunt.py || true
+
+      - name: Nightly NN training
+        run: python3 -W ignore overnight_learn.py || true
+
+      - name: Today's asymmetric scoring (EWMA fallback)
+        run: python3 enrich_asymmetric.py --workers 6 || true
+
+      # ── STEP 5: final portfolio scan + preflight ──────────────────
+      # worker.py already runs scan_universe at the end; but we run it
+      # explicitly so picks.json picks up the freshest NN scores and
+      # market cap cache from the enrichment steps above.
+      - name: Final portfolio scan
+        run: |
+          python3 - << 'PY'
+          from db import init_db
+          from portfolio_scanner import scan_universe, save_picks
+          conn = init_db()
+          results = scan_universe(conn)
+          save_picks(results, conn=conn)
+          PY
+
+      - name: Preflight (block on QC failures)
+        run: python3 preflight.py || (echo "Preflight FAILED — not deploying"; exit 1)
+
+      # ── STEP 6: commit cache + NN artifacts to main ───────────────
+      - name: Commit data artifacts
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -f projector_cache.db
+          # Only commit the small JSON artifacts that drive the live site.
+          # projector_cache.db is cached via actions/cache — too big for git.
+          git add -f portfolio_picks.json
+          git add -f \
+              data_cache/asymmetric_scores.json \
+              data_cache/nn_scores.json \
+              data_cache/confidence_nn_scores.json \
+              data_cache/production_scorer.json \
+              data_cache/market_caps.json \
+              data_cache/sec_edgar/company_info.json \
+              data_cache/sec_edgar/cik_map.json 2>/dev/null || true
+          # Per-ticker FMP profiles — one file per ticker, adds ~250/day.
+          git add -f data_cache/profiles/*.json 2>/dev/null || true
+
           if git diff --staged --quiet; then
-            echo "No cache changes to commit"
+            echo "No artifact changes to commit"
           else
-            git commit -m "chore(cron): refresh cache $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            git commit -m "chore(nightly): refresh cache + NN artifacts $(date -u +%Y-%m-%dT%H:%MZ)"
+            # Rebase-pull to stay ahead of concurrent commits, then push.
+            git pull --rebase || true
             git push
           fi
 
-  # Weekly backfill job — every Saturday at 02:00 UTC
-  weekly-backfill:
-    runs-on: ubuntu-latest
-    timeout-minutes: 180
-    if: github.event.schedule == null   # only on manual dispatch unless we add a weekly schedule
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      # Save engine cache for the next nightly run (120-day retention on
+      # GitHub's cache free tier). Key includes run_id so each run writes
+      # a new entry; restore-keys above grabs the most recent.
+      - name: Save engine cache
+        uses: actions/cache/save@v4
+        if: always()
         with:
-          python-version: "3.11"
-          cache: "pip"
-      - name: Install deps
-        run: pip install -r requirements.txt
-      - name: Backfill Public Pulse historical (rolling 30d window)
+          path: |
+            projector_cache.db
+            data_cache/prices
+            data_cache/sec_edgar
+          key: engine-cache-${{ github.run_id }}
+
+      # ── STEP 7: deploy the live site ──────────────────────────────
+      # Cloudflare = frontend pages; Railway = FastAPI backend serving
+      # /api/picks + /api/me. Both are deployed on every nightly run so
+      # anyone hitting s-tool.io gets today's picks + NN scores without
+      # waiting for a manual deploy.
+      - name: Deploy frontend (Cloudflare)
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          workingDirectory: cloudflare
+          command: deploy
+
+      - name: Install Railway CLI
+        run: |
+          curl -fsSL https://railway.com/install.sh | sh
+          echo "$HOME/.railway/bin" >> $GITHUB_PATH
+
+      - name: Deploy backend (Railway)
         env:
-          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: |
-          START=$(date -u -d '30 days ago' +%Y-%m-%d)
-          END=$(date -u +%Y-%m-%d)
-          python3 public_pulse_backfill.py --all --start "$START" --end "$END" --resume
-      - name: Commit backfill
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add public_pulse_data/
-          if ! git diff --staged --quiet; then
-            git commit -m "chore(backfill): weekly PP data refresh"
-            git push
-          fi
+          railway up --detach --service api

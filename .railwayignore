@@ -14,6 +14,8 @@ research/
 *_backtest*.csv
 *_backtest*.md
 *_sweep_*.csv
+upside_hunt_results.csv
+upside_hunt_report.md
 momentum_backtest_overnight.log
 factor_sweep_rerun.log
 cloudflare/

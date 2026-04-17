@@ -3,431 +3,266 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>s-tool — Honest stock projections</title>
-<meta name="description" content="A projection engine that ships only signals that survive walk-forward backtests on the full Russell 3000. No drift. No false alpha. Real MAPE bands." />
+<title>s-tool</title>
+<meta name="description" content="Stock projections, backed by research." />
 <link rel="canonical" href="https://s-tool.io/" />
-<meta property="og:title" content="s-tool — Honest Stock Projections" />
-<meta property="og:description" content="A projection engine that ships only signals that survive walk-forward backtests on the full Russell 3000. No drift. No false alpha. Real MAPE bands." />
-<meta property="og:image" content="https://s-tool.io/img/hero-banff.jpg" />
+<meta property="og:title" content="s-tool" />
+<meta property="og:image" content="https://s-tool.io/img/og-abstract.jpg" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
 <meta property="og:url" content="https://s-tool.io/" />
 <meta property="og:type" content="website" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="s-tool — Honest Stock Projections" />
-<meta name="twitter:description" content="Walk-forward validated stock projections across the Russell 3000. No drift. No false alpha." />
+<meta name="twitter:title" content="s-tool" />
+<meta name="twitter:image" content="https://s-tool.io/img/og-abstract.jpg" />
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230A6577'/%3E%3Cpath d='M16 44 L24 32 L34 38 L48 18' stroke='%23D2DDEA' stroke-width='4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/shared/nav.css" />
 <style>
 :root {
-    --bg-deepest: #0B1006;
-    --bg-base: #111512;
-    --bg-surface: #1F232D;
-    --bg-card: #28303B;
-    --accent-deep: #022834;
-    --accent-alpine: #0A6577;
-    --accent-lake: #5FAAC5;
-    --text-hi: #EDECE6;
-    --text-mid: #9BA1B9;
-    --text-dim: #6B7382;
-    --border: rgba(155,161,185,0.16);
-    --border-strong: rgba(95,170,197,0.35);
-    --shadow-glow: 0 24px 80px -20px rgba(10,101,119,0.45);
-    --radius-lg: 24px;
-    --radius-md: 16px;
-    --radius-sm: 10px;
+  --bg-deepest: #0B1006; --bg-base: #111512; --bg-surface: #1F232D;
+  --bg-card: #28303B; --accent-deep: #022834; --accent-alpine: #0A6577;
+  --accent-lake: #5FAAC5; --text-hi: #EDECE6; --text-mid: #9BA1B9;
+  --text-dim: #6B7382; --border: rgba(155,161,185,0.16);
+  --border-strong: rgba(95,170,197,0.35);
+  --shadow-glow: 0 24px 80px -20px rgba(10,101,119,0.45);
+  --radius-lg: 22px; --radius-md: 16px; --radius-sm: 10px;
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html { scroll-behavior: smooth; }
-body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    background: var(--bg-deepest);
-    color: var(--text-hi);
-    line-height: 1.55;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    overflow-x: hidden;
-}
+body { font-family: 'Inter', sans-serif; background: var(--bg-deepest); color: var(--text-hi); line-height: 1.55; -webkit-font-smoothing: antialiased; }
 a { color: inherit; text-decoration: none; }
-.serif { font-family: 'Crimson Text', Georgia, serif; font-weight: 400; letter-spacing: -0.01em; }
-.eyebrow {
-    font-family: 'Inter', sans-serif;
-    font-size: 11px; font-weight: 600; letter-spacing: 0.22em;
-    color: var(--accent-lake); text-transform: uppercase;
-}
-.btn {
-    display: inline-flex; align-items: center; gap: 8px;
-    padding: 14px 24px; border-radius: 999px;
-    font: 500 15px/1 'Inter', sans-serif;
-    cursor: pointer; transition: all .2s ease;
-    border: 1px solid transparent; text-decoration: none;
-    white-space: nowrap;
-}
-.btn-primary {
-    background: var(--accent-lake); color: var(--bg-deepest);
-    box-shadow: 0 8px 24px -8px rgba(95,170,197,0.55);
-}
-.btn-primary:hover { background: #82c1d6; transform: translateY(-1px); box-shadow: 0 12px 28px -8px rgba(95,170,197,0.7); }
-.btn-ghost {
-    background: transparent; color: var(--text-hi);
-    border-color: var(--border-strong);
-}
-.btn-ghost:hover { background: rgba(95,170,197,0.08); border-color: var(--accent-lake); }
-.btn-quiet { color: var(--text-mid); padding: 10px 14px; background: none; border: none; cursor: pointer; font: 500 14px 'Inter'; }
-.btn-quiet:hover { color: var(--text-hi); }
 .container { max-width: 1180px; margin: 0 auto; padding: 0 32px; }
-nav {
-    position: sticky; top: 0; z-index: 50;
-    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-    background: rgba(11,16,6,0.75);
-    border-bottom: 1px solid var(--border);
-}
-.nav-row {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 18px 0;
-}
-.logo {
-    display: flex; align-items: center; gap: 10px;
-    font-family: 'Inter', sans-serif; font-weight: 700; font-size: 18px;
-    letter-spacing: -0.04em;
-}
-.logo-mark {
-    width: 28px; height: 28px; border-radius: 7px;
-    background: linear-gradient(135deg, var(--accent-deep), var(--accent-alpine), var(--accent-lake));
-    display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 4px 12px -2px rgba(10,101,119,0.5);
-}
+
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 14px 24px; border-radius: 999px; font: 500 15px/1 'Inter'; cursor: pointer; transition: all .2s; border: 1px solid transparent; background: var(--accent-lake); color: var(--bg-deepest); box-shadow: 0 8px 24px -8px rgba(95,170,197,0.55); }
+.btn:hover { background: #82c1d6; transform: translateY(-1px); }
+.btn.ghost { background: transparent; color: var(--text-hi); border-color: var(--border-strong); box-shadow: none; }
+.btn.ghost:hover { background: rgba(95,170,197,0.08); border-color: var(--accent-lake); }
+
+/* Evergreen nav — matches every other page */
+nav { position: sticky; top: 0; z-index: 50; backdrop-filter: blur(14px); background: rgba(11,16,6,0.82); border-bottom: 1px solid var(--border); }
+.nav-row { display: flex; align-items: center; justify-content: space-between; padding: 18px 0; gap: 24px; }
+.logo { display: flex; align-items: center; gap: 10px; font: 700 18px 'Inter'; letter-spacing: -0.04em; color: var(--text-hi); }
+.logo-mark { width: 28px; height: 28px; border-radius: 7px; background: linear-gradient(135deg, var(--accent-deep), var(--accent-alpine), var(--accent-lake)); display: flex; align-items: center; justify-content: center; }
 .logo-mark svg { stroke: var(--text-hi); }
-.nav-links { display: flex; align-items: center; gap: 28px; font: 500 14px 'Inter'; color: var(--text-mid); }
-.nav-links a:hover { color: var(--text-hi); }
-.nav-actions { display: flex; align-items: center; gap: 12px; }
-@media (max-width: 720px) { .nav-links { display: none; } }
+.nav-center { display: flex; gap: 28px; font: 500 14px 'Inter'; color: var(--text-mid); }
+.nav-center a:hover { color: var(--text-hi); }
+.nav-center a.active { color: var(--text-hi); border-bottom: 1px solid var(--accent-lake); padding-bottom: 2px; }
+.nav-end { display: flex; align-items: center; gap: 14px; min-width: 120px; justify-content: flex-end; }
+/* user-pill + dropdown live in /shared/nav.css */
+.signin-btn { font: 500 14px 'Inter'; color: var(--text-hi); border: 1px solid var(--border-strong); padding: 9px 18px; border-radius: 999px; cursor: pointer; background: transparent; }
+.signin-btn:hover { background: rgba(95,170,197,0.08); }
+@media (max-width: 800px) { .nav-center { gap: 18px; } .nav-center a { font-size: 13px; } }
+@media (max-width: 620px) { .nav-center a:nth-child(4), .nav-center a:nth-child(5) { display: none; } }
+
+.eyebrow { font: 600 11px 'Inter'; color: var(--accent-lake); letter-spacing: 0.24em; text-transform: uppercase; }
+
+/* Hero — big statement, minimal chrome */
 .hero {
-    position: relative; padding: 96px 0 120px;
-    background:
-        linear-gradient(180deg, rgba(11,16,6,0.6) 0%, rgba(11,16,6,0.85) 100%),
-        url('/img/hero-banff.jpg') center/cover no-repeat;
-    overflow: hidden;
+  position: relative; padding: 112px 0 104px; overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(11,16,6,0.55) 0%, rgba(11,16,6,0.88) 100%),
+    url('/img/hero-banff.jpg') center/cover no-repeat;
 }
 .hero::before {
-    content: ""; position: absolute; inset: 0;
-    background-image:
-        linear-gradient(rgba(155,161,185,0.04) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(155,161,185,0.04) 1px, transparent 1px);
-    background-size: 64px 64px;
-    mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, black, transparent 80%);
-    pointer-events: none;
+  content: ""; position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(155,161,185,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(155,161,185,0.04) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, black, transparent 80%);
 }
 .hero-inner { position: relative; }
 .hero-eyebrow { display: inline-block; margin-bottom: 28px; }
-.hero-headline {
-    font-family: 'Crimson Text', Georgia, serif;
-    font-size: clamp(48px, 7vw, 92px);
-    font-weight: 400; line-height: 1.02; letter-spacing: -0.02em;
-    color: var(--text-hi); max-width: 14ch;
-}
+.hero-headline { font-family: 'Crimson Text', Georgia, serif; font-size: clamp(48px, 7vw, 92px); font-weight: 400; line-height: 1.02; letter-spacing: -0.02em; max-width: 14ch; }
 .hero-headline em { font-style: italic; color: var(--accent-lake); }
 .hero-sub { margin-top: 28px; font-size: 19px; line-height: 1.55; color: var(--text-mid); max-width: 56ch; }
 .hero-ctas { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 40px; }
-.metric-strip {
-    margin-top: 80px; padding: 28px 32px; border-radius: var(--radius-md);
-    background: rgba(31,35,45,0.55); border: 1px solid var(--border);
-    display: grid; grid-template-columns: repeat(4, 1fr); gap: 32px;
-    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+
+/* 3-card overview — where the product lives */
+section.overview { padding: 88px 0 96px; background: var(--bg-deepest); }
+.section-head { margin-bottom: 48px; max-width: 720px; }
+.section-head .eyebrow { display: inline-block; margin-bottom: 18px; }
+.section-title { font-family: 'Crimson Text', serif; font-weight: 400; font-size: clamp(34px, 4.4vw, 52px); line-height: 1.05; letter-spacing: -0.015em; }
+.section-title em { font-style: italic; color: var(--accent-lake); }
+
+.product-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+.product-card {
+  padding: 40px 32px; border: 1px solid var(--border); border-radius: var(--radius-lg);
+  background: var(--bg-surface); position: relative; transition: border-color .2s, transform .2s;
+  display: flex; flex-direction: column; gap: 18px; min-height: 320px;
 }
-.metric-strip .label { font: 500 12px 'Inter'; color: var(--text-mid); margin-top: 6px; letter-spacing: 0.04em; }
-.metric-strip .value { font-family: 'Crimson Text', serif; font-size: 36px; font-weight: 600; letter-spacing: -0.02em; }
-@media (max-width: 720px) { .metric-strip { grid-template-columns: repeat(2, 1fr); gap: 22px; padding: 22px; } .metric-strip .value { font-size: 28px; } }
-section { padding: 96px 0; }
-.section-head { max-width: 720px; margin-bottom: 56px; }
-.section-eyebrow { margin-bottom: 18px; }
-.section-title { font-family: 'Crimson Text', serif; font-weight: 400; font-size: clamp(34px, 4.4vw, 56px); line-height: 1.05; letter-spacing: -0.015em; }
-.section-sub { color: var(--text-mid); font-size: 17px; margin-top: 18px; max-width: 60ch; }
-.value-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
-.value-card { padding: 36px 32px; border-radius: var(--radius-md); background: var(--bg-surface); border: 1px solid var(--border); transition: border-color .2s, transform .2s; }
-.value-card:hover { border-color: var(--border-strong); transform: translateY(-3px); }
-.value-card .num { font-family: 'Crimson Text', serif; font-size: 14px; color: var(--accent-lake); margin-bottom: 18px; }
-.value-card h3 { font-family: 'Crimson Text', serif; font-weight: 600; font-size: 24px; line-height: 1.2; margin-bottom: 14px; }
-.value-card p { color: var(--text-mid); font-size: 15px; }
-@media (max-width: 820px) { .value-grid { grid-template-columns: 1fr; } }
-.edge { background: linear-gradient(180deg, var(--bg-deepest) 0%, var(--bg-base) 60%, var(--bg-deepest) 100%); }
-.edge-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 64px; align-items: center; }
-.edge-art {
-    aspect-ratio: 4/5; border-radius: var(--radius-lg);
-    position: relative; overflow: hidden; box-shadow: var(--shadow-glow);
-}
-.edge-art img {
-    width: 100%; height: 100%; object-fit: cover;
-    filter: brightness(0.9) contrast(1.05);
-}
-.edge-body p { color: var(--text-mid); font-size: 17px; margin-top: 20px; }
-.edge-list { margin-top: 36px; padding-top: 28px; border-top: 1px solid var(--border); list-style: none; }
-.edge-list li { display: grid; grid-template-columns: 100px 1fr; gap: 24px; padding: 14px 0; border-bottom: 1px dashed var(--border); }
-.edge-list .signal { font: 500 13px 'Inter'; color: var(--text-hi); }
-.edge-list .verdict { font-size: 14px; color: var(--text-mid); }
-.edge-list .verdict.dead { color: var(--text-dim); }
-@media (max-width: 900px) { .edge-grid { grid-template-columns: 1fr; gap: 40px; } .edge-art { max-width: 480px; } }
-.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
-.step { padding: 32px; border-radius: var(--radius-md); background: var(--bg-surface); border: 1px solid var(--border); }
-.step .step-num { font-family: 'Crimson Text', serif; font-size: 48px; line-height: 1; color: var(--accent-alpine); margin-bottom: 24px; }
-.step h3 { font-family: 'Crimson Text', serif; font-weight: 600; font-size: 22px; margin-bottom: 12px; }
-.step p { color: var(--text-mid); font-size: 14.5px; }
-@media (max-width: 820px) { .steps { grid-template-columns: 1fr; } }
-.pricing { background: linear-gradient(180deg, var(--bg-base) 0%, var(--bg-deepest) 100%); }
-.price-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
-.price-card.strategist { background: linear-gradient(180deg, var(--bg-surface), rgba(2,40,52,0.35)); border-color: rgba(95,170,197,0.25); }
-.price-card.strategist .tier { color: #d2ddea; }
-.price-card { padding: 40px; border-radius: var(--radius-lg); background: var(--bg-surface); border: 1px solid var(--border); position: relative; }
-.price-card.pro { background: linear-gradient(180deg, var(--bg-surface), rgba(10,101,119,0.18)); border-color: var(--accent-lake); box-shadow: 0 24px 60px -20px rgba(95,170,197,0.25); }
-.price-card .tier { font: 600 13px 'Inter'; color: var(--text-mid); letter-spacing: 0.06em; text-transform: uppercase; }
-.price-card.pro .tier { color: var(--accent-lake); }
-.price-card .price { margin-top: 14px; font-family: 'Crimson Text', serif; font-size: 64px; font-weight: 600; line-height: 1; letter-spacing: -0.02em; }
-.price-card .interval { font: 500 14px 'Inter'; color: var(--text-mid); margin-left: 6px; }
-.price-card .features { list-style: none; margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--border); }
-.price-card .features li { padding: 10px 0; font-size: 14.5px; color: var(--text-mid); display: flex; gap: 12px; align-items: flex-start; }
-.price-card .features li::before { content: ""; flex-shrink: 0; margin-top: 8px; width: 6px; height: 6px; border-radius: 50%; background: var(--accent-lake); }
-.price-card.free .features li::before { background: var(--text-mid); }
-.price-card .cta { margin-top: 32px; display: flex; }
-.price-card .cta .btn { flex: 1; justify-content: center; }
-.popular-badge { position: absolute; top: -12px; right: 32px; padding: 6px 12px; border-radius: 999px; background: var(--accent-lake); color: var(--bg-deepest); font: 600 11px 'Inter'; letter-spacing: 0.12em; text-transform: uppercase; }
-@media (max-width: 1000px) { .price-grid { grid-template-columns: 1fr; } }
-.faq-list { max-width: 880px; }
-.faq-item { padding: 24px 0; border-bottom: 1px solid var(--border); }
-.faq-item h3 { font: 600 18px 'Inter'; margin-bottom: 10px; }
-.faq-item p { color: var(--text-mid); font-size: 15px; }
-footer { border-top: 1px solid var(--border); padding: 56px 0 40px; color: var(--text-dim); font-size: 13px; }
-.footer-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 40px; flex-wrap: wrap; }
-.footer-row .logo { color: var(--text-hi); margin-bottom: 12px; }
-.footer-cols { display: grid; grid-template-columns: repeat(3, auto); gap: 56px; }
-.footer-cols h4 { font: 600 12px 'Inter'; color: var(--text-mid); letter-spacing: 0.16em; text-transform: uppercase; margin-bottom: 14px; }
-.footer-cols a { display: block; padding: 4px 0; color: var(--text-mid); font-size: 13.5px; }
-.footer-cols a:hover { color: var(--text-hi); }
-.footer-bottom { margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
-@media (max-width: 720px) { .footer-cols { grid-template-columns: 1fr 1fr; gap: 32px; } }
+.product-card:hover { border-color: var(--border-strong); transform: translateY(-3px); }
+.product-card h3 { font-family: 'Crimson Text', serif; font-size: 30px; font-weight: 400; letter-spacing: -0.015em; color: var(--text-hi); }
+.product-card .tag { font: 600 10px 'Inter'; color: var(--accent-lake); letter-spacing: 0.22em; text-transform: uppercase; }
+.product-card p { color: var(--text-mid); font-size: 15px; line-height: 1.55; flex: 1; }
+.product-card .cta { display: inline-flex; align-items: center; gap: 6px; color: var(--accent-lake); font: 500 14px 'Inter'; transition: gap .15s; }
+.product-card .cta:hover { gap: 10px; color: var(--text-hi); }
+.product-card .pill { display: inline-block; padding: 4px 10px; border-radius: 999px; font: 600 10px 'Inter'; letter-spacing: 0.14em; text-transform: uppercase; }
+.product-card .pill.free { background: rgba(155,161,185,0.10); color: var(--text-mid); }
+.product-card .pill.pro  { background: rgba(95,170,197,0.14); color: var(--accent-lake); }
+.product-card .pill.strategist { background: linear-gradient(90deg, rgba(2,40,52,0.6), rgba(95,170,197,0.20)); color: #d2ddea; }
+@media (max-width: 900px) { .product-grid { grid-template-columns: 1fr; } }
+
+/* Small secondary nav row — methodology + pricing */
+.secondary { margin: 64px auto 0; padding: 32px; border-radius: var(--radius-md); border: 1px solid var(--border); background: rgba(10,101,119,0.06); display: grid; grid-template-columns: repeat(2, 1fr); gap: 28px; max-width: 880px; }
+.secondary a { display: flex; flex-direction: column; gap: 6px; padding: 14px 18px; border-radius: var(--radius-sm); transition: background .15s; }
+.secondary a:hover { background: rgba(95,170,197,0.08); }
+.secondary a .top { font: 600 11px 'Inter'; color: var(--accent-lake); letter-spacing: 0.18em; text-transform: uppercase; }
+.secondary a .bot { font: 500 14px 'Inter'; color: var(--text-hi); }
+@media (max-width: 620px) { .secondary { grid-template-columns: 1fr; padding: 20px; } }
+
+/* Trust strip — data sources */
+.trust { padding: 48px 0; border-top: 1px solid var(--border); text-align: center; color: var(--text-dim); font-size: 13px; }
+.trust .sources { margin-top: 14px; display: flex; justify-content: center; flex-wrap: wrap; gap: 28px; color: var(--text-mid); }
+
+footer { border-top: 1px solid var(--border); padding: 40px 0; color: var(--text-dim); font-size: 13px; margin-top: 32px; }
+footer .container { display: flex; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
+footer a { color: var(--text-mid); }
+footer a:hover { color: var(--text-hi); }
+.footer-links { display: flex; gap: 22px; flex-wrap: wrap; }
 </style>
 <script async
   data-clerk-publishable-key="pk_test_Zmx1ZW50LW1vbGUtNzEuY2xlcmsuYWNjb3VudHMuZGV2JA"
   src="https://fluent-mole-71.clerk.accounts.dev/npm/@clerk/clerk-js@5/dist/clerk.browser.js"
   crossorigin="anonymous"
 ></script>
+<script defer src="/shared/nav.js"></script>
 </head>
 <body>
 
 <nav>
-    <div class="container nav-row">
-        <a href="/" class="logo">
-            <span class="logo-mark">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 18 9 12 13 16 21 4"></polyline></svg>
-            </span>
-            <span>s-tool</span>
-        </a>
-        <div class="nav-links">
-            <a href="#how">How it works</a>
-            <a href="#edge">The edge</a>
-            <a href="/picks">Picks</a>
-            <a href="#pricing">Pricing</a>
-            <a href="/app">Open app</a>
-        </div>
-        <div class="nav-actions" id="navActions">
-            <button class="btn-quiet" id="btnSignIn" onclick="openSignIn()">Sign in</button>
-            <a href="/app" class="btn btn-primary" id="ctaPrimary">Try the projector &rarr;</a>
-            <div id="userSlot"></div>
-        </div>
+  <div class="container nav-row">
+    <a href="/" class="logo"><span class="logo-mark"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 18 9 12 13 16 21 4"></polyline></svg></span><span>s-tool</span></a>
+    <div class="nav-center">
+      <a href="/app">App</a>
+      <a href="/picks">Picks</a>
+      <a href="/how">How</a>
+      <a href="/pricing">Pricing</a>
+      <a href="/faq">FAQ</a>
     </div>
+    <div class="nav-end" id="navEnd">
+      <button class="signin-btn" onclick="window.Clerk?.openSignIn?.({afterSignInUrl:'/'})">Sign in</button>
+    </div>
+  </div>
 </nav>
 
 <header class="hero">
-    <div class="container hero-inner">
-        <span class="eyebrow hero-eyebrow">Russell 3000 &middot; honest MAPE &middot; no dead signals</span>
-        <h1 class="hero-headline serif">Projections <em>without</em> the drift.</h1>
-        <p class="hero-sub">A stock projection engine built only on signals that actually survived post-2023 walk-forward backtests. 2,609 US tickers. Zero noise tilts. Honest percentile bands instead of made-up confidence.</p>
-        <div class="hero-ctas">
-            <a href="/app" class="btn btn-primary">Project a ticker &mdash; free</a>
-            <a href="#edge" class="btn btn-ghost">See what we killed &rarr;</a>
-        </div>
-        <div class="metric-strip">
-            <div><div class="value">2,609</div><div class="label">tickers covered</div></div>
-            <div><div class="value">466</div><div class="label">rolling backtest windows</div></div>
-            <div><div class="value">0</div><div class="label">drift tilts shipped</div></div>
-            <div><div class="value">3 / day</div><div class="label">free projections</div></div>
-        </div>
+  <div class="container hero-inner">
+    <span class="eyebrow hero-eyebrow">Russell 3000 &middot; honest error bands &middot; no dead signals</span>
+    <h1 class="hero-headline">Projections <em>without</em> the drift.</h1>
+    <p class="hero-sub">A stock projection engine built only on signals that actually survived rigorous out-of-sample testing. 2,609 US tickers. Zero noise tilts. Honest percentile bands instead of made-up confidence.</p>
+    <div class="hero-ctas">
+      <a href="/app" class="btn">Project a ticker &mdash; free</a>
+      <a href="/picks" class="btn ghost">See today's picks &rarr;</a>
     </div>
+  </div>
 </header>
 
-<section id="value">
-    <div class="container">
-        <div class="section-head">
-            <div class="eyebrow section-eyebrow">Why it's different</div>
-            <h2 class="section-title">Three things most projection tools won't tell you.</h2>
-        </div>
-        <div class="value-grid">
-            <div class="value-card"><div class="num">01</div><h3>The signal pile is mostly noise.</h3><p>Sentiment, Public Pulse, HY OAS, margin debt, market breadth &mdash; every one of them tested neutral or worse on the full Russell 3000 across 2018&ndash;2025. We zeroed all of them.</p></div>
-            <div class="value-card"><div class="num">02</div><h3>Confidence bands you can audit.</h3><p>10th to 90th percentile projection ranges from a Monte Carlo + mean-reversion blend, surfaced alongside the engine's actual MAPE on that ticker. No black box.</p></div>
-            <div class="value-card"><div class="num">03</div><h3>Free is genuinely free.</h3><p>Three projections per day on the top 500 tickers, no card required. Pro is for unlimited runs on the full Russell 3000, PDF export, and synced watchlist &mdash; that's it.</p></div>
-        </div>
+<section class="overview">
+  <div class="container">
+    <div class="section-head">
+      <span class="eyebrow">The product</span>
+      <h2 class="section-title">Three surfaces. <em>One</em> engine under all of them.</h2>
     </div>
+    <div class="product-grid">
+      <div class="product-card">
+        <span class="pill free">Free</span>
+        <h3>Projector</h3>
+        <p>Type a ticker, get a 1-year projection with 10–90 percentile bands, the model's measured error on that symbol, and the signal stack that went in. Three runs per day on the top 500.</p>
+        <a href="/app" class="cta">Open the app &rarr;</a>
+      </div>
+      <div class="product-card">
+        <span class="pill pro">Pro</span>
+        <h3>Full universe</h3>
+        <p>Ten projections per day across every Russell 3000 ticker, PDF export of each run, synced watchlist, daily digest. The tool for running your own research without the noise tilts.</p>
+        <a href="/pricing" class="cta">See Pro pricing &rarr;</a>
+      </div>
+      <div class="product-card">
+        <span class="pill strategist">Strategist</span>
+        <h3>Portfolio intelligence</h3>
+        <p>Ranked picks from the nightly full-universe scan, SEC EDGAR fundamentals attached to every name, confidence scoring, and a realized-return ledger so the engine is falsifiable, not just impressive.</p>
+        <a href="/picks" class="cta">See today's picks &rarr;</a>
+      </div>
+    </div>
+
+    <div class="secondary">
+      <a href="/how">
+        <span class="top">Methodology</span>
+        <span class="bot">How the projection engine works &mdash; and what we've killed &rarr;</span>
+      </a>
+      <a href="/pricing">
+        <span class="top">Pricing</span>
+        <span class="bot">Free · Pro $8/mo · Strategist $29/mo &rarr;</span>
+      </a>
+    </div>
+  </div>
 </section>
 
-<section id="edge" class="edge">
-    <div class="container">
-        <div class="edge-grid">
-            <div class="edge-art"><img src="/img/edge-matterhorn.jpg" alt="Matterhorn peak in clouds, Zermatt 2023" loading="lazy" /></div>
-            <div class="edge-body">
-                <div class="eyebrow">The honest part</div>
-                <h2 class="section-title serif" style="margin-top:18px;">Most projection tools <em>lie</em> with a straight face.</h2>
-                <p>Sentiment tilts that tested well in 2018 fell apart in 2024. Public Pulse &mdash; noise. HY OAS &mdash; noise. Margin debt &mdash; noise. We backtested everything on 2,478 symbols &times; 466 rolling windows and found exactly nothing post-2023 that earned a permanent spot in the engine.</p>
-                <p>So we ship the projection without the make-believe. Pure mean-reversion + Monte Carlo on the stock's own volatility, with the actual historical MAPE of the model on each ticker shown alongside the bands.</p>
-                <ul class="edge-list">
-                    <li><span class="signal">Sentiment</span><span class="verdict dead">Dead post-2022</span></li>
-                    <li><span class="signal">Public Pulse</span><span class="verdict dead">&plusmn;0.07pp &mdash; noise</span></li>
-                    <li><span class="signal">HY OAS</span><span class="verdict dead">&plusmn;0.17pp &mdash; noise</span></li>
-                    <li><span class="signal">CBOE SKEW</span><span class="verdict dead">Marginal, mixed sign</span></li>
-                    <li><span class="signal">Form 4</span><span class="verdict dead">Data-sparse, +0.04pp</span></li>
-                </ul>
-            </div>
-        </div>
+<div class="trust">
+  <div class="container">
+    <div>Data sources &middot; refreshed nightly</div>
+    <div class="sources">
+      <span>Regulatory filings</span>
+      <span>Institutional positioning</span>
+      <span>Price history</span>
+      <span>Macro reference</span>
+      <span>Index constituents</span>
     </div>
-</section>
-
-<section id="how">
-    <div class="container">
-        <div class="section-head">
-            <div class="eyebrow section-eyebrow">How it works</div>
-            <h2 class="section-title">From ticker to honest projection in seconds.</h2>
-        </div>
-        <div class="steps">
-            <div class="step"><div class="step-num">01</div><h3>Type a ticker</h3><p>Pull from the full Russell 3000 universe &mdash; 2,609 symbols &mdash; with cached 5-year price history and current fundamentals.</p></div>
-            <div class="step"><div class="step-num">02</div><h3>Engine runs</h3><p>Monte Carlo paths under the stock's own historical volatility, blended with mean-reversion toward fundamentals. No drift tilts. No paid-tier gates on the math.</p></div>
-            <div class="step"><div class="step-num">03</div><h3>Honest bands</h3><p>6- and 12-month percentile ranges shown alongside the model's true MAPE on that ticker. Save to your watchlist. Export to PDF (Pro).</p></div>
-        </div>
-    </div>
-</section>
-
-<section id="pricing" class="pricing">
-    <div class="container">
-        <div class="section-head">
-            <div class="eyebrow section-eyebrow">Pricing</div>
-            <h2 class="section-title">Free to try. Honest to pay for.</h2>
-        </div>
-        <div class="price-grid">
-            <div class="price-card free">
-                <div class="tier">Free</div>
-                <div><span class="price">$0</span><span class="interval">/ forever</span></div>
-                <ul class="features">
-                    <li>3 projections per day</li>
-                    <li>Top 500 US tickers</li>
-                    <li>6- and 12-month projection bands</li>
-                    <li>localStorage watchlist (single device)</li>
-                    <li>Glossary + tooltips on every field</li>
-                </ul>
-                <div class="cta"><a href="/app" class="btn btn-ghost">Start free &rarr;</a></div>
-            </div>
-            <div class="price-card pro">
-                <span class="popular-badge">Popular</span>
-                <div class="tier">Pro</div>
-                <div><span class="price">$8</span><span class="interval">/ month</span></div>
-                <ul class="features">
-                    <li>10 projections per day</li>
-                    <li>Full Russell 3000 &mdash; 2,609 tickers</li>
-                    <li>PDF export of every projection</li>
-                    <li>Synced watchlist across devices</li>
-                    <li>Daily email digest for your watchlist</li>
-                </ul>
-                <div class="cta"><button class="btn btn-primary" onclick="startCheckout('pro')">Get Pro</button></div>
-            </div>
-            <div class="price-card strategist">
-                <div class="tier">Strategist</div>
-                <div><span class="price">$29</span><span class="interval">/ month</span></div>
-                <ul class="features">
-                    <li>Unlimited projections</li>
-                    <li>Portfolio picks by risk tier &mdash; conservative, moderate, aggressive</li>
-                    <li>Daily ranked recommendations from the full Russell 3000 scan</li>
-                    <li>Every Pro feature included</li>
-                    <li>Early access to new signals as they validate</li>
-                    <li>API access for your own tooling</li>
-                </ul>
-                <div class="cta"><button class="btn btn-ghost" onclick="startCheckout('strategist')">Get Strategist</button></div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<section id="faq">
-    <div class="container">
-        <div class="section-head">
-            <div class="eyebrow section-eyebrow">FAQ</div>
-            <h2 class="section-title">Questions worth answering.</h2>
-        </div>
-        <div class="faq-list">
-            <div class="faq-item"><h3>Is this investment advice?</h3><p>No. Projections are statistical outputs, not recommendations. Every ticker shows its projection range and the model's historical MAPE on that symbol so you can judge the bands yourself.</p></div>
-            <div class="faq-item"><h3>Where does the data come from?</h3><p>Financial Modeling Prep for fundamentals, yfinance for prices, FRED for macro reference data. Russell 3000 universe via iShares IWV holdings, refreshed daily.</p></div>
-            <div class="faq-item"><h3>Why kill the sentiment signal?</h3><p>Because it failed. Post-2023 backtests on 2,478 symbols &times; 466 windows showed &le;0.43pp MAPE effect with worse hit rates. We don't ship dead tilts &mdash; even if they were once useful.</p></div>
-            <div class="faq-item"><h3>Can I cancel Pro anytime?</h3><p>Yes. Stripe, month-to-month, no contract. Cancel from your account portal &mdash; access continues through the end of the billing period.</p></div>
-            <div class="faq-item"><h3>How is my data handled?</h3><p>Email + Stripe customer ID stored in a private database, never committed to source. The projection cache is open and shared (no PII). We don't sell or share user data.</p></div>
-        </div>
-    </div>
-</section>
+  </div>
+</div>
 
 <footer>
-    <div class="container">
-        <div class="footer-row">
-            <div>
-                <a href="/" class="logo">
-                    <span class="logo-mark"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 18 9 12 13 16 21 4"></polyline></svg></span>
-                    <span>s-tool</span>
-                </a>
-                <p style="max-width:36ch;">Projections without the drift.</p>
-            </div>
-            <div class="footer-cols">
-                <div><h4>Product</h4><a href="/app">Open app</a><a href="#how">How it works</a><a href="#pricing">Pricing</a></div>
-                <div><h4>Research</h4><a href="https://github.com/jgmynott/s-tool-projector" target="_blank" rel="noopener">GitHub</a><a href="#edge">What we killed</a></div>
-                <div><h4>Legal</h4><a href="#faq">Disclosures</a><a href="mailto:hello@s-tool.io">Contact</a></div>
-            </div>
-        </div>
-        <div class="footer-bottom">
-            <span>&copy; 2026 s-tool.io</span>
-            <span>Not investment advice. Past backtest results are not indicative of future performance.</span>
-        </div>
+  <div class="container">
+    <div>&copy; 2026 s-tool.io &middot; Not investment advice</div>
+    <div class="footer-links">
+      <a href="/app">App</a>
+      <a href="/picks">Picks</a>
+      <a href="/how">How</a>
+      <a href="/pricing">Pricing</a>
+      <a href="/faq">FAQ</a>
     </div>
+  </div>
 </footer>
 
 <script>
 async function authHeaders() {
-    try { const t = await window.Clerk?.session?.getToken?.(); return t ? { Authorization: `Bearer ${t}` } : {}; } catch { return {}; }
+  try { const t = await window.Clerk?.session?.getToken?.(); return t ? { Authorization: `Bearer ${t}` } : {}; } catch { return {}; }
 }
-async function openSignIn() {
-    if (!window.Clerk) return alert('Auth still loading, try again in a moment.');
-    await window.Clerk.openSignIn({ afterSignInUrl: '/app', afterSignUpUrl: '/app' });
-}
-async function startCheckout(tier) {
-    tier = tier || 'pro';
-    if (!window.Clerk?.session) { return openSignIn(); }
-    try {
-        const res = await fetch(`/api/billing/checkout?tier=${encodeURIComponent(tier)}`, {
-            method: 'POST', headers: await authHeaders()
-        });
-        if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || `HTTP ${res.status}`);
-        const { checkout_url } = await res.json();
-        location.href = checkout_url;
-    } catch (e) { alert(`Checkout failed: ${e.message}`); }
-}
-async function refreshNav() {
-    if (!window.Clerk) return;
-    const signedIn = !!window.Clerk.user;
-    const slot = document.getElementById('userSlot');
-    document.getElementById('btnSignIn').style.display = signedIn ? 'none' : 'inline-flex';
-    const cta = document.getElementById('ctaPrimary');
-    cta.textContent = signedIn ? 'Open app \u2192' : 'Try the projector \u2192';
-    slot.innerHTML = '';
-    if (signedIn) { try { window.Clerk.mountUserButton(slot, { afterSignOutUrl: '/' }); } catch {} }
-}
-(function waitForClerk() {
-    if (!window.Clerk?.load) { setTimeout(waitForClerk, 100); return; }
-    window.Clerk.load().then(() => {
-        refreshNav();
-        window.Clerk.addListener(() => refreshNav());
-        if (new URLSearchParams(location.search).get('billing') === 'success') alert('Welcome to Pro!');
-    });
+// Nav pill + dark-themed Clerk modal live in /shared/nav.js
+async function refreshNavPill() { return window.STNav?.refreshPill?.(); }
+(function waitForNav() {
+  if (!window.STNav?.init) { setTimeout(waitForNav, 50); return; }
+  window.STNav.init({ signInRedirect: '/' });
+  // Post-checkout tier-flip flow (poll /api/me, resync if tier stuck).
+  if (new URLSearchParams(location.search).get('billing') === 'success') {
+    (async () => {
+      const expected = (new URLSearchParams(location.search).get('tier') || '').toLowerCase();
+      const fetchTier = async () => {
+        try {
+          const r = await fetch('/api/me', { headers: await authHeaders() });
+          return r.ok ? ((await r.json()).tier || '').toLowerCase() : '';
+        } catch { return ''; }
+      };
+      let tier = '';
+      for (let i = 0; i < 5; i++) {
+        tier = await fetchTier();
+        if (tier === 'strategist' || tier === 'pro') break;
+        await new Promise(res => setTimeout(res, 800));
+      }
+      if (expected && tier && tier !== expected) {
+        try {
+          await fetch('/api/billing/resync', { method: 'POST', headers: await authHeaders() });
+          tier = await fetchTier();
+        } catch (_) {}
+      }
+      if (tier === 'strategist') return alert('Welcome to Strategist!');
+      if (tier === 'pro')        return alert('Welcome to Pro!');
+      alert('Subscription confirmed.');
+    })();
+  }
 })();
 </script>
 </body>

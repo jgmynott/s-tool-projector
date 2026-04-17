@@ -114,26 +114,25 @@ Backtested momentum, value, and quality (low-beta) factors across 2022–2024. *
 | Auto-deploy Railway on `git push` | GitHub OAuth still blocked at project level | User → railway.com/account → Integrations → Connect GitHub |
 | `PAYWALL_ENABLED=true` | Still false in Railway — nothing blocks yet | Only flip once Strategist price is set + user has tested checkout end-to-end |
 
-## Open secrets still in chat transcript
+## Open secrets — ROTATE before next session
 
-These values were pasted in the chat and should be rolled at convenience (test-mode so low-risk, but hygiene):
-- Stripe `sk_test_…ynsz` (can be rolled at dashboard.stripe.com/test/apikeys)
-- FMP `KPUDzcVq8UeskEHvExkOk8GlpcCmpSoF` — **paid tier, prioritize rotating**
-- Finnhub `d7fbr81r…`
-- Polygon `MJFCE6KCmcLhTcAVNCfBdzcV9Rxp5mZa`
-- FRED `4e1028065e3393a3565aee40da09b842`
-- Alpha Vantage `VWNW7C8SCK7V66B2`
+Real values have been redacted from this file (they were committed in earlier
+revisions; treat git history as compromised and rotate at each provider):
+- Stripe test SK (`sk_test_…`) — rotate at dashboard.stripe.com/test/apikeys
+- Stripe webhook secret — rotate at dashboard.stripe.com/test/webhooks/…
+- FMP — **paid tier, prioritize**
+- Finnhub, Polygon, FRED, Alpha Vantage
 
-Live keys (rk_live_, sk_live_) — user confirmed "rotated" last night.
+Live keys (rk_live_, sk_live_) — user confirmed "rotated" on 2026-04-16.
 
 ## Env var state on Railway `api` service (verified)
 
 ```
 CLERK_JWKS_URL            = https://fluent-mole-71.clerk.accounts.dev/.well-known/jwks.json
-CLERK_SECRET_KEY          = sk_test_…
+CLERK_SECRET_KEY          = sk_test_…   (redacted — see Railway vars)
 CORS_ORIGINS              = https://s-tool.io,https://www.s-tool.io,http://localhost:8000
-STRIPE_SK                 = sk_test_…
-STRIPE_WEBHOOK_SECRET     = whsec_maVNYc9dQIryXARqpQ1E8iXDOAlnCMvu
+STRIPE_SK                 = sk_test_…   (redacted)
+STRIPE_WEBHOOK_SECRET     = whsec_…     (redacted — ROTATE after any git read)
 STRIPE_PRICE_ID_PRO       = price_1TMd5gHijsJzoz12PswsXLhj  ← $19.99/mo, NEEDS REPLACING WITH $8/mo
 USERS_DB_PATH             = /data/users.db
 RAILWAY_VOLUME_NAME       = api-volume

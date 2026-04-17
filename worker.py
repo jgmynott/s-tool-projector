@@ -210,7 +210,7 @@ def run_worker(symbols: list[str], horizons: list[int], force: bool = False,
     log.info("Running portfolio scan...")
     try:
         scan_results = scan_universe(conn)
-        save_picks(scan_results)
+        save_picks(scan_results, conn=conn)
         log.info("Portfolio scan complete: %d tickers scanned", len(scan_results))
     except Exception as e:
         log.warning("Portfolio scan failed: %s", e)

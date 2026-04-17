@@ -228,7 +228,11 @@ def compute_fundamental_tilt(
         total_tilt += tilt
 
     # ── 7. Public Pulse (US general-public sentiment composite) ──
-    pp = _dm.get_public_pulse(symbol, fast=True)
+    # Skip the network call entirely when its tilt weight is 0 — it was
+    # killed as a signal in the 2023 regime-change forensic, but the fetch
+    # was still firing on every projection, rate-limiting Google Trends and
+    # dragging cold-cache backfills out by hours.
+    pp = _dm.get_public_pulse(symbol, fast=True) if TILT_WEIGHTS.get("public_pulse", 0.0) > 0 else None
     if pp and pp.get("composite_score") is not None and pp.get("active_sources", 0) >= 2:
         raw_data["public_pulse"] = pp
         composite = pp["composite_score"]  # already in [-1, +1]

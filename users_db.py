@@ -29,6 +29,49 @@ from typing import Optional
 # Volume mount (e.g. /data/users.db) so rows survive container restarts.
 USERS_DB_PATH = os.getenv("USERS_DB_PATH", str(Path(__file__).parent / "users.db"))
 
+# Strategist override — any authed user matching the owner env vars OR
+# appearing in the comped-grants lists is treated as Strategist regardless
+# of their actual `tier` column. Two uses:
+#   1. Founder bypasses checkout (OWNER_EMAIL / OWNER_CLERK_USER_ID)
+#   2. Friends, early testers, comped accounts (STRATEGIST_GRANT_EMAILS /
+#      STRATEGIST_GRANT_CLERK_IDS — each comma-separated).
+# Using env vars rather than a DB table keeps this auditable and easy to
+# grant/revoke with a single Railway variable edit.
+OWNER_CLERK_USER_ID = os.getenv("OWNER_CLERK_USER_ID", "").strip()
+OWNER_EMAIL = os.getenv("OWNER_EMAIL", "").strip().lower()
+
+
+def _split_csv_lower(v: str) -> set[str]:
+    return {x.strip().lower() for x in (v or "").split(",") if x.strip()}
+
+
+def _split_csv(v: str) -> set[str]:
+    return {x.strip() for x in (v or "").split(",") if x.strip()}
+
+
+STRATEGIST_GRANT_EMAILS = _split_csv_lower(os.getenv("STRATEGIST_GRANT_EMAILS", ""))
+STRATEGIST_GRANT_CLERK_IDS = _split_csv(os.getenv("STRATEGIST_GRANT_CLERK_IDS", ""))
+
+
+def _has_strategist_override(user_row: Optional[dict]) -> bool:
+    if not user_row:
+        return False
+    cid = user_row.get("clerk_user_id") or ""
+    em = (user_row.get("email") or "").lower()
+    if OWNER_CLERK_USER_ID and cid == OWNER_CLERK_USER_ID:
+        return True
+    if OWNER_EMAIL and em == OWNER_EMAIL:
+        return True
+    if cid and cid in STRATEGIST_GRANT_CLERK_IDS:
+        return True
+    if em and em in STRATEGIST_GRANT_EMAILS:
+        return True
+    return False
+
+
+# Alias for callers that already import this name.
+_is_owner = _has_strategist_override
+
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS users (
     clerk_user_id       TEXT PRIMARY KEY,
@@ -227,6 +270,16 @@ def projections_in_last_24h(
     return int(row[0]) if row else 0
 
 
+def effective_tier(user_row: Optional[dict]) -> str:
+    """The tier we should treat this user as. Applies the owner override
+    before falling back to the stored tier column. Everything else in the
+    app should read through this helper (not user_row['tier']) so billing
+    bugs can't lock the owner out of their own product."""
+    if _is_owner(user_row):
+        return "strategist"
+    return (user_row.get("tier") if user_row else None) or "free"
+
+
 def quota_for_user(user_row: Optional[dict]) -> dict:
     """Return {'limit': int|None, 'tier': str}.
 
@@ -234,7 +287,7 @@ def quota_for_user(user_row: Optional[dict]) -> dict:
     - pro: 10/day
     - free / anonymous: 3/day
     """
-    tier = user_row.get("tier") if user_row else None
+    tier = effective_tier(user_row)
     if tier == "strategist":
         return {"limit": STRATEGIST_DAILY_PROJECTIONS, "tier": "strategist"}
     if tier == "pro":
@@ -243,5 +296,5 @@ def quota_for_user(user_row: Optional[dict]) -> dict:
 
 
 def can_access_picks(user_row: Optional[dict]) -> bool:
-    """Portfolio picks are gated to the Strategist tier."""
-    return bool(user_row and user_row.get("tier") == "strategist")
+    """Portfolio picks are gated to the Strategist tier (or the owner)."""
+    return effective_tier(user_row) == "strategist"

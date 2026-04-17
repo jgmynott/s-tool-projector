@@ -27,11 +27,59 @@ from fastapi import Header, HTTPException
 log = logging.getLogger("auth")
 
 CLERK_JWKS_URL = os.getenv("CLERK_JWKS_URL", "").strip()
+CLERK_SECRET_KEY = os.getenv("CLERK_SECRET_KEY", "").strip()
 _JWKS_TTL_SECONDS = 3600
 
 _jwks_cache: dict[str, Any] = {}
 _jwks_fetched_at: float = 0
 _jwks_lock = threading.Lock()
+
+# Per-process email cache, populated on demand from Clerk's Backend API.
+# Default Clerk JWT templates don't include email, so we do a one-time
+# lookup per user_id and keep it for the container's lifetime.
+_email_cache: dict[str, Optional[str]] = {}
+_email_lock = threading.Lock()
+
+
+def lookup_email_from_clerk(user_id: str) -> Optional[str]:
+    """Fetch the user's primary email from Clerk's Backend API.
+
+    Clerk JWTs under the default template don't carry email, so any code
+    that wants to match on email (e.g. STRATEGIST_GRANT_EMAILS) needs to
+    populate it from this call. Cached in-process after first hit.
+    """
+    if not user_id:
+        return None
+    with _email_lock:
+        if user_id in _email_cache:
+            return _email_cache[user_id]
+    if not CLERK_SECRET_KEY:
+        return None
+    try:
+        r = httpx.get(
+            f"https://api.clerk.com/v1/users/{user_id}",
+            headers={"Authorization": f"Bearer {CLERK_SECRET_KEY}"},
+            timeout=5.0,
+        )
+        if r.status_code != 200:
+            log.info("Clerk user lookup for %s returned %d", user_id, r.status_code)
+            with _email_lock:
+                _email_cache[user_id] = None
+            return None
+        data = r.json()
+        primary_id = data.get("primary_email_address_id")
+        email = None
+        for e in data.get("email_addresses", []) or []:
+            if (primary_id and e.get("id") == primary_id) or (not primary_id and not email):
+                email = e.get("email_address")
+                if primary_id:
+                    break
+        with _email_lock:
+            _email_cache[user_id] = email
+        return email
+    except Exception as e:
+        log.warning("Clerk email lookup failed for %s: %s", user_id, e)
+        return None
 
 
 def _fetch_jwks(force: bool = False) -> dict[str, Any]:
@@ -99,17 +147,24 @@ def verify_token(token: str) -> dict[str, Any]:
 
 # ── FastAPI dependencies ────────────────────────────────────────────────
 
+def _build_user(claims: dict) -> dict:
+    """Shared builder: returns {user_id, email, claims}. Fills email via
+    the Clerk Backend API if the JWT didn't carry it."""
+    user_id = claims.get("sub")
+    email = claims.get("email") or claims.get("primary_email_address") \
+            or claims.get("email_address")
+    if not email and user_id:
+        email = lookup_email_from_clerk(user_id)
+    return {"user_id": user_id, "email": email, "claims": claims}
+
+
 def current_user(authorization: Optional[str] = Header(None)) -> dict[str, Any]:
     """Required auth. Raises 401 if no valid bearer token."""
     if not authorization or not authorization.lower().startswith("bearer "):
         raise HTTPException(status_code=401, detail="Missing bearer token")
     token = authorization.split(" ", 1)[1].strip()
     claims = verify_token(token)
-    return {
-        "user_id": claims.get("sub"),
-        "email": claims.get("email"),
-        "claims": claims,
-    }
+    return _build_user(claims)
 
 
 def optional_user(authorization: Optional[str] = Header(None)) -> Optional[dict[str, Any]]:
@@ -121,8 +176,4 @@ def optional_user(authorization: Optional[str] = Header(None)) -> Optional[dict[
         claims = verify_token(token)
     except HTTPException:
         return None
-    return {
-        "user_id": claims.get("sub"),
-        "email": claims.get("email"),
-        "claims": claims,
-    }
+    return _build_user(claims)

@@ -8,7 +8,7 @@
 <link rel="canonical" href="https://s-tool.io/app/" />
 <meta property="og:title" content="S-Tool Projector — Honest Stock Projections" />
 <meta property="og:description" content="A projection engine that ships only signals that survive walk-forward backtests on the full Russell 3000. Real MAPE bands." />
-<meta property="og:image" content="https://s-tool.io/img/hero-banff.jpg" />
+<meta property="og:image" content="https://s-tool.io/img/og-abstract.jpg" />
 <meta property="og:url" content="https://s-tool.io/app/" />
 <meta property="og:type" content="website" />
 <meta name="twitter:card" content="summary_large_image" />
@@ -840,15 +840,121 @@ body {
   src="https://fluent-mole-71.clerk.accounts.dev/npm/@clerk/clerk-js@5/dist/clerk.browser.js"
   crossorigin="anonymous"
 ></script>
+<style>
+/* Evergreen nav — matches /, /picks, /how, /pricing, /faq */
+nav.evergreen { position: sticky; top: 0; z-index: 100; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); background: rgba(11,16,6,0.82); border-bottom: 1px solid rgba(155,161,185,0.14); }
+.evergreen .ev-row { max-width: 1180px; margin: 0 auto; padding: 18px 32px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+.evergreen .ev-logo { display: flex; align-items: center; gap: 10px; font: 700 18px 'Inter', sans-serif; letter-spacing: -0.04em; color: #EDECE6; text-decoration: none; }
+.evergreen .ev-logo-mark { width: 28px; height: 28px; border-radius: 7px; background: linear-gradient(135deg, #022834, #0A6577, #5FAAC5); display: flex; align-items: center; justify-content: center; }
+.evergreen .ev-logo-mark svg { stroke: #EDECE6; }
+.evergreen .ev-center { display: flex; gap: 28px; font: 500 14px 'Inter', sans-serif; color: #9BA1B9; }
+.evergreen .ev-center a { color: #9BA1B9; text-decoration: none; padding: 2px 0; }
+.evergreen .ev-center a:hover { color: #EDECE6; }
+.evergreen .ev-center a.active { color: #EDECE6; border-bottom: 1px solid #5FAAC5; padding-bottom: 2px; }
+.evergreen .ev-end { display: flex; align-items: center; gap: 14px; min-width: 120px; justify-content: flex-end; }
+.evergreen .ev-user-pill-wrap { position: relative; }
+.evergreen .ev-user-pill { display: inline-flex; align-items: center; gap: 10px; padding: 7px 14px 7px 7px; border-radius: 999px; background: rgba(95,170,197,0.08); border: 1px solid rgba(95,170,197,0.30); color: #EDECE6; font: 500 13px 'Inter', sans-serif; cursor: pointer; }
+.evergreen .ev-user-pill:hover { background: rgba(95,170,197,0.14); }
+.evergreen .ev-user-pill .ev-tier-badge { font: 600 10px 'Inter', sans-serif; letter-spacing: 0.14em; text-transform: uppercase; color: #5FAAC5; }
+.evergreen .ev-user-pill .ev-caret { width: 12px; height: 12px; opacity: 0.7; transition: transform .2s; }
+.evergreen .ev-user-pill-wrap.open .ev-caret { transform: rotate(180deg); }
+.evergreen .ev-user-menu { display: none; position: absolute; top: calc(100% + 10px); right: 0; min-width: 240px; max-width: 320px; padding: 6px; background: #14201B; border: 1px solid rgba(95,170,197,0.30); border-radius: 14px; box-shadow: 0 20px 56px -8px rgba(0,0,0,0.55); z-index: 200; }
+@media (max-width: 620px) {
+  .evergreen .ev-user-menu { position: fixed; top: 72px; left: 12px; right: 12px; min-width: 0; max-width: none; }
+}
+.evergreen .ev-user-pill-wrap.open .ev-user-menu { display: block; }
+.evergreen .ev-user-menu .ev-menu-email { padding: 10px 14px; font: 500 12px 'Inter', sans-serif; color: #6B7382; border-bottom: 1px solid rgba(155,161,185,0.14); margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; }
+.evergreen .ev-user-menu .ev-menu-item { display: block; width: 100%; text-align: left; padding: 10px 14px; border-radius: 8px; font: 500 14px 'Inter', sans-serif; color: #EDECE6; background: none; border: none; cursor: pointer; }
+.evergreen .ev-user-menu .ev-menu-item:hover { background: rgba(95,170,197,0.10); }
+.evergreen .ev-user-menu .ev-menu-item.danger { color: #fca5a5; }
+.evergreen .ev-user-menu .ev-menu-item.danger:hover { background: rgba(252,165,165,0.08); }
+.evergreen .ev-signin-btn { font: 500 14px 'Inter', sans-serif; color: #EDECE6; border: 1px solid rgba(95,170,197,0.30); padding: 9px 18px; border-radius: 999px; cursor: pointer; background: transparent; }
+.evergreen .ev-signin-btn:hover { background: rgba(95,170,197,0.08); }
+@media (max-width: 800px) { .evergreen .ev-center { gap: 18px; } .evergreen .ev-center a { font-size: 13px; } }
+@media (max-width: 640px) {
+  .evergreen .ev-center a:nth-child(4), .evergreen .ev-center a:nth-child(5) { display: none; }
+  .evergreen .ev-user-pill { gap: 6px; padding: 6px 10px 6px 6px; }
+  .evergreen .ev-user-pill .ev-pill-email { display: none; }
+  .evergreen .ev-user-pill .ev-caret { display: none; }
+  .evergreen .ev-user-pill .ev-tier-badge { font-size: 9px; letter-spacing: 0.10em; padding: 2px 6px; border-radius: 6px; background: rgba(95,170,197,0.14); }
+  .evergreen .ev-row { padding: 14px 16px; gap: 12px; }
+}
+.evergreen .ev-logo, .evergreen .ev-end { flex-shrink: 0; }
+.evergreen .ev-center { min-width: 0; overflow: hidden; white-space: nowrap; }
+</style>
 </head>
 <body>
+<nav class="evergreen">
+  <div class="ev-row">
+    <a href="/" class="ev-logo"><span class="ev-logo-mark"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 18 9 12 13 16 21 4"></polyline></svg></span><span>s-tool</span></a>
+    <div class="ev-center">
+      <a href="/app" class="active">App</a>
+      <a href="/picks">Picks</a>
+      <a href="/how">How</a>
+      <a href="/pricing">Pricing</a>
+      <a href="/faq">FAQ</a>
+    </div>
+    <div class="ev-end" id="evNavEnd">
+      <button class="ev-signin-btn" onclick="window.Clerk?.openSignIn?.({afterSignInUrl:'/app'})">Sign in</button>
+    </div>
+  </div>
+</nav>
+<script>
+(function () {
+  async function headers() {
+    try { const t = await window.Clerk?.session?.getToken?.(); return t ? { Authorization: `Bearer ${t}` } : {}; } catch { return {}; }
+  }
+  function toggleEvMenu(evt) { evt?.stopPropagation?.(); document.querySelector('.ev-user-pill-wrap')?.classList.toggle('open'); }
+  function closeEvMenu() { document.querySelector('.ev-user-pill-wrap')?.classList.remove('open'); }
+  document.addEventListener('click', (e) => { if (!e.target.closest?.('.ev-user-pill-wrap')) closeEvMenu(); });
+  async function evSignOut() { try { await window.Clerk?.signOut?.(); } catch (_) {} location.href = '/'; }
+  window.toggleEvMenu = toggleEvMenu; window.closeEvMenu = closeEvMenu; window.evSignOut = evSignOut;
+
+  async function paintPill() {
+    const end = document.getElementById('evNavEnd');
+    if (!end) return;
+    if (!window.Clerk?.session) {
+      end.innerHTML = `<button class="ev-signin-btn" onclick="window.Clerk?.openSignIn?.({afterSignInUrl:'/app'})">Sign in</button>`;
+      return;
+    }
+    try {
+      const r = await fetch('/api/me', { headers: await headers() });
+      if (!r.ok) return;
+      const d = await r.json();
+      const tier = (d.tier || 'free').toLowerCase();
+      const badge = tier === 'strategist' ? 'Strategist' : tier === 'pro' ? 'Pro' : 'Free';
+      const fullEmail = d.email || '';
+      const shortEmail = fullEmail.split('@')[0] || 'account';
+      const CLERK_DARK = {appearance:{variables:{colorPrimary:'#5FAAC5',colorBackground:'#111512',colorText:'#EDECE6',colorTextSecondary:'#9BA1B9',colorInputBackground:'#1F232D',colorInputText:'#EDECE6',borderRadius:'10px',fontFamily:"Inter, sans-serif"}}};
+      window.openDarkProfile = () => window.Clerk?.openUserProfile?.(CLERK_DARK);
+      window.openBillingPortal = async () => {
+        try {
+          const r = await fetch('/api/billing/portal', { method: 'POST', headers: await headers() });
+          if (!r.ok) return alert('Billing portal unavailable');
+          const { portal_url } = await r.json(); location.href = portal_url;
+        } catch (e) { alert('Could not open billing'); }
+      };
+      const hasSub = tier === 'pro' || tier === 'strategist';
+      const subRow = hasSub
+        ? `<button class="ev-menu-item" onclick="openBillingPortal(); closeEvMenu();">Manage subscription</button>`
+        : `<button class="ev-menu-item" onclick="location.href='/pricing'; closeEvMenu();">Upgrade</button>`;
+      end.innerHTML = `<div class="ev-user-pill-wrap"><button class="ev-user-pill" onclick="toggleEvMenu(event)" aria-label="Account menu for ${fullEmail || shortEmail}"><span style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#022834,#5FAAC5);display:inline-block;flex-shrink:0;"></span><span class="ev-pill-email">${shortEmail}</span><span class="ev-tier-badge">${badge}</span><svg class="ev-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></button><div class="ev-user-menu"><div class="ev-menu-email">${fullEmail || 'Signed in'}</div><button class="ev-menu-item" onclick="openDarkProfile(); closeEvMenu();">Manage account</button>${subRow}<button class="ev-menu-item" onclick="location.href='/'; closeEvMenu();">Home</button><button class="ev-menu-item" onclick="location.href='/picks'; closeEvMenu();">Picks</button><button class="ev-menu-item" onclick="location.href='/how'; closeEvMenu();">How it works</button><button class="ev-menu-item" onclick="location.href='/pricing'; closeEvMenu();">Pricing</button><button class="ev-menu-item" onclick="location.href='/faq'; closeEvMenu();">FAQ</button><button class="ev-menu-item danger" onclick="evSignOut(); closeEvMenu();">Sign out</button></div></div>`;
+    } catch (_) {}
+  }
+  function wait() {
+    if (!window.Clerk?.load) { setTimeout(wait, 100); return; }
+    window.Clerk.load().then(() => { paintPill(); window.Clerk.addListener(paintPill); });
+  }
+  wait();
+})();
+</script>
 <div class="container">
     <!-- Header -->
     <div class="header">
         <div>
             <a href="/" class="back-link">&larr; s-tool.io</a>
             <h1>S-TOOL PROJECTOR</h1>
-            <div class="subtitle">Monte Carlo + Mean Reversion Projection Engine</div>
+            <div class="subtitle">Adaptive Projection Engine</div>
         </div>
         <div class="meta auth-row">
             <div>
@@ -2202,9 +2308,50 @@ async function refreshUserPill() {
     window.Clerk.load().then(() => {
         refreshUserPill();
         window.Clerk.addListener(() => refreshUserPill());
-        // Handle post-checkout redirect flash.
+        // Deep-link support: /app?ticker=XYZ prefills + runs immediately so
+        // clicking a pick from /picks lands in a running projection.
+        const dlTicker = new URLSearchParams(location.search).get('ticker');
+        if (dlTicker) {
+            const input = document.getElementById('symbolInput');
+            if (input) {
+                input.value = dlTicker.toUpperCase();
+                try { runProjection(); } catch (_) {}
+            }
+        }
+        // Handle post-checkout redirect flash. We show a tier-specific message
+        // by polling /api/me briefly — Stripe webhooks are usually settled by
+        // the time the user lands back, but give it a couple tries just in case.
         const p = new URLSearchParams(location.search);
-        if (p.get('billing') === 'success') status('Welcome to Pro. Subscription confirmed.');
+        if (p.get('billing') === 'success') {
+            (async () => {
+                const expected = (p.get('tier') || '').toLowerCase();
+                const headers = async () => await authHeaders();
+                const fetchTier = async () => {
+                    try {
+                        const r = await fetch('/api/me', { headers: await headers() });
+                        return r.ok ? ((await r.json()).tier || '').toLowerCase() : '';
+                    } catch (_) { return ''; }
+                };
+                // Poll briefly for the webhook to settle.
+                let tier = '';
+                for (let i = 0; i < 5; i++) {
+                    tier = await fetchTier();
+                    if (tier === 'strategist' || tier === 'pro') break;
+                    await new Promise(res => setTimeout(res, 800));
+                }
+                // If the tier didn't match what was purchased, force a resync.
+                if (expected && tier && tier !== expected) {
+                    try {
+                        await fetch('/api/billing/resync', { method: 'POST', headers: await headers() });
+                        tier = await fetchTier();
+                    } catch (_) {}
+                }
+                if (tier === 'strategist') return status('Welcome to Strategist. Subscription confirmed.');
+                if (tier === 'pro')        return status('Welcome to Pro. Subscription confirmed.');
+                status('Subscription confirmed. Refresh if your tier badge hasn\u2019t updated.');
+                refreshUserPill();
+            })();
+        }
         if (p.get('billing') === 'cancel') status('Checkout canceled \u2014 you can try again any time.');
     });
 })();

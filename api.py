@@ -26,7 +26,7 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
-from db import init_db, get_projection, get_projection_age_hours, save_projection, list_cached_symbols, get_sentiment
+from db import init_db, get_projection, get_projection_age_hours, save_projection, list_cached_symbols, get_sentiment, get_picks_history
 from projector_engine import run_projection
 from hardening import health_checker
 from portfolio_scanner import get_picks, get_scan_age_hours
@@ -60,7 +60,22 @@ app.add_middleware(
 # Per-IP rate limiting. Protects against abuse of /api/project (FMP quota +
 # CPU) and /api/billing/checkout (spam Stripe customer creation). Webhook is
 # exempt — Stripe retries hard and we MUST absorb those.
-limiter = Limiter(key_func=get_remote_address, default_limits=["120/minute"])
+#
+# Cloudflare strips upstream IP headers (x-forwarded-*) before proxying,
+# so get_remote_address() sees Cloudflare's egress — one bucket for the
+# whole internet. Cloudflare DOES pass cf-connecting-ip though, so we
+# read that when present and fall back to the remote address otherwise.
+def _client_ip(request: Request) -> str:
+    cf = request.headers.get("cf-connecting-ip")
+    if cf:
+        return cf.strip()
+    xff = request.headers.get("x-forwarded-for")
+    if xff:
+        return xff.split(",")[0].strip()
+    return get_remote_address(request)
+
+
+limiter = Limiter(key_func=_client_ip, default_limits=["120/minute"])
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
@@ -253,6 +268,100 @@ def sentiment(
     return rows
 
 
+@app.get("/api/track-record")
+@limiter.limit("30/minute")
+def track_record(
+    request: Request,
+    tier: Optional[str] = Query(None, regex="^(conservative|moderate|aggressive)$"),
+    lookback_days: int = Query(90, ge=7, le=365),
+    user: Optional[dict] = Depends(auth.optional_user),
+):
+    """Historical picks ledger + realized performance per tier.
+
+    Every pick ever shown on /picks is captured in picks_history by the
+    nightly worker. This endpoint joins that ledger with each symbol's
+    latest cached price to compute realized return, then summarises by
+    tier (hit rate + median/mean return + n).
+
+    Gated to Strategist tier — this is the track-record page that proves
+    the picks are worth the $29/mo, so it belongs on the same side of the
+    paywall as /picks.
+    """
+    is_strategist = False
+    if user:
+        user_row = users_db.upsert_user(users_conn, user["user_id"], email=user.get("email"))
+        is_strategist = users_db.can_access_picks(user_row)
+
+    from datetime import datetime as _dt, timedelta as _td
+    since = (_dt.utcnow().date() - _td(days=lookback_days)).isoformat()
+
+    rows = get_picks_history(conn, tier=tier, since_date=since, limit=2000)
+
+    # Attach latest cached price + realized return
+    price_cache: dict[str, float | None] = {}
+    def _latest_price(sym: str):
+        if sym in price_cache:
+            return price_cache[sym]
+        p = get_projection(conn, sym, 252)
+        price = p.get("current_price") if p else None
+        price_cache[sym] = price
+        return price
+
+    for r in rows:
+        cur = _latest_price(r["symbol"])
+        r["current_price"] = cur
+        entry = r.get("entry_price")
+        if cur and entry:
+            r["realized_return"] = (cur - entry) / entry
+            r["toward_target_pct"] = (
+                (cur - entry) / (r["p50_target"] - entry)
+                if r.get("p50_target") and r["p50_target"] != entry else None
+            )
+        else:
+            r["realized_return"] = None
+            r["toward_target_pct"] = None
+
+    # Summary by tier — only picks that had at least 7 days to play out
+    cutoff = (_dt.utcnow().date() - _td(days=7)).isoformat()
+    matured = [r for r in rows if r["pick_date"] <= cutoff and r["realized_return"] is not None]
+    summary: dict = {}
+    for tname in ("conservative", "moderate", "aggressive"):
+        bucket = [r for r in matured if r["tier"] == tname]
+        if not bucket:
+            summary[tname] = {"n": 0}
+            continue
+        rets = sorted(r["realized_return"] for r in bucket)
+        n = len(rets)
+        median = rets[n // 2] if n % 2 else (rets[n // 2 - 1] + rets[n // 2]) / 2
+        mean = sum(rets) / n
+        hits = sum(1 for r in bucket if r["realized_return"] > 0)
+        summary[tname] = {
+            "n": n,
+            "median_return": round(median, 4),
+            "mean_return": round(mean, 4),
+            "hit_rate": round(hits / n, 3),
+        }
+
+    if not is_strategist:
+        return JSONResponse(
+            status_code=402,
+            content={
+                "error": "strategist_required",
+                "tier_required": "strategist",
+                "summary": summary,  # teaser: show the aggregate stats
+                "hint": "Full pick-by-pick track record is part of Strategist ($29/mo).",
+            },
+        )
+
+    return {
+        "lookback_days": lookback_days,
+        "tier_filter": tier,
+        "summary": summary,
+        "count": len(rows),
+        "picks": rows,
+    }
+
+
 @app.get("/api/picks")
 @limiter.limit("30/minute")
 def picks(
@@ -317,7 +426,7 @@ def api_me(user: Optional[dict] = Depends(auth.optional_user)):
         "authenticated": True,
         "user_id": user["user_id"],
         "email": user.get("email"),
-        "tier": user_row.get("tier", "free"),
+        "tier": users_db.effective_tier(user_row),
         "subscription_status": user_row.get("subscription_status"),
         "quota": {
             "limit": quota["limit"],
@@ -370,6 +479,95 @@ async def api_billing_webhook(request: Request):
     sig = request.headers.get("stripe-signature", "")
     payload = await request.body()
     return billing.handle_webhook(users_conn, payload=payload, signature=sig)
+
+
+@app.get("/api/_admin/user/{clerk_user_id}")
+@limiter.limit("10/minute")
+def api_admin_user(clerk_user_id: str, request: Request):
+    """Admin lookup: dump a user's row. Protected by ADMIN_TOKEN header."""
+    expected = os.getenv("ADMIN_TOKEN", "")
+    if not expected or request.headers.get("x-admin-token", "") != expected:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    row = users_db.get_user(users_conn, clerk_user_id)
+    return {"user": row}
+
+
+@app.get("/api/_admin/users")
+@limiter.limit("10/minute")
+def api_admin_list_users(request: Request):
+    """Admin: list all users. Small table so no pagination yet."""
+    expected = os.getenv("ADMIN_TOKEN", "")
+    if not expected or request.headers.get("x-admin-token", "") != expected:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    rows = users_conn.execute(
+        "SELECT clerk_user_id, email, tier, subscription_status, created_at, updated_at "
+        "FROM users ORDER BY created_at DESC"
+    ).fetchall()
+    return {"users": [dict(r) for r in rows], "count": len(rows)}
+
+
+@app.post("/api/_admin/backfill_emails")
+@limiter.limit("10/minute")
+def api_admin_backfill_emails(request: Request):
+    """Admin: walk every user row whose email is NULL and look it up via
+    Clerk Backend API. Idempotent — safe to run repeatedly. Returns a
+    summary of what was filled + which users still lack email (usually
+    because the Clerk user has no primary email on file)."""
+    expected = os.getenv("ADMIN_TOKEN", "")
+    if not expected or request.headers.get("x-admin-token", "") != expected:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    rows = users_conn.execute(
+        "SELECT clerk_user_id FROM users WHERE email IS NULL OR email = ''"
+    ).fetchall()
+    to_fill = [r[0] for r in rows]
+    filled: list[dict] = []
+    skipped: list[str] = []
+    for clerk_id in to_fill:
+        email = auth.lookup_email_from_clerk(clerk_id)
+        if email:
+            users_conn.execute(
+                "UPDATE users SET email = ?, updated_at = datetime('now') "
+                "WHERE clerk_user_id = ?",
+                (email, clerk_id),
+            )
+            filled.append({"clerk_user_id": clerk_id, "email": email})
+        else:
+            skipped.append(clerk_id)
+    users_conn.commit()
+    return {
+        "candidates": len(to_fill),
+        "filled": len(filled),
+        "skipped": len(skipped),
+        "filled_list": filled,
+        "skipped_list": skipped,
+    }
+
+
+@app.post("/api/_admin/force_resync/{clerk_user_id}")
+@limiter.limit("10/minute")
+def api_admin_force_resync(clerk_user_id: str, request: Request):
+    """Admin: force a tier resync for any user by clerk_user_id."""
+    expected = os.getenv("ADMIN_TOKEN", "")
+    if not expected or request.headers.get("x-admin-token", "") != expected:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    return billing.resync_by_customer(users_conn, clerk_user_id)
+
+
+@app.post("/api/billing/resync")
+@limiter.limit("5/minute")
+def api_billing_resync(request: Request, user: dict = Depends(auth.current_user)):
+    """Re-fetch the authed user's subscription from Stripe and refresh tier.
+
+    Self-service fix for tier-drift (e.g. when a webhook handler bug wrote
+    an incorrect tier). Safe to call repeatedly — the derivation is
+    idempotent and always reflects the current Stripe state.
+    """
+    # Always route through resync_by_customer — it handles the case where
+    # stripe_subscription_id was never recorded locally (e.g. when the Stripe
+    # webhook isn't configured for checkout.session.completed events) by
+    # looking the subscription up via the customer id.
+    return billing.resync_by_customer(users_conn, user["user_id"])
 
 
 # ── Health & Provider Status ──

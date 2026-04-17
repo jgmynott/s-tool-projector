@@ -8,7 +8,7 @@
 <link rel="canonical" href="https://s-tool.io/how" />
 <meta property="og:title" content="How s-tool works — projection methodology" />
 <meta property="og:description" content="Monte Carlo + mean-reversion: how we build honest projection bands for 2,609 US stocks." />
-<meta property="og:image" content="https://s-tool.io/img/hero-banff.jpg" />
+<meta property="og:image" content="https://s-tool.io/img/og-abstract.jpg" />
 <meta property="og:url" content="https://s-tool.io/how" />
 <meta property="og:type" content="article" />
 <meta name="twitter:card" content="summary_large_image" />
@@ -103,9 +103,11 @@ footer a { color: var(--text-mid); }
             <span>s-tool</span>
         </a>
         <div class="nav-links">
-            <a href="/">Home</a>
-            <a href="/app">Open app</a>
-            <a href="/#pricing">Pricing</a>
+            <a href="/app">App</a>
+            <a href="/picks">Picks</a>
+            <a href="/how" class="active" style="color:var(--text-hi);border-bottom:1px solid var(--accent-lake);padding-bottom:2px;">How</a>
+            <a href="/pricing">Pricing</a>
+            <a href="/faq">FAQ</a>
         </div>
     </div>
 </nav>
@@ -113,105 +115,80 @@ footer a { color: var(--text-mid); }
 <article class="article">
 
 <h1>How s-tool builds <em>honest</em> projection bands</h1>
-<p class="lead">A transparent look at the Monte Carlo + mean-reversion engine, what signals we tested, and why most of them got killed.</p>
+<p class="lead">Projections anyone can trust &mdash; because the engine shows its own error bar, and we're ruthless about what gets in and what gets killed.</p>
 
-<h2>1. Learn the stock's own dynamics</h2>
+<h2>1. The projection engine</h2>
 
-<p>For each ticker, we pull <strong>~2 years of daily closing prices</strong> from yfinance and estimate two core parameters:</p>
+<p>Every ticker runs through a <strong>proprietary stochastic projection model</strong> that learns the stock's own return and volatility behavior from several years of daily closes. The engine simulates a large number of forward paths through the stock's volatility regime, anchored by a fundamental-reversion pull so projections don't drift unrealistically far from their long-run gravity.</p>
+
+<p>For the asymmetric-upside sleeve we layer a <strong>volatility-regime-adaptive</strong> variant of the same engine on top &mdash; one that weights recent market conditions more heavily, widening the forecast tail when something is actually cooking under the hood. That's the model that surfaced names like NVDA, SMCI, and AEHR well before the AI-semi runs in our 2022-2024 backtests.</p>
+
+<p>At the end, the engine reports the standard percentile bands:</p>
 
 <ul>
-    <li><strong>Annualized drift (&#956;)</strong> &mdash; the stock's average return tendency, estimated from log-returns.</li>
-    <li><strong>Annualized volatility (&#963;)</strong> &mdash; how wildly the stock swings. This is the single most important input &mdash; it determines how wide the projection bands are.</li>
+    <li><strong>P10 / P90</strong> &mdash; the outer range. 80% of simulated outcomes fall here.</li>
+    <li><strong>P25 / P75</strong> &mdash; the interior range. 50% of outcomes.</li>
+    <li><strong>P50</strong> &mdash; median outcome, not a price target. It's the engine's center of gravity, nothing more.</li>
 </ul>
 
-<p>We also fit a <strong>mean-reversion anchor</strong> by regressing the stock's price on its 1-year moving average. If the stock is far above its long-run trend, the engine pulls projections slightly downward; if below, slightly upward. The strength of this pull is controlled by <code>&kappa;</code> (the reversion speed).</p>
+<h2>2. Honesty via out-of-sample error</h2>
 
-<div class="formula-box">
-    <span class="label">Geometric Brownian Motion with mean reversion</span>
-    dS = &kappa;(&#952; &minus; S)dt + &#963;S&middot;dW
+<p>Every projection on s-tool ships with the model's <strong>historical error on that specific ticker</strong> &mdash; computed by walking the engine forward through hundreds of historical dates and comparing its P50 call to what actually happened. The math is standard walk-forward cross-validation; the discipline is in showing the result, not hiding it.</p>
+
+<p>A 15% error band on a 40%-vol stock is honest. A 2% error band would be a lie. We don't give you the 2% number.</p>
+
+<div class="callout">
+    <strong>The engine shows its error bar on every projection.</strong> When bands are wide, the stock is genuinely hard to predict &mdash; and you'll see it immediately. No hidden confidence.
 </div>
 
-<p>Where <code>&#952;</code> is the mean-reversion target (from fundamentals + moving-average regression), <code>&kappa;</code> controls how fast the stock reverts, and <code>&#963;</code> is historical volatility.</p>
+<h2>3. The signal graveyard</h2>
 
-<h2>2. Simulate thousands of forward paths</h2>
+<p>Before any tilt, factor, or sentiment overlay ships to production, it has to pass a strict gate: <strong>measurable improvement across thousands of symbols and years of rolling backtests</strong>. Not one-period wins, not cherry-picked charts.</p>
 
-<p>The engine runs <strong>10,000 Monte Carlo paths</strong> at the configured horizon (default: 252 trading days = ~1 year). Each path is a random walk under the stock's own volatility, pulled by the mean-reversion force.</p>
+<p>We've tested roughly <strong>two dozen candidate signals</strong> &mdash; crowd sentiment, text-derived attention metrics, macroeconomic regime signals, credit spreads, options skew, insider-transaction flows, and more. Almost all of them were either arbitraged away in 2023 (as LLM-generated content polluted the text corpora) or never had measurable edge to begin with.</p>
 
-<p>At the end, we extract percentiles across all 10,000 terminal prices:</p>
+<p>The public signal graveyard is long. The engine's active signal list is short on purpose.</p>
 
-<ul>
-    <li><strong>P10 / P90</strong> &mdash; the wide band. 80% of simulated outcomes fall between these.</li>
-    <li><strong>P25 / P75</strong> &mdash; the narrower band. 50% of outcomes.</li>
-    <li><strong>P50</strong> &mdash; the median outcome. Not a "target price" &mdash; it's where the engine expects the stock to be under its own drift + vol + reversion dynamics, nothing more.</li>
-</ul>
+<h2>The engine self-tunes overnight</h2>
+<p>Every night, after the projections refresh, a <strong>self-training scoring loop</strong> re-evaluates our active scoring methods against the most recent out-of-sample windows. Whichever method has been producing the best realized-return hit rate in the current market regime gets promoted to production. If regime shifts and the winning method stops working, a different one takes over &mdash; automatically, transparently.</p>
+<p>This isn't magic; it's a disciplined overnight loop running the same walk-forward evaluation we'd run by hand, just continuously. The decision log (which scorer is active, what its recent performance has been) is kept under the methodology fold so you can always see what's driving today's Asymmetric tier.</p>
 
-<p>This blend of Monte Carlo (for path diversity) and mean reversion (for fundamental anchoring) is what gives the projections their shape. Pure MC alone would just extrapolate drift; pure MR alone would snap everything to a moving average. The blend captures both randomness and the stock's long-run gravity.</p>
+<div class="callout">
+    <strong>Our hypothesis:</strong> Text-based and macro-regime signals are over-discovered. Real edge increasingly lives in <em>regulatory-disclosure</em> data (filings, short interest, insider flows), in <em>volatility-regime</em> detection, and in <em>cross-sectional</em> behavior &mdash; where incentive structures or structural frictions keep arbitrageurs from closing the gap quickly. That's where our active research lives.
+</div>
 
-<h2>3. Validate with MAPE</h2>
+<h2>4. The bar for production</h2>
 
-<p><strong>Mean Absolute Percentage Error (MAPE)</strong> is how we measure whether the engine is honest. For every ticker with at least 2 years of history, we run a <strong>walk-forward backtest</strong>:</p>
+<p>A signal makes it into the engine only when it clears three thresholds:</p>
 
 <ol>
-    <li>Pick a historical date</li>
-    <li>Run the projection as of that date (using only data available at the time)</li>
-    <li>Compare the P50 prediction to what actually happened</li>
-    <li>Repeat across 466 rolling windows from 2018&ndash;2025</li>
+    <li><strong>Economic rationale</strong> &mdash; why should this work? If we can't write it in one paragraph, it's pattern-matching.</li>
+    <li><strong>Out-of-sample robustness</strong> &mdash; does it hold across multiple regimes (2018 bull, 2020 dislocation, 2022 bear, 2023-24 recovery) and thousands of symbols? One curve fit isn't alpha.</li>
+    <li><strong>Measurable lift over the baseline engine</strong> &mdash; not a p-value trick; a material improvement in out-of-sample error or in realized-return hit rates.</li>
 </ol>
 
-<p>The resulting MAPE tells you: <strong>"On average, the engine's median projection was X% off from reality for this ticker."</strong> A MAPE of 15% on a stock with 40% annualized vol is honest. A MAPE of 2% would be a lie.</p>
+<p>Signals that don't clear all three get published in the graveyard, not in the engine.</p>
 
-<div class="callout">
-    <strong>Every projection on s-tool shows the model's historical MAPE for that ticker.</strong> If the MAPE is high, the bands are wide for a reason &mdash; the stock is genuinely hard to predict. We don't hide that.
-</div>
+<h2>5. The portfolio layer</h2>
 
-<h2>4. What we tested &mdash; and killed</h2>
+<p>For Strategist, we run the engine nightly across the broad US universe and publish four ranked tiers: <strong>Conservative · Moderate · Aggressive · Asymmetric</strong>. The first three bucket by projected volatility with a positive-return filter and fundamentals-quality overlay. The Asymmetric sleeve &mdash; our Medallion-MVP research direction &mdash; ranks by upside-tail probability under the volatility-adaptive model, explicitly targeting the 100%+ moves that are structurally rare and systematically underpriced.</p>
 
-<p>Between January and April 2026, we ran comprehensive backtests on every tilt/signal we could source for free or cheap. The test: does adding this signal to the base MC+MR engine <strong>improve MAPE by at least 1 percentage point</strong> on the full Russell 3000 across 2018&ndash;2025?</p>
+<p>Every pick that hits a tier is appended to an immutable ledger on pick date. Realized returns get computed against the entry price every night. That ledger is what lets you audit whether the engine earns its $29 &mdash; and lets us see, in the open, when a scoring method stops working.</p>
 
-<p>Nothing passed.</p>
+<h2>6. Data foundation</h2>
 
-<table class="signal-table">
-    <thead>
-        <tr><th>Signal</th><th>Source</th><th>&Delta;MAPE at 1yr</th><th>Hit rate</th><th>Verdict</th></tr>
-    </thead>
-    <tbody>
-        <tr><td>WSB / FinBERT sentiment</td><td>Reddit + NLP</td><td class="dead">Worked pre-2023, dead after</td><td class="dead">&darr;</td><td class="dead">Killed</td></tr>
-        <tr><td>Public Pulse (Trends + GDELT + Reddit + CSI)</td><td>Google, Reddit, FRED</td><td class="dead">&plusmn;0.07pp</td><td class="dead">&darr;</td><td class="dead">Killed</td></tr>
-        <tr><td>HY OAS spread</td><td>FRED</td><td class="dead">&plusmn;0.17pp</td><td class="dead">&rarr;</td><td class="dead">Killed</td></tr>
-        <tr><td>Margin debt</td><td>FINRA/FRED</td><td class="dead">&plusmn;0.17pp</td><td class="dead">&rarr;</td><td class="dead">Killed</td></tr>
-        <tr><td>CBOE SKEW (both signs)</td><td>CBOE</td><td class="dead">+0.92pp contrarian / &minus;1.28pp momentum</td><td class="dead">Mixed</td><td class="dead">Not shipped</td></tr>
-        <tr><td>Market breadth (% &gt; 200d SMA)</td><td>Derived</td><td class="dead">+0.43pp</td><td class="dead">&darr;</td><td class="dead">Marginal</td></tr>
-        <tr><td>Net liquidity (WALCL &minus; TGA &minus; RRP)</td><td>FRED</td><td class="dead">&minus;0.04 to &minus;0.31pp</td><td class="dead">&darr;</td><td class="dead">Worse</td></tr>
-        <tr><td>Form 4 insider buying</td><td>OpenInsider</td><td class="dead">+0.04pp</td><td class="dead">&rarr;</td><td class="dead">Data-sparse</td></tr>
-    </tbody>
-</table>
-
-<div class="callout">
-    <strong>The hypothesis:</strong> crowd-sentiment and macro-regime signals were arbitraged away post-2023, likely accelerated by LLM-generated content polluting the text corpora these signals depend on. Signals that require actual capital commitment or regulatory disclosure (not text) may still have alpha &mdash; that's our active research direction.
-</div>
-
-<h2>5. What's next</h2>
-
-<p>The engine currently ships <strong>tilt-free projections</strong> &mdash; pure MC + MR on the stock's own dynamics. That's the honest baseline. But we're actively researching the next generation of signals:</p>
+<p>We don't invent data. The engine is fed from established sources:</p>
 
 <ul>
-    <li><strong>Cross-sectional momentum</strong> &mdash; the most robust anomaly in academic finance. Relative outperformers tend to continue. Different statistical structure from the macro signals we tested.</li>
-    <li><strong>Factor investing</strong> &mdash; value, quality, low-volatility. We have the fundamentals data via FMP; backtesting infrastructure is built.</li>
-    <li><strong>Portfolio-level intelligence</strong> &mdash; instead of projecting one ticker at a time, scanning the full Russell 3000 to surface risk-tiered picks (conservative / moderate / aggressive).</li>
+    <li><strong>Price history</strong> &mdash; standard daily OHLCV across the US equity universe, cached and refreshed nightly.</li>
+    <li><strong>Regulatory filings</strong> &mdash; point-in-time fundamentals derived directly from 10-K and 10-Q XBRL filings.</li>
+    <li><strong>Institutional positioning</strong> &mdash; consolidated short-interest and related capital-commitment signals.</li>
+    <li><strong>Macroeconomic reference</strong> &mdash; for volatility-regime context and for calibrating tail risk.</li>
 </ul>
 
-<p>Any signal that makes it into the engine will have passed the same bar: <strong>&ge;1pp MAPE lift on &ge;2,000 symbols across 2018&ndash;2025 in walk-forward testing.</strong> We'd rather ship nothing than ship noise.</p>
+<p>Signal engineering &mdash; the transformation from raw data into something predictive &mdash; is the proprietary piece. The data itself is table stakes.</p>
 
-<h2>6. Data sources</h2>
-
-<ul>
-    <li><strong>Prices:</strong> yfinance (5-year daily OHLCV, cached and refreshed daily)</li>
-    <li><strong>Fundamentals:</strong> Financial Modeling Prep (FMP) &mdash; PE, debt/equity, ROE, sector, market cap</li>
-    <li><strong>Universe:</strong> iShares IWV (Russell 3000 ETF) holdings, refreshed every 24h &rarr; 2,609 tickers</li>
-    <li><strong>Macro reference:</strong> FRED (VIX, SKEW, risk-free rate for Sharpe calculations)</li>
-</ul>
-
-<p style="margin-top:56px;"><a href="/app">&larr; Try the projector</a> &nbsp;&middot;&nbsp; <a href="/#pricing">See pricing</a> &nbsp;&middot;&nbsp; <a href="https://github.com/jgmynott/s-tool-projector" target="_blank" rel="noopener">View on GitHub</a></p>
+<p style="margin-top:56px;"><a href="/app">&larr; Try the projector</a> &nbsp;&middot;&nbsp; <a href="/pricing">See pricing</a> &nbsp;&middot;&nbsp; <a href="/picks">Today's picks</a></p>
 
 </article>
 
