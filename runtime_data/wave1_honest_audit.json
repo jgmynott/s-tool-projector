@@ -1,0 +1,103 @@
+{
+  "generated_at": 1776459756,
+  "universe_rows": 22218,
+  "delisted_mid_window_count": 0,
+  "delisted_mid_window_pct": 0.0,
+  "illiquid_count_below_500k": 670,
+  "illiquid_pct": 3.016,
+  "liquidity_floor_usd": 500000,
+  "tx_cost_roundtrip": 0.015,
+  "delist_gap_days": 30,
+  "top_n": 20,
+  "threshold": 1.0,
+  "scorers": {
+    "nn_score": {
+      "variants": {
+        "A_published": {
+          "n": 200,
+          "hit_100": 0.5,
+          "mean_return": 2.9376,
+          "median_return": 0.9918,
+          "baseline_hit_100": 0.0495,
+          "lift": 10.099
+        },
+        "B_survivorship": {
+          "n": 200,
+          "hit_100": 0.5,
+          "mean_return": 2.9376,
+          "median_return": 0.9918,
+          "baseline_hit_100": 0.0495,
+          "lift": 10.099
+        },
+        "C_liquidity": {
+          "n": 200,
+          "hit_100": 0.385,
+          "mean_return": 1.4684,
+          "median_return": 0.5465,
+          "baseline_hit_100": 0.0439,
+          "lift": 8.779
+        },
+        "D_tx_cost": {
+          "n": 200,
+          "hit_100": 0.485,
+          "mean_return": 2.9226,
+          "median_return": 0.9768,
+          "baseline_hit_100": 0.0482,
+          "lift": 10.061
+        },
+        "E_all_three": {
+          "n": 200,
+          "hit_100": 0.37,
+          "mean_return": 1.4534,
+          "median_return": 0.5315,
+          "baseline_hit_100": 0.0426,
+          "lift": 8.685
+        }
+      }
+    },
+    "ensemble_score": {
+      "variants": {
+        "A_published": {
+          "n": 200,
+          "hit_100": 0.46,
+          "mean_return": 2.8664,
+          "median_return": 0.7995,
+          "baseline_hit_100": 0.0495,
+          "lift": 9.291
+        },
+        "B_survivorship": {
+          "n": 200,
+          "hit_100": 0.46,
+          "mean_return": 2.8664,
+          "median_return": 0.7995,
+          "baseline_hit_100": 0.0495,
+          "lift": 9.291
+        },
+        "C_liquidity": {
+          "n": 200,
+          "hit_100": 0.345,
+          "mean_return": 1.3742,
+          "median_return": 0.3888,
+          "baseline_hit_100": 0.0439,
+          "lift": 7.867
+        },
+        "D_tx_cost": {
+          "n": 200,
+          "hit_100": 0.455,
+          "mean_return": 2.8514,
+          "median_return": 0.7845,
+          "baseline_hit_100": 0.0482,
+          "lift": 9.439
+        },
+        "E_all_three": {
+          "n": 200,
+          "hit_100": 0.34,
+          "mean_return": 1.3592,
+          "median_return": 0.3738,
+          "baseline_hit_100": 0.0426,
+          "lift": 7.981
+        }
+      }
+    }
+  }
+}
