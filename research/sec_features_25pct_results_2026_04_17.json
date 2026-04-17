@@ -1,0 +1,134 @@
+{
+  "generated_at": 1776441754,
+  "rows": 22218,
+  "TOP_N": 20,
+  "THRESHOLD": 0.25,
+  "runs": {
+    "base_8": {
+      "hit_25": 0.7,
+      "mean_return": 2.7535,
+      "n": 200,
+      "features": [
+        "log_price",
+        "sigma",
+        "p90_ratio",
+        "p10_ratio",
+        "asymmetry",
+        "vol_low",
+        "vol_hi",
+        "H7_ewma_p90"
+      ],
+      "elapsed_s": 2.5
+    },
+    "base_plus_all_sec": {
+      "hit_25": 0.715,
+      "mean_return": 2.7277,
+      "n": 200,
+      "features": [
+        "log_price",
+        "sigma",
+        "p90_ratio",
+        "p10_ratio",
+        "asymmetry",
+        "vol_low",
+        "vol_hi",
+        "H7_ewma_p90",
+        "revenue_yoy_growth",
+        "gross_margin",
+        "operating_margin",
+        "fcf_to_revenue",
+        "buyback_intensity",
+        "net_debt_change_pct"
+      ],
+      "elapsed_s": 2.2
+    },
+    "base_plus_growth": {
+      "hit_25": 0.705,
+      "mean_return": 2.6277,
+      "n": 200,
+      "features": [
+        "log_price",
+        "sigma",
+        "p90_ratio",
+        "p10_ratio",
+        "asymmetry",
+        "vol_low",
+        "vol_hi",
+        "H7_ewma_p90",
+        "revenue_yoy_growth"
+      ],
+      "elapsed_s": 1.9
+    },
+    "base_plus_margins": {
+      "hit_25": 0.705,
+      "mean_return": 2.6602,
+      "n": 200,
+      "features": [
+        "log_price",
+        "sigma",
+        "p90_ratio",
+        "p10_ratio",
+        "asymmetry",
+        "vol_low",
+        "vol_hi",
+        "H7_ewma_p90",
+        "gross_margin",
+        "operating_margin"
+      ],
+      "elapsed_s": 1.9
+    },
+    "base_plus_fcf": {
+      "hit_25": 0.7,
+      "mean_return": 2.8052,
+      "n": 200,
+      "features": [
+        "log_price",
+        "sigma",
+        "p90_ratio",
+        "p10_ratio",
+        "asymmetry",
+        "vol_low",
+        "vol_hi",
+        "H7_ewma_p90",
+        "fcf_to_revenue"
+      ],
+      "elapsed_s": 1.8
+    },
+    "base_plus_debt": {
+      "hit_25": 0.71,
+      "mean_return": 2.753,
+      "n": 200,
+      "features": [
+        "log_price",
+        "sigma",
+        "p90_ratio",
+        "p10_ratio",
+        "asymmetry",
+        "vol_low",
+        "vol_hi",
+        "H7_ewma_p90",
+        "net_debt_change_pct"
+      ],
+      "elapsed_s": 1.9
+    },
+    "base_plus_quality": {
+      "hit_25": 0.7,
+      "mean_return": 2.6666,
+      "n": 200,
+      "features": [
+        "log_price",
+        "sigma",
+        "p90_ratio",
+        "p10_ratio",
+        "asymmetry",
+        "vol_low",
+        "vol_hi",
+        "H7_ewma_p90",
+        "operating_margin",
+        "fcf_to_revenue",
+        "net_debt_change_pct"
+      ],
+      "elapsed_s": 2.0
+    }
+  }
+}
