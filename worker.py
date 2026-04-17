@@ -252,7 +252,11 @@ def main():
     parser = argparse.ArgumentParser(description="Precompute stock projections")
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--symbols", nargs="+", help="Specific symbols to compute")
-    group.add_argument("--all", action="store_true", help="Full 107-symbol universe")
+    group.add_argument("--all", action="store_true",
+                       help=f"Full universe (~{len(FULL_UNIVERSE)} symbols: Russell 3000 ∪ SP500 ∪ NDX100 ∪ WSB)")
+    group.add_argument("--preferred", action="store_true",
+                       help=f"Preferred universe only (~{len(SP500_NDX100) + len(WSB_UNIVERSE)} symbols: SP500 ∪ NDX100 ∪ WSB). "
+                            "Used by the nightly fast path so the critical-path refresh completes in ≤30 min.")
     parser.add_argument("--horizons", nargs="+", type=int, default=DEFAULT_HORIZONS,
                         help="Horizon days (default: 252)")
     parser.add_argument("--force", action="store_true", help="Recompute even if fresh")
@@ -262,12 +266,13 @@ def main():
                         help="Sleep until 4:30 PM ET then run once and exit")
     args = parser.parse_args()
 
-    # Daily cron: wait for market close
     if args.daily_cron:
         _wait_until_market_close()
 
     if args.all:
         symbols = FULL_UNIVERSE
+    elif args.preferred:
+        symbols = sorted(set(SP500_NDX100 + WSB_UNIVERSE))
     elif args.symbols:
         symbols = [s.upper() for s in args.symbols]
     else:

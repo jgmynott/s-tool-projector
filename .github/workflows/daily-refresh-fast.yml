@@ -67,9 +67,13 @@ jobs:
       - name: Smoke-test providers
         run: python3 data_providers.py
 
+      # Fast path scans the preferred universe only (~600 tickers — SP500 ∪
+      # NDX100 ∪ WSB favorites) so the critical-path refresh completes in
+      # ≤30 min even on a cold cache. The slow path picks up the long tail
+      # of the Russell 3000 at 23:00 UTC where it has 2.5 hours to work.
       - name: Refresh projections
         run: |
-          python3 worker.py --all || echo "worker.py exited non-zero; continuing"
+          python3 worker.py --preferred || echo "worker.py exited non-zero; continuing"
 
       - name: Market-cap + avg-volume enrichment
         run: python3 enrich_marketcaps.py --workers 6 || true
