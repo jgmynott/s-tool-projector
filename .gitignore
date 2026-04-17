@@ -14,6 +14,25 @@ sentiment_data/*.csv
 
 # Price cache + backfill artifacts (hundreds of MB)
 data_cache/
+# ...but the small per-day JSON artifacts the API actually serves at
+# runtime need to ride into the Railway container. Negations below.
+# `railway up` (and any nixpacks-style tar upload) respect .gitignore
+# even for files tracked via `git add -f`, so exclusion here means
+# missing-at-runtime on prod.
+!data_cache/backtest_report.json
+!data_cache/feature_importance.json
+!data_cache/asymmetric_scores.json
+!data_cache/market_caps.json
+!data_cache/nn_scores.json
+!data_cache/confidence_nn_scores.json
+!data_cache/moonshot_scores.json
+!data_cache/ensemble_scores.json
+!data_cache/production_scorer.json
+!data_cache/profiles/
+!data_cache/profiles/*.json
+!data_cache/sec_edgar/
+!data_cache/sec_edgar/company_info.json
+!data_cache/sec_edgar/cik_map.json
 
 # Backtest result artifacts (large, reproducible from scripts)
 *_backtest*.csv
