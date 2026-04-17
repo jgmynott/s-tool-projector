@@ -72,6 +72,15 @@ jobs:
       # Russell 3000 names is tolerable; we can add a weekly job later
       # if/when it matters.
 
+      # Short interest via yfinance. FINRA's public API is stuck on 2020
+      # data (compareFilters silently ignored, pagination returns ancient
+      # rows). yfinance exposes shortPercentOfFloat, shortRatio, shares
+      # short, and sharesShortPriorMonth per ticker — good enough to test
+      # as NN features. Takes ~2-3 min on the preferred universe.
+      - name: Short interest refresh (yfinance)
+        run: |
+          python3 -m signals_short_interest_yf --universe preferred --sleep 0.25 || true
+
       - name: Upside research sweep
         run: python3 upside_hunt.py || true
 
@@ -84,6 +93,14 @@ jobs:
 
       - name: Feature ablation study
         run: python3 -W ignore feature_ablation.py || true
+
+      # Nightly short-interest ablation — joins yfinance SI snapshots
+      # to the upside_hunt ground truth and reports whether the three
+      # derived features (dtc, chg_pct, pct_float) lift hit_100 vs
+      # the 8-feature baseline. Writes dated JSON to runtime_data/ so
+      # a week of overnight runs produces a time-series of deltas.
+      - name: Short interest ablation
+        run: python3 research/nightly_short_interest_ablation.py || true
 
       - name: Comprehensive backtest report
         run: python3 overnight_backtest.py || true
