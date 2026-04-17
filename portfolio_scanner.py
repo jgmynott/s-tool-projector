@@ -643,6 +643,25 @@ def save_picks(results: list[dict], conn=None) -> None:
         "asymmetric_picks": asym_picks,
         "full_results": results,
     }
+
+    # Guard: refuse to overwrite a good cache with a degraded scan. A real
+    # scan of the live universe returns 800-1000+ tickers. Anything below
+    # MIN_UNIVERSE means the engine cache was empty, data providers failed,
+    # or the universe loader short-circuited — in every one of those cases,
+    # preserving yesterday's picks is better than shipping a crippled set.
+    # Enforced after 2026-04-17 when a cold-cache slow run wrote a 223-
+    # ticker / 0-asymmetric payload over a healthy 914-ticker / 10-asym
+    # one, silently degrading the live site until manually reverted.
+    MIN_UNIVERSE = 500
+    if len(results) < MIN_UNIVERSE:
+        log.error(
+            "save_picks REFUSED: scan returned %d tickers, below MIN_UNIVERSE=%d. "
+            "Preserving existing %s. Investigate: data providers, cache restore, "
+            "or the universe loader probably short-circuited.",
+            len(results), MIN_UNIVERSE, PICKS_PATH,
+        )
+        return
+
     PICKS_PATH.write_text(json.dumps(payload, indent=2))
     log.info("Saved %d picks + %d asymmetric to %s",
              len(top_picks), len(asym_picks), PICKS_PATH)

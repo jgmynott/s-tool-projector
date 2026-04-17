@@ -22,7 +22,12 @@ on:
 jobs:
   refresh:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    # 90 min cap instead of 45: the first run against a cold engine cache
+    # has to compute projections for ~800-1000 tickers from scratch and
+    # regularly overshot the 45-min budget, leaving the cache empty and
+    # poisoning every downstream run. Warm-cache runs complete in ~15-20
+    # min because STALE_HOURS=18 skips fresh symbols.
+    timeout-minutes: 90
     env:
       FMP_API_KEY:         ${{ secrets.FMP_API_KEY }}
       FINNHUB_API_KEY:     ${{ secrets.FINNHUB_API_KEY }}
