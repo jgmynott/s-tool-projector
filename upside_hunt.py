@@ -317,7 +317,12 @@ def sweep(limit_symbols: int | None = None):
     log.info("Small-cap (< $2B) set: %d tickers", len(small_cap_syms))
 
     conn = sqlite3.connect(str(DB_PATH))
-    windows = pd.date_range("2022-01-15", "2024-09-15", freq="3MS")
+    # Regime-expanded walk-forward: 2016-01 → 2024-09, quarterly.
+    # Covers the 2018 Q4 drawdown, the 2020 COVID crash, the 2022 H1
+    # tech bear, plus the 2021 continuity windows we were missing.
+    # Requires the historical price backfill (backfill_prices_historical.py)
+    # so that as_of 2016-01-15 has enough lookback.
+    windows = pd.date_range("2016-01-15", "2024-09-15", freq="3MS")
     log.info("Windows: %d (%s → %s)", len(windows),
              windows[0].date(), windows[-1].date())
 
@@ -352,7 +357,7 @@ def sweep(limit_symbols: int | None = None):
         "# Asymmetric Upside Hunt — Research Report",
         f"\n**Run:** {datetime.utcnow().isoformat()[:19]}Z",
         f"**Universe:** {len(price_cache)} tickers",
-        f"**Windows:** {len(windows)} quarterly, 2022-Q1 through 2024-Q3",
+        f"**Windows:** {len(windows)} quarterly, 2016-Q1 through 2024-Q3",
         f"**Hit defined:** realized 12-month return ≥ +{int(HIT_THRESHOLD*100)}%",
         f"**Top-N per method:** {TOP_N}",
         "\n| Method | Picks | Hits | Hit rate | Median return | Mean return |",
