@@ -138,10 +138,13 @@ jobs:
           workingDirectory: cloudflare
           command: deploy
 
+      # Install the Railway CLI from npm rather than via railway.com/install.sh,
+      # because the install.sh hits GitHub's unauthenticated releases API to
+      # discover the latest version and that call rate-limits on shared CI
+      # runners, failing with "Failed to fetch latest version from GitHub".
+      # npm registry has no such limit.
       - name: Install Railway CLI
-        run: |
-          curl -fsSL https://railway.com/install.sh | sh
-          echo "$HOME/.railway/bin" >> $GITHUB_PATH
+        run: npm install -g @railway/cli
 
       - name: Deploy backend (Railway)
         env:
