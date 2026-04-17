@@ -49,7 +49,19 @@ def _split_csv(v: str) -> set[str]:
     return {x.strip() for x in (v or "").split(",") if x.strip()}
 
 
-STRATEGIST_GRANT_EMAILS = _split_csv_lower(os.getenv("STRATEGIST_GRANT_EMAILS", ""))
+# Hard-coded comped Strategist accounts. Audited via git history; add
+# here for anyone who should always be on the top tier without going
+# through Stripe and without depending on a Railway env var (which
+# doesn't survive every operational reshuffle). Email must match what
+# Clerk has on file.
+_COMPED_STRATEGIST_EMAILS = {
+    "kevinrvandelden@gmail.com",  # Comped 2026-04-17
+}
+
+STRATEGIST_GRANT_EMAILS = (
+    _split_csv_lower(os.getenv("STRATEGIST_GRANT_EMAILS", ""))
+    | _COMPED_STRATEGIST_EMAILS
+)
 STRATEGIST_GRANT_CLERK_IDS = _split_csv(os.getenv("STRATEGIST_GRANT_CLERK_IDS", ""))
 
 
