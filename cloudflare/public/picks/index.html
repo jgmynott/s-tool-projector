@@ -386,53 +386,48 @@ footer a { color: var(--text-mid); }
  * each tab tight on first render. */
 .tab-panel:not(.show-all) [data-overflow] { display: none; }
 
-/* ── Allocation widget (donut + numeric composition table + controls) ──
- * Replaced the horizontal bar viz with an SVG donut where every arc
- * carries its own percentage, plus a side-by-side composition table so
- * every row tells the user how much money goes into each tier. */
+/* ── Allocation widget (donut + per-tier ticker composition) ──
+ * Top bar: donut + profile selector + portfolio size.
+ * Body: four tier composition rows, each showing the tickers that
+ * compose the slice with their individual dollar allocation. Text is
+ * never clipped — chips wrap naturally and the row expands vertically. */
 .alloc-widget {
   margin: 28px 0 0; padding: 32px;
   border: 1px solid var(--border); border-radius: var(--radius-md);
   background: linear-gradient(180deg, var(--bg-surface), rgba(2,40,52,0.12));
-  display: grid; grid-template-columns: auto 1fr auto; gap: 36px; align-items: center;
+  display: flex; flex-direction: column; gap: 28px;
 }
+.alloc-top {
+  display: grid; grid-template-columns: auto 1fr auto;
+  gap: 36px; align-items: center;
+}
+.alloc-intro { min-width: 0; }
 .aw-title { font: 600 11px 'Inter'; color: var(--accent-lake); letter-spacing: 0.24em; text-transform: uppercase; margin-bottom: 10px; }
-.aw-sub { font: 500 13.5px/1.5 'Inter'; color: var(--text-mid); max-width: 42ch; }
+.aw-sub { font: 500 14px/1.55 'Inter'; color: var(--text-mid); max-width: 48ch; }
 .aw-sub b { color: var(--text-hi); }
 
-.alloc-donut { position: relative; width: 200px; height: 200px; flex-shrink: 0; }
+.alloc-donut { position: relative; width: 260px; height: 260px; flex-shrink: 0; }
 .alloc-donut svg { width: 100%; height: 100%; display: block; }
 .alloc-donut .dt-center {
   position: absolute; inset: 0;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  pointer-events: none; text-align: center;
+  pointer-events: none; text-align: center; padding: 0 18px;
 }
 .alloc-donut .dt-total {
-  font: 400 30px/1 'Crimson Text', Georgia, serif;
-  letter-spacing: -0.02em; color: var(--text-hi);
+  font: 400 38px/1 'Crimson Text', Georgia, serif;
+  letter-spacing: -0.022em; color: var(--text-hi);
   font-variant-numeric: tabular-nums;
 }
 .alloc-donut .dt-sub {
   font: 600 10px 'Inter'; color: var(--text-dim);
-  letter-spacing: 0.2em; text-transform: uppercase; margin-top: 8px;
+  letter-spacing: 0.22em; text-transform: uppercase; margin-top: 10px;
+}
+.alloc-donut .dt-caption {
+  font: 500 11px/1.35 'Inter'; color: var(--text-mid);
+  margin-top: 8px; max-width: 18ch;
 }
 
-.alloc-table { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
-.alloc-row {
-  display: grid; grid-template-columns: 12px 1fr auto auto; gap: 14px;
-  align-items: center; padding: 12px 16px;
-  border: 1px solid var(--border); border-radius: 10px;
-  background: rgba(11,16,6,0.35);
-  font-family: 'Inter';
-}
-.alloc-row .ar-dot { width: 10px; height: 10px; border-radius: 3px; }
-.alloc-row .ar-name { font: 500 14px 'Inter'; color: var(--text-hi); }
-.alloc-row .ar-sub { font: 500 11px 'Inter'; color: var(--text-dim); display: block; margin-top: 2px; letter-spacing: 0.04em; }
-.alloc-row .ar-pct { font: 500 13px 'Inter'; color: var(--text-mid); font-variant-numeric: tabular-nums; min-width: 44px; text-align: right; }
-.alloc-row .ar-dollar { font: 600 14px 'Inter'; color: var(--text-hi); font-variant-numeric: tabular-nums; min-width: 80px; text-align: right; }
-.alloc-row.ar-empty { opacity: 0.4; }
-
-.alloc-controls { display: flex; flex-direction: column; gap: 14px; min-width: 180px; }
+.alloc-controls { display: flex; flex-direction: column; gap: 14px; min-width: 200px; }
 .alloc-control label { display: block; font: 600 10px 'Inter'; color: var(--text-dim); letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 6px; }
 .alloc-control input, .alloc-control select {
   width: 100%;
@@ -444,17 +439,64 @@ footer a { color: var(--text-mid); }
 }
 .alloc-control input:focus, .alloc-control select:focus { outline: none; border-color: var(--accent-lake); }
 
+/* Composition grid — one row per tier, full-width. Each row shows the
+ * tier header (name + % + $) and a flex-wrapped strip of ticker chips
+ * with each ticker's own dollar allocation. Never clips — chips wrap. */
+.alloc-composition { display: flex; flex-direction: column; gap: 14px; border-top: 1px solid var(--border); padding-top: 24px; }
+.alloc-comp-title { font: 600 11px 'Inter'; color: var(--accent-lake); letter-spacing: 0.24em; text-transform: uppercase; }
+.alloc-row {
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 16px 20px;
+  border: 1px solid var(--border); border-radius: 12px;
+  background: rgba(11,16,6,0.35);
+}
+.alloc-row.ar-empty { opacity: 0.5; }
+.ar-header {
+  display: grid; grid-template-columns: auto 1fr auto auto;
+  gap: 14px; align-items: baseline;
+}
+.ar-dot { width: 12px; height: 12px; border-radius: 3px; align-self: center; }
+.ar-name-col { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.ar-name { font: 600 15px 'Inter'; color: var(--text-hi); letter-spacing: -0.01em; }
+.ar-sub { font: 500 11px 'Inter'; color: var(--text-dim); letter-spacing: 0.04em; }
+.ar-pct { font: 600 18px 'Crimson Text', Georgia, serif; color: var(--text-mid); font-variant-numeric: tabular-nums; min-width: 52px; text-align: right; }
+.ar-dollar { font: 600 18px 'Crimson Text', Georgia, serif; color: var(--text-hi); font-variant-numeric: tabular-nums; min-width: 90px; text-align: right; }
+.ar-tickers {
+  display: flex; flex-wrap: wrap; gap: 6px 8px;
+  padding-top: 10px; border-top: 1px dashed var(--border);
+}
+.at-chip {
+  display: inline-flex; align-items: baseline; gap: 6px;
+  padding: 5px 10px;
+  border: 1px solid var(--border); border-radius: 7px;
+  background: rgba(11,16,6,0.5);
+  font: 500 12px 'Inter'; color: var(--text-mid);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.at-chip .at-sym { color: var(--text-hi); font-weight: 600; letter-spacing: -0.01em; }
+.at-chip .at-amt { color: var(--text-mid); }
+.at-chip.at-zero { opacity: 0.45; }
+.ar-empty-msg { font: 500 12px 'Inter'; color: var(--text-dim); font-style: italic; padding-top: 6px; }
+
 @media (max-width: 920px) {
-  .alloc-widget { grid-template-columns: 1fr; gap: 24px; padding: 24px; }
-  .alloc-donut { justify-self: center; }
-  .alloc-controls { min-width: 0; flex-direction: row; flex-wrap: wrap; }
+  .alloc-widget { padding: 24px; }
+  .alloc-top { grid-template-columns: 1fr; gap: 24px; }
+  .alloc-donut { justify-self: center; width: 240px; height: 240px; }
+  .alloc-donut .dt-total { font-size: 34px; }
+  .alloc-controls { flex-direction: row; flex-wrap: wrap; min-width: 0; }
   .alloc-controls .alloc-control { flex: 1; min-width: 140px; }
 }
 @media (max-width: 540px) {
   .alloc-widget { padding: 20px; }
-  .alloc-row { padding: 10px 12px; grid-template-columns: 10px 1fr auto auto; gap: 10px; }
-  .alloc-row .ar-name { font-size: 13px; }
-  .alloc-row .ar-dollar { font-size: 13px; min-width: 70px; }
+  .alloc-donut { width: 220px; height: 220px; }
+  .alloc-donut .dt-total { font-size: 30px; }
+  .alloc-row { padding: 14px; }
+  .ar-header { grid-template-columns: auto 1fr auto; gap: 10px; }
+  .ar-pct { display: none; }
+  .ar-dollar { font-size: 16px; min-width: 70px; }
+  .ar-name { font-size: 14px; }
+  .at-chip { font-size: 11.5px; padding: 4px 8px; }
 }
 
 .pc-alloc, .asym-alloc {
@@ -1017,60 +1059,40 @@ const TIER_PALETTE = {
 };
 
 // SVG donut chart. Uses the r=15.9155 trick so circumference = 100 —
-// each segment's stroke-dasharray equals its percent directly. Every
-// arc also carries a text label showing its own %, so the visual is
-// not a number-less bar chart.
+// each segment's stroke-dasharray equals its percent directly. Thicker
+// ring than v1 (6.5 vs 4.5) because the donut is larger and a thin ring
+// at 260px reads as a circle-outline rather than a chart. Per-segment
+// labels were removed — percentages and dollars live in the composition
+// rows below, which fit any data volume and breakpoint.
 function renderDonut(profile, center) {
   const tiers = ['conservative','moderate','aggressive','asymmetric'];
   let offset = 0;
   const arcs = tiers.map(t => {
     const pct = (profile[t] || 0) * 100;
-    if (pct <= 0) return { t, pct, html: '', labelHtml: '' };
-    // stroke-dasharray is "segment gap". Starting position shifted by
-    // -offset so segments daisy-chain. Circumference = 100.
+    if (pct <= 0) { offset += 0; return ''; }
     const dashArr = `${pct.toFixed(3)} ${(100 - pct).toFixed(3)}`;
     const dashOff = (-offset).toFixed(3);
-    // Rotate each segment -90° about the center so the stroke starts at
-    // 12 o'clock instead of the SVG default 3 o'clock — matches user
-    // expectations for a pie chart (top → right → bottom → left).
     const arc = `<circle cx="21" cy="21" r="15.9155" fill="transparent"
-      stroke="${TIER_PALETTE[t]}" stroke-width="4.5"
+      stroke="${TIER_PALETTE[t]}" stroke-width="6.5"
       stroke-dasharray="${dashArr}" stroke-dashoffset="${dashOff}"
       transform="rotate(-90 21 21)"/>`;
-
-    // Label at the midpoint of the arc, in polar coords with 12 o'clock
-    // as 0 and clockwise positive (matching the segment rotation above).
-    const midPct = offset + pct / 2;
-    const theta = (midPct / 100) * 2 * Math.PI - Math.PI / 2;
-    const labelR = 15.9155; // text sits on the stroke path
-    const x = 21 + labelR * Math.cos(theta);
-    const y = 21 + labelR * Math.sin(theta);
-    // Only label slices >= 8% — smaller slices are unreadable inline.
-    const labelHtml = pct >= 8
-      ? `<text x="${x.toFixed(2)}" y="${y.toFixed(2)}"
-            text-anchor="middle" dominant-baseline="central"
-            fill="#0B1006" font-family="Inter" font-size="3.2" font-weight="700">${Math.round(pct)}%</text>`
-      : '';
-
     offset += pct;
-    return { t, pct, html: arc, labelHtml };
-  });
+    return arc;
+  }).join('');
 
-  const arcsHtml = arcs.map(a => a.html).join('');
-  const labelsHtml = arcs.map(a => a.labelHtml).join('');
   const centerHtml = center
     ? `<div class="dt-center">
          <div class="dt-total">${center.total}</div>
          <div class="dt-sub">${center.label}</div>
+         ${center.caption ? `<div class="dt-caption">${center.caption}</div>` : ''}
        </div>`
     : '';
 
   return `<div class="alloc-donut">
     <svg viewBox="0 0 42 42" aria-label="Allocation by tier">
       <circle cx="21" cy="21" r="15.9155" fill="transparent"
-        stroke="rgba(155,161,185,0.08)" stroke-width="4.5"/>
-      ${arcsHtml}
-      ${labelsHtml}
+        stroke="rgba(155,161,185,0.08)" stroke-width="6.5"/>
+      ${arcs}
     </svg>
     ${centerHtml}
   </div>`;
@@ -1081,12 +1103,20 @@ function renderAllocWidget(picksData) {
   const total = ALLOC.totalUsd || 0;
   const tiers = ['conservative','moderate','aggressive','asymmetric'];
 
-  // Per-tier pick counts from today's scan (capped at 10 per tier).
-  const pickCounts = { conservative: 0, moderate: 0, aggressive: 0 };
+  // Bucket today's picks by tier so we can list their tickers per slice.
+  // Standard tiers come from picksData.picks (flat list with p.tier);
+  // asymmetric is a separate top-level array.
+  const byTier = { conservative: [], moderate: [], aggressive: [] };
   for (const p of picksData.picks || []) {
-    if (pickCounts[p.tier] != null && pickCounts[p.tier] < 10) pickCounts[p.tier]++;
+    if (byTier[p.tier] && byTier[p.tier].length < 10) byTier[p.tier].push(p);
   }
-  pickCounts.asymmetric = Math.min(10, (picksData.asymmetric_picks || []).length);
+  const asymPicks = (picksData.asymmetric_picks || []).slice(0, 10);
+  const tierPicks = {
+    conservative: byTier.conservative,
+    moderate:     byTier.moderate,
+    aggressive:   byTier.aggressive,
+    asymmetric:   asymPicks,
+  };
 
   const LABELS = {
     conservative: 'Conservative',
@@ -1101,19 +1131,52 @@ function renderAllocWidget(picksData) {
     asymmetric:   'Tail upside · speculative',
   };
 
+  // Build one row per tier. Ticker chips show the dollar allocation
+  // computed by computeAllocations — sorted descending so the biggest
+  // single-name positions land on the left. Chips wrap; no clipping.
   const rows = tiers.map(t => {
     const share = profile[t] || 0;
     const dollars = total * share;
-    const pickN = pickCounts[t] || 0;
+    const picks = tierPicks[t] || [];
     const emptyCls = share === 0 ? ' ar-empty' : '';
+    const pickN = picks.length;
+
+    let chipsHtml;
+    if (share === 0) {
+      chipsHtml = `<div class="ar-empty-msg">Not allocated in the ${profile.label} profile.</div>`;
+    } else if (!pickN) {
+      chipsHtml = `<div class="ar-empty-msg">No ${LABELS[t].toLowerCase()} picks in today's scan.</div>`;
+    } else {
+      const entries = picks.map(p => {
+        const amt = ALLOC.byPick?.[`${p.symbol}|${t}`] || 0;
+        return { sym: p.symbol, amt };
+      }).sort((a, b) => b.amt - a.amt);
+      chipsHtml = entries.map(e => {
+        const zeroCls = e.amt <= 0 ? ' at-zero' : '';
+        return `<span class="at-chip${zeroCls}" title="${e.sym} — ${fmtUsd(e.amt)}">
+          <span class="at-sym">${e.sym}</span>
+          <span class="at-amt">${fmtUsd(e.amt)}</span>
+        </span>`;
+      }).join('');
+    }
+
+    const pickCountLabel = share === 0
+      ? `${pickN} pick${pickN === 1 ? '' : 's'} in today's scan`
+      : pickN
+        ? `${pickN} pick${pickN === 1 ? '' : 's'} weighted by confidence &times; inverse volatility`
+        : '0 picks available today';
+
     return `<div class="alloc-row${emptyCls}">
-      <span class="ar-dot" style="background:${TIER_PALETTE[t]};"></span>
-      <div style="min-width:0;">
-        <div class="ar-name">${LABELS[t]}</div>
-        <div class="ar-sub">${SUBS[t]} &middot; ${pickN} pick${pickN === 1 ? '' : 's'} available</div>
+      <div class="ar-header">
+        <span class="ar-dot" style="background:${TIER_PALETTE[t]};"></span>
+        <div class="ar-name-col">
+          <div class="ar-name">${LABELS[t]}</div>
+          <div class="ar-sub">${SUBS[t]} &middot; ${pickCountLabel}</div>
+        </div>
+        <div class="ar-pct">${Math.round(share * 100)}%</div>
+        <div class="ar-dollar">${share > 0 ? fmtUsd(dollars) : '$0'}</div>
       </div>
-      <div class="ar-pct">${Math.round(share * 100)}%</div>
-      <div class="ar-dollar">${share > 0 ? fmtUsd(dollars) : '—'}</div>
+      <div class="ar-tickers">${chipsHtml}</div>
     </div>`;
   }).join('');
 
@@ -1123,24 +1186,30 @@ function renderAllocWidget(picksData) {
   const donutHtml = renderDonut(profile, {
     total: fmtUsd(total),
     label: profile.label,
+    caption: profile.sub,
   });
 
   return `<div class="alloc-widget">
-    ${donutHtml}
-    <div>
-      <div class="aw-title">Allocation &middot; build your book</div>
-      <div class="aw-sub" style="margin-bottom:16px;"><b>${profile.label}</b>: ${profile.sub}. Per-pick weights inside each tier use confidence &times; inverse volatility.</div>
-      <div class="alloc-table">${rows}</div>
+    <div class="alloc-top">
+      ${donutHtml}
+      <div class="alloc-intro">
+        <div class="aw-title">Allocation &middot; build your book</div>
+        <div class="aw-sub"><b>${profile.label}</b>: ${profile.sub}. Each tier below shows the tickers that compose its slice and the dollar amount allocated to each name.</div>
+      </div>
+      <div class="alloc-controls">
+        <div class="alloc-control">
+          <label>Portfolio size</label>
+          <input type="number" id="allocTotal" min="100" step="500" value="${total}" />
+        </div>
+        <div class="alloc-control">
+          <label>Risk profile</label>
+          <select id="allocProfile">${opts}</select>
+        </div>
+      </div>
     </div>
-    <div class="alloc-controls">
-      <div class="alloc-control">
-        <label>Portfolio size</label>
-        <input type="number" id="allocTotal" min="100" step="500" value="${total}" />
-      </div>
-      <div class="alloc-control">
-        <label>Risk profile</label>
-        <select id="allocProfile">${opts}</select>
-      </div>
+    <div class="alloc-composition">
+      <div class="alloc-comp-title">Composition by tier</div>
+      ${rows}
     </div>
   </div>`;
 }

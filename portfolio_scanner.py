@@ -675,6 +675,17 @@ def load_cached_picks() -> list[dict] | None:
         return None
 
 
+def load_cached_asymmetric_picks() -> list[dict]:
+    """Load asymmetric picks from JSON cache. Empty list if missing/corrupt."""
+    if not PICKS_PATH.exists():
+        return []
+    try:
+        data = json.loads(PICKS_PATH.read_text())
+        return data.get("asymmetric_picks") or []
+    except (json.JSONDecodeError, KeyError):
+        return []
+
+
 def get_scan_age_hours() -> float | None:
     """How old is the cached scan, in hours? None if no cache."""
     if not PICKS_PATH.exists():

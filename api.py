@@ -29,7 +29,7 @@ from slowapi.middleware import SlowAPIMiddleware
 from db import init_db, get_projection, get_projection_age_hours, save_projection, list_cached_symbols, get_sentiment, get_picks_history
 from projector_engine import run_projection
 from hardening import health_checker
-from portfolio_scanner import get_picks, get_scan_age_hours
+from portfolio_scanner import get_picks, get_scan_age_hours, load_cached_asymmetric_picks
 
 import auth
 import billing
@@ -425,11 +425,19 @@ def picks(
             },
         )
 
+    # Asymmetric picks live in the same JSON cache but are a separate 10-name
+    # list with its own scoring (NN when winning, EWMA otherwise). The UI
+    # renders them in a distinct tab, so we ship them in a distinct field.
+    # Only included when no tier filter is applied — per-tier queries stay
+    # focused on that tier's bucket.
+    asym_picks = [] if tier else load_cached_asymmetric_picks()
+
     return {
         "scan_age_hours": round(scan_age, 1) if scan_age is not None else None,
         "tier_filter": tier,
         "count": len(results),
         "picks": results,
+        "asymmetric_picks": asym_picks,
     }
 
 
