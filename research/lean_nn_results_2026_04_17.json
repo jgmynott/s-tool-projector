@@ -1,0 +1,115 @@
+{
+  "generated_at": 1776439988,
+  "rows": 22218,
+  "TOP_N": 20,
+  "THRESHOLD": 1.0,
+  "runs": {
+    "8_baseline": {
+      "hit_100": 0.455,
+      "mean_return": 2.5688,
+      "n": 200,
+      "features": [
+        "log_price",
+        "sigma",
+        "p90_ratio",
+        "p10_ratio",
+        "asymmetry",
+        "vol_low",
+        "vol_hi",
+        "H7_ewma_p90"
+      ],
+      "elapsed_s": 5.2
+    },
+    "lean_2": {
+      "hit_100": 0.505,
+      "mean_return": 2.4108,
+      "n": 200,
+      "features": [
+        "log_price",
+        "sigma"
+      ],
+      "elapsed_s": 2.5
+    },
+    "lean_3_top": {
+      "hit_100": 0.495,
+      "mean_return": 2.5055,
+      "n": 200,
+      "features": [
+        "log_price",
+        "sigma",
+        "p10_ratio"
+      ],
+      "elapsed_s": 2.4
+    },
+    "lean_4_top": {
+      "hit_100": 0.48,
+      "mean_return": 2.4758,
+      "n": 200,
+      "features": [
+        "log_price",
+        "sigma",
+        "p10_ratio",
+        "vol_low"
+      ],
+      "elapsed_s": 3.4
+    },
+    "log_price_only": {
+      "hit_100": 0.43,
+      "mean_return": 1.9988,
+      "n": 200,
+      "features": [
+        "log_price"
+      ],
+      "elapsed_s": 7.9
+    },
+    "sigma_only": {
+      "hit_100": 0.315,
+      "mean_return": 1.4252,
+      "n": 200,
+      "features": [
+        "sigma"
+      ],
+      "elapsed_s": 2.4
+    },
+    "lean_plus_H7": {
+      "hit_100": 0.485,
+      "mean_return": 2.6846,
+      "n": 200,
+      "features": [
+        "log_price",
+        "sigma",
+        "H7_ewma_p90"
+      ],
+      "elapsed_s": 2.1
+    },
+    "drop_p90_ratio": {
+      "hit_100": 0.47,
+      "mean_return": 2.4251,
+      "n": 200,
+      "features": [
+        "log_price",
+        "sigma",
+        "p10_ratio",
+        "asymmetry",
+        "vol_low",
+        "vol_hi",
+        "H7_ewma_p90"
+      ],
+      "elapsed_s": 3.2
+    },
+    "drop_bottom_2": {
+      "hit_100": 0.49,
+      "mean_return": 2.8486,
+      "n": 200,
+      "features": [
+        "log_price",
+        "sigma",
+        "p10_ratio",
+        "vol_low",
+        "vol_hi",
+        "H7_ewma_p90"
+      ],
+      "elapsed_s": 2.7
+    }
+  }
+}
