@@ -642,6 +642,15 @@ def picks(
         raise HTTPException(status_code=404, detail="No scan results available yet")
     scan_age = get_scan_age_hours()
 
+    # Prevent intermediate caches (browser, Cloudflare, Fastly) from
+    # returning a stale pick list after a refresh. Ran into this
+    # 2026-04-18 when a user saw yesterday's rationales even though
+    # Railway had already been redeployed with new data.
+    no_cache = {
+        "Cache-Control": "no-store, must-revalidate",
+        "Pragma": "no-cache",
+    }
+
     if not is_strategist:
         # Teaser: 3 per bucket, not results[:9] (which would be same-tier heavy).
         teaser: list[dict] = []
@@ -650,6 +659,7 @@ def picks(
             teaser.extend({"symbol": p["symbol"], "tier": t} for p in bucket)
         return JSONResponse(
             status_code=402,
+            headers=no_cache,
             content={
                 "error": "strategist_required",
                 "tier_required": "strategist",
@@ -666,13 +676,16 @@ def picks(
     # focused on that tier's bucket.
     asym_picks = [] if tier else load_cached_asymmetric_picks()
 
-    return {
-        "scan_age_hours": round(scan_age, 1) if scan_age is not None else None,
-        "tier_filter": tier,
-        "count": len(results),
-        "picks": results,
-        "asymmetric_picks": asym_picks,
-    }
+    return JSONResponse(
+        headers=no_cache,
+        content={
+            "scan_age_hours": round(scan_age, 1) if scan_age is not None else None,
+            "tier_filter": tier,
+            "count": len(results),
+            "picks": results,
+            "asymmetric_picks": asym_picks,
+        },
+    )
 
 
 # ── User + billing ──

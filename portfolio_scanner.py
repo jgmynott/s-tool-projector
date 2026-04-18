@@ -600,7 +600,16 @@ def save_picks(results: list[dict], conn=None) -> None:
     # Enforced after 2026-04-17 when a cold-cache slow run wrote a 223-
     # ticker / 0-asymmetric payload over a healthy 914-ticker / 10-asym
     # one, silently degrading the live site until manually reverted.
-    MIN_UNIVERSE = 500
+    #
+    # Refined 2026-04-18: the guard was catching the legitimate pipeline
+    # runs too (preferred universe = ~537 tickers → ~461 post QC filters,
+    # below the old 500 threshold). The *failure mode* the guard exists
+    # for is "scan returned empty because the universe loader broke" —
+    # that looks like a single-digit / low-double-digit count, not 400+.
+    # Lowered to 200 which catches the broken-loader case but doesn't
+    # block normal pipeline runs. Also require non-empty top_picks so we
+    # never overwrite with a payload that has zero picks per tier.
+    MIN_UNIVERSE = 200
     if len(results) < MIN_UNIVERSE:
         log.error(
             "save_picks REFUSED: scan returned %d tickers, below MIN_UNIVERSE=%d. "
@@ -608,6 +617,10 @@ def save_picks(results: list[dict], conn=None) -> None:
             "or the universe loader probably short-circuited.",
             len(results), MIN_UNIVERSE, PICKS_PATH,
         )
+        return
+    if not top_picks:
+        log.error("save_picks REFUSED: top_picks empty even though scan "
+                  "returned %d tickers — tier assignment broke?", len(results))
         return
 
     PICKS_PATH.write_text(json.dumps(payload, indent=2))

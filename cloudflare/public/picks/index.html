@@ -298,8 +298,13 @@ header.hero { padding: 80px 0 40px; }
 .asym-risk.meaningful { background: rgba(245,213,143,0.12); color: #f5d58f; }
 .asym-risk.limited { background: rgba(110,231,183,0.10); color: #6ee7b7; }
 
-.asym-foot { margin-top: 14px; display: flex; justify-content: space-between; align-items: center; font: 500 12px 'Inter'; color: var(--text-dim); }
-.asym-foot a { color: var(--accent-lake); }
+.asym-foot { margin-top: 14px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; font: 500 12px 'Inter'; color: var(--text-dim); }
+.asym-foot > span { flex: 1 1 auto; min-width: 0; }
+.asym-foot a { color: var(--accent-lake); white-space: nowrap; flex-shrink: 0; }
+@media (max-width: 540px) {
+  .asym-foot { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .asym-foot > span { width: 100%; }
+}
 
 footer { border-top: 1px solid var(--border); padding: 48px 32px; text-align: center; color: var(--text-dim); font-size: 13px; margin-top: 80px; }
 footer a { color: var(--text-mid); }
