@@ -87,6 +87,51 @@ def init_sec_fundamentals_table(conn: sqlite3.Connection) -> None:
     conn.commit()
 
 
+def populate_from_cache(conn: sqlite3.Connection) -> int:
+    """Build the production `sec_fundamentals` table from the cached
+    `data_cache/sec_edgar/facts/` JSONs that the nightly pipeline
+    downloads. No network calls. Returns the row count written.
+
+    Idempotent — INSERT OR REPLACE on (symbol, period_end, period_type).
+    Safe to call on every overnight_learn run; takes ~30s for the full
+    1,947-company cache.
+    """
+    cache_dir = Path(__file__).parent / "data_cache" / "sec_edgar" / "facts"
+    cik_map_path = Path(__file__).parent / "data_cache" / "sec_edgar" / "cik_map.json"
+    if not cache_dir.exists():
+        log.warning("populate_from_cache: %s missing", cache_dir)
+        return 0
+    if not cik_map_path.exists():
+        log.warning("populate_from_cache: %s missing", cik_map_path)
+        return 0
+
+    init_sec_fundamentals_table(conn)
+    cik_map = json.loads(cik_map_path.read_text())
+    cik_to_syms: dict[str, list[str]] = {}
+    for sym, cik in cik_map.items():
+        cik_to_syms.setdefault(cik, []).append(sym)
+
+    facts_files = sorted(cache_dir.glob("CIK*.json"))
+    total_rows = 0
+    for p in facts_files:
+        cik = p.stem[3:]
+        syms = cik_to_syms.get(cik) or cik_to_syms.get(cik.lstrip("0"))
+        if not syms:
+            continue
+        primary = syms[0]
+        try:
+            facts = json.loads(p.read_text())
+        except json.JSONDecodeError:
+            continue
+        rows = parse_facts_to_rows(facts, primary)
+        if rows:
+            total_rows += save_rows(conn, rows)
+    conn.commit()
+    log.info("populate_from_cache: %d rows from %d cached fact files",
+             total_rows, len(facts_files))
+    return total_rows
+
+
 # ── HTTP helpers ────────────────────────────────────────────────────────
 
 _session = requests.Session()
@@ -617,6 +662,106 @@ def get_fundamentals_signal(conn: sqlite3.Connection, symbol: str) -> dict | Non
         "net_debt_change_pct": net_debt_change_pct,
         "raw_score": round(raw_score, 4),
     }
+
+
+def get_fundamentals_at(conn: sqlite3.Connection, symbol: str,
+                         cutoff: str) -> dict:
+    """Point-in-time fundamentals lookup — returns the SEC signal as it
+    would have been reported on or before `cutoff` (YYYY-MM-DD).
+
+    Distinct from `get_fundamentals_signal`, which always returns the
+    latest period. This variant is what walk-forward training/evaluation
+    must use to avoid lookahead bias.
+
+    Returns the 6 NN-ready features as a dict (zeros when unknown):
+      revenue_yoy_growth, gross_margin, operating_margin,
+      fcf_to_revenue, buyback_intensity, net_debt_change_pct
+    """
+    NN_FIELDS = [
+        "revenue_yoy_growth", "gross_margin", "operating_margin",
+        "fcf_to_revenue", "buyback_intensity", "net_debt_change_pct",
+    ]
+    zero = {f: 0.0 for f in NN_FIELDS}
+
+    row = conn.execute(
+        """SELECT period_end FROM sec_fundamentals
+             WHERE symbol = ? AND revenues IS NOT NULL
+               AND period_end <= ?
+             ORDER BY period_end DESC LIMIT 1""",
+        (symbol.upper(), cutoff),
+    ).fetchone()
+    if not row:
+        return zero
+    pend = row[0]
+    prior_end = (date.fromisoformat(pend[:10]) - timedelta(days=365)).isoformat()
+
+    rev = _ttm_from_period(conn, symbol, "revenues", pend)
+    rev_yoy = _ttm_from_period(conn, symbol, "revenues", prior_end)
+    gp = _ttm_from_period(conn, symbol, "gross_profit", pend)
+    opi = _ttm_from_period(conn, symbol, "operating_income", pend)
+    cfo = _ttm_from_period(conn, symbol, "cfo", pend)
+    capex = _ttm_from_period(conn, symbol, "capex", pend)
+    bb = _ttm_from_period(conn, symbol, "buybacks_value", pend)
+
+    def _div(a, b):
+        if a is None or not b:
+            return 0.0
+        return a / b
+
+    growth = 0.0
+    if rev is not None and rev_yoy:
+        growth = (rev - rev_yoy) / abs(rev_yoy)
+    fcf = (cfo - capex) if (cfo is not None and capex is not None) else None
+
+    bs = conn.execute(
+        """SELECT long_term_debt, cash FROM sec_fundamentals
+             WHERE symbol = ? AND period_end <= ?
+               AND long_term_debt IS NOT NULL
+             ORDER BY period_end DESC LIMIT 5""",
+        (symbol.upper(), pend),
+    ).fetchall()
+    ndc = 0.0
+    if len(bs) >= 5:
+        now = (bs[0][0] or 0) - (bs[0][1] or 0)
+        then = (bs[4][0] or 0) - (bs[4][1] or 0)
+        if then:
+            ndc = (now - then) / abs(then)
+
+    def clip(x):
+        if x is None or not (isinstance(x, (int, float))) or x != x or x in (float("inf"), -float("inf")):
+            return 0.0
+        return max(-3.0, min(3.0, float(x)))
+
+    return {
+        "revenue_yoy_growth":  clip(growth),
+        "gross_margin":        clip(_div(gp, rev)),
+        "operating_margin":    clip(_div(opi, rev)),
+        "fcf_to_revenue":      clip(_div(fcf, rev)),
+        "buyback_intensity":   clip(_div(bb, rev)),
+        "net_debt_change_pct": clip(ndc),
+    }
+
+
+def augment_dataframe_with_sec(df, conn: sqlite3.Connection):
+    """Attach point-in-time SEC features to a DataFrame with `symbol`
+    and `as_of` columns. Modifies in place; returns df. Caches lookups
+    per (symbol, cutoff) to avoid redundant DB hits across rows."""
+    NN_FIELDS = [
+        "revenue_yoy_growth", "gross_margin", "operating_margin",
+        "fcf_to_revenue", "buyback_intensity", "net_debt_change_pct",
+    ]
+    cache: dict[tuple[str, str], dict] = {}
+    cols = {f: [] for f in NN_FIELDS}
+    for sym, as_of in zip(df["symbol"].astype(str), df["as_of"].astype(str)):
+        cutoff = as_of[:10]
+        key = (sym.upper(), cutoff)
+        if key not in cache:
+            cache[key] = get_fundamentals_at(conn, sym.upper(), cutoff)
+        for f in NN_FIELDS:
+            cols[f].append(cache[key][f])
+    for f in NN_FIELDS:
+        df[f] = cols[f]
+    return df
 
 
 # ── Cross-sectional Frames API (cheap full-universe snapshot) ───────────

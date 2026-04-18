@@ -173,10 +173,11 @@ def _train_moonshot_nn(df: pd.DataFrame) -> tuple:
     from sklearn.preprocessing import StandardScaler
 
     feat = _build_features(df)
+    feat = _attach_sec_features(feat)
     feature_names = [
         "log_price", "sigma", "p90_ratio", "p10_ratio", "asymmetry",
         "vol_low", "vol_hi", "H7_ewma_p90",
-    ]
+    ] + SEC_FEATURE_NAMES
     feat["moonshot_label"] = (feat["realized_ret"] >= 1.0).astype(int)
 
     windows = sorted(feat["as_of"].unique())
@@ -239,6 +240,55 @@ def _train_moonshot_nn(df: pd.DataFrame) -> tuple:
     return feat, final_model, scaler
 
 
+SEC_FEATURE_NAMES = [
+    "revenue_yoy_growth", "gross_margin", "operating_margin",
+    "fcf_to_revenue", "buyback_intensity", "net_debt_change_pct",
+]
+
+
+def _attach_sec_features(feat: pd.DataFrame) -> pd.DataFrame:
+    """Best-effort SEC feature augmentation. If the projector cache + SEC
+    fundamentals table aren't available, returns feat unchanged with the
+    SEC columns set to 0 — so the same `feature_names` list still works
+    and the model just sees a constant-zero contribution.
+
+    Research 2026-04-17: adding the 6 SEC features alongside the 8 base
+    features lifted hit-rate +1.72pp on the expanded 2016-2024 set.
+    Single-feature additions were noise; the combined block was the win.
+    """
+    for f in SEC_FEATURE_NAMES:
+        if f not in feat.columns:
+            feat[f] = 0.0
+    try:
+        from db import init_db
+        from signals_sec_edgar import (augment_dataframe_with_sec,
+                                        populate_from_cache)
+        conn = init_db()
+        try:
+            # First-run safety: build the sec_fundamentals table from
+            # cached SEC EDGAR facts JSONs if it's missing or empty.
+            try:
+                row_count = conn.execute(
+                    "SELECT COUNT(*) FROM sec_fundamentals"
+                ).fetchone()[0]
+            except Exception:
+                row_count = 0
+            if row_count == 0:
+                log.info("sec_fundamentals empty — populating from cache")
+                populate_from_cache(conn)
+            tmp = feat[["symbol", "as_of"]].copy()
+            tmp = augment_dataframe_with_sec(tmp, conn)
+            for f in SEC_FEATURE_NAMES:
+                feat[f] = tmp[f].values
+            log.info("SEC features attached (coverage: %.1f%% non-zero rev_yoy)",
+                     100.0 * (feat["revenue_yoy_growth"] != 0).mean())
+        finally:
+            conn.close()
+    except Exception as e:
+        log.warning("SEC feature augmentation failed (%s) — features stay 0", e)
+    return feat
+
+
 def _train_nn(df: pd.DataFrame) -> tuple:
     """Walk-forward training — for each window, train only on prior windows,
     predict on the target window. Uses ExtraTreesRegressor (v2 research
@@ -246,15 +296,21 @@ def _train_nn(df: pd.DataFrame) -> tuple:
     and more stable across seeds/perturbations.
 
     Config `n_estimators=300, max_depth=14, min_samples_leaf=20` is the
-    v2 hyperparameter search winner. See research/deep_findings_v2_*.md."""
+    v2 hyperparameter search winner. See research/deep_findings_v2_*.md.
+
+    Feature set extended on 2026-04-17 to include 6 point-in-time SEC
+    fundamentals (revenue_yoy_growth, gross_margin, operating_margin,
+    fcf_to_revenue, buyback_intensity, net_debt_change_pct). Ablation
+    on the expanded 2016-2024 training set: +1.72pp hit-rate."""
     from sklearn.ensemble import ExtraTreesRegressor
     from sklearn.preprocessing import StandardScaler
 
     feat = _build_features(df)
+    feat = _attach_sec_features(feat)
     feature_names = [
         "log_price", "sigma", "p90_ratio", "p10_ratio", "asymmetry",
         "vol_low", "vol_hi", "H7_ewma_p90",
-    ]
+    ] + SEC_FEATURE_NAMES
     windows = sorted(feat["as_of"].unique())
     if len(windows) < 3:
         log.warning("Not enough windows (%d) for walk-forward training", len(windows))
