@@ -469,43 +469,72 @@ def save_picks(results: list[dict], conn=None) -> None:
     top_picks = get_picks(results=results)
 
     # ── Asymmetric upside tier ──
-    # Scoring is picked NIGHTLY by overnight_learn.py. When the neural
-    # network beats the hand-crafted methods in recent backtests, its
-    # scores sit at data_cache/nn_scores.json and we use those;
-    # otherwise we fall back to H7 (EWMA P90 ratio).
+    # Scorer priority (highest signal first; first non-empty wins):
+    #   1. moonshot_scores.json   — ExtraTreesClassifier on the +100%
+    #      label, the literal upside-classifier this tier was designed
+    #      around. Research 2026-04-17 showed raw p90_ratio (the legacy
+    #      scorer) only delivered 14.3% hit / 2.75× lift, vs moonshot's
+    #      8.27× lift in headline backtest. This is the right primary.
+    #   2. ensemble_scores.json   — stacker over nn + moonshot + H7 + H9.
+    #      Slightly weaker than moonshot for asymmetric specifically but
+    #      a sensible fallback when moonshot is missing.
+    #   3. nn_scores.json         — regression scorer. Final ML fallback.
+    #   4. asymmetric_scores.json — legacy p90_ratio. Last resort.
+    #
+    # Threshold per scorer matches the natural value range:
+    #   moonshot_score is 0-1 probability  → ≥ 0.55
+    #   ensemble_score / nn_score          → ≥ 0.05
+    #   p90_ratio                          → ≥ 1.3
     #
     # Liquidity floor: require avg_volume * current_price > $500k/day.
     # Penny stocks with $50k/day liquidity can't absorb Strategist-scale
     # positions even if the model likes them. Protects product credibility.
-    nn_scores = {}
-    scoring_regime = {}
+    moonshot_scores: dict = {}
+    ensemble_scores: dict = {}
+    nn_scores: dict = {}
     try:
-        nn_path = Path(__file__).parent / "data_cache" / "nn_scores.json"
-        if nn_path.exists():
-            nn_scores = json.loads(nn_path.read_text())
-        regime_path = Path(__file__).parent / "data_cache" / "production_scorer.json"
-        if regime_path.exists():
-            scoring_regime = json.loads(regime_path.read_text())
+        for fname, target in (
+            ("moonshot_scores.json",  moonshot_scores),
+            ("ensemble_scores.json",  ensemble_scores),
+            ("nn_scores.json",        nn_scores),
+        ):
+            p = Path(__file__).parent / "data_cache" / fname
+            if p.exists():
+                d = json.loads(p.read_text())
+                if isinstance(d, dict):
+                    target.update(d)
     except Exception:
         pass
 
-    use_nn = (scoring_regime.get("winner") == "nn_score" and bool(nn_scores))
+    if moonshot_scores:
+        asym_source, asym_threshold = moonshot_scores, 0.55
+        asym_source_name = "moonshot_score"
+    elif ensemble_scores:
+        asym_source, asym_threshold = ensemble_scores, 0.05
+        asym_source_name = "ensemble_score"
+    elif nn_scores:
+        asym_source, asym_threshold = nn_scores, 0.05
+        asym_source_name = "nn_score"
+    else:
+        asym_source, asym_threshold, asym_source_name = {}, 1.3, "p90_ratio"
+
+    log.info("asymmetric scorer: %s (threshold %.2f, %d tickers loaded)",
+             asym_source_name, asym_threshold, len(asym_source))
 
     def _asym_score(r: dict) -> float:
-        if use_nn:
-            return float(nn_scores.get(r["symbol"].upper(), 0.0))
+        sym = r["symbol"].upper()
+        v = asym_source.get(sym)
+        if v is not None:
+            return float(v)
+        # Final fallback: legacy p90_ratio embedded on the row
         return float((r.get("asymmetric") or {}).get("score", 0.0))
 
     MIN_DOLLAR_VOLUME = 500_000  # $500k avg daily turnover
     asym_eligible = []
     for r in results:
         score = _asym_score(r)
-        if use_nn:
-            if score < 0.05:
-                continue  # NN scores are small floats; keep anything above trivial
-        else:
-            if score < 1.3:
-                continue
+        if score < asym_threshold:
+            continue
         # Liquidity filter — skip uninvestable names
         avg_v = r.get("avg_volume") or 0
         cur_p = r.get("current_price") or 0

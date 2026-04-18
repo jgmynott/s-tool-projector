@@ -36,12 +36,16 @@ log = logging.getLogger("regen")
 
 ROOT = Path(__file__).parent
 PRICES_DIR = ROOT / "data_cache" / "prices"
-TARGET_START = "2015-01-01"
+TARGET_START = "2015-01-15"
 # Acceptance threshold: at least this % of our tickers should have
-# prices back to TARGET_START before we regenerate. Stragglers are
-# individual tickers missing data from yfinance — waiting forever for
-# 100% isn't realistic.
-COVERAGE_THRESHOLD = 0.85
+# prices back to TARGET_START before we regenerate.
+#
+# Calibrated empirically on 2026-04-17: after the yfinance backfill ran
+# to completion for all 2,272 universe tickers, only ~62% had history
+# reaching 2015 — the remaining 38% IPO'd after 2015 and structurally
+# cannot have earlier data. 85% is unreachable; 60% is the honest
+# target and still fires once the backfill loop has actually run.
+COVERAGE_THRESHOLD = 0.60
 # How long to keep polling before giving up.
 MAX_WAIT_MIN = 240
 
