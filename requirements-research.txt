@@ -7,5 +7,5 @@ pytrends>=4.9.3
 
 # Sentiment collector (WSB FinBERT) — tilts zeroed 2026-04-15, kept for
 # reproducibility of the dead-signal forensic
-transformers>=4.36
+transformers>=5.6.1
 torch>=2.1
