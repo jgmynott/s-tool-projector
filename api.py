@@ -716,6 +716,141 @@ def picks(
     )
 
 
+# ── Live paper-trading portfolio (Alpaca) ──
+
+@app.get("/api/portfolio")
+@limiter.limit("60/minute")
+def portfolio(request: Request, user: Optional[dict] = Depends(auth.optional_user)):
+    """Live actively-managed paper portfolio on Alpaca.
+
+    Returns account equity, today's P&L, recent equity curve, and
+    per-position state with sleeve attribution (swing vs daytrade)
+    pulled from research/trader_state.json. Strategist-gated because
+    it surfaces position-level data for paying users.
+
+    Set ALPACA_API_KEY / ALPACA_API_SECRET / ALPACA_BASE_URL on the
+    Railway service. Returns 503 if creds aren't configured (the
+    /picks UI degrades to "portfolio not yet wired").
+    """
+    is_strategist = False
+    if user:
+        user_row = users_db.upsert_user(users_conn, user["user_id"], email=user.get("email"))
+        is_strategist = users_db.can_access_picks(user_row)
+
+    api_key = os.getenv("ALPACA_API_KEY")
+    api_secret = os.getenv("ALPACA_API_SECRET")
+    base_url = os.getenv("ALPACA_BASE_URL", "https://paper-api.alpaca.markets/v2").rstrip("/")
+    if not api_key or not api_secret:
+        return JSONResponse(status_code=503, content={
+            "error": "alpaca_not_configured",
+            "hint": "Set ALPACA_API_KEY/ALPACA_API_SECRET on the Railway service.",
+        })
+
+    import urllib.request as _ur, urllib.error as _ue
+    headers = {"APCA-API-KEY-ID": api_key, "APCA-API-SECRET-KEY": api_secret}
+    def _alpaca(path: str):
+        url = f"{base_url}/{path.lstrip('/')}"
+        req = _ur.Request(url, headers=headers)
+        with _ur.urlopen(req, timeout=10) as r:
+            return json.loads(r.read())
+
+    try:
+        acct = _alpaca("account")
+        positions = _alpaca("positions")
+        # 1-week daily equity curve for the chart at the top of /picks
+        hist = _alpaca("account/portfolio/history?period=1W&timeframe=1D")
+    except (_ue.HTTPError, _ue.URLError, ValueError) as e:
+        return JSONResponse(status_code=502, content={
+            "error": "alpaca_upstream_error", "detail": str(e)[:200],
+        })
+
+    # Sleeve attribution from the local state file written by trader.py.
+    # If the file isn't present (first deploy, no orders yet), positions
+    # render under "unattributed" and the UI shows a friendly hint.
+    state_path = Path(__file__).parent / "research" / "trader_state.json"
+    entries: dict = {}
+    if state_path.exists():
+        try:
+            entries = (json.loads(state_path.read_text()) or {}).get("entries", {})
+        except Exception:
+            entries = {}
+
+    from datetime import datetime as _dt2
+    now = _dt2.utcnow()
+
+    pos_out = []
+    for p in positions:
+        sym = p["symbol"]
+        ent = entries.get(sym) or {}
+        opened_at = ent.get("opened_at")
+        days_held = None
+        if opened_at:
+            try:
+                d0 = _dt2.fromisoformat(opened_at.replace("Z", "+00:00")).replace(tzinfo=None)
+                days = (now.date() - d0.date()).days
+                wd = sum(1 for i in range(max(0, days))
+                         if (d0.date() + (now.date() - d0.date())).weekday() < 5)
+                days_held = max(0, days)  # calendar days; UI can label "days"
+            except Exception:
+                days_held = None
+        pos_out.append({
+            "symbol": sym,
+            "qty": p["qty"], "side": p["side"],
+            "avg_entry_price": float(p["avg_entry_price"]),
+            "current_price": float(p["current_price"]),
+            "market_value": float(p["market_value"]),
+            "cost_basis": float(p["cost_basis"]),
+            "unrealized_pl": float(p["unrealized_pl"]),
+            "unrealized_plpc": float(p["unrealized_plpc"]),
+            "change_today_pct": float(p.get("change_today", 0)) if p.get("change_today") else None,
+            "sleeve": ent.get("sleeve") or "unattributed",
+            "opened_at": opened_at,
+            "days_held": days_held,
+        })
+    pos_out.sort(key=lambda x: x["unrealized_pl"], reverse=True)
+
+    eq = float(acct["equity"])
+    last_eq = float(acct.get("last_equity") or 0) or eq
+    day_change = eq - last_eq
+    day_change_pct = (day_change / last_eq) if last_eq else 0.0
+
+    # Sleeve-level attribution: total P&L grouped by sleeve.
+    sleeve_summary: dict = {"swing": {"n": 0, "mv": 0.0, "upnl": 0.0},
+                            "daytrade": {"n": 0, "mv": 0.0, "upnl": 0.0},
+                            "unattributed": {"n": 0, "mv": 0.0, "upnl": 0.0}}
+    for p in pos_out:
+        s = p["sleeve"] if p["sleeve"] in sleeve_summary else "unattributed"
+        sleeve_summary[s]["n"] += 1
+        sleeve_summary[s]["mv"] += p["market_value"]
+        sleeve_summary[s]["upnl"] += p["unrealized_pl"]
+
+    payload = {
+        "is_strategist": is_strategist,
+        "as_of": now.isoformat() + "Z",
+        "account": {
+            "equity": eq, "cash": float(acct["cash"]),
+            "buying_power": float(acct["buying_power"]),
+            "last_equity": last_eq,
+            "day_change": day_change, "day_change_pct": day_change_pct,
+            "multiplier": acct.get("multiplier"),
+            "currency": acct.get("currency", "USD"),
+            "is_paper": "paper" in base_url,
+        },
+        "equity_history": {
+            "timestamps": hist.get("timestamp", []),
+            "equity": hist.get("equity", []),
+            "profit_loss": hist.get("profit_loss", []),
+        },
+        "positions": pos_out if is_strategist else pos_out[:3],  # teaser when not paid
+        "sleeves": sleeve_summary,
+        "strategy_doc": "swing=ranks 1-10, 5-day hold, 1.5× lev. daytrade=ranks 11-20, intraday only, 1× lev.",
+    }
+    if not is_strategist:
+        payload["teaser"] = True
+        payload["hint"] = "Position-level detail unlocks at Strategist tier."
+    return JSONResponse(headers={"Cache-Control": "no-store"}, content=payload)
+
+
 # ── User + billing ──
 
 @app.get("/api/me")

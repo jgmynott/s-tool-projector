@@ -41,3 +41,7 @@ macro_combined_run.log
 
 # Claude Code internals
 .claude/worktrees/
+
+# Local QC scratch (Playwright screenshots, ad-hoc check scripts)
+cloudflare/.qc-shots/
+cloudflare/.qc-*.mjs

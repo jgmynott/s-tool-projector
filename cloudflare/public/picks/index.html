@@ -587,6 +587,98 @@ footer a { color: var(--text-mid); }
   transition: all .15s;
 }
 .show-all-btn:hover { background: rgba(95,170,197,0.10); color: var(--text-hi); border-color: var(--accent-lake); }
+
+/* ── Live portfolio panel (Alpaca paper) ─────────────────────── */
+.pf-panel {
+  margin: 28px 0 36px; padding: 32px 32px 28px;
+  border: 1px solid var(--border); border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, rgba(10,101,119,0.10), rgba(2,40,52,0.06)), var(--bg-surface);
+  position: relative; overflow: hidden;
+}
+.pf-panel::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(600px 200px at 90% -20%, rgba(95,170,197,0.10), transparent 60%);
+}
+.pf-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+.pf-eyebrow { font: 600 10px 'Inter'; color: var(--accent-lake); letter-spacing: 0.22em; text-transform: uppercase; display: flex; align-items: center; gap: 8px; }
+.pf-live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--pos); box-shadow: 0 0 8px rgba(110,231,183,0.6); animation: pf-pulse 2s ease-in-out infinite; }
+@keyframes pf-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+.pf-paper-tag { font: 500 11px 'Inter'; color: var(--text-dim); border: 1px solid var(--border); padding: 4px 10px; border-radius: 999px; }
+
+.pf-equity-row { display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: end; margin-top: 8px; }
+.pf-equity-num { font: 400 56px/1 'Crimson Text', Georgia, serif; letter-spacing: -0.022em; color: var(--text-hi); font-variant-numeric: tabular-nums; }
+.pf-equity-sub { display: flex; align-items: center; gap: 14px; margin-top: 10px; flex-wrap: wrap; }
+.pf-day-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 14px; border-radius: 999px;
+  font: 600 13px 'Inter'; font-variant-numeric: tabular-nums;
+}
+.pf-day-pill.pos { background: rgba(110,231,183,0.10); color: var(--pos); border: 1px solid rgba(110,231,183,0.25); }
+.pf-day-pill.neg { background: rgba(252,165,165,0.10); color: var(--neg); border: 1px solid rgba(252,165,165,0.25); }
+.pf-day-pill.flat { background: rgba(155,161,185,0.10); color: var(--text-mid); border: 1px solid var(--border); }
+.pf-day-label { font: 500 12px 'Inter'; color: var(--text-dim); }
+.pf-curve { width: 240px; height: 64px; }
+.pf-curve path.line { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.pf-curve path.area { stroke: none; opacity: 0.18; }
+
+.pf-sleeves { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 22px 0 8px; padding-top: 18px; border-top: 1px solid var(--border); }
+.pf-sleeve { padding: 12px 16px; border-radius: var(--radius-sm); background: rgba(255,255,255,0.02); border: 1px solid var(--border); }
+.pf-sleeve-name { font: 600 10px 'Inter'; color: var(--accent-lake); letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 6px; }
+.pf-sleeve-name.daytrade { color: #e8b86a; }
+.pf-sleeve-name.unattributed { color: var(--text-dim); }
+.pf-sleeve-mv { font: 500 16px 'Inter'; color: var(--text-hi); font-variant-numeric: tabular-nums; }
+.pf-sleeve-meta { font: 500 12px 'Inter'; color: var(--text-mid); margin-top: 2px; font-variant-numeric: tabular-nums; }
+.pf-sleeve-meta.pos { color: var(--pos); } .pf-sleeve-meta.neg { color: var(--neg); }
+
+.pf-positions-head { display: flex; justify-content: space-between; align-items: baseline; margin: 22px 0 12px; }
+.pf-positions-title { font: 500 13px 'Inter'; color: var(--text-mid); letter-spacing: 0.06em; }
+.pf-positions-count { font: 500 12px 'Inter'; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+.pf-positions { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+.pf-pos {
+  padding: 14px 16px; border-radius: var(--radius-sm);
+  background: var(--bg-card); border: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 6px;
+  transition: border-color .15s, transform .15s;
+}
+.pf-pos:hover { border-color: var(--border-strong); transform: translateY(-1px); }
+.pf-pos-row1 { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.pf-pos-sym { font: 600 15px 'Inter'; color: var(--text-hi); letter-spacing: -0.005em; }
+.pf-pos-tag { font: 600 9px 'Inter'; padding: 2px 7px; border-radius: 4px; letter-spacing: 0.10em; text-transform: uppercase; }
+.pf-pos-tag.swing { background: rgba(95,170,197,0.14); color: var(--accent-lake); }
+.pf-pos-tag.daytrade { background: rgba(232,184,106,0.14); color: #e8b86a; }
+.pf-pos-tag.unattributed { background: rgba(155,161,185,0.10); color: var(--text-dim); }
+.pf-pos-row2 { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.pf-pos-mv { font: 500 14px 'Inter'; color: var(--text-mid); font-variant-numeric: tabular-nums; }
+.pf-pos-pct { font: 600 14px 'Inter'; font-variant-numeric: tabular-nums; }
+.pf-pos-pct.pos { color: var(--pos); } .pf-pos-pct.neg { color: var(--neg); }
+.pf-pos-row3 { display: flex; justify-content: space-between; align-items: center; gap: 8px; font: 500 11px 'Inter'; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+.pf-pos-pl.pos { color: var(--pos); } .pf-pos-pl.neg { color: var(--neg); }
+
+.pf-empty { padding: 40px 24px; text-align: center; color: var(--text-mid); font: 500 14px 'Inter'; line-height: 1.6; border: 1px dashed var(--border); border-radius: var(--radius-sm); }
+.pf-empty strong { color: var(--text-hi); display: block; margin-bottom: 6px; font: 400 18px 'Crimson Text', serif; }
+
+.pf-teaser-fade { position: relative; }
+.pf-teaser-fade::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(180deg, transparent 30%, var(--bg-surface) 95%);
+}
+.pf-teaser-cta { margin-top: 14px; text-align: center; font: 500 13px 'Inter'; color: var(--text-mid); }
+.pf-teaser-cta a { color: var(--accent-lake); }
+
+@media (max-width: 720px) {
+  .pf-panel { padding: 24px 22px 22px; margin: 22px 0 30px; }
+  .pf-equity-row { grid-template-columns: 1fr; gap: 14px; }
+  .pf-curve { width: 100%; height: 56px; }
+  .pf-equity-num { font-size: 44px; }
+  .pf-sleeves { grid-template-columns: 1fr; gap: 8px; }
+  .pf-positions { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 480px) {
+  .pf-panel { padding: 20px 18px 18px; }
+  .pf-equity-num { font-size: 38px; }
+  .pf-positions { grid-template-columns: 1fr; }
+  .pf-head { gap: 8px; }
+}
 </style>
 <script async
   data-clerk-publishable-key="pk_test_Zmx1ZW50LW1vbGUtNzEuY2xlcmsuYWNjb3VudHMuZGV2JA"
@@ -734,6 +826,123 @@ function renderTrackRecord(summary) {
       <div class="section-eyebrow">Live track record</div>
       <h2 class="section-title">How the picks have actually done. <span class="muted">Realized returns on matured names.</span></h2>
       <div class="tr-grid">${cards}</div>
+  </section>`;
+}
+
+// ── Live paper-portfolio panel ───────────────────────────────
+// Renders the Robinhood-style equity hero, sleeve summary, and per-position
+// cards for the actively-managed Alpaca paper account. Defensive against
+// every degraded state: no creds (503), upstream error (502), no positions
+// yet (empty hint), teaser mode (free user), zero equity_history points.
+function fmtUSD(v, opts) {
+  const o = opts || {};
+  const sign = (o.signed && v > 0) ? '+' : '';
+  const n = Math.abs(v);
+  const digits = (o.digits != null) ? o.digits : (n >= 1000 ? 0 : 2);
+  return `${v < 0 ? '-' : sign}$${n.toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits })}`;
+}
+function pfSparkline(eq) {
+  if (!eq || eq.length < 2) return '';
+  const w = 240, h = 64, pad = 4;
+  const xs = eq.length;
+  const min = Math.min(...eq), max = Math.max(...eq);
+  const range = (max - min) || 1;
+  const x = (i) => pad + (i / (xs - 1)) * (w - 2 * pad);
+  const y = (v) => pad + (1 - (v - min) / range) * (h - 2 * pad);
+  const pts = eq.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`);
+  const line = `M ${pts.join(' L ')}`;
+  const area = `${line} L ${x(xs - 1).toFixed(1)},${(h - pad).toFixed(1)} L ${x(0).toFixed(1)},${(h - pad).toFixed(1)} Z`;
+  const last = eq[eq.length - 1], first = eq[0];
+  const stroke = last >= first ? 'var(--pos)' : 'var(--neg)';
+  return `<svg class="pf-curve" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+    <path class="area" d="${area}" fill="${stroke}"/>
+    <path class="line" d="${line}" stroke="${stroke}"/>
+  </svg>`;
+}
+function pfSleeveCard(name, summary, label) {
+  const upnl = summary?.upnl || 0;
+  const upnlCls = upnl > 0 ? 'pos' : (upnl < 0 ? 'neg' : '');
+  const n = summary?.n || 0;
+  return `<div class="pf-sleeve">
+    <div class="pf-sleeve-name ${name}">${label}</div>
+    <div class="pf-sleeve-mv">${fmtUSD(summary?.mv || 0, { digits: 0 })}</div>
+    <div class="pf-sleeve-meta ${upnlCls}">${n} pos · ${fmtUSD(upnl, { signed: true, digits: 0 })}</div>
+  </div>`;
+}
+function pfPositionCard(p) {
+  const pct = (p.unrealized_plpc || 0) * 100;
+  const pctCls = pct > 0 ? 'pos' : (pct < 0 ? 'neg' : '');
+  const plCls = (p.unrealized_pl || 0) >= 0 ? 'pos' : 'neg';
+  const sleeve = p.sleeve || 'unattributed';
+  const sleeveLabel = sleeve === 'swing' ? 'Swing' : (sleeve === 'daytrade' ? 'Day' : '—');
+  const heldLabel = p.days_held != null ? `${p.days_held}d held` : '';
+  return `<div class="pf-pos">
+    <div class="pf-pos-row1">
+      <span class="pf-pos-sym">${p.symbol}</span>
+      <span class="pf-pos-tag ${sleeve}">${sleeveLabel}</span>
+    </div>
+    <div class="pf-pos-row2">
+      <span class="pf-pos-mv">${fmtUSD(p.market_value, { digits: 0 })}</span>
+      <span class="pf-pos-pct ${pctCls}">${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%</span>
+    </div>
+    <div class="pf-pos-row3">
+      <span class="pf-pos-pl ${plCls}">${fmtUSD(p.unrealized_pl, { signed: true, digits: 0 })}</span>
+      <span>${heldLabel}</span>
+    </div>
+  </div>`;
+}
+function renderPortfolio(data) {
+  if (!data || data.error) return '';  // 503/502 → render nothing, just keep the rest of the page
+  const acct = data.account || {};
+  const eq = acct.equity || 0;
+  const dc = acct.day_change || 0, dcp = acct.day_change_pct || 0;
+  const dcCls = dc > 0 ? 'pos' : (dc < 0 ? 'neg' : 'flat');
+  const sign = dc > 0 ? '+' : (dc < 0 ? '−' : '');
+  const dcAbs = Math.abs(dc), dcpAbs = Math.abs(dcp * 100);
+  const paperTag = acct.is_paper ? `<span class="pf-paper-tag">Paper · ${acct.multiplier || 1}× margin</span>` : '';
+  const spark = pfSparkline(data.equity_history?.equity || []);
+  const sleeves = data.sleeves || {};
+  const positions = data.positions || [];
+  const sleeveBlock = `
+    <div class="pf-sleeves">
+      ${pfSleeveCard('swing', sleeves.swing, '5-day swing')}
+      ${pfSleeveCard('daytrade', sleeves.daytrade, 'Day trade')}
+      ${pfSleeveCard('unattributed', sleeves.unattributed, 'Other')}
+    </div>`;
+  let positionsBlock;
+  if (positions.length === 0) {
+    positionsBlock = `<div class="pf-empty">
+      <strong>No open positions.</strong>
+      The strategy waits for the next entry window. Positions appear here as they fill.
+    </div>`;
+  } else {
+    const wrapCls = data.teaser ? 'pf-positions pf-teaser-fade' : 'pf-positions';
+    positionsBlock = `<div class="${wrapCls}">${positions.map(pfPositionCard).join('')}</div>`;
+    if (data.teaser) {
+      positionsBlock += `<div class="pf-teaser-cta">Showing ${positions.length} of total — <a href="/pricing">unlock the full book</a> to see every fill, sleeve allocation, and intraday rebalance.</div>`;
+    }
+  }
+  return `<section class="pf-panel" id="pf-panel">
+    <div class="pf-head">
+      <div class="pf-eyebrow"><span class="pf-live-dot"></span> Live paper portfolio</div>
+      ${paperTag}
+    </div>
+    <div class="pf-equity-row">
+      <div>
+        <div class="pf-equity-num">${fmtUSD(eq, { digits: 2 })}</div>
+        <div class="pf-equity-sub">
+          <span class="pf-day-pill ${dcCls}">${sign}${fmtUSD(dcAbs, { digits: 0 }).replace(/^[-]/, '')} · ${sign}${dcpAbs.toFixed(2)}%</span>
+          <span class="pf-day-label">today</span>
+        </div>
+      </div>
+      ${spark}
+    </div>
+    <div class="pf-positions-head">
+      <span class="pf-positions-title">Open positions</span>
+      <span class="pf-positions-count">${positions.length}${data.teaser ? ' shown' : ''}</span>
+    </div>
+    ${positionsBlock}
+    ${sleeveBlock}
   </section>`;
 }
 
@@ -1577,7 +1786,7 @@ function renderPicksTabs(picksData) {
   return { html: `<nav class="picks-tabs" role="tablist">${btns}</nav>`, activeKey };
 }
 
-function renderPage(picksData, trackData) {
+function renderPage(picksData, trackData, portfolioData) {
   const grouped = {};
   for (const p of picksData.picks) (grouped[p.tier] = grouped[p.tier] || []).push(p);
   const tiered = ['conservative','moderate','aggressive']
@@ -1608,7 +1817,10 @@ function renderPage(picksData, trackData) {
   const asymActive = tabs.activeKey === 'asymmetric' ? ' active' : '';
   const asymPanel = `<div class="tab-panel${asymActive}" data-panel-key="asymmetric">${renderTabAsymBody(picksData.asymmetric_picks || [])}</div>`;
 
-  return `<section class="hero-block">
+  const portfolioBlock = portfolioData ? renderPortfolio(portfolioData) : '';
+
+  return `${portfolioBlock}
+          <section class="hero-block">
             ${renderPortfolioSignal(tiered, picksData)}
             ${renderAllocWidget(picksData)}
           </section>
@@ -1619,16 +1831,46 @@ function renderPage(picksData, trackData) {
           ${renderMethodology(picksData)}`;
 }
 
+// Auto-refresh handle for the live portfolio panel. Cleared on tab hide
+// to stop hammering Alpaca when the user isn't looking.
+let _pfRefreshTimer = null;
+async function refreshPortfolioOnly() {
+  try {
+    const res = await fetch('/api/portfolio', { headers: await authHeaders() });
+    if (!res.ok) return;
+    const data = await res.json();
+    const node = document.getElementById('pf-panel');
+    if (!node) return;
+    const html = renderPortfolio(data);
+    if (html) node.outerHTML = html;
+  } catch (_) { /* swallow — next tick will retry */ }
+}
+function startPortfolioRefresh() {
+  if (_pfRefreshTimer) return;
+  _pfRefreshTimer = setInterval(() => {
+    if (document.visibilityState === 'visible') refreshPortfolioOnly();
+  }, 30000);
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') refreshPortfolioOnly();
+});
+
 async function load() {
   const content = document.getElementById('content');
   const scanMeta = document.getElementById('scanMeta');
 
-  const [picksRes, trackRes] = await Promise.all([
+  const [picksRes, trackRes, pfRes] = await Promise.all([
     fetch('/api/picks', { headers: await authHeaders() }),
     fetch('/api/track-record?lookback_days=90', { headers: await authHeaders() }),
+    fetch('/api/portfolio', { headers: await authHeaders() }).catch(() => null),
   ]);
   const picksData = await picksRes.json().catch(() => null);
   const trackData = await trackRes.json().catch(() => null);
+  // Portfolio is best-effort: 503 (no creds), 502 (Alpaca down), or
+  // strategist-gated all return a JSON body we can pass through to
+  // renderPortfolio, which renders nothing on error.
+  let portfolioData = null;
+  if (pfRes && pfRes.ok) portfolioData = await pfRes.json().catch(() => null);
 
   if (picksRes.status === 402 && picksData?.error === 'strategist_required') {
     scanMeta.innerHTML = `<span class="meta-item"><span class="dot waiting"></span><span>Scan last updated ${picksData.scan_age_hours != null ? picksData.scan_age_hours.toFixed(1) + 'h ago' : 'recently'}</span></span>
@@ -1653,9 +1895,10 @@ async function load() {
     <span class="meta-item">${picksData.count} picks across 3 tiers</span>
     <span class="meta-item">1-year horizon · nightly refresh</span>`;
 
-  content.innerHTML = renderPage(picksData, trackData);
+  content.innerHTML = renderPage(picksData, trackData, portfolioData);
   wireAllocControls(picksData, trackData);
   wireChartTooltips();
+  if (portfolioData && !portfolioData.error) startPortfolioRefresh();
 }
 
 // Start the shared nav (handles pill + dark Clerk appearance) and hook the
