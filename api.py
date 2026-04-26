@@ -747,12 +747,13 @@ def portfolio(request: Request, user: Optional[dict] = Depends(auth.optional_use
         })
 
     import urllib.request as _ur, urllib.error as _ue
+    import json as _json
     headers = {"APCA-API-KEY-ID": api_key, "APCA-API-SECRET-KEY": api_secret}
     def _alpaca(path: str):
         url = f"{base_url}/{path.lstrip('/')}"
         req = _ur.Request(url, headers=headers)
         with _ur.urlopen(req, timeout=10) as r:
-            return json.loads(r.read())
+            return _json.loads(r.read())
 
     try:
         acct = _alpaca("account")
@@ -771,7 +772,7 @@ def portfolio(request: Request, user: Optional[dict] = Depends(auth.optional_use
     entries: dict = {}
     if state_path.exists():
         try:
-            entries = (json.loads(state_path.read_text()) or {}).get("entries", {})
+            entries = (_json.loads(state_path.read_text()) or {}).get("entries", {})
         except Exception:
             entries = {}
 
