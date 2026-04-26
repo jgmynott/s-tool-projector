@@ -157,27 +157,44 @@ def _fetch_one_to_csv(sym: str) -> bool:
     return True
 
 
-def _self_heal_prices(workers: int = 6) -> list[str]:
-    """When PRICES_DIR is missing or empty (CI cache eviction), fetch the
-    preferred universe (SP500 ∪ NDX100 ∪ WSB) via the data-providers layer
-    and write CSVs so subsequent runs can read them from cache. Returns
-    the list of symbols with usable CSVs after the heal.
-
-    First-run cost on a cold cache: ~3–5 min for ~600 symbols at workers=6
-    (yfinance is unrate-limited; FMP fallback is 250 req/min). Subsequent
-    runs hit the existing CSVs and skip this entirely.
+def _required_universe() -> set[str]:
+    """Union of the preferred universe (regular-tier scoring needs) and
+    every symbol in moonshot_scores.json (the asymmetric-pick pool).
+    Anything that could be picked must have a price CSV; otherwise the
+    asym tier ships partial null bands and preflight kills the deploy.
     """
-    # The preferred universe is what worker.py --preferred scans, so
-    # everything enrich_asymmetric needs to score is in here.
     from worker import SP500_NDX100, WSB_UNIVERSE
-    universe = sorted(set(SP500_NDX100 + WSB_UNIVERSE))
-    log.warning("self-heal: PRICES_DIR empty — fetching %d symbols from data providers (~3-5 min)", len(universe))
+    syms: set[str] = set(SP500_NDX100) | set(WSB_UNIVERSE)
+    moonshot_path = ROOT / "data_cache" / "moonshot_scores.json"
+    if moonshot_path.exists():
+        try:
+            ms = json.loads(moonshot_path.read_text())
+            syms |= {s.upper() for s in ms.keys()}
+        except Exception as exc:
+            log.warning("couldn't read %s: %s — universe = preferred only", moonshot_path, exc)
+    return syms
+
+
+def _self_heal_prices(missing: list[str], workers: int = 6) -> list[str]:
+    """Fetch the missing-CSV slice of the required universe and write each
+    as data_cache/prices/<SYM>.csv. Idempotent: callable on every run with
+    whatever subset is currently absent.
+
+    Cost: roughly 1/15s per missing symbol at workers=6 (yfinance hit-rate
+    in observed CI). On a cold CI cache (~2300 missing) this lands at
+    150–200s; once the cache warms (slot in next workflow's saved cache)
+    subsequent runs find 0 missing and skip the fetch entirely.
+    """
+    if not missing:
+        return []
+    log.warning("self-heal: fetching %d missing price CSVs from data providers", len(missing))
 
     PRICES_DIR.mkdir(parents=True, exist_ok=True)
     healed: list[str] = []
     t0 = time.time()
+    n = len(missing)
     with ThreadPoolExecutor(max_workers=workers) as ex:
-        futures = {ex.submit(_fetch_one_to_csv, s): s for s in universe}
+        futures = {ex.submit(_fetch_one_to_csv, s): s for s in missing}
         done = 0
         for fut in as_completed(futures):
             sym = futures[fut]
@@ -187,12 +204,12 @@ def _self_heal_prices(workers: int = 6) -> list[str]:
                     healed.append(sym)
             except Exception as exc:
                 log.warning("self-heal: %s failed: %s", sym, exc)
-            if done % 50 == 0 or done == len(universe):
+            if done % 100 == 0 or done == n:
                 elapsed = time.time() - t0
                 rate = done / elapsed if elapsed > 0 else 0
                 log.info("self-heal [%d/%d] healed=%d · %.1f/s",
-                         done, len(universe), len(healed), rate)
-    log.warning("self-heal: wrote %d/%d price CSVs in %.1fs", len(healed), len(universe), time.time() - t0)
+                         done, n, len(healed), rate)
+    log.warning("self-heal: wrote %d/%d price CSVs in %.1fs", len(healed), n, time.time() - t0)
     return sorted(healed)
 
 
@@ -206,28 +223,37 @@ def main():
     args = ap.parse_args()
     if args.symbols:
         syms = [s.upper() for s in args.symbols]
+    elif args.no_self_heal:
+        # Caller wants strict "score whatever is in PRICES_DIR" behavior.
+        syms = sorted(p.stem for p in PRICES_DIR.glob("*.csv"))
     else:
+        # Self-heal pass: incrementally fill in any CSV missing from the
+        # required universe (preferred ∪ moonshot pick pool). Was needed
+        # because CI cache eviction wiped data_cache/prices/ and the
+        # Russell 3000 backfill that used to populate it was removed for
+        # cost reasons. Now also catches the "partial cache" case where
+        # the CI cache has the preferred set but is missing the long
+        # tail the asym tier picks from.
+        existing = {p.stem.upper() for p in PRICES_DIR.glob("*.csv")}
+        required = _required_universe()
+        missing = sorted(required - existing)
+        if missing:
+            log.warning("self-heal: %d/%d required CSVs missing — filling",
+                        len(missing), len(required))
+            _self_heal_prices(missing, workers=args.workers)
         syms = sorted(p.stem for p in PRICES_DIR.glob("*.csv"))
 
-    # Self-heal: when CI's cache eviction has wiped data_cache/prices/ the
-    # nightly slow-path no longer repopulates it (the Russell 3000 backfill
-    # was removed for cost reasons). Rebuild from data-providers so the
-    # asymmetric tier doesn't silently ship empty.
-    if not syms and not args.no_self_heal:
+    if not syms:
+        # Belt-and-braces diagnostic: even after self-heal we have nothing.
+        # Either data providers are down or the moonshot universe is empty.
         log.error(
-            "no symbols to score. PRICES_DIR=%s exists=%s is_dir=%s",
+            "no symbols to score after self-heal. PRICES_DIR=%s exists=%s is_dir=%s",
             PRICES_DIR, PRICES_DIR.exists(), PRICES_DIR.is_dir() if PRICES_DIR.exists() else None,
         )
         if PRICES_DIR.exists():
             entries = list(PRICES_DIR.iterdir())
             log.error("PRICES_DIR has %d entries; first 10: %s",
                       len(entries), [e.name for e in entries[:10]])
-        else:
-            parent = PRICES_DIR.parent
-            log.error("PRICES_DIR parent %s exists=%s; siblings: %s",
-                      parent, parent.exists(),
-                      [p.name for p in parent.iterdir()][:10] if parent.exists() else 'n/a')
-        syms = _self_heal_prices(workers=args.workers)
 
     if args.limit:
         syms = syms[: args.limit]
