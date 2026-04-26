@@ -654,8 +654,12 @@ footer a { color: var(--text-mid); }
 .pf-pos-row3 { display: flex; justify-content: space-between; align-items: center; gap: 8px; font: 500 11px 'Inter'; color: var(--text-dim); font-variant-numeric: tabular-nums; }
 .pf-pos-pl.pos { color: var(--pos); } .pf-pos-pl.neg { color: var(--neg); }
 
-.pf-empty { padding: 40px 24px; text-align: center; color: var(--text-mid); font: 500 14px 'Inter'; line-height: 1.6; border: 1px dashed var(--border); border-radius: var(--radius-sm); }
-.pf-empty strong { color: var(--text-hi); display: block; margin-bottom: 6px; font: 400 18px 'Crimson Text', serif; }
+.pf-empty { padding: 36px 28px 28px; text-align: center; color: var(--text-mid); font: 500 14px 'Inter'; line-height: 1.6; border: 1px dashed var(--border); border-radius: var(--radius-sm); max-width: 720px; margin: 0 auto; }
+.pf-empty strong { color: var(--text-hi); display: block; margin-bottom: 8px; font: 400 22px 'Crimson Text', serif; letter-spacing: -0.012em; }
+.pf-countdown { margin-top: 22px; padding-top: 22px; border-top: 1px solid var(--border); display: flex; justify-content: center; align-items: baseline; gap: 8px 16px; flex-wrap: wrap; }
+.pf-countdown-label { font: 600 10px 'Inter'; color: var(--text-dim); letter-spacing: 0.20em; text-transform: uppercase; }
+.pf-countdown-time { font: 500 16px 'Inter'; color: var(--text-hi); font-variant-numeric: tabular-nums; }
+.pf-countdown-in { font: 500 13px 'Inter'; color: var(--accent-lake); font-variant-numeric: tabular-nums; }
 
 .pf-teaser-fade { position: relative; }
 .pf-teaser-fade::after {
@@ -891,6 +895,32 @@ function pfPositionCard(p) {
     </div>
   </div>`;
 }
+// Returns "Mon 09:30 ET (in 14h 32m)" style copy for the next trader fire.
+// We don't have a clock from /api/portfolio so we infer from the user's
+// local time + the trader's known schedule (13:30 UTC open, 19:55 UTC
+// close, Mon-Fri).
+function pfNextEntryWindow() {
+  const now = new Date();
+  // Build candidate Date objects for the next open + close in UTC.
+  const nextWeekdayAt = (h, m) => {
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + i, h, m));
+      const dow = d.getUTCDay();  // 0=Sun, 6=Sat
+      if (dow === 0 || dow === 6) continue;
+      if (d.getTime() > now.getTime()) return d;
+    }
+    return null;
+  };
+  const nextOpen = nextWeekdayAt(13, 30);
+  if (!nextOpen) return null;
+  const ms = nextOpen.getTime() - now.getTime();
+  const h = Math.floor(ms / 3600000);
+  const m = Math.floor((ms % 3600000) / 60000);
+  // Render in viewer's local time so the countdown is meaningful regardless of TZ.
+  const local = nextOpen.toLocaleString(undefined, { weekday: 'short', hour: '2-digit', minute: '2-digit' });
+  const inStr = h >= 1 ? `${h}h ${m}m` : `${m}m`;
+  return { iso: nextOpen.toISOString(), local, inStr };
+}
 function renderPortfolio(data) {
   if (!data || data.error) return '';  // 503/502 → render nothing, just keep the rest of the page
   const acct = data.account || {};
@@ -911,9 +941,23 @@ function renderPortfolio(data) {
     </div>`;
   let positionsBlock;
   if (positions.length === 0) {
+    // Empty state — most viewers see this outside trading hours. Show a
+    // live countdown to the next entry window so the panel still feels
+    // active rather than dormant. The strategy strip below the count
+    // (-7%/+15% swing brackets, -3%/+5% daytrade brackets) is general
+    // enough not to give away methodology specifics.
+    const nxt = pfNextEntryWindow();
+    const countdown = nxt
+      ? `<div class="pf-countdown">
+           <span class="pf-countdown-label">Next entry window</span>
+           <span class="pf-countdown-time">${nxt.local}</span>
+           <span class="pf-countdown-in">in ${nxt.inStr}</span>
+         </div>`
+      : '';
     positionsBlock = `<div class="pf-empty">
-      <strong>No open positions.</strong>
-      The strategy waits for the next entry window. Positions appear here as they fill.
+      <strong>Idle between sessions.</strong>
+      The book holds 20 positions during the trading day. Two sleeves: a 5-day swing on top-ranked names with an asymmetric reward profile, and an intraday lane that opens at the bell and exits at the close.
+      ${countdown}
     </div>`;
   } else {
     const wrapCls = data.teaser ? 'pf-positions pf-teaser-fade' : 'pf-positions';
