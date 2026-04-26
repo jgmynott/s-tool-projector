@@ -188,16 +188,18 @@ function liftClass(v) {
   return '';
 }
 
-// Pick the best public-facing scorer: prefer the wave-1 NN audit (which
-// applies liquidity + transaction costs); fall back to the legacy
-// honest_metrics block in the backtest report. We never expose internal
-// method codenames on this page — readers see "the model", not "H7".
+// Pick the best public-facing scorer: ensemble (the production scorer)
+// with the wave-1 honest filters applied (liquidity + tx cost +
+// survivorship). Falls back to nn_score then to the legacy
+// honest_metrics block. We never expose internal method codenames on
+// this page — readers see "the model".
 function pickHonestNumbers(honest, backtest) {
-  const nn = honest?.scorers?.nn_score;
-  if (nn?.overall?.E_all_three && nn?.oos_2024?.E_all_three) {
-    const overall = nn.overall.E_all_three;
-    const oos = nn.oos_2024.E_all_three;
-    const pub = nn.overall.A_published || {};
+  const sc = honest?.scorers || {};
+  const primary = sc.ensemble_score || sc.nn_score;
+  if (primary?.overall?.E_all_three && primary?.oos_2024?.E_all_three) {
+    const overall = primary.overall.E_all_three;
+    const oos = primary.oos_2024.E_all_three;
+    const pub = primary.overall.A_published || {};
     return {
       hit100: overall.hit_100,
       lift: overall.lift,
@@ -263,6 +265,8 @@ function pickPrimaryMethod(backtest) {
 // the +100% hit rate when concentrating on the top-N picks per window.
 // Story: edge concentrates at the top of the rank — fewer picks, more
 // selective signal. Data is liquidity-floor + tx-cost adjusted.
+// Prefer ensemble (production scorer) over nn_score for consistency
+// with the headline numbers above.
 function renderTopNCurve(honest, backtest) {
   const curve = honest?.top_n_curve_honest?.ensemble_score
              || honest?.top_n_curve_honest?.nn_score;

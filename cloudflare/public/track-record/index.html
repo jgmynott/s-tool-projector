@@ -62,6 +62,13 @@ section.section { margin: 72px 0; }
 .section-title { font-family: 'Crimson Text', serif; font-size: 32px; font-weight: 400; line-height: 1.15; letter-spacing: -0.015em; margin-bottom: 14px; }
 .section-sub { color: var(--text-mid); font-size: 15px; line-height: 1.6; max-width: 70ch; margin-bottom: 28px; }
 
+.table-scroll { width: 100%; }
+@media (max-width: 720px) {
+  .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -20px; padding: 0 20px; }
+  .table-scroll table.perf { min-width: 640px; }
+  .table-scroll::-webkit-scrollbar { height: 4px; }
+  .table-scroll::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 2px; }
+}
 table.perf { width: 100%; border-collapse: collapse; font: 500 14px 'Inter'; }
 table.perf th { text-align: left; font: 600 11px 'Inter'; color: var(--text-dim); letter-spacing: 0.14em; text-transform: uppercase; padding: 12px 14px; border-bottom: 1px solid var(--border); }
 table.perf th:not(:first-child) { text-align: right; }
@@ -298,10 +305,10 @@ function renderScoreboard(live) {
     <p class="section-sub">Every row below joins our published picks with today's prices. Nothing is retroactively adjusted. Only picks at least 7 days old count as <em>matured</em>.</p>
     ${aggCards}
     ${eventsHtml}
-    <table class="perf" style="margin-top:18px;">
+    <div class="table-scroll" style="margin-top:18px;"><table class="perf">
       <thead><tr><th>Tier</th><th>Matured picks</th><th>Profitable rate</th><th>Mean return</th><th>Median return</th></tr></thead>
       <tbody>${tierRows}</tbody>
-    </table>
+    </table></div>
   </section>`;
 }
 
@@ -437,10 +444,10 @@ function renderDataFeeds(status) {
     <div class="section-eyebrow">Data feeds · under the hood</div>
     <h2 class="section-title">What's feeding the model <em>right now</em>.</h2>
     <p class="section-sub">Every row is a live data source tracked by the nightly pipeline. The "snapshot" column is the most recent data we've actually ingested. "Queued" rows are sources with API keys ready but not yet wired into the training loop.</p>
-    <table class="perf data-feeds">
+    <div class="table-scroll"><table class="perf data-feeds">
       <thead><tr><th>Source</th><th>Status</th><th>Coverage</th><th>Snapshot</th><th>Last refresh</th></tr></thead>
       <tbody>${rows.join('')}${roadmap}</tbody>
-    </table>
+    </table></div>
     ${deltaBlock}
   </section>`;
 }
@@ -526,7 +533,7 @@ function renderAll(r, live, honest) {
     <div class="section-eyebrow">Hit-rate distribution</div>
     <h2 class="section-title">How often picks clear each return threshold</h2>
     <p class="section-sub">Universe baseline = raw % of any ticker in any window that cleared the return threshold within 12 months. Method hit rate = same calculation restricted to each method's top-20 per window. Lift is the ratio — above 1.0x means the method beat random selection.</p>
-    <table class="perf">
+    <div class="table-scroll"><table class="perf">
       <thead><tr><th>Threshold</th><th>Baseline</th><th>H1 · naive P90</th><th>H4 · composite</th><th>H7 · volatility-adaptive</th><th>H9 · full stack</th></tr></thead>
       <tbody>`;
   const thresholds = ['+10%', '+25%', '+50%', '+100%', '+200%'];
@@ -539,7 +546,7 @@ function renderAll(r, live, honest) {
     }
     tableHtml += `</tr>`;
   }
-  tableHtml += `</tbody></table></section>`;
+  tableHtml += `</tbody></table></div></section>`;
 
   // Regime performance
   let regimeHtml = `<section class="section">
