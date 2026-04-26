@@ -84,6 +84,12 @@ table.perf .lift.lo { color: var(--text-mid); }
 .regime-card .r-stat .v.pos { color: var(--pos); }
 .regime-card .r-stat .v.neg { color: var(--neg); }
 
+/* Pipeline event banner (outages, maintenance) */
+.pipeline-events { margin: 28px 0 0; padding: 18px 22px; border-left: 3px solid var(--caution); background: rgba(245,213,143,0.06); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
+.pipeline-events .pe-label { font: 600 10px 'Inter'; color: var(--caution); letter-spacing: 0.22em; text-transform: uppercase; margin-bottom: 8px; }
+.pipeline-events .pe-line { color: var(--text-mid); font-size: 14px; line-height: 1.55; }
+.pipeline-events .pe-line .pe-range { color: var(--text-hi); font-weight: 500; font-variant-numeric: tabular-nums; }
+
 /* Disclaimer block */
 .caveats { margin-top: 80px; padding: 28px 32px; border-left: 3px solid var(--accent-alpine); background: rgba(10,101,119,0.08); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
 .caveats h3 { font: 600 12px 'Inter'; color: var(--accent-lake); letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 12px; }
@@ -111,6 +117,7 @@ footer a { color: var(--text-mid); }
       <a href="/app">App</a>
       <a href="/picks">Picks</a>
       <a href="/track-record" class="active">Track record</a>
+      <a href="/backtest">Backtest</a>
       <a href="/how">How</a>
       <a href="/pricing">Pricing</a>
     </div>
@@ -183,16 +190,54 @@ function liftClass(v) {
   return 'lo';
 }
 
+// Build a banner for any pipeline_events the API surfaced (outages,
+// maintenance windows). Adjacent dates collapse into a single range so
+// "2026-04-19 to 2026-04-25" renders as one line, not seven.
+function renderPipelineEvents(events) {
+  if (!events || !events.length) return '';
+  // Sort ascending then collapse adjacent dates by event_type+summary
+  const sorted = [...events].sort((a,b) => a.event_date.localeCompare(b.event_date));
+  const ranges = [];
+  for (const e of sorted) {
+    const last = ranges[ranges.length - 1];
+    const dt = new Date(e.event_date + 'T00:00:00Z');
+    const prevEnd = last && new Date(last.end + 'T00:00:00Z');
+    const oneDay = 24*60*60*1000;
+    if (last && last.event_type === e.event_type && last.summary === e.summary &&
+        (dt - prevEnd === oneDay)) {
+      last.end = e.event_date;
+    } else {
+      ranges.push({ event_type: e.event_type, summary: e.summary, detail: e.detail,
+                    start: e.event_date, end: e.event_date });
+    }
+  }
+  const fmtDate = (s) => new Date(s + 'T00:00:00Z').toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  const lines = ranges.map(r => {
+    const range = r.start === r.end ? fmtDate(r.start)
+                                    : `${fmtDate(r.start)} – ${fmtDate(r.end)}`;
+    const label = r.event_type === 'outage' ? 'Pipeline outage'
+                : r.event_type === 'maintenance' ? 'Scheduled maintenance'
+                : r.event_type;
+    return `<div class="pe-line"><span class="pe-range">${range}</span> · ${label}: ${r.summary}${r.detail ? ` <span style="color:var(--text-dim);">— ${r.detail}</span>` : ''}</div>`;
+  }).join('');
+  return `<div class="pipeline-events">
+    <div class="pe-label">Ledger gaps</div>
+    ${lines}
+  </div>`;
+}
+
 // Render the live scoreboard block from /api/track-record response
 // (works with either the 200 strategist payload or the 402 teaser —
 // both shapes carry `aggregate` + `summary`). Returns HTML string.
 function renderScoreboard(live) {
   if (!live || !live.aggregate || !live.aggregate.n) {
     // No matured picks yet — honest placeholder, don't fake numbers.
+    const eventsHtml = renderPipelineEvents(live?.events);
     return `<section class="section">
       <div class="section-eyebrow">Live scoreboard</div>
       <h2 class="section-title">Live tracking starts once picks mature.</h2>
       <p class="section-sub">Every pick published to <a href="/picks" style="color:var(--accent-lake);">/picks</a> is logged to a public ledger with its entry date and entry price. Once a pick has been out for at least 7 days the realized return is tracked against the live market. Come back after the first week of picks has matured.</p>
+      ${eventsHtml}
     </section>`;
   }
   const agg = live.aggregate;
@@ -246,11 +291,13 @@ function renderScoreboard(live) {
     </tr>`;
   }).join('');
 
+  const eventsHtml = renderPipelineEvents(live.events);
   return `<section class="section" style="margin-top:12px;">
     <div class="section-eyebrow">Live scoreboard · real picks, real prices</div>
     <h2 class="section-title">What the ranker has actually delivered.</h2>
     <p class="section-sub">Every row below joins our published picks with today's prices. Nothing is retroactively adjusted. Only picks at least 7 days old count as <em>matured</em>.</p>
     ${aggCards}
+    ${eventsHtml}
     <table class="perf" style="margin-top:18px;">
       <thead><tr><th>Tier</th><th>Matured picks</th><th>Profitable rate</th><th>Mean return</th><th>Median return</th></tr></thead>
       <tbody>${tierRows}</tbody>
