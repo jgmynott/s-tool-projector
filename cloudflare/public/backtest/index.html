@@ -251,53 +251,52 @@ function renderHeadline(numbers) {
   </section>`;
 }
 
-// The threshold table on /track-record exposes internal scorer codenames;
-// /backtest is the public marketing surface so we collapse to a single
-// "the model" line per threshold using the strongest published scorer
-// (NN) when present, or the volatility-adaptive fallback. Method-mix
-// stays internal.
+// Picks the primary scorer for regime/simulated views — same method
+// across all sections so the story stays coherent. The visitor sees
+// "the model"; internal codenames stay backstage.
 function pickPrimaryMethod(backtest) {
   const m = backtest?.methods || {};
-  return m.nn_score || m.ensemble_score || m.H9_full_stack || m.H7_ewma_p90 || null;
+  return m.ensemble_score || m.nn_score || m.H7_ewma_p90 || null;
 }
 
-function renderThresholds(backtest) {
-  const method = pickPrimaryMethod(backtest);
-  if (!method) return '';
-  const baselines = backtest.baseline_rates || {};
-  const thresholds = ['+10%', '+25%', '+50%', '+100%', '+200%'];
-  // Width scale: tallest bar (the largest method rate) anchors at 100%.
-  const widths = thresholds.map(t => method.thresholds?.[t]?.rate || 0);
-  const maxWidth = Math.max(...widths, 0.001);
-
-  const rows = thresholds.map(t => {
-    const cell = method.thresholds?.[t];
-    if (!cell) return '';
-    const baseline = baselines[t] || 0;
-    const methodPct = cell.rate * 100;
+// Top-N concentration view from the wave-1 honest audit. Each bar shows
+// the +100% hit rate when concentrating on the top-N picks per window.
+// Story: edge concentrates at the top of the rank — fewer picks, more
+// selective signal. Data is liquidity-floor + tx-cost adjusted.
+function renderTopNCurve(honest, backtest) {
+  const curve = honest?.top_n_curve_honest?.ensemble_score
+             || honest?.top_n_curve_honest?.nn_score;
+  if (!curve) return '';
+  const tiers = ['top_5','top_10','top_20','top_50','top_100'];
+  const baseline = backtest?.baseline_rates?.['+100%'] || 0.05;
+  const maxRate = Math.max(...tiers.map(t => curve[t]?.hit_100 || 0), 0.001);
+  const rows = tiers.map(t => {
+    const c = curve[t];
+    if (!c) return '';
+    const label = t.replace('_',' ').replace('top','Top');
+    const methodPct = c.hit_100 * 100;
     const baselinePct = baseline * 100;
-    const methodBarW = (cell.rate / maxWidth) * 100;
-    const baselineBarW = (baseline / maxWidth) * 100;
+    const methodBarW = (c.hit_100 / maxRate) * 100;
+    const baselineBarW = (baseline / maxRate) * 100;
     return `<div class="threshold-row">
       <div class="tr-head">
-        <div class="tr-name"><span class="tr-pct">${methodPct.toFixed(1)}%</span> hit rate at ${t} return</div>
-        <div class="tr-lift ${liftClass(cell.lift)}">${fmtLift(cell.lift)} lift</div>
+        <div class="tr-name"><span class="tr-pct">${methodPct.toFixed(1)}%</span> doubled within 12 months · ${label} per window</div>
+        <div class="tr-lift ${liftClass(c.lift)}">${fmtLift(c.lift)} vs baseline</div>
       </div>
       <div class="tr-bar">
         <div class="tr-baseline" style="width:${baselineBarW.toFixed(2)}%;"></div>
-        <div class="tr-method" style="width:${methodBarW.toFixed(2)}%; background:linear-gradient(90deg, var(--accent-alpine), var(--accent-lake)); opacity:0.92;"></div>
+        <div class="tr-method" style="width:${methodBarW.toFixed(2)}%;"></div>
       </div>
       <div class="tr-foot">
-        <span>Universe baseline: ${baselinePct.toFixed(1)}%</span>
-        <span class="tr-method-label">Model: ${methodPct.toFixed(1)}%</span>
+        <span>${c.n.toLocaleString()} picks scored · 95% CI ${(c.wilson_95_lo*100).toFixed(1)}–${(c.wilson_95_hi*100).toFixed(1)}%</span>
+        <span class="tr-method-label">Baseline ${baselinePct.toFixed(1)}%</span>
       </div>
     </div>`;
   }).join('');
-
   return `<section class="section">
-    <div class="section-eyebrow">Hit rate distribution</div>
-    <h2 class="section-title">How often picks clear each return threshold.</h2>
-    <p class="section-sub">Universe baseline = the share of any ticker in any window that cleared the return threshold within 12 months. Model rate = the same calculation restricted to the model's top-ranked picks per window. The wider the gap, the more selectively the model is working.</p>
+    <div class="section-eyebrow">Concentration curve</div>
+    <h2 class="section-title">Edge concentrates at the top of the rank.</h2>
+    <p class="section-sub">If you took only the top-5 picks per window the doubling rate is 48%; widen to the top-100 and it falls to 21%. That's how a real signal behaves — most selective at the top, decaying gracefully as you take more. All numbers below apply the liquidity floor and 1.5% transaction cost. 95% confidence intervals included so you can see the error bars, not single-point claims.</p>
     <div class="thresholds">${rows}</div>
   </section>`;
 }
@@ -460,7 +459,7 @@ async function load() {
   const numbers = pickHonestNumbers(honest, backtest);
   const html =
     renderHeadline(numbers) +
-    renderThresholds(backtest) +
+    renderTopNCurve(honest, backtest) +
     renderRegime(backtest) +
     renderSimulated(backtest) +
     renderPhilosophy() +
