@@ -760,21 +760,53 @@ def portfolio(request: Request, user: Optional[dict] = Depends(auth.optional_use
         positions = _alpaca("positions")
         # 1-week daily equity curve for the chart at the top of /picks
         hist = _alpaca("account/portfolio/history?period=1W&timeframe=1D")
+        # Sleeve attribution comes from the entry order's client_order_id
+        # ("<sleeve>-<sym>-<YYYYMMDD>"). That's the cleanest source — it
+        # crosses the GH-Action ↔ Railway boundary without needing a
+        # state-file deploy. Pull the last 30 days of buys; that covers
+        # 5-day swing holds + same-day daytrade rotations comfortably.
+        orders = _alpaca("orders?status=closed&direction=desc&limit=200&side=buy")
     except (_ue.HTTPError, _ue.URLError, ValueError) as e:
         return JSONResponse(status_code=502, content={
             "error": "alpaca_upstream_error", "detail": str(e)[:200],
         })
 
-    # Sleeve attribution from the local state file written by trader.py.
-    # If the file isn't present (first deploy, no orders yet), positions
-    # render under "unattributed" and the UI shows a friendly hint.
+    # Build sym → {sleeve, opened_at} from the most recent FILLED buy per
+    # symbol. We walk newest-first so the first hit wins — that's the
+    # current open lot. Bracket parents have order_class="bracket"; the
+    # auto-generated stop/target legs are children with parent_order_id
+    # set, so we filter on the parent.
+    sleeve_by_sym: dict = {}
+    for o in (orders or []):
+        sym = o.get("symbol")
+        cid = o.get("client_order_id") or ""
+        if not sym or not cid or sym in sleeve_by_sym:
+            continue
+        if o.get("status") != "filled":
+            continue
+        if o.get("parent_order_id"):
+            continue  # skip bracket legs
+        # Parse "<sleeve>-<sym>-<YYYYMMDD>". Defensive against IDs we
+        # didn't generate (manual orders, prior schemes) — those just
+        # leave the position as "unattributed".
+        parts = cid.split("-")
+        if len(parts) >= 2 and parts[0] in {"swing", "daytrade"}:
+            sleeve_by_sym[sym] = {
+                "sleeve": parts[0],
+                "opened_at": o.get("filled_at") or o.get("submitted_at"),
+                "ref_price": float(o.get("filled_avg_price") or 0) or None,
+            }
+
+    # Fallback: legacy trader_state.json deploy path. Only used for
+    # positions that don't have a parsable client_order_id (e.g.
+    # pre-Apr-26 orders submitted before the client_order_id encoding).
     state_path = Path(__file__).parent / "research" / "trader_state.json"
-    entries: dict = {}
+    legacy_entries: dict = {}
     if state_path.exists():
         try:
-            entries = (_json.loads(state_path.read_text()) or {}).get("entries", {})
+            legacy_entries = (_json.loads(state_path.read_text()) or {}).get("entries", {})
         except Exception:
-            entries = {}
+            legacy_entries = {}
 
     from datetime import datetime as _dt2
     now = _dt2.utcnow()
@@ -782,16 +814,13 @@ def portfolio(request: Request, user: Optional[dict] = Depends(auth.optional_use
     pos_out = []
     for p in positions:
         sym = p["symbol"]
-        ent = entries.get(sym) or {}
-        opened_at = ent.get("opened_at")
+        meta = sleeve_by_sym.get(sym) or legacy_entries.get(sym) or {}
+        opened_at = meta.get("opened_at")
         days_held = None
         if opened_at:
             try:
                 d0 = _dt2.fromisoformat(opened_at.replace("Z", "+00:00")).replace(tzinfo=None)
-                days = (now.date() - d0.date()).days
-                wd = sum(1 for i in range(max(0, days))
-                         if (d0.date() + (now.date() - d0.date())).weekday() < 5)
-                days_held = max(0, days)  # calendar days; UI can label "days"
+                days_held = max(0, (now.date() - d0.date()).days)
             except Exception:
                 days_held = None
         pos_out.append({
@@ -804,7 +833,7 @@ def portfolio(request: Request, user: Optional[dict] = Depends(auth.optional_use
             "unrealized_pl": float(p["unrealized_pl"]),
             "unrealized_plpc": float(p["unrealized_plpc"]),
             "change_today_pct": float(p.get("change_today", 0)) if p.get("change_today") else None,
-            "sleeve": ent.get("sleeve") or "unattributed",
+            "sleeve": meta.get("sleeve") or "unattributed",
             "opened_at": opened_at,
             "days_held": days_held,
         })

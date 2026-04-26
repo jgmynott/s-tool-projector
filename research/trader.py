@@ -271,12 +271,22 @@ def plan_close_window(account: dict, positions: list, state: dict) -> dict:
 
 def submit_buy(api: Alpaca, b: dict, sleeve_name: str) -> None:
     cfg = SLEEVES[sleeve_name]
+    # Encode sleeve in client_order_id so the api layer (which doesn't
+    # have access to trader_state.json across the GH-Action ↔ Railway
+    # boundary) can attribute positions by querying Alpaca instead of
+    # depending on a state-file deploy. Format: <sleeve>-<sym>-<YYYYMMDD>.
+    # Alpaca enforces 128-char limit on client_order_id, but rejects any
+    # ID that's already been used in the past 30 days, so we suffix with
+    # the date to keep daily entries unique without colliding.
+    today = datetime.now(timezone.utc).strftime("%Y%m%d")
+    cid = f"{sleeve_name}-{b['symbol']}-{today}"
     body = {
         "symbol": b["symbol"], "qty": str(b["qty"]),
         "side": "buy", "type": "market", "time_in_force": "day",
         "order_class": "bracket",
         "stop_loss": {"stop_price": str(b["stop_loss"])},
         "take_profit": {"limit_price": str(b["take_profit"])},
+        "client_order_id": cid,
     }
     api.submit(body)
 
