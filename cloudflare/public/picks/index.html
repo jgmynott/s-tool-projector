@@ -635,6 +635,8 @@ footer a { color: var(--text-mid); }
 .pf-positions-head { display: flex; justify-content: space-between; align-items: baseline; margin: 22px 0 12px; }
 .pf-positions-title { font: 500 13px 'Inter'; color: var(--text-mid); letter-spacing: 0.06em; }
 .pf-positions-count { font: 500 12px 'Inter'; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+.pf-tally-w { color: var(--pos); font-weight: 600; }
+.pf-tally-l { color: var(--neg); font-weight: 600; }
 .pf-positions { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
 .pf-pos {
   padding: 14px 16px; border-radius: var(--radius-sm);
@@ -995,7 +997,17 @@ function renderPortfolio(data) {
     </div>
     <div class="pf-positions-head">
       <span class="pf-positions-title">Open positions</span>
-      <span class="pf-positions-count">${positions.length}${data.teaser ? ' shown' : ''}</span>
+      <span class="pf-positions-count">
+        ${(() => {
+          if (positions.length === 0) return '0';
+          const wins = positions.filter(p => (p.unrealized_pl || 0) > 0).length;
+          const losses = positions.filter(p => (p.unrealized_pl || 0) < 0).length;
+          const flat = positions.length - wins - losses;
+          // Compact tally; teaser shows just count.
+          if (data.teaser) return `${positions.length} shown`;
+          return `<span class="pf-tally-w">${wins}</span> in green · <span class="pf-tally-l">${losses}</span> in red${flat ? ` · ${flat} flat` : ''}`;
+        })()}
+      </span>
     </div>
     ${positionsBlock}
     ${sleeveBlock}
