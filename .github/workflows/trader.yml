@@ -1,0 +1,174 @@
+# S-Tool — Paper-portfolio trader (Alpaca)
+#
+# Runs research/trader.py against the live Alpaca paper account to manage
+# the two-sleeve book described in research/trader.py:
+#   • swing    : picks ranked 1–10, 5-day hold, 1.5× leverage
+#   • daytrade : picks ranked 11–20, intraday only, 1× leverage
+#
+# Two scheduled firings per weekday:
+#   • Open  09:30 ET (13:30 UTC, summer) — swing rebalance + daytrade entries
+#   • Close 15:55 ET (19:55 UTC, summer) — daytrade EOD force-close
+#
+# Notes on timing:
+# - Cron is in UTC. ET is UTC-4 in DST, UTC-5 in standard time. We schedule
+#   the DST window since the US trades through DST most of the year. During
+#   standard time (~Nov–Mar) these will fire one hour early relative to
+#   market open/close — trader.py's clock check refuses to trade outside
+#   market hours, so the worst case is a no-op run, not a misfire.
+# - GitHub Actions does not guarantee cron precision. Expect 0–10 min
+#   slippage. The "open" window targets 13:30 so that even with slippage
+#   we're entering near-open rather than missing it entirely.
+#
+# Required repo secrets (Settings → Secrets → Actions):
+#   ALPACA_API_KEY       — paper account key (PK...)
+#   ALPACA_API_SECRET    — paper account secret
+#   ALPACA_BASE_URL      — https://paper-api.alpaca.markets/v2
+#
+# The workflow is also manually triggerable via workflow_dispatch with a
+# `mode` input ("dry" prints the plan without submitting orders) so any
+# trading change can be smoke-tested before committing to a live cron.
+
+name: paper-portfolio-trader
+
+on:
+  schedule:
+    # 13:30 UTC Mon-Fri = 09:30 ET (DST). Open: rebalance + daytrade entries.
+    - cron: "30 13 * * 1-5"
+    # 19:55 UTC Mon-Fri = 15:55 ET (DST). Close: daytrade EOD exits.
+    - cron: "55 19 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "trader mode: 'live' submits orders, 'dry' prints plan only"
+        required: true
+        default: "dry"
+        type: choice
+        options: ["dry", "live"]
+      window:
+        description: "trading window"
+        required: true
+        default: "open"
+        type: choice
+        options: ["open", "close"]
+
+# Never run two trader instances concurrently — duplicate orders would
+# breach the per-position cap.
+concurrency:
+  group: paper-portfolio-trader
+  cancel-in-progress: false
+
+jobs:
+  trade:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # commit research/trader_state.json
+      issues: write     # alert on failure
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # trader.py uses only stdlib (urllib, json, argparse, datetime). No
+      # heavy deps — no pip install needed unless we later want pandas
+      # there. Keeping this lean keeps the workflow under 30s.
+
+      # Resolve the (mode, window) pair from either schedule trigger or
+      # manual dispatch. Schedules use the cron expression to pick window;
+      # manual dispatch uses the inputs.
+      - name: Resolve mode + window
+        id: resolve
+        env:
+          GITHUB_EVENT: ${{ github.event_name }}
+          DISPATCH_MODE: ${{ github.event.inputs.mode }}
+          DISPATCH_WINDOW: ${{ github.event.inputs.window }}
+          # github.event.schedule echoes the cron string that triggered us.
+          SCHEDULED_CRON: ${{ github.event.schedule }}
+        run: |
+          if [ "$GITHUB_EVENT" = "workflow_dispatch" ]; then
+            echo "mode=$DISPATCH_MODE"   >> "$GITHUB_OUTPUT"
+            echo "window=$DISPATCH_WINDOW" >> "$GITHUB_OUTPUT"
+          else
+            # Schedule run: pick window from cron expression.
+            case "$SCHEDULED_CRON" in
+              "30 13 * * 1-5") echo "window=open"  >> "$GITHUB_OUTPUT" ;;
+              "55 19 * * 1-5") echo "window=close" >> "$GITHUB_OUTPUT" ;;
+              *)               echo "window=open"  >> "$GITHUB_OUTPUT" ;;
+            esac
+            echo "mode=live" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Always print the dry plan first regardless of mode. This makes the
+      # log readable: you see what was *intended* before what was *executed*,
+      # which is the key audit trail when reviewing a fill that surprised
+      # you.
+      - name: Print dry plan
+        env:
+          ALPACA_API_KEY:    ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
+          ALPACA_BASE_URL:   ${{ secrets.ALPACA_BASE_URL }}
+        run: |
+          python3 research/trader.py dry --window=${{ steps.resolve.outputs.window }} || true
+
+      - name: Execute (live)
+        if: steps.resolve.outputs.mode == 'live'
+        env:
+          ALPACA_API_KEY:    ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
+          ALPACA_BASE_URL:   ${{ secrets.ALPACA_BASE_URL }}
+        run: |
+          python3 research/trader.py live --window=${{ steps.resolve.outputs.window }}
+
+      # Persist trader_state.json so the next run sees prior sleeve
+      # attribution. Without this, every run would start with empty
+      # entries and treat every existing Alpaca position as "unattributed",
+      # which breaks the sleeve-scoped exit logic in plan_open_window.
+      - name: Commit trader_state
+        if: steps.resolve.outputs.mode == 'live'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if [ ! -f research/trader_state.json ]; then
+            echo "no state to commit"; exit 0
+          fi
+          git add -f research/trader_state.json
+          if git diff --staged --quiet; then
+            echo "trader_state.json unchanged"
+          else
+            git commit -m "chore(trader): sleeve attribution after ${{ steps.resolve.outputs.window }} window $(date -u +%Y-%m-%dT%H:%MZ)"
+            git pull --rebase || true
+            git push
+          fi
+
+      # Failure tripwire. A trader.py crash that goes unobserved means
+      # entries don't fire, exits don't fire, or sleeve-scoped tagging
+      # drifts — every one of which is a real-money risk on a paper-only
+      # learning portfolio (we're trying to characterize the strategy's
+      # actual P&L; silent breakage means we'd misread the signal).
+      - name: Open issue on failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          window="${{ steps.resolve.outputs.window }}"
+          mode="${{ steps.resolve.outputs.mode }}"
+          run_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          # Build the body in /tmp to avoid heredoc + yaml-block-scalar
+          # indentation conflicts. gh accepts --body-file.
+          {
+            printf "Run: %s\n\n" "$run_url"
+            printf "Mode: %s\nWindow: %s\nCommit: %s\n\n" "$mode" "$window" "${{ github.sha }}"
+            printf "Common causes:\n"
+            printf "- Alpaca creds expired/rotated\n"
+            printf "- Account flagged (PDT, trading_blocked)\n"
+            printf "- portfolio_picks.json stale / empty\n"
+            printf "- Network hiccup on Alpaca API\n"
+            printf "- Picks JSON shape change broke load_picks()\n\n"
+            printf "If it failed at submit time, some orders may already be live — check the Alpaca dashboard.\n"
+          } > /tmp/issue.md
+          gh issue create \
+            --title "🚨 Paper trader failed — ${mode} ${window} $(date -u +%Y-%m-%d)" \
+            --body-file /tmp/issue.md \
+            --label "trader-failure" || true
