@@ -150,8 +150,8 @@ def check_picks_json():
     else:
         with_bands = sum(
             1 for p in asym
-            if p.get("asymmetric", {}).get("p90_ratio")
-            and p.get("asymmetric", {}).get("p10_ratio")
+            if (p.get("asymmetric") or {}).get("p90_ratio")
+            and (p.get("asymmetric") or {}).get("p10_ratio")
         )
         if with_bands < len(asym):
             fail(f"{len(asym) - with_bands} asymmetric picks missing p10/p90 — UI will show blank stats")
