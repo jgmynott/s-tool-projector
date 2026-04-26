@@ -1875,7 +1875,12 @@ async function load() {
   if (picksRes.status === 402 && picksData?.error === 'strategist_required') {
     scanMeta.innerHTML = `<span class="meta-item"><span class="dot waiting"></span><span>Scan last updated ${picksData.scan_age_hours != null ? picksData.scan_age_hours.toFixed(1) + 'h ago' : 'recently'}</span></span>
       <span class="meta-item">Upgrade to see the full list</span>`;
-    content.innerHTML = renderGate({ ...picksData, summary: trackData?.summary });
+    // Render the live portfolio panel ABOVE the gate as proof-of-life
+    // for anonymous / non-strategist visitors. The /api/portfolio
+    // response in this case is gated to a 3-position teaser.
+    const portfolioBlock = portfolioData ? renderPortfolio(portfolioData) : '';
+    content.innerHTML = portfolioBlock + renderGate({ ...picksData, summary: trackData?.summary });
+    if (portfolioData && !portfolioData.error) startPortfolioRefresh();
     return;
   }
   if (picksRes.status === 404) {
