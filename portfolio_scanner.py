@@ -584,6 +584,26 @@ def save_picks(results: list[dict], conn=None) -> None:
         # views.
         p["in_asymmetric"] = True
 
+    # Drop the asymmetric tier entirely if 100% of picks are missing
+    # bands. Happens when enrich_asymmetric.py wrote an empty
+    # asymmetric_scores.json (typically because PRICES_DIR was empty in
+    # CI). Better to omit the tier than ship blank cards. The other
+    # tiers (conservative/moderate/aggressive) ship normally.
+    if asym_picks:
+        with_bands = sum(
+            1 for p in asym_picks
+            if (p.get("asymmetric") or {}).get("p90_ratio")
+            and (p.get("asymmetric") or {}).get("p10_ratio")
+        )
+        if with_bands == 0:
+            log.error(
+                "save_picks: dropping asymmetric tier — 0/%d picks have "
+                "p10/p90 bands. Likely cause: empty asymmetric_scores.json "
+                "from enrich_asymmetric.py. Other tiers ship normally.",
+                len(asym_picks),
+            )
+            asym_picks = []
+
     payload = {
         "scanned_at": datetime.now(timezone.utc).isoformat(),
         "total_tickers": len(results),

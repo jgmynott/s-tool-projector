@@ -129,6 +129,23 @@ def main():
         syms = sorted(p.stem for p in PRICES_DIR.glob("*.csv"))
     if args.limit:
         syms = syms[: args.limit]
+    if not syms:
+        # Diagnostic for the 2026-04-26 mystery: in CI we kept getting
+        # "Scoring 0 symbols" despite cache restore reporting success.
+        # Print enough to figure out the mismatch on the next run.
+        log.error(
+            "no symbols to score. PRICES_DIR=%s exists=%s is_dir=%s",
+            PRICES_DIR, PRICES_DIR.exists(), PRICES_DIR.is_dir() if PRICES_DIR.exists() else None,
+        )
+        if PRICES_DIR.exists():
+            entries = list(PRICES_DIR.iterdir())
+            log.error("PRICES_DIR has %d entries; first 10: %s",
+                      len(entries), [e.name for e in entries[:10]])
+        else:
+            parent = PRICES_DIR.parent
+            log.error("PRICES_DIR parent %s exists=%s; siblings: %s",
+                      parent, parent.exists(),
+                      [p.name for p in parent.iterdir()][:10] if parent.exists() else 'n/a')
     enrich(syms, workers=args.workers)
 
 
