@@ -117,22 +117,103 @@ def enrich(symbols: list[str], workers: int = 6) -> dict:
     return out
 
 
+def _fetch_one_to_csv(sym: str) -> bool:
+    """Pull 2y daily OHLCV via DataManager and persist as
+    data_cache/prices/<SYM>.csv. Returns True iff a CSV with >=504 rows
+    is on disk after this call (either pre-existing or freshly written).
+
+    Schema matches backfill_prices_historical.py: Date,Open,High,Low,Close,Volume.
+    """
+    out = PRICES_DIR / f"{sym}.csv"
+    if out.exists():
+        try:
+            existing = pd.read_csv(out)
+            if len(existing) >= 504:
+                return True
+        except Exception:
+            pass  # fall through and refetch
+
+    try:
+        # Lazy import — DataManager pulls in numpy/yfinance and shouldn't
+        # be loaded just to read existing CSVs.
+        from data_providers import DataManager
+        # 3 years (~756 rows) gives comfortable headroom over the 504-row
+        # scoring threshold; 2 years lands at ~501 rows once weekends and
+        # holidays are taken out, which is just under the cutoff.
+        rows = DataManager().get_historical(sym, years=3)
+    except Exception as exc:
+        log.warning("self-heal: %s DataManager.get_historical raised: %s", sym, exc)
+        return False
+    if not rows or len(rows) < 504:
+        return False
+    rows_sorted = sorted(rows, key=lambda r: r["date"])
+    df = pd.DataFrame([
+        {"Date": r["date"], "Open": r.get("open"), "High": r.get("high"),
+         "Low": r.get("low"), "Close": r.get("close"), "Volume": r.get("volume")}
+        for r in rows_sorted
+    ])
+    PRICES_DIR.mkdir(parents=True, exist_ok=True)
+    df.to_csv(out, index=False)
+    return True
+
+
+def _self_heal_prices(workers: int = 6) -> list[str]:
+    """When PRICES_DIR is missing or empty (CI cache eviction), fetch the
+    preferred universe (SP500 ∪ NDX100 ∪ WSB) via the data-providers layer
+    and write CSVs so subsequent runs can read them from cache. Returns
+    the list of symbols with usable CSVs after the heal.
+
+    First-run cost on a cold cache: ~3–5 min for ~600 symbols at workers=6
+    (yfinance is unrate-limited; FMP fallback is 250 req/min). Subsequent
+    runs hit the existing CSVs and skip this entirely.
+    """
+    # The preferred universe is what worker.py --preferred scans, so
+    # everything enrich_asymmetric needs to score is in here.
+    from worker import SP500_NDX100, WSB_UNIVERSE
+    universe = sorted(set(SP500_NDX100 + WSB_UNIVERSE))
+    log.warning("self-heal: PRICES_DIR empty — fetching %d symbols from data providers (~3-5 min)", len(universe))
+
+    PRICES_DIR.mkdir(parents=True, exist_ok=True)
+    healed: list[str] = []
+    t0 = time.time()
+    with ThreadPoolExecutor(max_workers=workers) as ex:
+        futures = {ex.submit(_fetch_one_to_csv, s): s for s in universe}
+        done = 0
+        for fut in as_completed(futures):
+            sym = futures[fut]
+            done += 1
+            try:
+                if fut.result():
+                    healed.append(sym)
+            except Exception as exc:
+                log.warning("self-heal: %s failed: %s", sym, exc)
+            if done % 50 == 0 or done == len(universe):
+                elapsed = time.time() - t0
+                rate = done / elapsed if elapsed > 0 else 0
+                log.info("self-heal [%d/%d] healed=%d · %.1f/s",
+                         done, len(universe), len(healed), rate)
+    log.warning("self-heal: wrote %d/%d price CSVs in %.1fs", len(healed), len(universe), time.time() - t0)
+    return sorted(healed)
+
+
 def main():
-    p = argparse.ArgumentParser()
-    p.add_argument("--symbols", nargs="+")
-    p.add_argument("--limit", type=int, default=None)
-    p.add_argument("--workers", type=int, default=6)
-    args = p.parse_args()
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--symbols", nargs="+")
+    ap.add_argument("--limit", type=int, default=None)
+    ap.add_argument("--workers", type=int, default=6)
+    ap.add_argument("--no-self-heal", action="store_true",
+                    help="Disable the data-providers fallback when PRICES_DIR is empty.")
+    args = ap.parse_args()
     if args.symbols:
         syms = [s.upper() for s in args.symbols]
     else:
         syms = sorted(p.stem for p in PRICES_DIR.glob("*.csv"))
-    if args.limit:
-        syms = syms[: args.limit]
-    if not syms:
-        # Diagnostic for the 2026-04-26 mystery: in CI we kept getting
-        # "Scoring 0 symbols" despite cache restore reporting success.
-        # Print enough to figure out the mismatch on the next run.
+
+    # Self-heal: when CI's cache eviction has wiped data_cache/prices/ the
+    # nightly slow-path no longer repopulates it (the Russell 3000 backfill
+    # was removed for cost reasons). Rebuild from data-providers so the
+    # asymmetric tier doesn't silently ship empty.
+    if not syms and not args.no_self_heal:
         log.error(
             "no symbols to score. PRICES_DIR=%s exists=%s is_dir=%s",
             PRICES_DIR, PRICES_DIR.exists(), PRICES_DIR.is_dir() if PRICES_DIR.exists() else None,
@@ -146,6 +227,12 @@ def main():
             log.error("PRICES_DIR parent %s exists=%s; siblings: %s",
                       parent, parent.exists(),
                       [p.name for p in parent.iterdir()][:10] if parent.exists() else 'n/a')
+        syms = _self_heal_prices(workers=args.workers)
+
+    if args.limit:
+        syms = syms[: args.limit]
+    if not syms:
+        log.error("self-heal also produced 0 symbols — asymmetric tier will be empty this run")
     enrich(syms, workers=args.workers)
 
 
