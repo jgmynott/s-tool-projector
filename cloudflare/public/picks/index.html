@@ -617,6 +617,8 @@ footer a { color: var(--text-mid); }
 .pf-day-pill.neg { background: rgba(252,165,165,0.10); color: var(--neg); border: 1px solid rgba(252,165,165,0.25); }
 .pf-day-pill.flat { background: rgba(155,161,185,0.10); color: var(--text-mid); border: 1px solid var(--border); }
 .pf-day-label { font: 500 12px 'Inter'; color: var(--text-dim); }
+.pf-util { font: 500 11px 'Inter'; color: var(--text-dim); border-left: 1px solid var(--border); padding-left: 12px; margin-left: 4px; font-variant-numeric: tabular-nums; }
+@media (max-width: 540px) { .pf-util { border-left: none; padding-left: 0; margin-left: 0; flex-basis: 100%; } }
 .pf-curve { width: 240px; height: 64px; }
 .pf-curve path.line { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .pf-curve path.area { stroke: none; opacity: 0.18; }
@@ -966,6 +968,15 @@ function renderPortfolio(data) {
       positionsBlock += `<div class="pf-teaser-cta">Showing ${positions.length} of total — <a href="/pricing">unlock the full book</a> to see every fill, sleeve allocation, and intraday rebalance.</div>`;
     }
   }
+  // Utilization = fraction of buying power currently in market value of
+  // open positions. Useful at a glance: empty between sessions = 0%,
+  // mid-day fully deployed = ~60-65% (because we run 1.5× swing + 1×
+  // daytrade across half-equity each, on a 2× margin account).
+  const totalMv = positions.reduce((s, p) => s + (p.market_value || 0), 0);
+  const utilization = (acct.buying_power && acct.buying_power > 0)
+    ? Math.min(1, totalMv / acct.buying_power) : 0;
+  const utilStr = `${(utilization * 100).toFixed(0)}%`;
+
   return `<section class="pf-panel" id="pf-panel">
     <div class="pf-head">
       <div class="pf-eyebrow"><span class="pf-live-dot"></span> Live paper portfolio</div>
@@ -977,6 +988,7 @@ function renderPortfolio(data) {
         <div class="pf-equity-sub">
           <span class="pf-day-pill ${dcCls}">${sign}${fmtUSD(dcAbs, { digits: 0 }).replace(/^[-]/, '')} · ${sign}${dcpAbs.toFixed(2)}%</span>
           <span class="pf-day-label">today</span>
+          ${positions.length > 0 ? `<span class="pf-util">${utilStr} deployed · ${fmtUSD(totalMv, { digits: 0 })} of ${fmtUSD(acct.buying_power || 0, { digits: 0 })} BP</span>` : ''}
         </div>
       </div>
       ${spark}
