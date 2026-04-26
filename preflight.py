@@ -127,7 +127,7 @@ def check_picks_json():
     # Checked against both the new top-level field AND the legacy one.
     mcap_count = sum(
         1 for p in picks
-        if p.get("market_cap") or p.get("fundamentals", {}).get("market_cap")
+        if p.get("market_cap") or (p.get("fundamentals") or {}).get("market_cap")
     )
     if mcap_count < len(picks) * 0.50:
         warn(f"only {mcap_count}/{len(picks)} picks have market_cap — meta row degrades gracefully but re-run enrich_marketcaps + a Polygon backfill before next ship")

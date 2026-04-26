@@ -16,6 +16,7 @@ name: nightly-pipeline-slow
 
 permissions:
   contents: write
+  issues: write
 
 on:
   schedule:
@@ -197,3 +198,22 @@ jobs:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: |
           railway up --detach --service api
+
+      # Loud-failure tripwire — see daily-refresh-fast.yml for context.
+      - name: Open issue on failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue create \
+            --title "nightly-pipeline-slow failed — NN retrain / redeploy blocked" \
+            --body "$(cat <<EOF
+          Run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          Triggered: ${{ github.event_name }}
+          SHA: ${{ github.sha }}
+
+          Until this is resolved the slow path won't refresh the NN scorer or run the honest backtest.
+          The fast path can still ship picks if it succeeds at 20:00 UTC.
+          EOF
+          )" \
+            --label "broken-deploy" || true

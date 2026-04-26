@@ -13,6 +13,7 @@ name: nightly-pipeline-fast
 
 permissions:
   contents: write
+  issues: write
 
 on:
   schedule:
@@ -160,3 +161,25 @@ jobs:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: |
           railway up --detach --service api
+
+      # Loud-failure tripwire. The data refresh pipeline silently froze for
+      # 8 days (2026-04-20 → 2026-04-26) because nothing alerted on the
+      # preflight failures. GitHub emails the repo owner on issue creation,
+      # so this turns a silent workflow-failure into an inbox alert.
+      - name: Open issue on failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue create \
+            --title "nightly-pipeline-fast failed — site refresh blocked" \
+            --body "$(cat <<EOF
+          Run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          Triggered: ${{ github.event_name }}
+          SHA: ${{ github.sha }}
+
+          Until this is resolved s-tool.io will keep serving the last successfully-deployed picks.
+          See \`preflight.py\` output in the run logs for the failing check.
+          EOF
+          )" \
+            --label "broken-deploy" || true
