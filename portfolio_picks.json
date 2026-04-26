@@ -1,5 +1,5 @@
 {
-  "scanned_at": "2026-04-26T19:51:52.651901+00:00",
+  "scanned_at": "2026-04-26T20:49:38.981902+00:00",
   "total_tickers": 472,
   "picks": [
     {
@@ -130,10 +130,10 @@
     },
     {
       "symbol": "WAB",
-      "company_name": "Westinghouse Air Brake Technologies Corp",
-      "website": null,
+      "company_name": "Westinghouse Air Brake Technologies Corporation",
+      "website": "https://www.wabteccorp.com",
       "sector": "Industrials",
-      "industry": null,
+      "industry": "Railroads",
       "expected_return": 0.118101,
       "risk": 0.239932,
       "sharpe_proxy": 0.492226,
@@ -147,8 +147,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 44909111497.69653,
-      "avg_volume": 1191160.0,
+      "market_cap": 45314031608.50867,
+      "avg_volume": 1179760.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-03-31",
@@ -189,8 +189,8 @@
         "sector": "Consumer Cyclical",
         "debt_equity": null
       },
-      "market_cap": 178429844691.29608,
-      "avg_volume": 4302290.0,
+      "market_cap": 174376646572.29935,
+      "avg_volume": 3930040.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-01-31",
@@ -231,8 +231,8 @@
         "sector": "Financial Services",
         "debt_equity": null
       },
-      "market_cap": 274778371748.3722,
-      "avg_volume": 2174490.0,
+      "market_cap": 275063242961.5812,
+      "avg_volume": 2245000.0,
       "asymmetric": null,
       "sec_fundamentals": null,
       "rationale": "Projection-only thesis: +12% to P50, Sharpe 0.44, 28% volatility \u2014 the model kept it; the narrative is yet to catch up.",
@@ -264,8 +264,8 @@
         "sector": "Consumer Cyclical",
         "debt_equity": null
       },
-      "market_cap": 78195319524.58301,
-      "avg_volume": 1433320.0,
+      "market_cap": 76957146197.66797,
+      "avg_volume": 1397410.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -289,10 +289,10 @@
     },
     {
       "symbol": "WELL",
-      "company_name": "Welltower Inc",
-      "website": null,
+      "company_name": "Welltower Inc.",
+      "website": "https://www.welltower.com",
       "sector": "Real Estate",
-      "industry": null,
+      "industry": "REIT - Healthcare Facilities",
       "expected_return": 0.113246,
       "risk": 0.261209,
       "sharpe_proxy": 0.433544,
@@ -306,8 +306,8 @@
         "sector": "Real Estate",
         "debt_equity": null
       },
-      "market_cap": 148317761554.359,
-      "avg_volume": 2307840.0,
+      "market_cap": 147070739578.75,
+      "avg_volume": 2584870.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -390,8 +390,8 @@
         "sector": "Financial Services",
         "debt_equity": null
       },
-      "market_cap": 38576711814.39871,
-      "avg_volume": 1202260.0,
+      "market_cap": 36856887912.41913,
+      "avg_volume": 1415100.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-03-31",
@@ -432,8 +432,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 102516365687.32758,
-      "avg_volume": 1691220.0,
+      "market_cap": 97203909852.57758,
+      "avg_volume": 2086450.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -474,8 +474,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 320800559902.88855,
-      "avg_volume": 4996360.0,
+      "market_cap": 297358511390.93384,
+      "avg_volume": 7568630.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-03-31",
@@ -558,8 +558,8 @@
         "sector": "Financial Services",
         "debt_equity": null
       },
-      "market_cap": 138922547284.4593,
-      "avg_volume": 4270940.0,
+      "market_cap": 34143166339.663307,
+      "avg_volume": 5043720.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -600,8 +600,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 27311675972.13159,
-      "avg_volume": 283430.0,
+      "market_cap": 26482003488.894775,
+      "avg_volume": 217130.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -642,8 +642,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 11971543628.995544,
-      "avg_volume": 416980.0,
+      "market_cap": 12329239017.923798,
+      "avg_volume": 378880.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-01-31",
@@ -684,8 +684,8 @@
         "sector": "Technology",
         "debt_equity": null
       },
-      "market_cap": 1921600066932.0,
-      "avg_volume": 12429110.0,
+      "market_cap": 2087318499682.6172,
+      "avg_volume": 15379930.0,
       "asymmetric": null,
       "sec_fundamentals": null,
       "rationale": "Engine ranks this in the top quintile on a combined expected-return (+16%) and Sharpe (0.42) read \u2014 a purely statistical surface, sized for that.",
@@ -759,8 +759,8 @@
         "sector": "Technology",
         "debt_equity": null
       },
-      "market_cap": 33968941699.030945,
-      "avg_volume": 951660.0,
+      "market_cap": 36044970162.3631,
+      "avg_volume": 1036060.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-02-28",
@@ -834,8 +834,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 270270671028.75,
-      "avg_volume": 1866640.0,
+      "market_cap": 308810315308.7378,
+      "avg_volume": 2450780.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-03-31",
@@ -860,9 +860,9 @@
     {
       "symbol": "VRT",
       "company_name": "Vertiv Holdings Co",
-      "website": null,
+      "website": "https://www.vertiv.com",
       "sector": "Industrials",
-      "industry": null,
+      "industry": "Electrical Equipment & Parts",
       "expected_return": 0.359519,
       "risk": 0.623038,
       "sharpe_proxy": 0.577042,
@@ -876,8 +876,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 117587810524.64258,
-      "avg_volume": 4563020.0,
+      "market_cap": 124243834341.18018,
+      "avg_volume": 5984910.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-03-31",
@@ -918,8 +918,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 58070080983.70972,
-      "avg_volume": 320980.0,
+      "market_cap": 60763607942.993164,
+      "avg_volume": 428390.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-03-31",
@@ -944,10 +944,10 @@
     },
     {
       "symbol": "WDC",
-      "company_name": "Western Digital Corp",
-      "website": null,
+      "company_name": "Western Digital Corporation",
+      "website": "https://www.westerndigital.com",
       "sector": "Technology",
-      "industry": null,
+      "industry": "Computer Hardware",
       "expected_return": 0.339678,
       "risk": 0.612526,
       "sharpe_proxy": 0.554553,
@@ -961,8 +961,8 @@
         "sector": "Technology",
         "debt_equity": null
       },
-      "market_cap": 127364316401.90231,
-      "avg_volume": 6901880.0,
+      "market_cap": 138127309524.0,
+      "avg_volume": 6159120.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-01-02",
@@ -1173,8 +1173,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 36083524936.79169,
-      "avg_volume": 304340.0,
+      "market_cap": 38738881120.520874,
+      "avg_volume": 342390.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -1215,8 +1215,8 @@
         "sector": "Technology",
         "debt_equity": null
       },
-      "market_cap": 122709900251.75,
-      "avg_volume": 3690510.0,
+      "market_cap": 131334877266.25,
+      "avg_volume": 3244840.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-01-02",
@@ -1260,8 +1260,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 270270671028.75,
-      "avg_volume": 1866640.0,
+      "market_cap": 308810315308.7378,
+      "avg_volume": 2450780.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-03-31",
@@ -1286,9 +1286,9 @@
     {
       "symbol": "VRT",
       "company_name": "Vertiv Holdings Co",
-      "website": null,
+      "website": "https://www.vertiv.com",
       "sector": "Industrials",
-      "industry": null,
+      "industry": "Electrical Equipment & Parts",
       "expected_return": 0.359519,
       "risk": 0.623038,
       "sharpe_proxy": 0.577042,
@@ -1302,8 +1302,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 117587810524.64258,
-      "avg_volume": 4563020.0,
+      "market_cap": 124243834341.18018,
+      "avg_volume": 5984910.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-03-31",
@@ -1344,8 +1344,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 58070080983.70972,
-      "avg_volume": 320980.0,
+      "market_cap": 60763607942.993164,
+      "avg_volume": 428390.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-03-31",
@@ -1370,10 +1370,10 @@
     },
     {
       "symbol": "WDC",
-      "company_name": "Western Digital Corp",
-      "website": null,
+      "company_name": "Western Digital Corporation",
+      "website": "https://www.westerndigital.com",
       "sector": "Technology",
-      "industry": null,
+      "industry": "Computer Hardware",
       "expected_return": 0.339678,
       "risk": 0.612526,
       "sharpe_proxy": 0.554553,
@@ -1387,8 +1387,8 @@
         "sector": "Technology",
         "debt_equity": null
       },
-      "market_cap": 127364316401.90231,
-      "avg_volume": 6901880.0,
+      "market_cap": 138127309524.0,
+      "avg_volume": 6159120.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-01-02",
@@ -1599,8 +1599,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 36083524936.79169,
-      "avg_volume": 304340.0,
+      "market_cap": 38738881120.520874,
+      "avg_volume": 342390.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -1641,8 +1641,8 @@
         "sector": "Technology",
         "debt_equity": null
       },
-      "market_cap": 122709900251.75,
-      "avg_volume": 3690510.0,
+      "market_cap": 131334877266.25,
+      "avg_volume": 3244840.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-01-02",
@@ -1725,8 +1725,8 @@
         "sector": "Technology",
         "debt_equity": null
       },
-      "market_cap": 513197942848.3409,
-      "avg_volume": 42538010.0,
+      "market_cap": 560168059189.3485,
+      "avg_volume": 37618410.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-02-26",
@@ -1767,8 +1767,8 @@
         "sector": "Technology",
         "debt_equity": null
       },
-      "market_cap": 141204863100.46838,
-      "avg_volume": 10687780.0,
+      "market_cap": 151092119155.62897,
+      "avg_volume": 8703930.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -1809,8 +1809,8 @@
         "sector": "Technology",
         "debt_equity": null
       },
-      "market_cap": 3122310553.956444,
-      "avg_volume": 1142420.0,
+      "market_cap": 2981055499.1141815,
+      "avg_volume": 384580.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -1851,8 +1851,8 @@
         "sector": "Technology",
         "debt_equity": null
       },
-      "market_cap": 336113635666.1987,
-      "avg_volume": 8398830.0,
+      "market_cap": 334869331893.46313,
+      "avg_volume": 9307960.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-03-29",
@@ -1893,8 +1893,8 @@
         "sector": "Technology",
         "debt_equity": null
       },
-      "market_cap": 350117405873.527,
-      "avg_volume": 56879120.0,
+      "market_cap": 342224868728.412,
+      "avg_volume": 48060440.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -1977,8 +1977,8 @@
         "sector": "Technology",
         "debt_equity": null
       },
-      "market_cap": 3324313903.60318,
-      "avg_volume": 575000.0,
+      "market_cap": 3640555469.067932,
+      "avg_volume": 689920.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -2104,8 +2104,8 @@
         "sector": "Consumer Cyclical",
         "debt_equity": null
       },
-      "market_cap": 31894665098.28296,
-      "avg_volume": 1483350.0,
+      "market_cap": 29856352194.371704,
+      "avg_volume": 1689530.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-27",
@@ -2146,8 +2146,8 @@
         "sector": "Technology",
         "debt_equity": null
       },
-      "market_cap": 235381482287.9502,
-      "avg_volume": 794420.0,
+      "market_cap": 254244174030.0,
+      "avg_volume": 847780.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -2230,8 +2230,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 2498808530.110962,
-      "avg_volume": 171580.0,
+      "market_cap": 2631170240.3639374,
+      "avg_volume": 210120.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -2272,8 +2272,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 90316139366.29883,
-      "avg_volume": 817850.0,
+      "market_cap": 93761444954.64355,
+      "avg_volume": 853710.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -2398,8 +2398,8 @@
         "sector": "Technology",
         "debt_equity": null
       },
-      "market_cap": 130251644081.66818,
-      "avg_volume": 6691920.0,
+      "market_cap": 140499278123.7378,
+      "avg_volume": 7309660.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-01-30",
@@ -2424,10 +2424,10 @@
     },
     {
       "symbol": "VST",
-      "company_name": "Vistra Corp",
-      "website": null,
+      "company_name": "Vistra Corp.",
+      "website": "https://www.vistracorp.com",
       "sector": "Utilities",
-      "industry": null,
+      "industry": "Independent Power Producers",
       "expected_return": 0.198418,
       "risk": 0.646098,
       "sharpe_proxy": 0.307102,
@@ -2441,8 +2441,8 @@
         "sector": "Utilities",
         "debt_equity": null
       },
-      "market_cap": 55339269543.29498,
-      "avg_volume": 3326410.0,
+      "market_cap": 55640578206.54089,
+      "avg_volume": 3461740.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -2483,8 +2483,8 @@
         "sector": "Utilities",
         "debt_equity": null
       },
-      "market_cap": 35621859118.63098,
-      "avg_volume": 2463730.0,
+      "market_cap": 33939840003.503418,
+      "avg_volume": 3029930.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -2525,8 +2525,8 @@
         "sector": "Consumer Cyclical",
         "debt_equity": null
       },
-      "market_cap": 77854102242.6742,
-      "avg_volume": 2321680.0,
+      "market_cap": 71917243344.65576,
+      "avg_volume": 2528440.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -2609,8 +2609,8 @@
         "sector": "Technology",
         "debt_equity": null
       },
-      "market_cap": 63836598522.94922,
-      "avg_volume": 6450920.0,
+      "market_cap": 62949097045.89844,
+      "avg_volume": 5012570.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-27",
@@ -2651,8 +2651,8 @@
         "sector": "Financial Services",
         "debt_equity": null
       },
-      "market_cap": 4071930138.1396484,
-      "avg_volume": 186510.0,
+      "market_cap": 4147067766.5146484,
+      "avg_volume": 248600.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-03-31",
@@ -2693,8 +2693,8 @@
         "sector": "Healthcare",
         "debt_equity": null
       },
-      "market_cap": 683203679.6196976,
-      "avg_volume": 433130.0,
+      "market_cap": 628088995.3098488,
+      "avg_volume": 367590.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -2777,8 +2777,8 @@
         "sector": "Financial Services",
         "debt_equity": null
       },
-      "market_cap": 81702986392.5,
-      "avg_volume": 34403850.0,
+      "market_cap": 76265122892.64305,
+      "avg_volume": 39363060.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -2819,8 +2819,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 11856811096.635086,
-      "avg_volume": 987470.0,
+      "market_cap": 10633304286.390614,
+      "avg_volume": 1028850.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -2903,8 +2903,8 @@
         "sector": "Technology",
         "debt_equity": null
       },
-      "market_cap": 958869583.7791634,
-      "avg_volume": 344440.0,
+      "market_cap": 973493891.9875298,
+      "avg_volume": 305200.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-01-31",
@@ -2945,8 +2945,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 6574669144.246704,
-      "avg_volume": 482140.0,
+      "market_cap": 6944720787.746704,
+      "avg_volume": 591780.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -3029,8 +3029,8 @@
         "sector": "Consumer Cyclical",
         "debt_equity": null
       },
-      "market_cap": 7026352471.121338,
-      "avg_volume": 900740.0,
+      "market_cap": 6039123904.016968,
+      "avg_volume": 1223860.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-24",
@@ -3188,8 +3188,8 @@
         "sector": "Consumer Defensive",
         "debt_equity": null
       },
-      "market_cap": 4308202255.690887,
-      "avg_volume": 254980.0,
+      "market_cap": 3714152235.709511,
+      "avg_volume": 266720.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -3297,10 +3297,10 @@
     },
     {
       "symbol": "WSM",
-      "company_name": "Williams Sonoma Inc",
-      "website": null,
+      "company_name": "Williams-Sonoma, Inc.",
+      "website": "https://www.williams-sonomainc.com",
       "sector": "Consumer Cyclical",
-      "industry": null,
+      "industry": "Specialty Retail",
       "expected_return": 0.105747,
       "risk": 0.456103,
       "sharpe_proxy": 0.231848,
@@ -3314,8 +3314,8 @@
         "sector": "Consumer Cyclical",
         "debt_equity": null
       },
-      "market_cap": 23647299066.376526,
-      "avg_volume": 1035080.0,
+      "market_cap": 22678508500.158157,
+      "avg_volume": 1059330.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-02-01",
@@ -3432,8 +3432,8 @@
         "sector": "Financial Services",
         "debt_equity": null
       },
-      "market_cap": 14373213278.719482,
-      "avg_volume": 519820.0,
+      "market_cap": 13636155262.935059,
+      "avg_volume": 549210.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -3474,8 +3474,8 @@
         "sector": "Technology",
         "debt_equity": null
       },
-      "market_cap": 59552075987.09033,
-      "avg_volume": 2907420.0,
+      "market_cap": 65454363556.00159,
+      "avg_volume": 2326920.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -3516,8 +3516,8 @@
         "sector": "Technology",
         "debt_equity": null
       },
-      "market_cap": 158721910338.86438,
-      "avg_volume": 13398290.0,
+      "market_cap": 153617775789.5857,
+      "avg_volume": 14788210.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -3759,8 +3759,8 @@
         "sector": "Consumer Cyclical",
         "debt_equity": null
       },
-      "market_cap": 79886661604.1272,
-      "avg_volume": 4104480.0,
+      "market_cap": 77031245585.16302,
+      "avg_volume": 3997610.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -3876,8 +3876,8 @@
         "sector": "Healthcare",
         "debt_equity": null
       },
-      "market_cap": 31186317565.300125,
-      "avg_volume": 1954000.0,
+      "market_cap": 29176734585.09291,
+      "avg_volume": 1796270.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -4002,8 +4002,8 @@
         "sector": "Real Estate",
         "debt_equity": null
       },
-      "market_cap": 1789274349.8133554,
-      "avg_volume": 1506430.0,
+      "market_cap": 1806222855.7361841,
+      "avg_volume": 1062900.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -4245,8 +4245,8 @@
         "sector": "Healthcare",
         "debt_equity": null
       },
-      "market_cap": 2261153596.1454544,
-      "avg_volume": 1636260.0,
+      "market_cap": 2241213894.2818184,
+      "avg_volume": 2474890.0,
       "asymmetric": null,
       "sec_fundamentals": null,
       "rationale": "No filings-side signal this pass; the ranker holds it on engine Sharpe (0.18) and a +14% P50 expectation.",
@@ -4521,8 +4521,8 @@
         "sector": "Healthcare",
         "debt_equity": null
       },
-      "market_cap": 11825305267.91851,
-      "avg_volume": 4217210.0,
+      "market_cap": 11360882237.25,
+      "avg_volume": 4027930.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -4605,8 +4605,8 @@
         "sector": "Technology",
         "debt_equity": null
       },
-      "market_cap": 70744522028.50552,
-      "avg_volume": 5920900.0,
+      "market_cap": 72884562884.8407,
+      "avg_volume": 3753200.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -4690,8 +4690,8 @@
         "sector": "Consumer Cyclical",
         "debt_equity": null
       },
-      "market_cap": 32574670189.583893,
-      "avg_volume": 1663630.0,
+      "market_cap": 30810168766.277405,
+      "avg_volume": 1569120.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -4732,8 +4732,8 @@
         "sector": "Healthcare",
         "debt_equity": null
       },
-      "market_cap": 5908299459.606371,
-      "avg_volume": 5461680.0,
+      "market_cap": 6679082193.893629,
+      "avg_volume": 7721410.0,
       "asymmetric": null,
       "sec_fundamentals": null,
       "rationale": "No filings-side signal this pass; the ranker holds it on engine Sharpe (0.15) and a +12% P50 expectation.",
@@ -4765,8 +4765,8 @@
         "sector": "Consumer Cyclical",
         "debt_equity": null
       },
-      "market_cap": 9460353404.690918,
-      "avg_volume": 84660.0,
+      "market_cap": 9295280849.838074,
+      "avg_volume": 88220.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-01-31",
@@ -4807,8 +4807,8 @@
         "sector": "Consumer Cyclical",
         "debt_equity": null
       },
-      "market_cap": 4060164262.8129654,
-      "avg_volume": 891150.0,
+      "market_cap": 4265034812.0139923,
+      "avg_volume": 868080.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -4892,8 +4892,8 @@
         "sector": "Technology",
         "debt_equity": null
       },
-      "market_cap": 746339521.4770508,
-      "avg_volume": 83650.0,
+      "market_cap": 734146715.4128418,
+      "avg_volume": 53330.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -4976,8 +4976,8 @@
         "sector": "Healthcare",
         "debt_equity": null
       },
-      "market_cap": 5077892499.775124,
-      "avg_volume": 753890.0,
+      "market_cap": 4758278064.457108,
+      "avg_volume": 563400.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -5018,8 +5018,8 @@
         "sector": "Technology",
         "debt_equity": null
       },
-      "market_cap": 122153074378.95782,
-      "avg_volume": 27783990.0,
+      "market_cap": 143682232101.04218,
+      "avg_volume": 31216940.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-01-31",
@@ -5103,8 +5103,8 @@
         "sector": "Technology",
         "debt_equity": null
       },
-      "market_cap": 343939200618.0,
-      "avg_volume": 119077790.0,
+      "market_cap": 414846044601.4404,
+      "avg_volume": 125829080.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-03-28",
@@ -5146,8 +5146,8 @@
         "sector": "Financial Services",
         "debt_equity": null
       },
-      "market_cap": 95945974435.65385,
-      "avg_volume": 5197980.0,
+      "market_cap": 94306746103.91537,
+      "avg_volume": 5332980.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -5314,8 +5314,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 1399144714.8877773,
-      "avg_volume": 351520.0,
+      "market_cap": 1385893466.1238384,
+      "avg_volume": 327160.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -5356,8 +5356,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 33049308078.351288,
-      "avg_volume": 8336570.0,
+      "market_cap": 30184984704.0,
+      "avg_volume": 8974660.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-03-31",
@@ -5440,8 +5440,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 2022234767.3446274,
-      "avg_volume": 836510.0,
+      "market_cap": 2028167921.4533882,
+      "avg_volume": 837800.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -5524,8 +5524,8 @@
         "sector": "Energy",
         "debt_equity": null
       },
-      "market_cap": 29133320963.591125,
-      "avg_volume": 607950.0,
+      "market_cap": 30259137718.61151,
+      "avg_volume": 362910.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -5567,8 +5567,8 @@
         "sector": "Technology",
         "debt_equity": null
       },
-      "market_cap": 72122414100.83008,
-      "avg_volume": 525740.0,
+      "market_cap": 80163525958.00781,
+      "avg_volume": 532660.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -5609,8 +5609,8 @@
         "sector": "Healthcare",
         "debt_equity": null
       },
-      "market_cap": 9887635834.80835,
-      "avg_volume": 666860.0,
+      "market_cap": 10013648735.192322,
+      "avg_volume": 585520.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -6139,8 +6139,8 @@
         "sector": "Healthcare",
         "debt_equity": null
       },
-      "market_cap": 3693324070.766365,
-      "avg_volume": 763660.0,
+      "market_cap": 3395866015.1359463,
+      "avg_volume": 822020.0,
       "asymmetric": null,
       "sec_fundamentals": null,
       "rationale": "No filings-side signal this pass; the ranker holds it on engine Sharpe (0.10) and a +8% P50 expectation.",
@@ -6340,8 +6340,8 @@
         "sector": "Technology",
         "debt_equity": null
       },
-      "market_cap": 136965604980.46875,
-      "avg_volume": 8687400.0,
+      "market_cap": 144795934555.0537,
+      "avg_volume": 6710590.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-01-31",
@@ -6382,8 +6382,8 @@
         "sector": "Technology",
         "debt_equity": null
       },
-      "market_cap": 170624461109.8544,
-      "avg_volume": 8083460.0,
+      "market_cap": 163703219619.06866,
+      "avg_volume": 7935630.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -6457,8 +6457,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 15546500786.374329,
-      "avg_volume": 346250.0,
+      "market_cap": 14147824105.06485,
+      "avg_volume": 420860.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -6499,8 +6499,8 @@
         "sector": "Financial Services",
         "debt_equity": null
       },
-      "market_cap": 24778376994.67964,
-      "avg_volume": 52932160.0,
+      "market_cap": 23515866075.064373,
+      "avg_volume": 58266150.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -6584,8 +6584,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 12446890968.87912,
-      "avg_volume": 622840.0,
+      "market_cap": 12963250029.355408,
+      "avg_volume": 657400.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -6669,8 +6669,8 @@
         "sector": "Consumer Cyclical",
         "debt_equity": null
       },
-      "market_cap": 94085349043.1565,
-      "avg_volume": 376880.0,
+      "market_cap": 93040480864.771,
+      "avg_volume": 354290.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -6711,8 +6711,8 @@
         "sector": "Financial Services",
         "debt_equity": null
       },
-      "market_cap": 2468311672.9817963,
-      "avg_volume": 179720.0,
+      "market_cap": 2413405342.3399353,
+      "avg_volume": 211370.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -6753,8 +6753,8 @@
         "sector": "Basic Materials",
         "debt_equity": null
       },
-      "market_cap": 100905923441.46263,
-      "avg_volume": 14359110.0,
+      "market_cap": 87637371951.09918,
+      "avg_volume": 17154700.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -6870,8 +6870,8 @@
         "sector": "Consumer Cyclical",
         "debt_equity": null
       },
-      "market_cap": 20185423805.072662,
-      "avg_volume": 1204160.0,
+      "market_cap": 20324875883.935974,
+      "avg_volume": 978810.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-01-31",
@@ -6955,8 +6955,8 @@
         "sector": "Technology",
         "debt_equity": null
       },
-      "market_cap": 8900737022.118874,
-      "avg_volume": 6483890.0,
+      "market_cap": 9896522045.496292,
+      "avg_volume": 4225050.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -6997,8 +6997,8 @@
         "sector": "Technology",
         "debt_equity": null
       },
-      "market_cap": 2067861559.5829773,
-      "avg_volume": 272810.0,
+      "market_cap": 2131048319.8609924,
+      "avg_volume": 255960.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -7039,8 +7039,8 @@
         "sector": "Financial Services",
         "debt_equity": null
       },
-      "market_cap": 1628030407.434082,
-      "avg_volume": 279840.0,
+      "market_cap": 1554771570.3353882,
+      "avg_volume": 329980.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -7630,8 +7630,8 @@
         "sector": "Basic Materials",
         "debt_equity": null
       },
-      "market_cap": 44614212727.86926,
-      "avg_volume": 1316070.0,
+      "market_cap": 48801469623.77313,
+      "avg_volume": 1490470.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -7757,8 +7757,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 102516365687.32758,
-      "avg_volume": 1691220.0,
+      "market_cap": 97203909852.57758,
+      "avg_volume": 2086450.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -7799,8 +7799,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 320800559902.88855,
-      "avg_volume": 4996360.0,
+      "market_cap": 297358511390.93384,
+      "avg_volume": 7568630.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-03-31",
@@ -7883,8 +7883,8 @@
         "sector": "Financial Services",
         "debt_equity": null
       },
-      "market_cap": 138922547284.4593,
-      "avg_volume": 4270940.0,
+      "market_cap": 34143166339.663307,
+      "avg_volume": 5043720.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -7925,8 +7925,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 27311675972.13159,
-      "avg_volume": 283430.0,
+      "market_cap": 26482003488.894775,
+      "avg_volume": 217130.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -7967,8 +7967,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 11971543628.995544,
-      "avg_volume": 416980.0,
+      "market_cap": 12329239017.923798,
+      "avg_volume": 378880.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-01-31",
@@ -8009,8 +8009,8 @@
         "sector": "Technology",
         "debt_equity": null
       },
-      "market_cap": 1921600066932.0,
-      "avg_volume": 12429110.0,
+      "market_cap": 2087318499682.6172,
+      "avg_volume": 15379930.0,
       "asymmetric": null,
       "sec_fundamentals": null,
       "rationale": "Engine ranks this in the top quintile on a combined expected-return (+16%) and Sharpe (0.42) read \u2014 a purely statistical surface, sized for that.",
@@ -8084,8 +8084,8 @@
         "sector": "Technology",
         "debt_equity": null
       },
-      "market_cap": 33968941699.030945,
-      "avg_volume": 951660.0,
+      "market_cap": 36044970162.3631,
+      "avg_volume": 1036060.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-02-28",
@@ -8243,8 +8243,8 @@
         "sector": "Energy",
         "debt_equity": null
       },
-      "market_cap": 50621148664.5,
-      "avg_volume": 1153760.0,
+      "market_cap": 51736749026.094666,
+      "avg_volume": 1141650.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -8285,8 +8285,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 124802902334.47089,
-      "avg_volume": 478630.0,
+      "market_cap": 122994217316.88013,
+      "avg_volume": 549250.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -8369,8 +8369,8 @@
         "sector": "Financial Services",
         "debt_equity": null
       },
-      "market_cap": 1001524363.7327652,
-      "avg_volume": 123600.0,
+      "market_cap": 906951331.5402145,
+      "avg_volume": 160730.0,
       "asymmetric": null,
       "sec_fundamentals": null,
       "rationale": "Projection-only thesis: +14% to P50, Sharpe 0.38, 37% volatility \u2014 the model kept it; the narrative is yet to catch up.",
@@ -8486,8 +8486,8 @@
         "sector": "Technology",
         "debt_equity": null
       },
-      "market_cap": 8155093716.761414,
-      "avg_volume": 385010.0,
+      "market_cap": 8287704164.675171,
+      "avg_volume": 405320.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -8528,8 +8528,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 105572153946.31006,
-      "avg_volume": 1196750.0,
+      "market_cap": 107558203663.50851,
+      "avg_volume": 1191530.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -8612,8 +8612,8 @@
         "sector": "Consumer Cyclical",
         "debt_equity": null
       },
-      "market_cap": 23460658450.016968,
-      "avg_volume": 560460.0,
+      "market_cap": 22512237654.966064,
+      "avg_volume": 543920.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-27",
@@ -8654,8 +8654,8 @@
         "sector": "Consumer Cyclical",
         "debt_equity": null
       },
-      "market_cap": 75860280956.59332,
-      "avg_volume": 5906610.0,
+      "market_cap": 70374298664.5375,
+      "avg_volume": 5256680.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -8696,8 +8696,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 157771960681.15234,
-      "avg_volume": 1930590.0,
+      "market_cap": 164474750542.5641,
+      "avg_volume": 2287520.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -8780,8 +8780,8 @@
         "sector": "Communication Services",
         "debt_equity": null
       },
-      "market_cap": 412778269636.43414,
-      "avg_volume": 36045900.0,
+      "market_cap": 389246226208.58984,
+      "avg_volume": 52376250.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-03-31",
@@ -8822,8 +8822,8 @@
         "sector": "Consumer Cyclical",
         "debt_equity": null
       },
-      "market_cap": 100145610930.34515,
-      "avg_volume": 1352580.0,
+      "market_cap": 97289077750.91263,
+      "avg_volume": 1432800.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -8864,8 +8864,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 2068198686.0,
-      "avg_volume": 237250.0,
+      "market_cap": 2089330336.153839,
+      "avg_volume": 213950.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -8948,8 +8948,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 51700415403.17845,
-      "avg_volume": 1082140.0,
+      "market_cap": 49561638884.81955,
+      "avg_volume": 1324600.0,
       "asymmetric": null,
       "sec_fundamentals": null,
       "rationale": "No filings-side signal this pass; the ranker holds it on engine Sharpe (0.29) and a +9% P50 expectation.",
@@ -9023,8 +9023,8 @@
         "sector": "Technology",
         "debt_equity": null
       },
-      "market_cap": 51473226143.18146,
-      "avg_volume": 738870.0,
+      "market_cap": 50032018872.78992,
+      "avg_volume": 717200.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-27",
@@ -9149,8 +9149,8 @@
         "sector": "Healthcare",
         "debt_equity": null
       },
-      "market_cap": 11658322890.696396,
-      "avg_volume": 2217800.0,
+      "market_cap": 11415126990.732857,
+      "avg_volume": 2534920.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-01-02",
@@ -9191,8 +9191,8 @@
         "sector": "Financial Services",
         "debt_equity": null
       },
-      "market_cap": 28215802576.67404,
-      "avg_volume": 3025130.0,
+      "market_cap": 25709387965.093872,
+      "avg_volume": 4131920.0,
       "asymmetric": null,
       "sec_fundamentals": null,
       "rationale": "Projection-only thesis: +9% to P50, Sharpe 0.26, 35% volatility \u2014 the model kept it; the narrative is yet to catch up.",
@@ -9266,8 +9266,8 @@
         "sector": "Communication Services",
         "debt_equity": null
       },
-      "market_cap": 36760588335.07312,
-      "avg_volume": 3101530.0,
+      "market_cap": 36829950251.531204,
+      "avg_volume": 3132870.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -9434,8 +9434,8 @@
         "sector": "Technology",
         "debt_equity": null
       },
-      "market_cap": 17660863581.772095,
-      "avg_volume": 640530.0,
+      "market_cap": 17134383009.65976,
+      "avg_volume": 657140.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -9476,8 +9476,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 50155977068.24072,
-      "avg_volume": 447960.0,
+      "market_cap": 61043429923.96735,
+      "avg_volume": 658580.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-03-31",
@@ -9602,8 +9602,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 86221763450.61548,
-      "avg_volume": 3206120.0,
+      "market_cap": 86864434834.7933,
+      "avg_volume": 2979350.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -9686,8 +9686,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 7344918064.0,
-      "avg_volume": 287740.0,
+      "market_cap": 7712992690.6614685,
+      "avg_volume": 260200.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-28",
@@ -9770,8 +9770,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 16960139452.322388,
-      "avg_volume": 478970.0,
+      "market_cap": 17094537040.952301,
+      "avg_volume": 498910.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -9812,8 +9812,8 @@
         "sector": "Technology",
         "debt_equity": null
       },
-      "market_cap": 57345247584.6232,
-      "avg_volume": 982440.0,
+      "market_cap": 59504504199.72458,
+      "avg_volume": 979110.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-01-31",
@@ -9929,8 +9929,8 @@
         "sector": "Consumer Cyclical",
         "debt_equity": null
       },
-      "market_cap": 13667621604.36943,
-      "avg_volume": 1729190.0,
+      "market_cap": 13455868662.653687,
+      "avg_volume": 2076530.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-28",
@@ -10013,8 +10013,8 @@
         "sector": "Basic Materials",
         "debt_equity": null
       },
-      "market_cap": 9505092268.32912,
-      "avg_volume": 2533420.0,
+      "market_cap": 9826638110.109707,
+      "avg_volume": 2700640.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -10097,8 +10097,8 @@
         "sector": "Real Estate",
         "debt_equity": null
       },
-      "market_cap": 35123323832.40667,
-      "avg_volume": 1188600.0,
+      "market_cap": 34516466773.37668,
+      "avg_volume": 1432410.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -10139,8 +10139,8 @@
         "sector": "Basic Materials",
         "debt_equity": null
       },
-      "market_cap": 29022843629.470398,
-      "avg_volume": 897650.0,
+      "market_cap": 32857878750.0688,
+      "avg_volume": 1431870.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -10214,8 +10214,8 @@
         "sector": "Consumer Cyclical",
         "debt_equity": null
       },
-      "market_cap": 24311672364.492188,
-      "avg_volume": 1865880.0,
+      "market_cap": 24298438723.625427,
+      "avg_volume": 2123920.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-03-31",
@@ -10256,8 +10256,8 @@
         "sector": "Technology",
         "debt_equity": null
       },
-      "market_cap": 20703247934.667114,
-      "avg_volume": 1940260.0,
+      "market_cap": 21531140249.750336,
+      "avg_volume": 2087080.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-01-23",
@@ -10298,8 +10298,8 @@
         "sector": "Basic Materials",
         "debt_equity": null
       },
-      "market_cap": 126737345698.0,
-      "avg_volume": 7496510.0,
+      "market_cap": 128853615356.88751,
+      "avg_volume": 8064890.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-03-31",
@@ -10323,10 +10323,10 @@
     },
     {
       "symbol": "VLO",
-      "company_name": "Valero Energy Corp/tx",
-      "website": null,
+      "company_name": "Valero Energy Corporation",
+      "website": "https://www.valero.com",
       "sector": "Energy",
-      "industry": null,
+      "industry": "Oil & Gas Refining & Marketing",
       "expected_return": 0.066356,
       "risk": 0.335674,
       "sharpe_proxy": 0.197679,
@@ -10340,8 +10340,8 @@
         "sector": "Energy",
         "debt_equity": null
       },
-      "market_cap": 66877213619.78876,
-      "avg_volume": 2969880.0,
+      "market_cap": 70525337227.21124,
+      "avg_volume": 2911270.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -10508,8 +10508,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 93624520084.35205,
-      "avg_volume": 1507450.0,
+      "market_cap": 92574651814.29211,
+      "avg_volume": 1534120.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-02-28",
@@ -10550,8 +10550,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 47119618514.634766,
-      "avg_volume": 12205920.0,
+      "market_cap": 44971244961.413086,
+      "avg_volume": 9869930.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-03-31",
@@ -10592,8 +10592,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 28471759572.507202,
-      "avg_volume": 459723.0,
+      "market_cap": 29402087607.507202,
+      "avg_volume": 473630.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -10634,8 +10634,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 81401486607.36084,
-      "avg_volume": 2539960.0,
+      "market_cap": 76143607298.44453,
+      "avg_volume": 4221150.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-03-31",
@@ -10692,10 +10692,10 @@
     },
     {
       "symbol": "VMC",
-      "company_name": "Vulcan Materials Co",
-      "website": null,
+      "company_name": "Vulcan Materials Company",
+      "website": "https://www.vulcanmaterials.com",
       "sector": "Basic Materials",
-      "industry": null,
+      "industry": "Construction Materials",
       "expected_return": 0.052727,
       "risk": 0.300076,
       "sharpe_proxy": 0.175712,
@@ -10709,8 +10709,8 @@
         "sector": "Basic Materials",
         "debt_equity": null
       },
-      "market_cap": 38091602700.84082,
-      "avg_volume": 930870.0,
+      "market_cap": 38138613711.2793,
+      "avg_volume": 691630.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -10751,8 +10751,8 @@
         "sector": "Consumer Cyclical",
         "debt_equity": null
       },
-      "market_cap": 47301800689.697266,
-      "avg_volume": 4267760.0,
+      "market_cap": 43877121093.75,
+      "avg_volume": 5031940.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -10835,8 +10835,8 @@
         "sector": "Financial Services",
         "debt_equity": null
       },
-      "market_cap": 965428553.83461,
-      "avg_volume": 136060.0,
+      "market_cap": 941576825.9887962,
+      "avg_volume": 124920.0,
       "asymmetric": null,
       "sec_fundamentals": null,
       "rationale": "Projection-only thesis: +5% to P50, Sharpe 0.17, 31% volatility \u2014 the model kept it; the narrative is yet to catch up.",
@@ -10868,8 +10868,8 @@
         "sector": "Financial Services",
         "debt_equity": null
       },
-      "market_cap": 3637006365.0502014,
-      "avg_volume": 1301450.0,
+      "market_cap": 3621384784.05558,
+      "avg_volume": 1808420.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -10994,8 +10994,8 @@
         "sector": "Communication Services",
         "debt_equity": null
       },
-      "market_cap": 39264602446.99658,
-      "avg_volume": 1594550.0,
+      "market_cap": 39025727352.0,
+      "avg_volume": 1542390.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -11036,8 +11036,8 @@
         "sector": "Financial Services",
         "debt_equity": null
       },
-      "market_cap": 23702986570.461273,
-      "avg_volume": 15070030.0,
+      "market_cap": 23518146677.5074,
+      "avg_volume": 15008010.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -11078,8 +11078,8 @@
         "sector": "Energy",
         "debt_equity": null
       },
-      "market_cap": 2950282740.6939926,
-      "avg_volume": 3980760.0,
+      "market_cap": 2908411878.214487,
+      "avg_volume": 3508120.0,
       "asymmetric": null,
       "sec_fundamentals": null,
       "rationale": "No filings-side signal this pass; the ranker holds it on engine Sharpe (0.17) and a +6% P50 expectation.",
@@ -11195,8 +11195,8 @@
         "sector": "Financial Services",
         "debt_equity": null
       },
-      "market_cap": 64691485607.44501,
-      "avg_volume": 9559400.0,
+      "market_cap": 63203441099.681854,
+      "avg_volume": 8124670.0,
       "asymmetric": null,
       "sec_fundamentals": null,
       "rationale": "Ranked on model output alone \u2014 +5% expected return against 30% realized vol. The Sharpe proxy of 0.16 is why it clears the filter.",
@@ -11228,8 +11228,8 @@
         "sector": "Financial Services",
         "debt_equity": null
       },
-      "market_cap": 494979941.1861725,
-      "avg_volume": 65280.0,
+      "market_cap": 467487359.3850403,
+      "avg_volume": 51480.0,
       "asymmetric": null,
       "sec_fundamentals": null,
       "rationale": "No filings-side signal this pass; the ranker holds it on engine Sharpe (0.15) and a +6% P50 expectation.",
@@ -11294,8 +11294,8 @@
         "sector": "Financial Services",
         "debt_equity": null
       },
-      "market_cap": 16242227759.529816,
-      "avg_volume": 778170.0,
+      "market_cap": 16803180803.62445,
+      "avg_volume": 1081050.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2020-09-30",
@@ -11336,8 +11336,8 @@
         "sector": "Utilities",
         "debt_equity": null
       },
-      "market_cap": 519475375.47566986,
-      "avg_volume": 119480.0,
+      "market_cap": 539526426.3314819,
+      "avg_volume": 233330.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -11420,8 +11420,8 @@
         "sector": "Financial Services",
         "debt_equity": null
       },
-      "market_cap": 2794908132.0,
-      "avg_volume": 363760.0,
+      "market_cap": 2754977820.069214,
+      "avg_volume": 364290.0,
       "asymmetric": null,
       "sec_fundamentals": null,
       "rationale": "Engine ranks this in the top quintile on a combined expected-return (+5%) and Sharpe (0.15) read \u2014 a purely statistical surface, sized for that.",
@@ -11495,8 +11495,8 @@
         "sector": "Technology",
         "debt_equity": null
       },
-      "market_cap": 35133695969.02027,
-      "avg_volume": 13512690.0,
+      "market_cap": 37364210943.77814,
+      "avg_volume": 15479220.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-01-31",
@@ -11537,8 +11537,8 @@
         "sector": "Energy",
         "debt_equity": null
       },
-      "market_cap": 62701645796.74719,
-      "avg_volume": 2952360.0,
+      "market_cap": 65300017391.75351,
+      "avg_volume": 2478310.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -11579,8 +11579,8 @@
         "sector": "Basic Materials",
         "debt_equity": null
       },
-      "market_cap": 19407684131.677048,
-      "avg_volume": 2856210.0,
+      "market_cap": 18989610777.887543,
+      "avg_volume": 2970850.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -11621,8 +11621,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 82292914888.91962,
-      "avg_volume": 2816730.0,
+      "market_cap": 79438703430.17578,
+      "avg_volume": 2557110.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -11747,8 +11747,8 @@
         "sector": "Energy",
         "debt_equity": null
       },
-      "market_cap": 62983026578.43048,
-      "avg_volume": 2047430.0,
+      "market_cap": 66008530055.17337,
+      "avg_volume": 1985780.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -11831,8 +11831,8 @@
         "sector": "Healthcare",
         "debt_equity": null
       },
-      "market_cap": 166649168148.42273,
-      "avg_volume": 1767790.0,
+      "market_cap": 170784406101.5677,
+      "avg_volume": 2633350.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-03-31",
@@ -11915,8 +11915,8 @@
         "sector": "Financial Services",
         "debt_equity": null
       },
-      "market_cap": 34325467048.09948,
-      "avg_volume": 22299080.0,
+      "market_cap": 33244940853.511047,
+      "avg_volume": 22628880.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -11957,8 +11957,8 @@
         "sector": "Energy",
         "debt_equity": null
       },
-      "market_cap": 36507543234.23004,
-      "avg_volume": 6773950.0,
+      "market_cap": 36846908884.55963,
+      "avg_volume": 8382480.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-03-31",
@@ -12083,8 +12083,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 33900473096.781235,
-      "avg_volume": 3351730.0,
+      "market_cap": 33114201240.325012,
+      "avg_volume": 3807560.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -12335,8 +12335,8 @@
         "sector": "Financial Services",
         "debt_equity": null
       },
-      "market_cap": 24290442493.146347,
-      "avg_volume": 11260020.0,
+      "market_cap": 23715819906.257477,
+      "avg_volume": 10532040.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2021-12-31",
@@ -12452,8 +12452,8 @@
         "sector": "Real Estate",
         "debt_equity": null
       },
-      "market_cap": 107363499936.38,
-      "avg_volume": 448730.0,
+      "market_cap": 109349778409.23999,
+      "avg_volume": 508020.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -12494,8 +12494,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 6669570920.89566,
-      "avg_volume": 707130.0,
+      "market_cap": 6166080473.841736,
+      "avg_volume": 673590.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -12536,8 +12536,8 @@
         "sector": "Technology",
         "debt_equity": null
       },
-      "market_cap": 19612352700.01808,
-      "avg_volume": 787560.0,
+      "market_cap": 18460915262.52411,
+      "avg_volume": 874140.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-01-02",
@@ -12945,10 +12945,10 @@
     },
     {
       "symbol": "VTRS",
-      "company_name": "Viatris Inc",
-      "website": null,
+      "company_name": "Viatris Inc.",
+      "website": "https://www.viatris.com",
       "sector": "Healthcare",
-      "industry": null,
+      "industry": "Drug Manufacturers - Specialty & Generic",
       "expected_return": 0.033585,
       "risk": 0.368916,
       "sharpe_proxy": 0.091036,
@@ -12962,8 +12962,8 @@
         "sector": "Healthcare",
         "debt_equity": null
       },
-      "market_cap": 17093699299.47306,
-      "avg_volume": 7581480.0,
+      "market_cap": 16988901239.98653,
+      "avg_volume": 10083640.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -13037,8 +13037,8 @@
         "sector": "Financial Services",
         "debt_equity": null
       },
-      "market_cap": 51446261706.946655,
-      "avg_volume": 3387730.0,
+      "market_cap": 50664583475.98952,
+      "avg_volume": 3427090.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -13079,8 +13079,8 @@
         "sector": "Technology",
         "debt_equity": null
       },
-      "market_cap": 209242699970.57294,
-      "avg_volume": 5081870.0,
+      "market_cap": 252197413330.07812,
+      "avg_volume": 9240450.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-03-31",
@@ -13163,8 +13163,8 @@
         "sector": "Communication Services",
         "debt_equity": null
       },
-      "market_cap": 14704025257.84845,
-      "avg_volume": 1378660.0,
+      "market_cap": 13981471014.5,
+      "avg_volume": 1332070.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -13205,8 +13205,8 @@
         "sector": "Financial Services",
         "debt_equity": null
       },
-      "market_cap": 11023418417.200975,
-      "avg_volume": 6676940.0,
+      "market_cap": 11334438226.485296,
+      "avg_volume": 6249610.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -13247,8 +13247,8 @@
         "sector": "Financial Services",
         "debt_equity": null
       },
-      "market_cap": 4735193181.52692,
-      "avg_volume": 1717350.0,
+      "market_cap": 4300795041.756626,
+      "avg_volume": 2785190.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -13289,8 +13289,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 1884641838.9418488,
-      "avg_volume": 374620.0,
+      "market_cap": 1858253685.9418488,
+      "avg_volume": 397380.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-02-28",
@@ -13373,8 +13373,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 15225125201.255371,
-      "avg_volume": 722820.0,
+      "market_cap": 14868753686.590538,
+      "avg_volume": 818180.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-26",
@@ -13457,8 +13457,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 23185569079.94525,
-      "avg_volume": 1010930.0,
+      "market_cap": 23517628895.109497,
+      "avg_volume": 1116740.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-03-31",
@@ -13868,8 +13868,8 @@
         "sector": "Financial Services",
         "debt_equity": null
       },
-      "market_cap": 11742375276.730202,
-      "avg_volume": 4658610.0,
+      "market_cap": 11571144582.909584,
+      "avg_volume": 3689760.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -13952,8 +13952,8 @@
         "sector": "Consumer Cyclical",
         "debt_equity": null
       },
-      "market_cap": 43609621077.08777,
-      "avg_volume": 2506930.0,
+      "market_cap": 45344378387.8674,
+      "avg_volume": 2872760.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-03-31",
@@ -13994,8 +13994,8 @@
         "sector": "Financial Services",
         "debt_equity": null
       },
-      "market_cap": 673016885.9127045,
-      "avg_volume": 197730.0,
+      "market_cap": 656198274.0872955,
+      "avg_volume": 257770.0,
       "asymmetric": null,
       "sec_fundamentals": null,
       "rationale": "No filings-side signal this pass; the ranker holds it on engine Sharpe (0.07) and a +2% P50 expectation.",
@@ -14153,8 +14153,8 @@
         "sector": "Consumer Cyclical",
         "debt_equity": null
       },
-      "market_cap": 3340079662.1343994,
-      "avg_volume": 236140.0,
+      "market_cap": 3344627296.158203,
+      "avg_volume": 217650.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -14195,8 +14195,8 @@
         "sector": "Technology",
         "debt_equity": null
       },
-      "market_cap": 16208968894.48877,
-      "avg_volume": 1589860.0,
+      "market_cap": 15631175678.710701,
+      "avg_volume": 1454920.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-01-02",
@@ -14379,10 +14379,10 @@
     },
     {
       "symbol": "WAB",
-      "company_name": "Westinghouse Air Brake Technologies Corp",
-      "website": null,
+      "company_name": "Westinghouse Air Brake Technologies Corporation",
+      "website": "https://www.wabteccorp.com",
       "sector": "Industrials",
-      "industry": null,
+      "industry": "Railroads",
       "expected_return": 0.118101,
       "risk": 0.239932,
       "sharpe_proxy": 0.492226,
@@ -14396,8 +14396,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 44909111497.69653,
-      "avg_volume": 1191160.0,
+      "market_cap": 45314031608.50867,
+      "avg_volume": 1179760.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-03-31",
@@ -14438,8 +14438,8 @@
         "sector": "Consumer Cyclical",
         "debt_equity": null
       },
-      "market_cap": 178429844691.29608,
-      "avg_volume": 4302290.0,
+      "market_cap": 174376646572.29935,
+      "avg_volume": 3930040.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-01-31",
@@ -14480,8 +14480,8 @@
         "sector": "Financial Services",
         "debt_equity": null
       },
-      "market_cap": 274778371748.3722,
-      "avg_volume": 2174490.0,
+      "market_cap": 275063242961.5812,
+      "avg_volume": 2245000.0,
       "asymmetric": null,
       "sec_fundamentals": null,
       "rationale": "Projection-only thesis: +12% to P50, Sharpe 0.44, 28% volatility \u2014 the model kept it; the narrative is yet to catch up.",
@@ -14513,8 +14513,8 @@
         "sector": "Consumer Cyclical",
         "debt_equity": null
       },
-      "market_cap": 78195319524.58301,
-      "avg_volume": 1433320.0,
+      "market_cap": 76957146197.66797,
+      "avg_volume": 1397410.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -14538,10 +14538,10 @@
     },
     {
       "symbol": "WELL",
-      "company_name": "Welltower Inc",
-      "website": null,
+      "company_name": "Welltower Inc.",
+      "website": "https://www.welltower.com",
       "sector": "Real Estate",
-      "industry": null,
+      "industry": "REIT - Healthcare Facilities",
       "expected_return": 0.113246,
       "risk": 0.261209,
       "sharpe_proxy": 0.433544,
@@ -14555,8 +14555,8 @@
         "sector": "Real Estate",
         "debt_equity": null
       },
-      "market_cap": 148317761554.359,
-      "avg_volume": 2307840.0,
+      "market_cap": 147070739578.75,
+      "avg_volume": 2584870.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -14639,8 +14639,8 @@
         "sector": "Financial Services",
         "debt_equity": null
       },
-      "market_cap": 38576711814.39871,
-      "avg_volume": 1202260.0,
+      "market_cap": 36856887912.41913,
+      "avg_volume": 1415100.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-03-31",
@@ -14723,8 +14723,8 @@
         "sector": "Financial Services",
         "debt_equity": null
       },
-      "market_cap": 22943987316.838264,
-      "avg_volume": 577380.0,
+      "market_cap": 22753792421.611908,
+      "avg_volume": 580570.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -14765,8 +14765,8 @@
         "sector": "Energy",
         "debt_equity": null
       },
-      "market_cap": 13694375760.700287,
-      "avg_volume": 714240.0,
+      "market_cap": 13736200366.055237,
+      "avg_volume": 702840.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -14790,10 +14790,10 @@
     },
     {
       "symbol": "WMB",
-      "company_name": "Williams Companies, Inc",
-      "website": null,
+      "company_name": "The Williams Companies, Inc.",
+      "website": "https://www.williams.com",
       "sector": "Energy",
-      "industry": null,
+      "industry": "Oil & Gas Midstream",
       "expected_return": 0.097257,
       "risk": 0.268358,
       "sharpe_proxy": 0.362415,
@@ -14807,8 +14807,8 @@
         "sector": "Energy",
         "debt_equity": null
       },
-      "market_cap": 87006274000.73163,
-      "avg_volume": 5440260.0,
+      "market_cap": 88265815168.54633,
+      "avg_volume": 5249250.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -14849,8 +14849,8 @@
         "sector": "Consumer Cyclical",
         "debt_equity": null
       },
-      "market_cap": 73687225865.9414,
-      "avg_volume": 2137610.0,
+      "market_cap": 73218226772.03906,
+      "avg_volume": 1820990.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-01-31",
@@ -14891,8 +14891,8 @@
         "sector": "Utilities",
         "debt_equity": null
       },
-      "market_cap": 52884896547.36039,
-      "avg_volume": 2456910.0,
+      "market_cap": 52024236374.70189,
+      "avg_volume": 2970060.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -15059,8 +15059,8 @@
         "sector": "Financial Services",
         "debt_equity": null
       },
-      "market_cap": 40535441684.26361,
-      "avg_volume": 2049610.0,
+      "market_cap": 42015492057.23979,
+      "avg_volume": 2612830.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -15143,8 +15143,8 @@
         "sector": "Healthcare",
         "debt_equity": null
       },
-      "market_cap": 106934382496.0492,
-      "avg_volume": 650580.0,
+      "market_cap": 101433085393.91016,
+      "avg_volume": 729590.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -15311,8 +15311,8 @@
         "sector": "Healthcare",
         "debt_equity": null
       },
-      "market_cap": 11689219772.463058,
-      "avg_volume": 269650.0,
+      "market_cap": 11049586968.27835,
+      "avg_volume": 355440.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -15395,8 +15395,8 @@
         "sector": "Financial Services",
         "debt_equity": null
       },
-      "market_cap": 30099921142.60849,
-      "avg_volume": 892110.0,
+      "market_cap": 30394483399.22177,
+      "avg_volume": 1274800.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -15420,10 +15420,10 @@
     },
     {
       "symbol": "WFC",
-      "company_name": "Wells Fargo & Company/mn",
-      "website": null,
+      "company_name": "Wells Fargo & Company",
+      "website": "https://www.wellsfargo.com",
       "sector": "Financial Services",
-      "industry": null,
+      "industry": "Banks - Diversified",
       "expected_return": 0.079955,
       "risk": 0.281947,
       "sharpe_proxy": 0.283581,
@@ -15437,8 +15437,8 @@
         "sector": "Financial Services",
         "debt_equity": null
       },
-      "market_cap": 250332077702.55063,
-      "avg_volume": 15902400.0,
+      "market_cap": 243369881398.28577,
+      "avg_volume": 19827020.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2020-09-30",
@@ -15521,8 +15521,8 @@
         "sector": "Real Estate",
         "debt_equity": null
       },
-      "market_cap": 71227179179.25049,
-      "avg_volume": 1881860.0,
+      "market_cap": 69784800000.0,
+      "avg_volume": 2155630.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -15647,8 +15647,8 @@
         "sector": "Financial Services",
         "debt_equity": null
       },
-      "market_cap": 299819775726.7555,
-      "avg_volume": 6609870.0,
+      "market_cap": 298628880572.2555,
+      "avg_volume": 6381970.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2018-03-31",
@@ -15731,8 +15731,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 52570477923.371796,
-      "avg_volume": 8681790.0,
+      "market_cap": 51305685299.50377,
+      "avg_volume": 7913860.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-03-31",
@@ -15773,8 +15773,8 @@
         "sector": "Energy",
         "debt_equity": null
       },
-      "market_cap": 71238701812.20126,
-      "avg_volume": 11426730.0,
+      "market_cap": 70615750995.89937,
+      "avg_volume": 12957510.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-03-31",
@@ -15815,8 +15815,8 @@
         "sector": "Technology",
         "debt_equity": null
       },
-      "market_cap": 72250824591.02016,
-      "avg_volume": 1484690.0,
+      "market_cap": 62991534847.6158,
+      "avg_volume": 3192160.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-03-27",
@@ -15857,8 +15857,8 @@
         "sector": "Financial Services",
         "debt_equity": null
       },
-      "market_cap": 50595905666.637955,
-      "avg_volume": 3074230.0,
+      "market_cap": 51103103521.77649,
+      "avg_volume": 3357140.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-03-31",
@@ -15899,8 +15899,8 @@
         "sector": "Financial Services",
         "debt_equity": null
       },
-      "market_cap": 63965649582.17792,
-      "avg_volume": 1187950.0,
+      "market_cap": 64373930248.07437,
+      "avg_volume": 1609150.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-03-31",
@@ -15941,8 +15941,8 @@
         "sector": "Communication Services",
         "debt_equity": null
       },
-      "market_cap": 27680522665.63942,
-      "avg_volume": 2818610.0,
+      "market_cap": 26736142853.197098,
+      "avg_volume": 2377930.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -16067,8 +16067,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 65440439453.30063,
-      "avg_volume": 1063930.0,
+      "market_cap": 59306391345.531006,
+      "avg_volume": 1446320.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-01-02",
@@ -16092,10 +16092,10 @@
     },
     {
       "symbol": "VTR",
-      "company_name": "Ventas, Inc",
-      "website": null,
+      "company_name": "Ventas, Inc.",
+      "website": "https://www.ventasreit.com",
       "sector": "Real Estate",
-      "industry": null,
+      "industry": "REIT - Healthcare Facilities",
       "expected_return": 0.071036,
       "risk": 0.280829,
       "sharpe_proxy": 0.25295,
@@ -16109,8 +16109,8 @@
         "sector": "Real Estate",
         "debt_equity": null
       },
-      "market_cap": 40461915296.80077,
-      "avg_volume": 3038120.0,
+      "market_cap": 39758231832.15861,
+      "avg_volume": 3679280.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -16184,8 +16184,8 @@
         "sector": "Utilities",
         "debt_equity": null
       },
-      "market_cap": 23117938148.175304,
-      "avg_volume": 3425600.0,
+      "market_cap": 22964807679.49204,
+      "avg_volume": 4764880.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -16226,8 +16226,8 @@
         "sector": "Consumer Cyclical",
         "debt_equity": null
       },
-      "market_cap": 78574619188.4822,
-      "avg_volume": 4147910.0,
+      "market_cap": 78088295173.44658,
+      "avg_volume": 4501920.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -16251,10 +16251,10 @@
     },
     {
       "symbol": "WRB",
-      "company_name": "Berkley W R Corp",
-      "website": null,
+      "company_name": "W. R. Berkley Corporation",
+      "website": "https://www.berkley.com",
       "sector": "Financial Services",
-      "industry": null,
+      "industry": "Insurance - Property & Casualty",
       "expected_return": 0.052908,
       "risk": 0.217437,
       "sharpe_proxy": 0.243328,
@@ -16268,8 +16268,8 @@
         "sector": "Financial Services",
         "debt_equity": null
       },
-      "market_cap": 25396815754.259552,
-      "avg_volume": 1661910.0,
+      "market_cap": 25947963327.782593,
+      "avg_volume": 2447960.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -16310,8 +16310,8 @@
         "sector": "Technology",
         "debt_equity": null
       },
-      "market_cap": 237858548625.3589,
-      "avg_volume": 4262640.0,
+      "market_cap": 218034583238.77686,
+      "avg_volume": 7853430.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-03-31",
@@ -16352,8 +16352,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 67906090318.423096,
-      "avg_volume": 1458460.0,
+      "market_cap": 71797920513.50958,
+      "avg_volume": 1155430.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-03-31",
@@ -16394,8 +16394,8 @@
         "sector": "Basic Materials",
         "debt_equity": null
       },
-      "market_cap": 77610047998.84424,
-      "avg_volume": 1226910.0,
+      "market_cap": 76110378480.27539,
+      "avg_volume": 1336370.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -16562,8 +16562,8 @@
         "sector": "Real Estate",
         "debt_equity": null
       },
-      "market_cap": 78500001788.9577,
-      "avg_volume": 1343620.0,
+      "market_cap": 76570144860.03625,
+      "avg_volume": 1308190.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -16604,8 +16604,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 55091981754.796875,
-      "avg_volume": 235670.0,
+      "market_cap": 54334349017.943115,
+      "avg_volume": 243830.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -16688,8 +16688,8 @@
         "sector": "Consumer Defensive",
         "debt_equity": null
       },
-      "market_cap": 245920480523.95477,
-      "avg_volume": 4166000.0,
+      "market_cap": 255910665249.34308,
+      "avg_volume": 5215790.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-03-31",
@@ -16730,8 +16730,8 @@
         "sector": "Communication Services",
         "debt_equity": null
       },
-      "market_cap": 27324959835.94995,
-      "avg_volume": 1178020.0,
+      "market_cap": 23894496922.336517,
+      "avg_volume": 956880.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -16772,8 +16772,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 64157843962.15137,
-      "avg_volume": 1664390.0,
+      "market_cap": 64815917445.38916,
+      "avg_volume": 1719510.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -16814,8 +16814,8 @@
         "sector": "Healthcare",
         "debt_equity": null
       },
-      "market_cap": 10704533838.00888,
-      "avg_volume": 1096510.0,
+      "market_cap": 10138460534.493454,
+      "avg_volume": 803480.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -16856,8 +16856,8 @@
         "sector": "Financial Services",
         "debt_equity": null
       },
-      "market_cap": 45586066627.498024,
-      "avg_volume": 6831370.0,
+      "market_cap": 44983170041.78238,
+      "avg_volume": 6678720.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2024-09-30",
@@ -16898,8 +16898,8 @@
         "sector": "Financial Services",
         "debt_equity": null
       },
-      "market_cap": 29966057173.25,
-      "avg_volume": 1175920.0,
+      "market_cap": 29855531643.676758,
+      "avg_volume": 1685160.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -16973,8 +16973,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 91082757246.33673,
-      "avg_volume": 1272590.0,
+      "market_cap": 84831630122.66327,
+      "avg_volume": 1410630.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -17015,8 +17015,8 @@
         "sector": "Communication Services",
         "debt_equity": null
       },
-      "market_cap": 16446272306.82949,
-      "avg_volume": 927080.0,
+      "market_cap": 16577051042.69089,
+      "avg_volume": 868230.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -17141,8 +17141,8 @@
         "sector": "Financial Services",
         "debt_equity": null
       },
-      "market_cap": 90681816214.8377,
-      "avg_volume": 2478040.0,
+      "market_cap": 88685131376.97807,
+      "avg_volume": 2316210.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -17183,8 +17183,8 @@
         "sector": "Financial Services",
         "debt_equity": null
       },
-      "market_cap": 91567637036.90872,
-      "avg_volume": 2732940.0,
+      "market_cap": 89750952351.8405,
+      "avg_volume": 2795140.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -17225,8 +17225,8 @@
         "sector": "Technology",
         "debt_equity": null
       },
-      "market_cap": 29449920113.105164,
-      "avg_volume": 298680.0,
+      "market_cap": 30045096094.562073,
+      "avg_volume": 432170.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-03-29",
@@ -17300,8 +17300,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 264376253827.8476,
-      "avg_volume": 3502010.0,
+      "market_cap": 234673046765.727,
+      "avg_volume": 5770980.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-03-31",
@@ -17342,8 +17342,8 @@
         "sector": "Technology",
         "debt_equity": null
       },
-      "market_cap": 73455346497.36313,
-      "avg_volume": 737140.0,
+      "market_cap": 72840396179.94214,
+      "avg_volume": 813070.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -17426,8 +17426,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 14867508401.373505,
-      "avg_volume": 1280300.0,
+      "market_cap": 14976876025.5,
+      "avg_volume": 1429820.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -17468,8 +17468,8 @@
         "sector": "Communication Services",
         "debt_equity": null
       },
-      "market_cap": 185585303227.32495,
-      "avg_volume": 37099240.0,
+      "market_cap": 182932218186.7543,
+      "avg_volume": 40534190.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -17510,8 +17510,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 29545232964.68268,
-      "avg_volume": 861150.0,
+      "market_cap": 30269192474.53839,
+      "avg_volume": 1215280.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-03-31",
@@ -17552,8 +17552,8 @@
         "sector": "Consumer Cyclical",
         "debt_equity": null
       },
-      "market_cap": 19037246091.208466,
-      "avg_volume": 757430.0,
+      "market_cap": 18990854745.167725,
+      "avg_volume": 966540.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -17577,10 +17577,10 @@
     },
     {
       "symbol": "USB",
-      "company_name": "US Bancorp de",
-      "website": null,
+      "company_name": "U.S. Bancorp",
+      "website": "https://www.usbank.com",
       "sector": "Financial Services",
-      "industry": null,
+      "industry": "Banks - Regional",
       "expected_return": 0.053976,
       "risk": 0.289468,
       "sharpe_proxy": 0.186467,
@@ -17594,8 +17594,8 @@
         "sector": "Financial Services",
         "debt_equity": null
       },
-      "market_cap": 88526150474.54834,
-      "avg_volume": 9520790.0,
+      "market_cap": 86426902847.29004,
+      "avg_volume": 9625710.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -17678,8 +17678,8 @@
         "sector": "Basic Materials",
         "debt_equity": null
       },
-      "market_cap": 228096510498.88025,
-      "avg_volume": 1832410.0,
+      "market_cap": 236470032150.13306,
+      "avg_volume": 1842000.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -17762,8 +17762,8 @@
         "sector": "Basic Materials",
         "debt_equity": null
       },
-      "market_cap": 37515300652.90967,
-      "avg_volume": 368520.0,
+      "market_cap": 37110001782.86896,
+      "avg_volume": 419340.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -17804,8 +17804,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 66394173428.75,
-      "avg_volume": 2502020.0,
+      "market_cap": 66788594261.0,
+      "avg_volume": 2795190.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -17846,8 +17846,8 @@
         "sector": "Communication Services",
         "debt_equity": null
       },
-      "market_cap": 51009214779.018234,
-      "avg_volume": 1554080.0,
+      "market_cap": 50718919555.481766,
+      "avg_volume": 1435880.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -17930,8 +17930,8 @@
         "sector": "Financial Services",
         "debt_equity": null
       },
-      "market_cap": 161693975972.35126,
-      "avg_volume": 11529490.0,
+      "market_cap": 155070622701.0,
+      "avg_volume": 14313280.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -18014,8 +18014,8 @@
         "sector": "Financial Services",
         "debt_equity": null
       },
-      "market_cap": 5866383522.169533,
-      "avg_volume": 509980.0,
+      "market_cap": 5980891860.366894,
+      "avg_volume": 565800.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -18056,8 +18056,8 @@
         "sector": "Financial Services",
         "debt_equity": null
       },
-      "market_cap": 81054065567.69943,
-      "avg_volume": 806020.0,
+      "market_cap": 79661187417.61926,
+      "avg_volume": 1138730.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-03-31",
@@ -18098,8 +18098,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 19795845250.69095,
-      "avg_volume": 318030.0,
+      "market_cap": 19602881748.30237,
+      "avg_volume": 475480.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-04-04",
@@ -18140,8 +18140,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 149096367899.64752,
-      "avg_volume": 2485150.0,
+      "market_cap": 159530747580.57574,
+      "avg_volume": 3570650.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-03-31",
@@ -18182,8 +18182,8 @@
         "sector": "Consumer Defensive",
         "debt_equity": null
       },
-      "market_cap": 43153985833.6319,
-      "avg_volume": 4506250.0,
+      "market_cap": 42546451218.46261,
+      "avg_volume": 4467820.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-01-31",
@@ -18224,8 +18224,8 @@
         "sector": "Financial Services",
         "debt_equity": null
       },
-      "market_cap": 118501769349.27892,
-      "avg_volume": 2797190.0,
+      "market_cap": 117400115643.31055,
+      "avg_volume": 2887700.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -18308,8 +18308,8 @@
         "sector": "Utilities",
         "debt_equity": null
       },
-      "market_cap": 99635079566.18848,
-      "avg_volume": 3079170.0,
+      "market_cap": 99043633233.01831,
+      "avg_volume": 2918620.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -18350,8 +18350,8 @@
         "sector": "Consumer Defensive",
         "debt_equity": null
       },
-      "market_cap": 107285697245.62317,
-      "avg_volume": 7953060.0,
+      "market_cap": 111816539533.43475,
+      "avg_volume": 7463310.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -18434,8 +18434,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 71488754206.18982,
-      "avg_volume": 305760.0,
+      "market_cap": 64841818598.58801,
+      "avg_volume": 447330.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-27",
@@ -18476,8 +18476,8 @@
         "sector": "Healthcare",
         "debt_equity": null
       },
-      "market_cap": 22304031396.484375,
-      "avg_volume": 527510.0,
+      "market_cap": 21737118994.140625,
+      "avg_volume": 593650.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -18560,8 +18560,8 @@
         "sector": "Healthcare",
         "debt_equity": null
       },
-      "market_cap": 21585707264.495544,
-      "avg_volume": 811790.0,
+      "market_cap": 21726388592.77617,
+      "avg_volume": 1295160.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-03-31",
@@ -18602,8 +18602,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 159487551664.69446,
-      "avg_volume": 1214410.0,
+      "market_cap": 151973165101.12964,
+      "avg_volume": 1065260.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-02-01",
@@ -18644,8 +18644,8 @@
         "sector": "Healthcare",
         "debt_equity": null
       },
-      "market_cap": 170839281465.46936,
-      "avg_volume": 4663870.0,
+      "market_cap": 161852959598.6936,
+      "avg_volume": 5261820.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -18669,10 +18669,10 @@
     },
     {
       "symbol": "WM",
-      "company_name": "Waste Management Inc",
-      "website": null,
+      "company_name": "Waste Management, Inc.",
+      "website": "https://www.wm.com",
       "sector": "Industrials",
-      "industry": null,
+      "industry": "Waste Management",
       "expected_return": 0.031151,
       "risk": 0.22362,
       "sharpe_proxy": 0.139302,
@@ -18686,8 +18686,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 90327046924.06688,
-      "avg_volume": 1841710.0,
+      "market_cap": 92577661320.57675,
+      "avg_volume": 2082730.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -18728,8 +18728,8 @@
         "sector": "Healthcare",
         "debt_equity": null
       },
-      "market_cap": 109127633600.0,
-      "avg_volume": 838030.0,
+      "market_cap": 96684633125.98065,
+      "avg_volume": 1126160.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -18812,8 +18812,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 10330630122.16298,
-      "avg_volume": 571640.0,
+      "market_cap": 10302834951.248894,
+      "avg_volume": 653230.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-01-31",
@@ -18896,8 +18896,8 @@
         "sector": "Utilities",
         "debt_equity": null
       },
-      "market_cap": 29349482429.253857,
-      "avg_volume": 6222180.0,
+      "market_cap": 29146397508.75,
+      "avg_volume": 7289810.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -18938,8 +18938,8 @@
         "sector": "Basic Materials",
         "debt_equity": null
       },
-      "market_cap": 85618568057.80566,
-      "avg_volume": 1485750.0,
+      "market_cap": 83673542178.19434,
+      "avg_volume": 1540130.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -18980,8 +18980,8 @@
         "sector": "Financial Services",
         "debt_equity": null
       },
-      "market_cap": 32491322406.06978,
-      "avg_volume": 991790.0,
+      "market_cap": 31916610294.35994,
+      "avg_volume": 1075390.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -19022,8 +19022,8 @@
         "sector": "Real Estate",
         "debt_equity": null
       },
-      "market_cap": 15127561665.053932,
-      "avg_volume": 1389850.0,
+      "market_cap": 14989240112.181458,
+      "avg_volume": 1288020.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -19064,8 +19064,8 @@
         "sector": "Real Estate",
         "debt_equity": null
       },
-      "market_cap": 4337154303.512054,
-      "avg_volume": 935070.0,
+      "market_cap": 4249772699.632416,
+      "avg_volume": 725490.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -19106,8 +19106,8 @@
         "sector": "Utilities",
         "debt_equity": null
       },
-      "market_cap": 106541513277.22137,
-      "avg_volume": 4211970.0,
+      "market_cap": 105391658274.77863,
+      "avg_volume": 3876630.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -19148,8 +19148,8 @@
         "sector": "Communication Services",
         "debt_equity": null
       },
-      "market_cap": 14995878932.18018,
-      "avg_volume": 3247440.0,
+      "market_cap": 14362392634.030369,
+      "avg_volume": 3147300.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -19190,8 +19190,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 15724839257.362549,
-      "avg_volume": 352360.0,
+      "market_cap": 15751055914.137451,
+      "avg_volume": 319810.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-01-31",
@@ -19232,8 +19232,8 @@
         "sector": "Consumer Cyclical",
         "debt_equity": null
       },
-      "market_cap": 23151049840.805054,
-      "avg_volume": 1397180.0,
+      "market_cap": 23028407423.553528,
+      "avg_volume": 1301570.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-02-22",
@@ -19316,8 +19316,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 94488980743.38257,
-      "avg_volume": 686030.0,
+      "market_cap": 81684870301.7915,
+      "avg_volume": 916570.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-03-31",
@@ -19358,8 +19358,8 @@
         "sector": "Utilities",
         "debt_equity": null
       },
-      "market_cap": 18968505985.624306,
-      "avg_volume": 1395180.0,
+      "market_cap": 18705982196.318596,
+      "avg_volume": 1678740.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -19400,8 +19400,8 @@
         "sector": "Utilities",
         "debt_equity": null
       },
-      "market_cap": 30575971747.867996,
-      "avg_volume": 987920.0,
+      "market_cap": 30555170840.72229,
+      "avg_volume": 1061030.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2018-03-31",
@@ -19442,8 +19442,8 @@
         "sector": "Utilities",
         "debt_equity": null
       },
-      "market_cap": 12591508944.882294,
-      "avg_volume": 924200.0,
+      "market_cap": 12380924568.940979,
+      "avg_volume": 1040310.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -19484,8 +19484,8 @@
         "sector": "Utilities",
         "debt_equity": null
       },
-      "market_cap": 18810276729.808365,
-      "avg_volume": 1739340.0,
+      "market_cap": 18675971855.17218,
+      "avg_volume": 1896360.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -19568,8 +19568,8 @@
         "sector": "Consumer Cyclical",
         "debt_equity": null
       },
-      "market_cap": 26509386420.0,
-      "avg_volume": 2433270.0,
+      "market_cap": 27250748465.34729,
+      "avg_volume": 2948850.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-03-31",
@@ -19610,8 +19610,8 @@
         "sector": "Real Estate",
         "debt_equity": null
       },
-      "market_cap": 7064522444.5,
-      "avg_volume": 2182500.0,
+      "market_cap": 6794447922.598257,
+      "avg_volume": 2648710.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-03-31",
@@ -19652,8 +19652,8 @@
         "sector": "Utilities",
         "debt_equity": null
       },
-      "market_cap": 28977771482.4337,
-      "avg_volume": 3547680.0,
+      "market_cap": 28578677208.24337,
+      "avg_volume": 4649500.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -19694,8 +19694,8 @@
         "sector": "Consumer Defensive",
         "debt_equity": null
       },
-      "market_cap": 75052931983.37814,
-      "avg_volume": 4511440.0,
+      "market_cap": 76501591383.82558,
+      "avg_volume": 4670190.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -19736,8 +19736,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 13556160092.115707,
-      "avg_volume": 2540740.0,
+      "market_cap": 15103573627.435951,
+      "avg_volume": 4375140.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-03-31",
@@ -19820,8 +19820,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 147989687876.20587,
-      "avg_volume": 3100590.0,
+      "market_cap": 135075834216.97649,
+      "avg_volume": 4153370.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-03-31",
@@ -19904,8 +19904,8 @@
         "sector": "Utilities",
         "debt_equity": null
       },
-      "market_cap": 40720982276.05823,
-      "avg_volume": 2199220.0,
+      "market_cap": 40301690955.93207,
+      "avg_volume": 2297710.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -19929,10 +19929,10 @@
     },
     {
       "symbol": "WEC",
-      "company_name": "Wec Energy Group, Inc",
-      "website": null,
+      "company_name": "WEC Energy Group, Inc.",
+      "website": "https://www.wecenergygroup.com",
       "sector": "Utilities",
-      "industry": null,
+      "industry": "Regulated Electric",
       "expected_return": 0.016667,
       "risk": 0.205328,
       "sharpe_proxy": 0.081171,
@@ -19946,8 +19946,8 @@
         "sector": "Utilities",
         "debt_equity": null
       },
-      "market_cap": 37738814473.52069,
-      "avg_volume": 1670630.0,
+      "market_cap": 37325174579.82184,
+      "avg_volume": 1719910.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -19971,10 +19971,10 @@
     },
     {
       "symbol": "VRSN",
-      "company_name": "Verisign Inc/ca",
-      "website": null,
+      "company_name": "VeriSign, Inc.",
+      "website": "https://www.verisign.com",
       "sector": "Technology",
-      "industry": null,
+      "industry": "Software - Infrastructure",
       "expected_return": 0.018091,
       "risk": 0.227279,
       "sharpe_proxy": 0.079597,
@@ -19988,8 +19988,8 @@
         "sector": "Technology",
         "debt_equity": null
       },
-      "market_cap": 25130383880.615234,
-      "avg_volume": 961220.0,
+      "market_cap": 24497201110.839844,
+      "avg_volume": 973150.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-03-31",
@@ -20030,8 +20030,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 19665092324.120895,
-      "avg_volume": 1001320.0,
+      "market_cap": 19623119748.252014,
+      "avg_volume": 970170.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -20156,8 +20156,8 @@
         "sector": "Communication Services",
         "debt_equity": null
       },
-      "market_cap": 221095202713.3732,
-      "avg_volume": 5394680.0,
+      "market_cap": 209133551224.81824,
+      "avg_volume": 6913130.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -20198,8 +20198,8 @@
         "sector": "Real Estate",
         "debt_equity": null
       },
-      "market_cap": 16313814058.450172,
-      "avg_volume": 4704110.0,
+      "market_cap": 15976612452.450172,
+      "avg_volume": 4067090.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -20240,8 +20240,8 @@
         "sector": "Financial Services",
         "debt_equity": null
       },
-      "market_cap": 41773666250.75006,
-      "avg_volume": 463380.0,
+      "market_cap": 43104916680.0376,
+      "avg_volume": 671850.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-03-31",
@@ -20282,8 +20282,8 @@
         "sector": "Financial Services",
         "debt_equity": null
       },
-      "market_cap": 20853035209.102997,
-      "avg_volume": 1321870.0,
+      "market_cap": 21502075947.55887,
+      "avg_volume": 1518860.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -20324,8 +20324,8 @@
         "sector": "Financial Services",
         "debt_equity": null
       },
-      "market_cap": 132239918188.47656,
-      "avg_volume": 1746790.0,
+      "market_cap": 130512854553.22266,
+      "avg_volume": 1721110.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -20534,8 +20534,8 @@
         "sector": "Industrials",
         "debt_equity": null
       },
-      "market_cap": 15955020959.870316,
-      "avg_volume": 975560.0,
+      "market_cap": 15313738292.967705,
+      "avg_volume": 1112890.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-01-03",
@@ -20618,8 +20618,8 @@
         "sector": "Financial Services",
         "debt_equity": null
       },
-      "market_cap": 35374200531.00586,
-      "avg_volume": 1923600.0,
+      "market_cap": 32785079681.396484,
+      "avg_volume": 2484120.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2025-12-31",
@@ -20702,8 +20702,8 @@
         "sector": "Real Estate",
         "debt_equity": null
       },
-      "market_cap": 10797261671.269547,
-      "avg_volume": 320440.0,
+      "market_cap": 10636009642.749588,
+      "avg_volume": 409180.0,
       "asymmetric": null,
       "sec_fundamentals": {
         "as_of": "2026-03-31",
