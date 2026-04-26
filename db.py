@@ -104,6 +104,21 @@ CREATE TABLE IF NOT EXISTS picks_history (
 CREATE INDEX IF NOT EXISTS idx_picks_hist_date ON picks_history(pick_date);
 CREATE INDEX IF NOT EXISTS idx_picks_hist_symbol ON picks_history(symbol);
 CREATE INDEX IF NOT EXISTS idx_picks_hist_tier ON picks_history(tier);
+
+-- Pipeline-level events. Lets /track-record surface dates where no
+-- picks were issued (outages, holidays, manual blackouts) instead of
+-- presenting absence as silent missing data. Backfilling synthetic
+-- picks would inject lookahead bias; an explicit outage marker keeps
+-- the ledger honest.
+CREATE TABLE IF NOT EXISTS pipeline_events (
+    event_date  TEXT    NOT NULL,   -- ISO date the event applies to
+    event_type  TEXT    NOT NULL,   -- 'outage' | 'maintenance' | 'holiday'
+    summary     TEXT    NOT NULL,   -- human-readable one-liner for the UI
+    detail      TEXT,                -- optional longer note
+    created_at  TEXT    NOT NULL,
+    PRIMARY KEY (event_date, event_type)
+);
+CREATE INDEX IF NOT EXISTS idx_pipeline_events_date ON pipeline_events(event_date);
 """
 
 
@@ -316,3 +331,38 @@ def get_picks_history(
         d.pop("sec_fundamentals_json", None)
         out.append(d)
     return out
+
+
+# ── Pipeline events ──
+
+def save_pipeline_event(
+    conn: sqlite3.Connection,
+    event_date: str,
+    event_type: str,
+    summary: str,
+    detail: str | None = None,
+) -> None:
+    """Idempotent on (event_date, event_type) — re-running overwrites the row."""
+    conn.execute(
+        """INSERT OR REPLACE INTO pipeline_events
+           (event_date, event_type, summary, detail, created_at)
+           VALUES (?, ?, ?, ?, ?)""",
+        (event_date, event_type, summary, detail,
+         datetime.now(timezone.utc).isoformat()),
+    )
+    conn.commit()
+
+
+def get_pipeline_events(
+    conn: sqlite3.Connection,
+    since_date: str | None = None,
+    limit: int = 500,
+) -> list[dict]:
+    sql = "SELECT event_date, event_type, summary, detail FROM pipeline_events"
+    args: list = []
+    if since_date:
+        sql += " WHERE event_date >= ?"
+        args.append(since_date)
+    sql += " ORDER BY event_date DESC LIMIT ?"
+    args.append(limit)
+    return [dict(r) for r in conn.execute(sql, args).fetchall()]

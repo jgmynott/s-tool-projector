@@ -26,7 +26,11 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
-from db import init_db, get_projection, get_projection_age_hours, save_projection, list_cached_symbols, get_sentiment, get_picks_history
+from db import (
+    init_db, get_projection, get_projection_age_hours, save_projection,
+    list_cached_symbols, get_sentiment, get_picks_history,
+    save_pipeline_event, get_pipeline_events,
+)
 from projector_engine import run_projection
 from hardening import health_checker
 from portfolio_scanner import get_picks, get_scan_age_hours, load_cached_asymmetric_picks
@@ -117,6 +121,22 @@ async def request_counter_middleware(request: Request, call_next):
 conn = init_db()
 users_conn = users_db.get_users_db()
 users_db.init_users_db(users_conn)
+
+# Seed the known nightly-pipeline outage so /track-record renders the
+# 8-day gap as an explicit event rather than silent missing data. Insert
+# is idempotent on (event_date, event_type), safe on every boot. We do
+# NOT backfill picks_history with synthetic rows for these dates —
+# computing what we "would have" picked using post-outage data would
+# inject lookahead bias and corrupt the realized-return scoreboard.
+for _outage_date in (
+    "2026-04-19", "2026-04-20", "2026-04-21", "2026-04-22",
+    "2026-04-23", "2026-04-24", "2026-04-25",
+):
+    save_pipeline_event(
+        conn, _outage_date, "outage",
+        summary="Nightly pipeline failed; no picks issued",
+        detail="preflight.py crashed on a None asymmetric block; deploy gate aborted. Resolved 2026-04-26.",
+    )
 
 # Log the DB path on boot so Railway deploy logs make it obvious whether
 # the USERS_DB_PATH env var is pointing at the mounted Volume or the
@@ -592,6 +612,12 @@ def track_record(
         }
     scoreboard = {"summary": summary, "aggregate": aggregate}
 
+    # Pipeline events (outages, maintenance) over the same lookback window so
+    # the UI can render gap markers instead of silently missing dates. Always
+    # included — these aren't pick-level data and tell the same story to free
+    # and paid viewers.
+    events = get_pipeline_events(conn, since_date=since)
+
     if not is_strategist:
         # Aggregate + per-tier stats are OK to expose publicly — they are
         # proof-of-edge, not personalized recommendations. Pick-level detail
@@ -603,6 +629,7 @@ def track_record(
                 "tier_required": "strategist",
                 "summary": summary,
                 "aggregate": aggregate,
+                "events": events,
                 "hint": "Full pick-by-pick track record is part of Strategist ($29/mo).",
             },
         )
@@ -612,6 +639,7 @@ def track_record(
         "tier_filter": tier,
         "summary": summary,
         "aggregate": aggregate,
+        "events": events,
         "count": len(rows),
         "picks": rows,
     }

@@ -2,6 +2,14 @@ data_cache/
 *.db
 *.db-shm
 *.db-wal
+# projector_cache.db carries the picks_history ledger that powers
+# /api/track-record. The CI nightly worker writes daily picks into it;
+# without this whitelist the populated DB never ships to Railway and
+# track-record's `aggregate.n` is always 0. users.db / billing tables
+# are NOT shipped — they live on a /data Volume per USERS_DB_PATH.
+!projector_cache.db
+!projector_cache.db-shm
+!projector_cache.db-wal
 *.log
 __pycache__/
 .venv/
