@@ -836,11 +836,24 @@ def portfolio(request: Request, user: Optional[dict] = Depends(auth.optional_use
         except (_ue.HTTPError, _ue.URLError, ValueError):
             return {}
 
-    with ThreadPoolExecutor(max_workers=len(fan_paths) + 1) as ex:
+    # SPY intraday 15Min bars for today only — feeds the 1D view of the
+    # equity chart so users see SPY alongside the trader on the same time
+    # axis. RTH only (Alpaca defaults to non-extended for stocks/bars,
+    # which is what we want here — pre-market noise would dwarf the trader
+    # signal). Bars run 13:30-20:00 UTC = 9:30-16:00 ET on a normal day.
+    def _spy_intraday_safe():
+        try:
+            start = today_iso  # current UTC date; bars before 13:30 don't exist on RTH-only
+            return _alpaca_data(f"stocks/SPY/bars?timeframe=15Min&start={start}&limit=200")
+        except (_ue.HTTPError, _ue.URLError, ValueError):
+            return {}
+
+    with ThreadPoolExecutor(max_workers=len(fan_paths) + 2) as ex:
         futs = {k: ex.submit(_alpaca_safe if default is not None else _alpaca, path,
                              *( (default,) if default is not None else () ))
                 for k, (path, default) in fan_paths.items()}
         futs["spy"] = ex.submit(_spy_safe)
+        futs["spy_intra"] = ex.submit(_spy_intraday_safe)
         try:
             acct = futs["acct"].result()
             positions = futs["positions"].result()
@@ -854,6 +867,7 @@ def portfolio(request: Request, user: Optional[dict] = Depends(auth.optional_use
         open_orders = futs["open_orders"].result()
         activities = futs["activities"].result()
         spy_bars = futs["spy"].result()
+        spy_intra_bars = futs["spy_intra"].result()
 
     # Build sym → {sleeve, opened_at} from the most recent FILLED buy per
     # symbol. We walk newest-first so the first hit wins — that's the
@@ -1149,6 +1163,44 @@ def portfolio(request: Request, user: Optional[dict] = Depends(auth.optional_use
     except Exception:
         spy_history_aligned = []
 
+    # SPY intraday alignment — same idea but over today's 15-min bars so
+    # the 1D chart can render SPY too. equity_intraday timestamps are unix
+    # seconds at 15-min boundaries; SPY bars come in as ISO8601. Bucket
+    # SPY by minute-of-day, then for each equity ts pull the matching SPY
+    # close (forward-fill across the rare gap where Alpaca skips a bar).
+    spy_intraday_aligned: list = []
+    try:
+        ibars = (spy_intra_bars or {}).get("bars") or []
+        if ibars and intraday.get("timestamp"):
+            from datetime import datetime as _dt_si
+            spy_by_minute: dict = {}
+            for b in ibars:
+                t = b.get("t") or ""
+                c = b.get("c")
+                if not t or c is None:
+                    continue
+                try:
+                    dt_b = _dt_si.fromisoformat(t.replace("Z", "+00:00"))
+                    key = dt_b.strftime("%Y-%m-%dT%H:%M")
+                    spy_by_minute[key] = float(c)
+                except Exception:
+                    continue
+            last = None
+            for ts in (intraday.get("timestamp") or []):
+                try:
+                    key = _dt_si.utcfromtimestamp(ts).strftime("%Y-%m-%dT%H:%M")
+                except Exception:
+                    spy_intraday_aligned.append(None)
+                    continue
+                v = spy_by_minute.get(key)
+                if v is None:
+                    spy_intraday_aligned.append(last)
+                else:
+                    last = v
+                    spy_intraday_aligned.append(v)
+    except Exception:
+        spy_intraday_aligned = []
+
     payload = {
         "is_strategist": is_strategist,
         "as_of": now.isoformat() + "Z",
@@ -1171,6 +1223,7 @@ def portfolio(request: Request, user: Optional[dict] = Depends(auth.optional_use
             "timestamps": intraday.get("timestamp", []),
             "equity": intraday.get("equity", []),
             "profit_loss": intraday.get("profit_loss", []),
+            "spy_close": spy_intraday_aligned,
         },
         "positions": pos_out if is_strategist else pos_out[:3],  # teaser when not paid
         "sleeves": sleeve_summary,

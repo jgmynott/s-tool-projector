@@ -677,6 +677,14 @@ footer a { color: var(--text-mid); }
   font-variant-numeric: tabular-nums; }
 .pf-chart-x-label { fill: var(--text-dim); font: 500 10px 'Inter'; text-anchor: middle;
   font-variant-numeric: tabular-nums; }
+/* Chart canvas — explicit height keeps the aspect ratio stable across
+   viewport widths so the curve never flattens into a stretched line.
+   preserveAspectRatio="none" lets the data points fill the box; the
+   container height is what controls how visually compressed the curve
+   reads. 240px desktop / 200px mobile mirrors the Robinhood-class hero. */
+.pf-chart { position: relative; width: 100%; height: 240px; margin-top: 4px; }
+.pf-chart-svg { display: block; width: 100%; height: 100%; overflow: visible; }
+@media (max-width: 720px) { .pf-chart { height: 200px; } }
 .pf-chart-area { stroke: none; opacity: 0.14; }
 .pf-chart-line { fill: none; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
 .pf-chart-spy-line { fill: none; stroke: #9BA1B9; stroke-width: 1.25;
@@ -1056,12 +1064,27 @@ function pfEquityChart(data) {
   const win = window.__pfChartWindow || '1M';
   let pts, ts, isIntraday = false, spyPts = null;
   if (win === '1D') {
-    pts = (data.equity_intraday?.equity || []).slice();
-    ts  = (data.equity_intraday?.timestamps || []).slice();
+    // Filter intraday to regular trading hours (13:30-20:00 UTC = 9:30-16:00 ET)
+    // — Alpaca's portfolio history with extended_hours=true returns pre-market
+    // and after-hours bars that mostly add flat noise to the chart and dwarf
+    // the actual trading window visually.
+    const rawTs  = data.equity_intraday?.timestamps || [];
+    const rawEq  = data.equity_intraday?.equity || [];
+    const rawSpy = data.equity_intraday?.spy_close || [];
+    const keepIdx = pfFilterRTH(rawTs);
+    pts = keepIdx.map(i => rawEq[i]);
+    ts  = keepIdx.map(i => rawTs[i]);
     isIntraday = true;
-    // SPY is daily-only from the API — no intraday SPY series yet.
-    // Hide the comparison line in 1D rather than fake a flat baseline.
-    spyPts = null;
+    if (rawSpy.length) {
+      const spySlice = keepIdx.map(i => rawSpy[i] ?? null);
+      // Normalize SPY to trader's first equity value so both lines start
+      // from the same y-coord and the alpha gap reads naturally.
+      const traderStart = pts.find(v => v != null);
+      const spyAnchor = spySlice.find(v => v != null);
+      if (traderStart && spyAnchor) {
+        spyPts = spySlice.map(c => c == null ? null : (c / spyAnchor) * traderStart);
+      }
+    }
   } else {
     const allPts = data.equity_history?.equity || [];
     const allTs  = data.equity_history?.timestamps || [];
@@ -1091,6 +1114,22 @@ function pfEquityChart(data) {
     </div>`;
   }
   return `<div class="pf-chart-row">${tabs}${pfChartSvg(pts, ts, isIntraday, spyPts)}</div>`;
+}
+
+// Returns the indices of `timestamps` (unix seconds) whose UTC time falls
+// inside 13:30-20:00 UTC (= 9:30-16:00 ET, regular cash session).
+function pfFilterRTH(timestamps) {
+  const out = [];
+  const RTH_START = 13 * 60 + 30;   // 13:30 UTC
+  const RTH_END   = 20 * 60;        // 20:00 UTC
+  for (let i = 0; i < timestamps.length; i++) {
+    const t = timestamps[i];
+    if (t == null) continue;
+    const d = (typeof t === 'number') ? new Date(t * 1000) : new Date(t);
+    const min = d.getUTCHours() * 60 + d.getUTCMinutes();
+    if (min >= RTH_START && min <= RTH_END) out.push(i);
+  }
+  return out;
 }
 
 function pfChartTabs(active) {
