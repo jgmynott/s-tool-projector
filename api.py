@@ -641,8 +641,21 @@ def track_record(
 
     if not is_strategist:
         # Aggregate + per-tier stats are OK to expose publicly — they are
-        # proof-of-edge, not personalized recommendations. Pick-level detail
-        # stays behind the paywall.
+        # proof-of-edge, not personalized recommendations. We also surface
+        # a *teaser* row list with limited fields (symbol, tier, entry,
+        # realized) so the public track-record page can render a
+        # last-30-days picks table — that's the credibility moment that
+        # converts free → paid. Rationale, sec_fundamentals, and
+        # expected_return stay behind the paywall.
+        public_fields = (
+            "pick_date", "symbol", "tier", "entry_price", "p50_target",
+            "current_price", "realized_return", "toward_target_pct", "days_held",
+        )
+        teaser_rows = [
+            {k: r.get(k) for k in public_fields}
+            for r in rows
+            if (r.get("days_held") or 0) >= 1 and r.get("realized_return") is not None
+        ][:60]
         return JSONResponse(
             status_code=402,
             content={
@@ -650,6 +663,7 @@ def track_record(
                 "tier_required": "strategist",
                 "summary": summary,
                 "aggregate": aggregate,
+                "rows": teaser_rows,
                 "events": events,
                 "hint": "Full pick-by-pick track record is part of Strategist ($29/mo).",
             },
@@ -663,6 +677,9 @@ def track_record(
         "events": events,
         "count": len(rows),
         "picks": rows,
+        # Mirror under "rows" so the public + paid frontends share a key
+        # path; renderRecentPicksTable on /track-record reads live.rows.
+        "rows": rows,
     }
 
 

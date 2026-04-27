@@ -97,6 +97,20 @@ table.perf .lift.lo { color: var(--text-mid); }
 .pipeline-events .pe-line { color: var(--text-mid); font-size: 14px; line-height: 1.55; }
 .pipeline-events .pe-line .pe-range { color: var(--text-hi); font-weight: 500; font-variant-numeric: tabular-nums; }
 
+/* Tier pills + per-tier win-rate strip on Recent Picks table. */
+.tier-pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font: 600 10px 'Inter'; letter-spacing: 0.06em; text-transform: uppercase; vertical-align: middle; }
+.tier-pill.conservative { background: rgba(95,170,197,0.12); color: var(--accent-lake); }
+.tier-pill.moderate { background: rgba(232,184,106,0.10); color: #e8b86a; }
+.tier-pill.aggressive { background: rgba(232,148,106,0.10); color: #e8946a; }
+.tier-pill.asymmetric { background: rgba(186,140,255,0.10); color: #ba8cff; }
+.tier-strip { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 18px; padding: 12px 18px; border: 1px dashed var(--border); border-radius: var(--radius-sm); font: 500 12px 'Inter'; color: var(--text-mid); font-variant-numeric: tabular-nums; }
+
+/* Best/worst trade strip under the live-trader headline cards. */
+.lt-bestworst { display: flex; gap: 24px; flex-wrap: wrap; margin-top: 14px; padding: 12px 18px; border-top: 1px solid var(--border); font: 500 13px 'Inter'; font-variant-numeric: tabular-nums; }
+.lt-bestworst .lt-be { color: var(--pos); }
+.lt-bestworst .lt-wo { color: var(--neg); }
+.lt-bestworst strong { color: var(--text-hi); }
+
 /* Disclaimer block */
 .caveats { margin-top: 80px; padding: 28px 32px; border-left: 3px solid var(--accent-alpine); background: rgba(10,101,119,0.08); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
 .caveats h3 { font: 600 12px 'Inter'; color: var(--accent-lake); letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 12px; }
@@ -158,12 +172,17 @@ async function load() {
   const authHeaders = async () => {
     try { const t = await window.Clerk?.session?.getToken?.(); return t ? { Authorization: `Bearer ${t}` } : {}; } catch { return {}; }
   };
-  const [liveRes, backtestRes, honestRes] = await Promise.all([
+  const [liveRes, backtestRes, honestRes, journalRes] = await Promise.all([
     fetch('/api/track-record?lookback_days=365', { headers: await authHeaders() }).catch(() => null),
     fetch('/api/backtest-report').catch(() => null),
     fetch('/api/honest-audit').catch(() => null),
+    fetch('/api/trade-journal?lookback_days=90').catch(() => null),
   ]);
   const live = liveRes ? await liveRes.json().catch(() => null) : null;
+  const journal = journalRes && journalRes.ok ? await journalRes.json().catch(() => null) : null;
+  // Make journal globally readable so renderAll/renderScoreboard can pull it
+  // without thread the fourth arg through every internal helper.
+  window.__live_journal = journal;
 
   let backtest = null;
   if (backtestRes && backtestRes.ok) {
@@ -231,6 +250,51 @@ function renderPipelineEvents(events) {
     <div class="pe-label">Ledger gaps</div>
     ${lines}
   </div>`;
+}
+
+// Live paper-trader scoreboard block. Pulls /api/trade-journal stats
+// (anonymous, gated on Strategist for per-trade detail). Renders a
+// 4-card hero plus best/worst trade strip when there are any closed
+// pairs. Hidden entirely when no trades have been journaled yet.
+function renderLiveTraderBlock(journal) {
+  const s = journal?.stats;
+  if (!s || (!s.n_buys && !s.n_sells)) return '';
+  const pnlCls = s.realized_pnl_total > 0 ? 'pos' : (s.realized_pnl_total < 0 ? 'neg' : '');
+  const winCls = (s.win_rate || 0) >= 0.5 ? 'pos' : '';
+  const fmtUSD = (v) => `${v < 0 ? '−' : ''}$${Math.abs(v).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+  const bestStrip = s.best_trade && s.worst_trade
+    ? `<div class="lt-bestworst">
+        <span class="lt-be">Best: <strong>${s.best_trade.symbol}</strong> ${fmtUSD(s.best_trade.pnl)}</span>
+        <span class="lt-wo">Worst: <strong>${s.worst_trade.symbol}</strong> ${fmtUSD(s.worst_trade.pnl)}</span>
+      </div>` : '';
+  return `<section class="section" style="margin-top:12px;">
+    <div class="section-eyebrow">Live paper trader · real Alpaca fills</div>
+    <h2 class="section-title">The engine is trading the picks. Here's the receipts.</h2>
+    <p class="section-sub">A $100k Alpaca paper account opens 10 swing positions and 10 daytrade positions every weekday at 13:30 UTC, exits the daytrade sleeve at 19:55 UTC, and rolls swings on a 5-day cycle. Every fill below is real — entry price, exit price, realized P&L.</p>
+    <section class="headline">
+      <div class="h-card">
+        <div class="label">Trades opened</div>
+        <div class="val">${(s.n_buys || 0).toLocaleString()}</div>
+        <div class="sub">Buys submitted · ${journal.lookback_days}-day window</div>
+      </div>
+      <div class="h-card">
+        <div class="label">Closed pairs</div>
+        <div class="val">${(s.n_closed_pairs || 0).toLocaleString()}</div>
+        <div class="sub">${s.wins || 0} wins · ${s.losses || 0} losses</div>
+      </div>
+      <div class="h-card">
+        <div class="label">Win rate</div>
+        <div class="val ${winCls}">${s.win_rate != null ? (s.win_rate * 100).toFixed(1) + '%' : '—'}</div>
+        <div class="sub">Share of closed trades above entry</div>
+      </div>
+      <div class="h-card">
+        <div class="label">Realized P&L</div>
+        <div class="val ${pnlCls}">${fmtUSD(s.realized_pnl_total || 0)}</div>
+        <div class="sub">Cumulative across closed trades · paper</div>
+      </div>
+    </section>
+    ${bestStrip}
+  </section>`;
 }
 
 // Render the live scoreboard block from /api/track-record response
@@ -596,15 +660,63 @@ function renderAll(r, live, honest) {
   // the backtest validation (headHtml / disclosure / table / regime / sim).
   // Backtest is the "how did we validate" supporting evidence; scoreboard
   // is the "what has it done since" trust signal.
+  const liveTraderHtml = renderLiveTraderBlock(window.__live_journal);
   const scoreboardHtml = renderScoreboard(live);
+  const recentPicksHtml = renderRecentPicksTable(live);
   const backtestEyebrow = `<section class="section" style="margin-top:48px;">
     <div class="section-eyebrow">Backtest validation</div>
     <h2 class="section-title">How the ranker was tested before going live.</h2>
     <p class="section-sub">Walk-forward across ~22,000 ticker-windows, 2022-05 → 2024-08. Out-of-sample on 2024 data the model never saw in training. The honest bar, not the flattering one.</p>
   </section>`;
   document.getElementById('content').innerHTML =
-    scoreboardHtml + backtestEyebrow + headHtml + disclosureHtml +
-    tableHtml + regimeHtml + simHtml + caveatHtml;
+    liveTraderHtml + scoreboardHtml + recentPicksHtml + backtestEyebrow +
+    headHtml + disclosureHtml + tableHtml + regimeHtml + simHtml + caveatHtml;
+}
+
+// Last-30-days picks with realized return. Shows the actual movements
+// of recent picks; this is where a visitor can scan "did the engine
+// pick winners over the past month?". Only matured-or-equal picks are
+// shown (days_held ≥ 1) so we never display a brand-new-pick row with
+// realized=0%.
+function renderRecentPicksTable(live) {
+  const rows = (live?.rows || []).filter(r =>
+    (r.days_held || 0) >= 1 && r.realized_return != null
+  );
+  if (!rows.length) return '';
+  // Sort by realized return descending — the visual hits "biggest winner first"
+  // so the eye anchors on the upside before scanning down to losses.
+  rows.sort((a, b) => (b.realized_return || 0) - (a.realized_return || 0));
+  const top = rows.slice(0, 30);
+  const fmt = (v) => v == null ? '—' : `${v >= 0 ? '+' : ''}${(v * 100).toFixed(1)}%`;
+  const fmtDate = (d) => d ? new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '—';
+  const tierTag = (t) => `<span class="tier-pill ${t}">${t}</span>`;
+  const tierBy = (t) => rows.filter(r => r.tier === t);
+  const wins = (rs) => rs.length ? `${rs.filter(r => r.realized_return > 0).length}/${rs.length}` : '—';
+  const tierStrip = `<div class="tier-strip">
+    <span>Conservative ${wins(tierBy('conservative'))}</span>
+    <span>Moderate ${wins(tierBy('moderate'))}</span>
+    <span>Aggressive ${wins(tierBy('aggressive'))}</span>
+    ${tierBy('asymmetric').length ? `<span>Asymmetric ${wins(tierBy('asymmetric'))}</span>` : ''}
+  </div>`;
+  const trs = top.map(r => `<tr>
+    <td>${fmtDate(r.pick_date)}</td>
+    <td><strong>${r.symbol}</strong></td>
+    <td>${tierTag(r.tier)}</td>
+    <td class="num">$${(r.entry_price || 0).toFixed(2)}</td>
+    <td class="num">${r.current_price ? '$' + r.current_price.toFixed(2) : '—'}</td>
+    <td class="num ${r.realized_return >= 0 ? 'pos' : 'neg'}">${fmt(r.realized_return)}</td>
+    <td class="num">${r.days_held || 0}d</td>
+  </tr>`).join('');
+  return `<section class="section" style="margin-top:32px;">
+    <div class="section-eyebrow">Recent picks · live ledger</div>
+    <h2 class="section-title">${top.length} picks from the last ${(live.aggregate?.earliest_pick_date ? Math.max(1, Math.round((Date.now() - new Date(live.aggregate.earliest_pick_date).getTime()) / 86400000)) : 30)} days, sorted by realized return.</h2>
+    <p class="section-sub">Entry price is the close on the day the pick was published. Current price is today's most recent close. No retroactive adjustments — these are the same numbers the picks page showed when the call was made.</p>
+    ${tierStrip}
+    <div class="table-scroll" style="margin-top:18px;"><table class="perf">
+      <thead><tr><th>Pick date</th><th>Symbol</th><th>Tier</th><th>Entry</th><th>Now</th><th>Realized</th><th>Held</th></tr></thead>
+      <tbody>${trs}</tbody>
+    </table></div>
+  </section>`;
 }
 
 load();
