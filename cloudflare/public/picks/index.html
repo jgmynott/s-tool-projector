@@ -620,6 +620,16 @@ footer a { color: var(--text-mid); }
 .pf-day-pill.pos { background: rgba(110,231,183,0.10); color: var(--pos); border: 1px solid rgba(110,231,183,0.25); }
 .pf-day-pill.neg { background: rgba(252,165,165,0.10); color: var(--neg); border: 1px solid rgba(252,165,165,0.25); }
 .pf-day-pill.flat { background: rgba(155,161,185,0.10); color: var(--text-mid); border: 1px solid var(--border); }
+/* Realized-today pill — same shape as day pill but slightly tighter
+   visual weight so it reads as secondary information. Only renders
+   after at least one position has closed today (Math.abs(realized) > 0.5). */
+.pf-realized-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 12px; border-radius: 999px;
+  font: 500 12px 'Inter'; font-variant-numeric: tabular-nums; cursor: help;
+}
+.pf-realized-pill.pos { background: rgba(110,231,183,0.06); color: var(--pos); border: 1px dashed rgba(110,231,183,0.30); }
+.pf-realized-pill.neg { background: rgba(252,165,165,0.06); color: var(--neg); border: 1px dashed rgba(252,165,165,0.30); }
 .pf-day-label { font: 500 12px 'Inter'; color: var(--text-dim); }
 .pf-util { font: 500 11px 'Inter'; color: var(--text-dim); border-left: 1px solid var(--border); padding-left: 12px; margin-left: 4px; font-variant-numeric: tabular-nums; }
 @media (max-width: 540px) { .pf-util { border-left: none; padding-left: 0; margin-left: 0; flex-basis: 100%; } }
@@ -1063,6 +1073,12 @@ function renderPortfolio(data) {
         <div class="pf-equity-sub">
           <span class="pf-day-pill ${dcCls}">${sign}${fmtUSD(dcAbs, { digits: 0 }).replace(/^[-]/, '')} · ${sign}${dcpAbs.toFixed(2)}%</span>
           <span class="pf-day-label">today</span>
+          ${Math.abs(realizedToday) > 0.5 ? (() => {
+            const rCls = realizedToday > 0 ? 'pos' : 'neg';
+            const rSign = realizedToday > 0 ? '+' : '−';
+            const rAbs = fmtUSD(Math.abs(realizedToday), { digits: 0 });
+            return `<span class="pf-realized-pill ${rCls}" title="Realized P&L from today's closed positions">${rSign}${rAbs} realized</span>`;
+          })() : ''}
           ${totalPositions > 0 ? `<span class="pf-util">${utilStr} deployed · ${fmtUSD(totalMv, { digits: 0 })} of ${fmtUSD(totalCapacity, { digits: 0 })} cap</span>` : ''}
         </div>
       </div>
