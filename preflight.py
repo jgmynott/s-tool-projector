@@ -511,6 +511,56 @@ def check_workflow_crons():
         ok(f"{total} cron schedules across workflows — all parse cleanly")
 
 
+def check_nav_consistency():
+    """Every public page's top nav must list the SAME items in the SAME
+    order. Caught this 2026-04-27 — Pricing/FAQ were missing Track record
+    + Backtest, and Picks/Track-record/Backtest/App/How were missing FAQ.
+    Result: links visibly appeared and disappeared as users moved between
+    pages, which reads like a broken site. The canonical order is set by
+    the home page; every other page must match exactly."""
+    import re
+    print("\n[*] Top-nav consistency across public pages")
+    pages = [
+        Path("cloudflare/public/index.html"),
+        Path("cloudflare/public/app/index.html"),
+        Path("cloudflare/public/picks/index.html"),
+        Path("cloudflare/public/track-record/index.html"),
+        Path("cloudflare/public/backtest/index.html"),
+        Path("cloudflare/public/how/index.html"),
+        Path("cloudflare/public/pricing/index.html"),
+        Path("cloudflare/public/faq/index.html"),
+    ]
+    nav_re = re.compile(
+        r'<(?:div|nav)[^>]*(?:nav-center|ev-center|nav-links)[^>]*>(.*?)</div>',
+        re.DOTALL,
+    )
+    link_re = re.compile(r'<a [^>]*href="([^"]+)"[^>]*>([^<]+)</a>')
+    canonical = None
+    bad = 0
+    for p in pages:
+        if not p.exists():
+            warn(f"{p} missing — can't verify nav"); continue
+        m = nav_re.search(p.read_text())
+        if not m:
+            fail(f"{p} has no recognizable top-nav block"); bad += 1; continue
+        items = [(h, l.strip()) for h, l in link_re.findall(m.group(1))]
+        labels = tuple(l for _, l in items)
+        if canonical is None:
+            canonical = labels
+            continue
+        if labels != canonical:
+            missing = [l for l in canonical if l not in labels]
+            extra   = [l for l in labels if l not in canonical]
+            detail = []
+            if missing: detail.append("missing " + ",".join(missing))
+            if extra:   detail.append("extra " + ",".join(extra))
+            if labels != canonical and not missing and not extra:
+                detail.append("reordered")
+            fail(f"{p} nav diverges — {'; '.join(detail)}"); bad += 1
+    if canonical and bad == 0:
+        ok(f"all {len(pages)} pages have identical top nav: {' | '.join(canonical)}")
+
+
 def main() -> int:
     print("=" * 50)
     print("s-tool preflight")
@@ -522,6 +572,7 @@ def main() -> int:
     check_trader_smoke()
     check_rotation_pool()
     check_workflow_crons()
+    check_nav_consistency()
     check_no_committed_secrets()
     check_nn_artifacts()
     check_users_sanity()
