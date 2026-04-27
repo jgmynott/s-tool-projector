@@ -1,0 +1,68 @@
+/* s-tool skeleton system — consistent shimmer placeholders for any
+ * loading state. Match the SHAPE of the final element so when content
+ * lands there's zero layout shift. Page-level loaders import this and
+ * render a structural skeleton in markup; once data resolves, the
+ * skeleton is replaced in-place. */
+@keyframes sk-shimmer {
+  0%   { background-position: -300px 0; }
+  100% { background-position: 1400px 0; }
+}
+.sk {
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0.04) 0%,
+    rgba(255,255,255,0.08) 40%,
+    rgba(255,255,255,0.04) 80%
+  );
+  background-size: 800px 100%;
+  background-repeat: no-repeat;
+  animation: sk-shimmer 1.6s ease-in-out infinite;
+  border-radius: 6px;
+  color: transparent !important;
+  user-select: none;
+  pointer-events: none;
+}
+.sk-line   { display: block; height: 14px; margin: 6px 0; }
+.sk-line.lg { height: 22px; }
+.sk-line.xl { height: 36px; }
+.sk-block  { display: block; width: 100%; }
+.sk-pill   { display: inline-block; height: 22px; min-width: 64px;
+             border-radius: 999px; vertical-align: middle; }
+.sk-card   { border: 1px solid var(--border, rgba(155,161,185,0.14));
+             border-radius: 12px; padding: 18px; background: rgba(255,255,255,0.015); }
+.sk-grid   { display: grid; gap: 12px; }
+.sk-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+.sk-grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
+@media (max-width: 720px) {
+  .sk-grid.cols-3, .sk-grid.cols-4 { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 480px) {
+  .sk-grid.cols-3, .sk-grid.cols-4 { grid-template-columns: 1fr; }
+}
+
+/* Reserve the nav-end column width so the sign-in→user-pill swap
+ * doesn't shift the page. min-width is wide enough for either state.
+ * !important because each page's inline <style> redeclares .nav-end at
+ * the same specificity, and inline blocks load after this stylesheet. */
+.nav-end { min-width: 168px !important; }
+.nav-end-skel {
+  display: inline-block; width: 120px; height: 36px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border, rgba(155,161,185,0.14));
+}
+@media (max-width: 640px) {
+  .nav-end { min-width: 96px !important; }
+  .nav-end-skel { width: 64px; height: 32px; }
+}
+
+/* View-transition smoothing — when supported, gives a subtle cross-fade
+ * between same-origin navigations instead of the white flash. Falls back
+ * silently on browsers without the feature (Firefox, older Safari). */
+@supports (view-transition-name: root) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 220ms;
+    animation-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+  }
+}

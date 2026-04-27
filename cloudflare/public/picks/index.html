@@ -22,7 +22,11 @@
 <link rel="prefetch" href="/faq/" />
 <!-- s-tool perf hints -->
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/shared/nav.css" />
+<link rel="stylesheet" href="/shared/nav.css" /><!-- s-tool perf skel -->
+<meta name="view-transition" content="same-origin" />
+<link rel="stylesheet" href="/shared/skeleton.css" />
+<!-- s-tool perf skel -->
+
 <style>
 :root {
   --bg-deepest: #0B1006; --bg-base: #111512; --bg-surface: #1A1F1B;
@@ -932,7 +936,40 @@ footer a { color: var(--text-mid); }
 </header>
 
 <main class="container" id="content">
-  <div class="loading">Fetching the latest scan&hellip;</div>
+  <!-- Initial skeleton — matches the live-portfolio panel + tier-section
+       layout so when data lands there's zero structural shift. JS replaces
+       the entire #content block once /api/picks resolves. -->
+  <div class="pf-card" aria-busy="true" aria-label="Loading portfolio">
+    <div class="pf-head">
+      <span class="sk sk-pill" style="width:140px;"></span>
+    </div>
+    <div class="pf-equity-row">
+      <span class="sk sk-line xl" style="width:280px;"></span>
+      <div style="margin-top:14px;">
+        <span class="sk sk-pill" style="width:120px;margin-right:10px;"></span>
+        <span class="sk sk-pill" style="width:90px;"></span>
+      </div>
+    </div>
+    <div class="pf-chart-row" style="margin-top:18px;">
+      <span class="sk sk-block" style="height:380px;border-radius:8px;"></span>
+    </div>
+    <div class="pf-sleeves sk-grid cols-3" style="margin-top:22px;">
+      <span class="sk sk-card" style="height:96px;"></span>
+      <span class="sk sk-card" style="height:96px;"></span>
+      <span class="sk sk-card" style="height:96px;"></span>
+    </div>
+  </div>
+
+  <div style="margin:56px 0 28px;">
+    <span class="sk sk-line lg" style="width:240px;"></span>
+    <span class="sk sk-line"    style="width:480px;"></span>
+  </div>
+  <div class="pick-grid">
+    <span class="sk sk-card" style="height:280px;"></span>
+    <span class="sk sk-card" style="height:280px;"></span>
+    <span class="sk sk-card" style="height:280px;"></span>
+    <span class="sk sk-card" style="height:280px;"></span>
+  </div>
 </main>
 
 <footer>
