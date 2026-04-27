@@ -165,16 +165,19 @@ jobs:
           run_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           # Build the body in /tmp to avoid heredoc + yaml-block-scalar
           # indentation conflicts. gh accepts --body-file.
+          # printf without `--` parses the leading "-" of each bullet as
+          # an option flag and bails ("invalid option"). Use %s\n with
+          # the bullet as an argument so dashes can't be interpreted.
           {
             printf "Run: %s\n\n" "$run_url"
             printf "Mode: %s\nWindow: %s\nCommit: %s\n\n" "$mode" "$window" "${{ github.sha }}"
-            printf "Common causes:\n"
-            printf "- Alpaca creds expired/rotated\n"
-            printf "- Account flagged (PDT, trading_blocked)\n"
-            printf "- portfolio_picks.json stale / empty\n"
-            printf "- Network hiccup on Alpaca API\n"
-            printf "- Picks JSON shape change broke load_picks()\n\n"
-            printf "If it failed at submit time, some orders may already be live — check the Alpaca dashboard.\n"
+            printf "%s\n" "Common causes:"
+            printf "%s\n" "- Alpaca creds expired/rotated"
+            printf "%s\n" "- Account flagged (PDT, trading_blocked)"
+            printf "%s\n" "- portfolio_picks.json stale / empty"
+            printf "%s\n" "- Network hiccup on Alpaca API"
+            printf "%s\n\n" "- Picks JSON shape change broke load_picks()"
+            printf "%s\n" "If it failed at submit time, some orders may already be live — check the Alpaca dashboard."
           } > /tmp/issue.md
           gh issue create \
             --title "🚨 Paper trader failed — ${mode} ${window} $(date -u +%Y-%m-%d)" \

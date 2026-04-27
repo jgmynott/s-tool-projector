@@ -637,7 +637,7 @@ def print_open_plan(combined: dict) -> None:
         p = combined["plans"][name]
         print(f"\n  [{name}]  ${p['equity_allocated']:,.0f} allocated ({p['config']['leverage']}× → ${p['target_capital']:,.0f}), {p['n_slots']} slots @ ${p['per_position_target']:,.0f}")
         for s in p["sells"]:
-            print(f"    SELL {s['symbol']:>6} qty={s['qty']:>5} held={s.get('days_held','?'):>2}d  upnl=${s['unrealized_pl']:>+9}  {s['reason']}")
+            print(f"    SELL {s['symbol']:>6} qty={s['qty']:>5} held={s.get('days_held','?'):>2}d  upnl=${float(s['unrealized_pl']):>+9.2f}  {s['reason']}")
         for b in p["buys"]:
             print(f"    BUY  {b['symbol']:>6} qty={b['qty']:>5} @ ${b['ref_price']:>7.2f}  stop=${b['stop_loss']:>7.2f}  tgt=${b['take_profit']:>7.2f}  [{b['tier']}]")
         if p["skipped"]:
@@ -651,7 +651,7 @@ def print_close_plan(plan: dict) -> None:
     if not plan["sells"]:
         print("  no daytrade positions to close.")
     for s in plan["sells"]:
-        print(f"  SELL {s['symbol']:>6} qty={s['qty']:>5}  upnl=${s['unrealized_pl']:>+9}  {s['reason']}")
+        print(f"  SELL {s['symbol']:>6} qty={s['qty']:>5}  upnl=${float(s['unrealized_pl']):>+9.2f}  {s['reason']}")
     print()
 
 
