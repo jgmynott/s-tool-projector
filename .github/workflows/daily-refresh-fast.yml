@@ -175,6 +175,14 @@ jobs:
         run: |
           railway up --detach --service api
 
+      # L2 post-deploy verifier — polls live API for ≤180s waiting for
+      # the new container to swap, asserts /api/portfolio + /api/picks +
+      # /api/track-record return valid shapes. Catches the case where
+      # railway up succeeds but the new image fails to boot (502s / stale
+      # serving). Fails the workflow → existing issue tripwire fires.
+      - name: Post-deploy verify
+        run: python3 post_deploy_verify.py
+
       # Loud-failure tripwire. The data refresh pipeline silently froze for
       # 8 days (2026-04-20 → 2026-04-26) because nothing alerted on the
       # preflight failures. GitHub emails the repo owner on issue creation,

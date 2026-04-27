@@ -212,6 +212,13 @@ jobs:
         run: |
           railway up --detach --service api
 
+      # L2 post-deploy verifier — polls live API for ≤180s waiting for
+      # the new container to swap, asserts /api/portfolio + /api/picks +
+      # /api/track-record return valid shapes. Catches the case where
+      # railway up succeeds but the new image fails to boot.
+      - name: Post-deploy verify
+        run: python3 post_deploy_verify.py
+
       # Loud-failure tripwire — see daily-refresh-fast.yml for context.
       - name: Open issue on failure
         if: failure()
