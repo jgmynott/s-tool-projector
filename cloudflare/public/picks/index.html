@@ -665,6 +665,19 @@ footer a { color: var(--text-mid); }
 .pf-pos-row3 { display: flex; justify-content: space-between; align-items: center; gap: 8px; font: 500 11px 'Inter'; color: var(--text-dim); font-variant-numeric: tabular-nums; }
 .pf-pos-pl.pos { color: var(--pos); } .pf-pos-pl.neg { color: var(--neg); }
 
+/* Bracket strip — visual stop ◀ entry ●▶ target with current-price tick. */
+.pf-pos-bracket { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+.pf-bracket-bar { position: relative; height: 4px; background: var(--border); border-radius: 2px; }
+.pf-bracket-fill { position: absolute; top: 0; bottom: 0; border-radius: 2px; }
+.pf-bracket-tick { position: absolute; top: -3px; width: 2px; height: 10px; background: var(--text-mid); transform: translateX(-1px); }
+.pf-bracket-tick.entry { background: var(--text-hi); }
+.pf-bracket-tick.cur { width: 8px; height: 8px; top: -2px; border-radius: 50%; transform: translateX(-4px); background: var(--text-hi); border: 2px solid var(--bg-surface); }
+.pf-bracket-tick.cur.pos { background: var(--pos); }
+.pf-bracket-tick.cur.neg { background: var(--neg); }
+.pf-bracket-labels { display: flex; justify-content: space-between; margin-top: 6px; font: 500 10px 'Inter'; color: var(--text-dim); font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
+.pf-bracket-labels .neg { color: var(--neg); }
+.pf-bracket-labels .pos { color: var(--pos); }
+
 .pf-empty { padding: 36px 28px 28px; text-align: center; color: var(--text-mid); font: 500 14px 'Inter'; line-height: 1.6; border: 1px dashed var(--border); border-radius: var(--radius-sm); max-width: 720px; margin: 0 auto; }
 .pf-empty strong { color: var(--text-hi); display: block; margin-bottom: 8px; font: 400 22px 'Crimson Text', serif; letter-spacing: -0.012em; }
 .pf-countdown { margin-top: 22px; padding-top: 22px; border-top: 1px solid var(--border); display: flex; justify-content: center; align-items: baseline; gap: 8px 16px; flex-wrap: wrap; }
@@ -899,6 +912,30 @@ function pfPositionCard(p) {
   const sleeve = p.sleeve || 'unattributed';
   const sleeveLabel = sleeve === 'swing' ? 'Swing' : (sleeve === 'daytrade' ? 'Day' : '—');
   const heldLabel = p.days_held != null ? `${p.days_held}d held` : '';
+
+  // Bracket strip: stop ◀ entry ●▶ target — visualises where the
+  // current price sits between the two protective levels. Position is
+  // (cur - stop) / (target - stop) clamped to [0,1].
+  let bracketRow = '';
+  if (p.stop_price != null && p.target_price != null && p.current_price) {
+    const stop = p.stop_price, tgt = p.target_price, cur = p.current_price, entry = p.avg_entry_price;
+    const span = tgt - stop;
+    const curPos = span > 0 ? Math.max(0, Math.min(1, (cur - stop) / span)) : 0.5;
+    const entryPos = span > 0 ? Math.max(0, Math.min(1, (entry - stop) / span)) : 0.5;
+    bracketRow = `<div class="pf-pos-bracket">
+      <div class="pf-bracket-bar">
+        <div class="pf-bracket-fill" style="left:${(entryPos*100).toFixed(1)}%;width:${((curPos-entryPos)*100).toFixed(1)}%;${cur>=entry?'background:rgba(110,231,183,0.30)':'background:rgba(252,165,165,0.30);left:'+(curPos*100).toFixed(1)+'%;width:'+((entryPos-curPos)*100).toFixed(1)+'%'}"></div>
+        <div class="pf-bracket-tick entry" style="left:${(entryPos*100).toFixed(1)}%"></div>
+        <div class="pf-bracket-tick cur ${pctCls}" style="left:${(curPos*100).toFixed(1)}%"></div>
+      </div>
+      <div class="pf-bracket-labels">
+        <span class="neg">$${stop.toFixed(stop<10?2:0)}</span>
+        <span>$${entry.toFixed(entry<10?2:0)}</span>
+        <span class="pos">$${tgt.toFixed(tgt<10?2:0)}</span>
+      </div>
+    </div>`;
+  }
+
   return `<div class="pf-pos">
     <div class="pf-pos-row1">
       <span class="pf-pos-sym">${p.symbol}</span>
@@ -912,6 +949,7 @@ function pfPositionCard(p) {
       <span class="pf-pos-pl ${plCls}">${fmtUSD(p.unrealized_pl, { signed: true, digits: 0 })}</span>
       <span>${heldLabel}</span>
     </div>
+    ${bracketRow}
   </div>`;
 }
 // Returns "Mon 09:30 ET (in 14h 32m)" style copy for the next trader fire.

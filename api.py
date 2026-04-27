@@ -835,11 +835,20 @@ def portfolio(request: Request, user: Optional[dict] = Depends(auth.optional_use
     from datetime import datetime as _dt2
     now = _dt2.utcnow()
 
+    # Bracket levels per sleeve. Mirror SLEEVES config from research/trader.py
+    # — keep these in sync with that file or the panel display will diverge
+    # from the actual orders sitting at Alpaca.
+    SLEEVE_BRACKETS = {
+        "swing":    {"stop_pct": -0.07, "target_pct": +0.15},
+        "daytrade": {"stop_pct": -0.03, "target_pct": +0.05},
+    }
+
     pos_out = []
     for p in positions:
         sym = p["symbol"]
         meta = sleeve_by_sym.get(sym) or legacy_entries.get(sym) or {}
         opened_at = meta.get("opened_at")
+        sleeve = meta.get("sleeve") or "unattributed"
         days_held = None
         if opened_at:
             try:
@@ -847,17 +856,23 @@ def portfolio(request: Request, user: Optional[dict] = Depends(auth.optional_use
                 days_held = max(0, (now.date() - d0.date()).days)
             except Exception:
                 days_held = None
+        avg_entry = float(p["avg_entry_price"])
+        bracket_cfg = SLEEVE_BRACKETS.get(sleeve)
+        stop_price = round(avg_entry * (1 + bracket_cfg["stop_pct"]), 2) if bracket_cfg else None
+        target_price = round(avg_entry * (1 + bracket_cfg["target_pct"]), 2) if bracket_cfg else None
         pos_out.append({
             "symbol": sym,
             "qty": p["qty"], "side": p["side"],
-            "avg_entry_price": float(p["avg_entry_price"]),
+            "avg_entry_price": avg_entry,
             "current_price": float(p["current_price"]),
             "market_value": float(p["market_value"]),
             "cost_basis": float(p["cost_basis"]),
             "unrealized_pl": float(p["unrealized_pl"]),
             "unrealized_plpc": float(p["unrealized_plpc"]),
             "change_today_pct": float(p.get("change_today", 0)) if p.get("change_today") else None,
-            "sleeve": meta.get("sleeve") or "unattributed",
+            "sleeve": sleeve,
+            "stop_price": stop_price,
+            "target_price": target_price,
             "opened_at": opened_at,
             "days_held": days_held,
         })
