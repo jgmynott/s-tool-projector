@@ -161,6 +161,89 @@ def save_state(state: dict) -> None:
 JOURNAL_PATH = ROOT / "runtime_data" / "trade_journal.json"
 
 
+# ── Discord webhook (optional alerts) ──
+#
+# Set DISCORD_WEBHOOK_URL in Railway env (and mirror to GH Actions
+# secrets so trader.yml has it). Best-effort delivery — any failure
+# is logged and swallowed so a webhook outage never blocks a trade.
+
+def discord_post(content: str, *, embed: dict | None = None) -> None:
+    """Send a single message to the configured Discord webhook. Silent
+    no-op when the env var isn't set, so trader.py runs fine without
+    Discord configured at all."""
+    url = os.environ.get("DISCORD_WEBHOOK_URL", "").strip()
+    if not url:
+        return
+    body: dict = {"content": content}
+    if embed:
+        body["embeds"] = [embed]
+    try:
+        req = Request(url, data=json.dumps(body).encode(),
+                      headers={"Content-Type": "application/json"},
+                      method="POST")
+        with urlopen(req, timeout=8):
+            pass
+    except (HTTPError, Exception) as e:
+        log.warning("discord webhook failed: %s", e)
+
+
+def discord_alert_open_summary(executed_per_sleeve: dict, failed: list[dict],
+                                acct: dict) -> None:
+    """Posted right after the open window finishes submitting orders.
+    One embed per sleeve plus a roll-up of any rejections."""
+    eq = float(acct.get("equity") or 0)
+    last_eq = float(acct.get("last_equity") or eq)
+    fields = []
+    for sleeve, exec_list in executed_per_sleeve.items():
+        if not exec_list:
+            continue
+        syms = ", ".join(sorted(b["symbol"] for b in exec_list if b.get("side") == "buy"))[:1024]
+        fields.append({
+            "name": f"{sleeve} ({sum(1 for b in exec_list if b.get('side') == 'buy')} buys)",
+            "value": syms or "—",
+            "inline": False,
+        })
+    if failed:
+        fields.append({
+            "name": f"⚠ {len(failed)} rejected",
+            "value": "\n".join(f"{f['symbol']}: {f.get('error','')[:90]}" for f in failed)[:1024],
+            "inline": False,
+        })
+    embed = {
+        "title": "Open window · paper trader",
+        "description": f"Equity ${eq:,.0f} · prior close ${last_eq:,.0f}",
+        "color": 0x6ee7b7 if not failed else 0xfca5a5,
+        "fields": fields,
+        "footer": {"text": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")},
+    }
+    discord_post("📈 Trader open-window complete", embed=embed)
+
+
+def discord_alert_close_summary(realized_total: float, n_closed: int,
+                                 acct: dict) -> None:
+    """Posted at the end of the close window. realized_total is the
+    sum of (sell - buy) * qty over today's closes; n_closed is how
+    many distinct daytrade exits fired."""
+    eq = float(acct.get("equity") or 0)
+    last_eq = float(acct.get("last_equity") or eq)
+    day_chg = eq - last_eq
+    color = 0x6ee7b7 if (day_chg or 0) >= 0 else 0xfca5a5
+    sign = "+" if day_chg >= 0 else "−"
+    rs = "+" if realized_total >= 0 else "−"
+    embed = {
+        "title": "Close window · paper trader",
+        "description": (
+            f"Day change: **{sign}${abs(day_chg):,.0f}**  "
+            f"({((day_chg / last_eq * 100) if last_eq else 0):+.2f}%)\n"
+            f"Realized today: **{rs}${abs(realized_total):,.0f}** across {n_closed} closes\n"
+            f"Equity: ${eq:,.0f}"
+        ),
+        "color": color,
+        "footer": {"text": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")},
+    }
+    discord_post("📊 Trader close-window complete", embed=embed)
+
+
 def load_journal() -> list[dict]:
     if not JOURNAL_PATH.exists():
         return []
@@ -616,16 +699,21 @@ def cmd_live(api: Alpaca, window: str) -> int:
         if not picks: print("no picks"); return 4
         combined = plan_open_window(picks, acct, pos, state)
         print_open_plan(combined)
+        executed_by_sleeve: dict[str, list] = {}
+        all_failed: list[dict] = []
         for name in SLEEVE_NAMES:
             p = combined["plans"][name]
             print(f"\n>>> SUBMITTING [{name}] {len(p['sells'])} sells + {len(p['buys'])} buys")
             r = execute_sleeve_plan(api, p, state, name, journal_rows=new_rows)
+            executed_by_sleeve[name] = r["executed"]
             for f in r["failed"]:
                 print(f"  FAIL {f['side']} {f['symbol']}: {f['error']}")
+                all_failed.append(f)
         save_state(state)
         if new_rows:
             print(f"\njournal: appended {len(new_rows)} rows")
             save_journal(_prune_journal(journal_rows + new_rows))
+        discord_alert_open_summary(executed_by_sleeve, all_failed, acct)
         return 0
     elif window == "close":
         plan = plan_close_window(acct, pos, state); print_close_plan(plan)
@@ -639,10 +727,18 @@ def cmd_live(api: Alpaca, window: str) -> int:
         # bracket child fills (stop-outs, target hits) that didn't pass
         # through trader.py's flow during the day, plus the EOD daytrade
         # closes we just submitted.
-        new_rows.extend(journal_alpaca_fills(api, state.get("entries", {})))
+        sell_rows_today = journal_alpaca_fills(api, state.get("entries", {}))
+        new_rows.extend(sell_rows_today)
         if new_rows:
             print(f"\njournal: appended {len(new_rows)} rows")
             save_journal(_prune_journal(journal_rows + new_rows))
+        # Refresh acct after closes so day_change reflects realized P&L.
+        try:
+            acct = api.account()
+        except Exception:
+            pass
+        realized_total = sum(float(r.get("pnl") or 0) for r in sell_rows_today)
+        discord_alert_close_summary(realized_total, len(sell_rows_today), acct)
         return 0
     return 5
 

@@ -118,6 +118,10 @@ jobs:
           ALPACA_API_KEY:    ${{ secrets.ALPACA_API_KEY }}
           ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
           ALPACA_BASE_URL:   ${{ secrets.ALPACA_BASE_URL }}
+          # Optional: trader posts to this webhook on open/close window
+          # complete. Set DISCORD_WEBHOOK_URL in repo Actions secrets to
+          # enable; absence is a silent no-op (trader runs fine without).
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: |
           python3 research/trader.py live --window=${{ steps.resolve.outputs.window }}
 
