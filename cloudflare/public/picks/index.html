@@ -661,8 +661,9 @@ footer a { color: var(--text-mid); }
    tabs (1D intraday · 1W last 7 daily · 1M last 30 daily) toggle the
    data window without re-fetching. Hover snaps to nearest data point,
    surfaces date + value in a floating tooltip. Pure SVG, no library. */
-.pf-chart-row { margin-top: 18px; }
-.pf-chart-tabs { display: flex; gap: 6px; margin-bottom: 10px; justify-content: flex-end; }
+.pf-chart-row { margin-top: 18px; max-width: 760px; }
+.pf-chart-tabs { display: flex; gap: 6px; margin-bottom: 10px; justify-content: flex-end; max-width: 760px; }
+@media (max-width: 720px) { .pf-chart-row, .pf-chart-tabs { max-width: 100%; } }
 .pf-chart-tab { background: transparent; border: 1px solid var(--border);
   color: var(--text-dim); font: 600 11px 'Inter'; letter-spacing: 0.10em;
   text-transform: uppercase; padding: 5px 12px; border-radius: 4px;
@@ -670,21 +671,24 @@ footer a { color: var(--text-mid); }
 .pf-chart-tab:hover { color: var(--text-mid); border-color: var(--border-strong); }
 .pf-chart-tab.active { color: var(--text-hi); border-color: var(--accent-lake);
   background: rgba(95,170,197,0.08); }
-.pf-chart { position: relative; width: 100%; height: 200px; }
-.pf-chart-svg { width: 100%; height: 100%; overflow: visible; }
+/* Chart canvas — explicit height keeps the aspect ratio stable across
+   viewport widths so the curve never flattens into a stretched line.
+   max-width caps the chart at a financial-pane-sized rectangle (~720px,
+   matching the equity hero's typical reading width); on the 1240px page
+   container without it the chart renders as a 5:1 ribbon which makes
+   the axes look absurdly wide for the data shown.
+   preserveAspectRatio="none" lets the data points fill the box; the
+   container size is what controls how visually compressed the curve
+   reads. 260px desktop / 200px mobile mirrors the Robinhood-class hero. */
+.pf-chart { position: relative; width: 100%; max-width: 760px;
+  height: 260px; margin: 4px 0 0; }
+.pf-chart-svg { display: block; width: 100%; height: 100%; overflow: visible; }
+@media (max-width: 720px) { .pf-chart { height: 200px; max-width: 100%; } }
 .pf-chart-grid { stroke: var(--border); stroke-width: 1; stroke-dasharray: 2 4; opacity: 0.6; }
 .pf-chart-y-label { fill: var(--text-dim); font: 500 10px 'Inter'; text-anchor: end;
   font-variant-numeric: tabular-nums; }
 .pf-chart-x-label { fill: var(--text-dim); font: 500 10px 'Inter'; text-anchor: middle;
   font-variant-numeric: tabular-nums; }
-/* Chart canvas — explicit height keeps the aspect ratio stable across
-   viewport widths so the curve never flattens into a stretched line.
-   preserveAspectRatio="none" lets the data points fill the box; the
-   container height is what controls how visually compressed the curve
-   reads. 240px desktop / 200px mobile mirrors the Robinhood-class hero. */
-.pf-chart { position: relative; width: 100%; height: 240px; margin-top: 4px; }
-.pf-chart-svg { display: block; width: 100%; height: 100%; overflow: visible; }
-@media (max-width: 720px) { .pf-chart { height: 200px; } }
 .pf-chart-area { stroke: none; opacity: 0.14; }
 .pf-chart-line { fill: none; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
 .pf-chart-spy-line { fill: none; stroke: #9BA1B9; stroke-width: 1.25;
