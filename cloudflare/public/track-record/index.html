@@ -115,6 +115,43 @@ table.perf .lift.lo { color: var(--text-mid); }
 .lt-bench strong.pos { color: var(--pos); }
 .lt-bench strong.neg { color: var(--neg); }
 
+/* Trade journal feed — chronological list of every entry/exit. Strategist-
+   only on per-row detail; non-strategist sees only the aggregate stats
+   already in the live-trader hero above. Items wrap on narrow viewports
+   instead of using a fixed grid — the row is still scannable at 320px
+   because the symbol + result tag stay on the first line. */
+.tj-feed { display: flex; flex-direction: column; gap: 6px; margin-top: 16px;
+  max-height: 640px; overflow-y: auto; padding-right: 4px; }
+.tj-feed::-webkit-scrollbar { width: 6px; }
+.tj-feed::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+.tj-row { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: baseline;
+  padding: 10px 14px; border: 1px solid var(--border); border-radius: 6px;
+  background: rgba(255,255,255,0.02); font: 500 12px 'Inter';
+  font-variant-numeric: tabular-nums; }
+.tj-row:hover { border-color: var(--border-strong); background: rgba(255,255,255,0.035); }
+.tj-time { color: var(--text-dim); min-width: 70px; }
+.tj-sleeve { font: 600 9px 'Inter'; padding: 2px 7px; border-radius: 3px;
+  letter-spacing: 0.12em; text-transform: uppercase; }
+.tj-sleeve-momentum { background: rgba(186,140,255,0.14); color: #ba8cff; }
+.tj-sleeve-swing { background: rgba(95,170,197,0.14); color: var(--accent-lake); }
+.tj-sleeve-daytrade { background: rgba(232,184,106,0.14); color: #e8b86a; }
+.tj-sleeve-unattributed { background: rgba(155,161,185,0.10); color: var(--text-dim); }
+.tj-sym { font: 600 13px 'Inter'; color: var(--text-hi); min-width: 52px; }
+.tj-side { font: 600 11px 'Inter'; }
+.tj-side.buy { color: var(--pos); }
+.tj-side.sell { color: var(--neg); }
+.tj-meta { color: var(--text-mid); flex: 1 1 240px; }
+.tj-result { font: 600 9px 'Inter'; padding: 2px 7px; border-radius: 3px;
+  letter-spacing: 0.10em; text-transform: uppercase; }
+.tj-result.tj-ok   { color: var(--pos);    background: rgba(110,231,183,0.10); }
+.tj-result.tj-warn { color: #e8b86a;       background: rgba(232,184,106,0.10); }
+.tj-result.tj-fail { color: var(--neg);    background: rgba(252,165,165,0.10); }
+.tj-empty { padding: 28px 22px; text-align: center; color: var(--text-mid);
+  font: 500 13px 'Inter'; border: 1px dashed var(--border); border-radius: 6px; }
+.tj-locked { padding: 18px 22px; text-align: center; font: 500 13px 'Inter';
+  color: var(--text-mid); border-top: 1px solid var(--border); margin-top: 18px; }
+.tj-locked a { color: var(--accent-lake); text-decoration: underline; text-underline-offset: 3px; }
+
 /* Disclaimer block */
 .caveats { margin-top: 80px; padding: 28px 32px; border-left: 3px solid var(--accent-alpine); background: rgba(10,101,119,0.08); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
 .caveats h3 { font: 600 12px 'Inter'; color: var(--accent-lake); letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 12px; }
@@ -322,7 +359,78 @@ function renderLiveTraderBlock(journal, portfolio) {
     </section>
     ${benchStrip}
     ${bestStrip}
+    ${renderTradeJournalFeed(journal)}
   </section>`;
+}
+
+// Trade journal feed — chronological list of every buy/sell with bracket
+// math and result. Per-row detail is Strategist-gated by the API: when
+// the response carries `teaser: true`, /api/trade-journal omits `rows[]`
+// and we render a locked nudge below the live-trader stats. Strategist
+// users get the full feed, newest 50 rows, scrollable.
+function renderTradeJournalFeed(journal) {
+  if (!journal) return '';
+
+  // Gated case — back the live-trader hero with a "this is what's behind
+  // the gate" nudge so visitors understand the upgrade unlocks per-trade
+  // evidence, not just bigger numbers.
+  if (journal.teaser) {
+    if (!journal.stats || (!journal.stats.n_buys && !journal.stats.n_sells)) {
+      return '';   // no activity at all → don't bother showing the gate
+    }
+    return `<div class="tj-locked">
+      Per-trade detail (timestamps, brackets, results) unlocks at
+      <a href="/pricing">Strategist tier</a> — the aggregate stats above
+      are everything visible without it.
+    </div>`;
+  }
+
+  const rows = journal.rows || [];
+  if (!rows.length) {
+    return `<div class="tj-empty">No journal entries yet — the trader hasn't fired since this lookback window opened.</div>`;
+  }
+
+  const sorted = [...rows].sort((a, b) =>
+    (b.ts || '').localeCompare(a.ts || ''));
+  const top = sorted.slice(0, 50);
+
+  const fmtRel = (ts) => {
+    if (!ts) return '—';
+    const t = new Date(ts);
+    const diffSec = (Date.now() - t.getTime()) / 1000;
+    if (diffSec < 0)    return 'just now';
+    if (diffSec < 60)   return 'just now';
+    if (diffSec < 3600) return `${Math.floor(diffSec/60)}m ago`;
+    if (diffSec < 86400) return `${Math.floor(diffSec/3600)}h ago`;
+    return `${Math.floor(diffSec/86400)}d ago`;
+  };
+  const fmtUSD = (v, digits = 2) => v == null
+    ? '—' : `$${Number(v).toFixed(digits)}`;
+  const fmtPnL = (v) => v == null
+    ? '—' : `${v >= 0 ? '+' : '−'}$${Math.abs(v).toFixed(2)}`;
+
+  const trs = top.map(r => {
+    const event = (r.event || 'buy').toLowerCase();
+    const isBuy = event === 'buy';
+    const sleeve = r.sleeve || 'unattributed';
+    const result = r.result || event;
+    const meta = isBuy
+      ? `entry ${fmtUSD(r.live_price ?? r.ref_price)} · stop ${fmtUSD(r.stop)} · tgt ${fmtUSD(r.target)}`
+      : `realized ${fmtPnL(r.pnl)}`;
+    let resultCls = 'tj-ok';
+    if (event === 'buy_failed' || (result || '').includes('fail')) resultCls = 'tj-fail';
+    else if (result === 'nobracket_fallback') resultCls = 'tj-warn';
+    return `<div class="tj-row">
+      <span class="tj-time" title="${r.ts || ''}">${fmtRel(r.ts)}</span>
+      <span class="tj-sleeve tj-sleeve-${sleeve}">${sleeve}</span>
+      <span class="tj-sym">${r.symbol || '—'}</span>
+      <span class="tj-side ${isBuy ? 'buy' : 'sell'}">${isBuy ? 'BUY' : 'SELL'} ${r.qty != null ? r.qty : ''}</span>
+      <span class="tj-meta">${meta}</span>
+      <span class="tj-result ${resultCls}">${result}</span>
+    </div>`;
+  }).join('');
+
+  return `<div class="tj-feed">${trs}</div>`;
 }
 
 // Render the live scoreboard block from /api/track-record response
