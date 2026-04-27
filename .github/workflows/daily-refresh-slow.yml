@@ -197,6 +197,9 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           workingDirectory: cloudflare
           command: deploy
+          # See daily-refresh-fast.yml — wrangler 3.x silently drops
+          # `run_worker_first`; pin to 4.x to keep Worker headers honest.
+          wranglerVersion: "4.30.0"
 
       # Install the Railway CLI from npm rather than via railway.com/install.sh,
       # because the install.sh hits GitHub's unauthenticated releases API to

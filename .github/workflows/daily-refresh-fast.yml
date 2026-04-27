@@ -160,6 +160,11 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           workingDirectory: cloudflare
           command: deploy
+          # wrangler-action defaults to 3.90.0 which silently ignores
+          # `run_worker_first` (introduced in 4.20.0). Pin to 4.x so the
+          # Worker actually runs ahead of static-asset serving and our
+          # applyCacheControl + applySecurityHeaders fire on every response.
+          wranglerVersion: "4.30.0"
 
       # Install the Railway CLI from npm rather than via railway.com/install.sh,
       # because the install.sh hits GitHub's unauthenticated releases API to
