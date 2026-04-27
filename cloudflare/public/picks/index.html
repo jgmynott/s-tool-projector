@@ -635,6 +635,9 @@ footer a { color: var(--text-mid); }
 .pf-sleeve-mv { font: 500 16px 'Inter'; color: var(--text-hi); font-variant-numeric: tabular-nums; }
 .pf-sleeve-meta { font: 500 12px 'Inter'; color: var(--text-mid); margin-top: 2px; font-variant-numeric: tabular-nums; }
 .pf-sleeve-meta.pos { color: var(--pos); } .pf-sleeve-meta.neg { color: var(--neg); }
+.pf-sleeve-realized { font: 500 11px 'Inter'; margin-top: 4px; padding-top: 4px; border-top: 1px dashed var(--border); font-variant-numeric: tabular-nums; }
+.pf-sleeve-realized.pos { color: var(--pos); }
+.pf-sleeve-realized.neg { color: var(--neg); }
 
 .pf-positions-head { display: flex; justify-content: space-between; align-items: baseline; margin: 22px 0 12px; }
 .pf-positions-title { font: 500 13px 'Inter'; color: var(--text-mid); letter-spacing: 0.06em; }
@@ -873,12 +876,20 @@ function pfSparkline(eq) {
 }
 function pfSleeveCard(name, summary, label) {
   const upnl = summary?.upnl || 0;
+  const realized = summary?.realized_today || 0;
   const upnlCls = upnl > 0 ? 'pos' : (upnl < 0 ? 'neg' : '');
   const n = summary?.n || 0;
+  // Surface realized P&L when the sleeve has had any closes today —
+  // otherwise it'd just clutter the card with "+$0". Always shown for
+  // daytrade after 19:55 UTC since EVERY daytrade closes by EOD.
+  const realizedRow = Math.abs(realized) > 0.5
+    ? `<div class="pf-sleeve-realized ${realized > 0 ? 'pos' : 'neg'}">+ ${fmtUSD(realized, { signed: true, digits: 0 })} realized today</div>`
+    : '';
   return `<div class="pf-sleeve">
     <div class="pf-sleeve-name ${name}">${label}</div>
     <div class="pf-sleeve-mv">${fmtUSD(summary?.mv || 0, { digits: 0 })}</div>
     <div class="pf-sleeve-meta ${upnlCls}">${n} pos · ${fmtUSD(upnl, { signed: true, digits: 0 })}</div>
+    ${realizedRow}
   </div>`;
 }
 function pfPositionCard(p) {
@@ -938,9 +949,19 @@ function renderPortfolio(data) {
   const sign = dc > 0 ? '+' : (dc < 0 ? '−' : '');
   const dcAbs = Math.abs(dc), dcpAbs = Math.abs(dcp * 100);
   const paperTag = acct.is_paper ? `<span class="pf-paper-tag">Paper · ${acct.multiplier || 1}× margin</span>` : '';
-  const spark = pfSparkline(data.equity_history?.equity || []);
+  // Prefer the intraday curve while there's signal in it (any point that
+  // diverges from the starting baseline). Falls back to the daily 1-month
+  // history outside trading hours or before any moves today. Without this
+  // pre-trading the spark would render as a 4-day flat line at $100k.
+  const intradayPts = data.equity_intraday?.equity || [];
+  const intradayHasSignal = intradayPts.length > 1
+    && intradayPts.some(v => Math.abs((v || 0) - (intradayPts[0] || 0)) > 0.01);
+  const sparkSrc = intradayHasSignal ? intradayPts : (data.equity_history?.equity || []);
+  const spark = pfSparkline(sparkSrc);
   const sleeves = data.sleeves || {};
   const positions = data.positions || [];
+  const realizedToday = data.realized_today || 0;
+  const closedToday = data.closed_today || [];
   // Sleeve totals reflect the entire book; positions[] may be teaser-truncated.
   const totalMv = Object.values(sleeves).reduce((s, m) => s + (m?.mv || 0), 0)
     || positions.reduce((s, p) => s + (p.market_value || 0), 0);
