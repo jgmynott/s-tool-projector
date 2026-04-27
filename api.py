@@ -516,6 +516,27 @@ def track_record(
 
     rows = get_picks_history(conn, tier=tier, since_date=since, limit=2000)
 
+    # Fallback: production Railway DB starts empty on every redeploy
+    # (projector_cache.db lives in GH Actions cache, not in the railway
+    # up tarball). The nightly fast/slow workflows write a snapshot of
+    # picks_history to runtime_data/picks_history.json that ships with
+    # the deploy. Use it when the DB has nothing to say.
+    if not rows:
+        ph_path = _Path(__file__).parent / "runtime_data" / "picks_history.json"
+        if ph_path.exists():
+            try:
+                import json as _json3
+                snap = _json3.loads(ph_path.read_text())
+                snap_rows = snap.get("rows") or []
+                # Filter by tier + since_date the same way get_picks_history does.
+                rows = [
+                    r for r in snap_rows
+                    if r.get("pick_date") and r["pick_date"] >= since
+                       and (tier is None or r.get("tier") == tier)
+                ]
+            except Exception:
+                rows = []
+
     # Price source hierarchy:
     #   1. Most-recent Close from data_cache/prices/<SYM>.csv  (updated by the
     #      nightly yfinance refresh, freshest available)

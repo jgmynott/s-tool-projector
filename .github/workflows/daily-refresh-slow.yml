@@ -144,11 +144,20 @@ jobs:
           cp data_cache/feature_importance.json runtime_data/ 2>/dev/null || true
           ls -la runtime_data/
 
+      # Same picks_history export the fast path does. Slow re-runs the
+      # final portfolio scan with fresh NN scores, which appends today's
+      # picks to picks_history a second time (overwriting the fast-path
+      # row via the (pick_date, symbol) primary key) — so we re-export
+      # to capture those refreshed entry prices and rationales.
+      - name: Export picks_history → runtime_data/picks_history.json
+        run: python3 export_picks_history.py
+
       - name: Commit data artifacts
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -f portfolio_picks.json
+          git add -f runtime_data/picks_history.json 2>/dev/null || true
           git add -f \
               data_cache/asymmetric_scores.json \
               data_cache/nn_scores.json \
