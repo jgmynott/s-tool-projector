@@ -1,0 +1,71 @@
+# S-Tool watchdog — health monitor + self-corrector for the live stack.
+#
+# Cadence:
+#   • Every 15 min during US market hours (14:00-19:30 UTC weekdays). The
+#     denser cadence catches scheduled-rotation misses + Railway lag while
+#     trades are firing.
+#   • Hourly otherwise — overnight pipeline failures, weekend issues. One
+#     missed nightly run is detected within the hour, not days later.
+#
+# What it checks (see watchdog.py for the full list + severity policy):
+#   - fast / slow pipeline freshness (last successful run age)
+#   - /api/portfolio + /api/picks live HTTP + JSON shape
+#   - portfolio_picks.json freshness (scanned_at)
+#   - Railway-deployed SHA matches origin/main HEAD
+#   - During market hours: trader run within last 60 min
+#
+# Self-correction (where safe):
+#   - Railway SHA lag → dispatch fast pipeline (cooldown 60 min)
+#   - Stale rotation during market → dispatch live rotate (cooldown 30 min)
+#
+# On critical failure: opens a GitHub issue (rate-limited 1/hour) labeled
+# `watchdog`, plus Discord ping if DISCORD_WEBHOOK_URL is set. Warnings
+# don't escalate.
+#
+# Cost: ~258 runs/week × ~30s = ~8 min/week. Negligible vs other workflows.
+
+name: watchdog
+
+on:
+  schedule:
+    - cron: "*/15 14-19 * * 1-5"   # 15-min cadence during market
+    - cron: "0 * * * *"             # hourly otherwise
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  actions: write     # required for self-correcting workflow_dispatch
+
+# Two ticks at the same minute (e.g., 14:00 hits both crons) MUST NOT run
+# concurrently — they'd duplicate any self-correction. Queue, don't cancel.
+concurrency:
+  group: watchdog
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # Make sure origin/main is fresh — git rev-parse origin/main is what
+      # the SHA-lag check compares against.
+      - name: Sync origin
+        run: git fetch origin main --quiet || true
+
+      - name: Run watchdog
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        # Always exit 0 — watchdog uses exit codes 1/2 for warn/critical
+        # which we don't want surfacing as workflow_run failures (that
+        # would create a feedback loop with the failure tripwire).
+        run: python3 watchdog.py || true
