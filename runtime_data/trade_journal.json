@@ -1,0 +1,20 @@
+{
+  "as_of": "2026-04-27T17:42:21.275983+00:00",
+  "n_rows": 1,
+  "rows": [
+    {
+      "ts": "2026-04-27T17:42:21.275537+00:00",
+      "event": "buy",
+      "sleeve": "daytrade",
+      "symbol": "APG",
+      "qty": 75,
+      "ref_price": 44.39,
+      "live_price": 49.27,
+      "stop": 47.79,
+      "target": 51.73,
+      "tier": "moderate",
+      "rationale": "",
+      "result": "submitted"
+    }
+  ]
+}
