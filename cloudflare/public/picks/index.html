@@ -937,6 +937,11 @@ function renderPortfolio(data) {
   const spark = pfSparkline(data.equity_history?.equity || []);
   const sleeves = data.sleeves || {};
   const positions = data.positions || [];
+  // Sleeve totals reflect the entire book; positions[] may be teaser-truncated.
+  const totalMv = Object.values(sleeves).reduce((s, m) => s + (m?.mv || 0), 0)
+    || positions.reduce((s, p) => s + (p.market_value || 0), 0);
+  const totalPositions = Object.values(sleeves).reduce((s, m) => s + (m?.n || 0), 0)
+    || positions.length;
   const sleeveBlock = `
     <div class="pf-sleeves">
       ${pfSleeveCard('swing', sleeves.swing, '5-day swing')}
@@ -944,7 +949,7 @@ function renderPortfolio(data) {
       ${pfSleeveCard('unattributed', sleeves.unattributed, 'Other')}
     </div>`;
   let positionsBlock;
-  if (positions.length === 0) {
+  if (totalPositions === 0) {
     // Empty state — most viewers see this outside trading hours. Show a
     // live countdown to the next entry window so the panel still feels
     // active rather than dormant. The strategy strip below the count
@@ -974,7 +979,6 @@ function renderPortfolio(data) {
   // open positions. Useful at a glance: empty between sessions = 0%,
   // mid-day fully deployed = ~60-65% (because we run 1.5× swing + 1×
   // daytrade across half-equity each, on a 2× margin account).
-  const totalMv = positions.reduce((s, p) => s + (p.market_value || 0), 0);
   const utilization = (acct.buying_power && acct.buying_power > 0)
     ? Math.min(1, totalMv / acct.buying_power) : 0;
   const utilStr = `${(utilization * 100).toFixed(0)}%`;
@@ -990,7 +994,7 @@ function renderPortfolio(data) {
         <div class="pf-equity-sub">
           <span class="pf-day-pill ${dcCls}">${sign}${fmtUSD(dcAbs, { digits: 0 }).replace(/^[-]/, '')} · ${sign}${dcpAbs.toFixed(2)}%</span>
           <span class="pf-day-label">today</span>
-          ${positions.length > 0 ? `<span class="pf-util">${utilStr} deployed · ${fmtUSD(totalMv, { digits: 0 })} of ${fmtUSD(acct.buying_power || 0, { digits: 0 })} BP</span>` : ''}
+          ${totalPositions > 0 ? `<span class="pf-util">${utilStr} deployed · ${fmtUSD(totalMv, { digits: 0 })} of ${fmtUSD(acct.buying_power || 0, { digits: 0 })} BP</span>` : ''}
         </div>
       </div>
       ${spark}
@@ -999,12 +1003,13 @@ function renderPortfolio(data) {
       <span class="pf-positions-title">Open positions</span>
       <span class="pf-positions-count">
         ${(() => {
-          if (positions.length === 0) return '0';
+          if (totalPositions === 0) return '0';
+          // Tally in/out-of-money on the visible positions only — even
+          // for the teaser, since we have full sleeve UPL totals up top.
           const wins = positions.filter(p => (p.unrealized_pl || 0) > 0).length;
           const losses = positions.filter(p => (p.unrealized_pl || 0) < 0).length;
           const flat = positions.length - wins - losses;
-          // Compact tally; teaser shows just count.
-          if (data.teaser) return `${positions.length} shown`;
+          if (data.teaser) return `${positions.length} of ${totalPositions} shown`;
           return `<span class="pf-tally-w">${wins}</span> in green · <span class="pf-tally-l">${losses}</span> in red${flat ? ` · ${flat} flat` : ''}`;
         })()}
       </span>
