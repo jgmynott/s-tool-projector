@@ -110,6 +110,10 @@ table.perf .lift.lo { color: var(--text-mid); }
 .lt-bestworst .lt-be { color: var(--pos); }
 .lt-bestworst .lt-wo { color: var(--neg); }
 .lt-bestworst strong { color: var(--text-hi); }
+.lt-bench { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 18px; padding: 14px 18px; border: 1px solid var(--border); background: rgba(95,170,197,0.04); border-radius: var(--radius-sm); font: 500 14px 'Inter'; color: var(--text-mid); font-variant-numeric: tabular-nums; align-items: baseline; }
+.lt-bench strong { color: var(--text-hi); font-weight: 600; }
+.lt-bench strong.pos { color: var(--pos); }
+.lt-bench strong.neg { color: var(--neg); }
 
 /* Disclaimer block */
 .caveats { margin-top: 80px; padding: 28px 32px; border-left: 3px solid var(--accent-alpine); background: rgba(10,101,119,0.08); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
@@ -172,17 +176,20 @@ async function load() {
   const authHeaders = async () => {
     try { const t = await window.Clerk?.session?.getToken?.(); return t ? { Authorization: `Bearer ${t}` } : {}; } catch { return {}; }
   };
-  const [liveRes, backtestRes, honestRes, journalRes] = await Promise.all([
+  const [liveRes, backtestRes, honestRes, journalRes, portfolioRes] = await Promise.all([
     fetch('/api/track-record?lookback_days=365', { headers: await authHeaders() }).catch(() => null),
     fetch('/api/backtest-report').catch(() => null),
     fetch('/api/honest-audit').catch(() => null),
     fetch('/api/trade-journal?lookback_days=90').catch(() => null),
+    fetch('/api/portfolio').catch(() => null),
   ]);
   const live = liveRes ? await liveRes.json().catch(() => null) : null;
   const journal = journalRes && journalRes.ok ? await journalRes.json().catch(() => null) : null;
-  // Make journal globally readable so renderAll/renderScoreboard can pull it
-  // without thread the fourth arg through every internal helper.
+  const portfolio = portfolioRes && portfolioRes.ok ? await portfolioRes.json().catch(() => null) : null;
+  // Make these globally readable so renderAll/renderScoreboard can pull them
+  // without threading extra args through every internal helper.
   window.__live_journal = journal;
+  window.__live_portfolio = portfolio;
 
   let backtest = null;
   if (backtestRes && backtestRes.ok) {
@@ -256,7 +263,7 @@ function renderPipelineEvents(events) {
 // (anonymous, gated on Strategist for per-trade detail). Renders a
 // 4-card hero plus best/worst trade strip when there are any closed
 // pairs. Hidden entirely when no trades have been journaled yet.
-function renderLiveTraderBlock(journal) {
+function renderLiveTraderBlock(journal, portfolio) {
   const s = journal?.stats;
   if (!s || (!s.n_buys && !s.n_sells)) return '';
   const pnlCls = s.realized_pnl_total > 0 ? 'pos' : (s.realized_pnl_total < 0 ? 'neg' : '');
@@ -267,6 +274,26 @@ function renderLiveTraderBlock(journal) {
         <span class="lt-be">Best: <strong>${s.best_trade.symbol}</strong> ${fmtUSD(s.best_trade.pnl)}</span>
         <span class="lt-wo">Worst: <strong>${s.worst_trade.symbol}</strong> ${fmtUSD(s.worst_trade.pnl)}</span>
       </div>` : '';
+
+  // Live alpha vs SPY — cumulative trader return minus SPY's move over
+  // the same window. Only shown when we have ≥1 trading day of history.
+  const bench = portfolio?.benchmark;
+  const benchStrip = (bench && bench.alpha != null) ? (() => {
+    const traderPct = (bench.trader_return * 100).toFixed(2);
+    const spyPct = (bench.spy_return * 100).toFixed(2);
+    const alphaPct = (bench.alpha * 100).toFixed(2);
+    const alphaCls = bench.alpha > 0 ? 'pos' : 'neg';
+    const traderSign = bench.trader_return >= 0 ? '+' : '';
+    const spySign = bench.spy_return >= 0 ? '+' : '';
+    const alphaSign = bench.alpha >= 0 ? '+' : '';
+    return `<div class="lt-bench">
+      <span>Trader: <strong class="${bench.trader_return >= 0 ? 'pos' : 'neg'}">${traderSign}${traderPct}%</strong></span>
+      <span>·</span>
+      <span>SPY: <strong>${spySign}${spyPct}%</strong></span>
+      <span>·</span>
+      <span>Alpha: <strong class="${alphaCls}">${alphaSign}${alphaPct}%</strong></span>
+    </div>`;
+  })() : '';
   return `<section class="section" style="margin-top:12px;">
     <div class="section-eyebrow">Live paper trader · real Alpaca fills</div>
     <h2 class="section-title">The engine is trading the picks. Here's the receipts.</h2>
@@ -293,6 +320,7 @@ function renderLiveTraderBlock(journal) {
         <div class="sub">Cumulative across closed trades · paper</div>
       </div>
     </section>
+    ${benchStrip}
     ${bestStrip}
   </section>`;
 }
@@ -660,7 +688,7 @@ function renderAll(r, live, honest) {
   // the backtest validation (headHtml / disclosure / table / regime / sim).
   // Backtest is the "how did we validate" supporting evidence; scoreboard
   // is the "what has it done since" trust signal.
-  const liveTraderHtml = renderLiveTraderBlock(window.__live_journal);
+  const liveTraderHtml = renderLiveTraderBlock(window.__live_journal, window.__live_portfolio);
   const scoreboardHtml = renderScoreboard(live);
   const recentPicksHtml = renderRecentPicksTable(live);
   const backtestEyebrow = `<section class="section" style="margin-top:48px;">

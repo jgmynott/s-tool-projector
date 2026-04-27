@@ -793,6 +793,14 @@ def portfolio(request: Request, user: Optional[dict] = Depends(auth.optional_use
         req = _ur.Request(url, headers=headers)
         with _ur.urlopen(req, timeout=10) as r:
             return _json.loads(r.read())
+    def _alpaca_data(path: str):
+        """Hits the market-data API (data.alpaca.markets) — same creds, same
+        headers. Used for the SPY benchmarking and any other quote/bars
+        lookup we want server-side."""
+        url = f"https://data.alpaca.markets/v2/{path.lstrip('/')}"
+        req = _ur.Request(url, headers=headers)
+        with _ur.urlopen(req, timeout=10) as r:
+            return _json.loads(r.read())
     def _alpaca_safe(path: str, default):
         """Best-effort fetch; returns default on any error so one slow or
         unavailable Alpaca endpoint doesn't crater the whole panel."""
@@ -816,10 +824,23 @@ def portfolio(request: Request, user: Optional[dict] = Depends(auth.optional_use
         "open_orders": ("orders?status=open&direction=desc&limit=100", []),
         "activities":  (f"account/activities/FILL?date={today_iso}", []),
     }
-    with ThreadPoolExecutor(max_workers=len(fan_paths)) as ex:
+    # SPY daily bars over the last ~30 trading days. Used to compute the
+    # "live alpha" stat — paper account return vs SPY over the window
+    # the trader has been live. Pulled from data.alpaca.markets so the
+    # same creds work; degrades to {} if the data API is down.
+    def _spy_safe():
+        from datetime import timedelta as _td_local
+        start = (_dt_local.utcnow().date() - _td_local(days=45)).isoformat()
+        try:
+            return _alpaca_data(f"stocks/SPY/bars?timeframe=1Day&start={start}&limit=60")
+        except (_ue.HTTPError, _ue.URLError, ValueError):
+            return {}
+
+    with ThreadPoolExecutor(max_workers=len(fan_paths) + 1) as ex:
         futs = {k: ex.submit(_alpaca_safe if default is not None else _alpaca, path,
                              *( (default,) if default is not None else () ))
                 for k, (path, default) in fan_paths.items()}
+        futs["spy"] = ex.submit(_spy_safe)
         try:
             acct = futs["acct"].result()
             positions = futs["positions"].result()
@@ -832,6 +853,7 @@ def portfolio(request: Request, user: Optional[dict] = Depends(auth.optional_use
         orders = futs["orders"].result()
         open_orders = futs["open_orders"].result()
         activities = futs["activities"].result()
+        spy_bars = futs["spy"].result()
 
     # Build sym → {sleeve, opened_at} from the most recent FILLED buy per
     # symbol. We walk newest-first so the first hit wins — that's the
@@ -979,6 +1001,39 @@ def portfolio(request: Request, user: Optional[dict] = Depends(auth.optional_use
     day_change = eq - last_eq
     day_change_pct = (day_change / last_eq) if last_eq else 0.0
 
+    # Live alpha vs SPY: trader return − SPY return over the equity
+    # history window. Uses the daily portfolio_history (1M) for the
+    # trader leg and Alpaca's SPY 1D bars for the benchmark. Both are
+    # closed-on-close so they're directly comparable. Stat is hidden
+    # when there's not enough history yet (need ≥ 2 trading days).
+    live_alpha = None
+    spy_return = None
+    trader_return = None
+    try:
+        eq_series = hist.get("equity") or []
+        # First non-zero equity = where the account actually started
+        # (Alpaca pads pre-funding days with the seed value, which would
+        # otherwise zero out our return). We anchor the trader return
+        # off that point.
+        eq_baseline = next((v for v in eq_series if v), None)
+        eq_now = eq_series[-1] if eq_series else None
+        if eq_baseline and eq_now:
+            trader_return = (eq_now - eq_baseline) / eq_baseline
+
+        bars = (spy_bars or {}).get("bars") or []
+        if bars and len(bars) >= 2:
+            # Match SPY window to the trader's live period — anchor on the
+            # first SPY bar at-or-after the equity baseline date.
+            spy_first = float(bars[0].get("c") or 0)
+            spy_last = float(bars[-1].get("c") or 0)
+            if spy_first and spy_last:
+                spy_return = (spy_last - spy_first) / spy_first
+
+        if trader_return is not None and spy_return is not None:
+            live_alpha = trader_return - spy_return
+    except Exception:
+        pass
+
     # Sleeve-level attribution: total P&L grouped by sleeve.
     sleeve_summary: dict = {"swing": {"n": 0, "mv": 0.0, "upnl": 0.0, "realized_today": 0.0},
                             "daytrade": {"n": 0, "mv": 0.0, "upnl": 0.0, "realized_today": 0.0},
@@ -1018,6 +1073,12 @@ def portfolio(request: Request, user: Optional[dict] = Depends(auth.optional_use
         "sleeves": sleeve_summary,
         "realized_today": realized_today_total,
         "closed_today": closed_today if is_strategist else closed_today[:3],
+        "benchmark": {
+            "trader_return": trader_return,
+            "spy_return": spy_return,
+            "alpha": live_alpha,
+            "as_of": now.isoformat() + "Z",
+        },
         "open_orders": [
             {
                 "symbol": o.get("symbol"),
