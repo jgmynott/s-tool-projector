@@ -381,6 +381,32 @@ def load_picks() -> list[dict]:
     return picks
 
 
+def load_rotation_pool() -> list[dict]:
+    """Wider candidate pool for the daytrade rotator. Combines the scored
+    `picks` (top-10 per tier = 30) with the `asymmetric_picks` (top-20 by
+    moonshot score) deduped by symbol, then re-sorts by score. The picks
+    file caps each tier at 10 names, so a naive picks[15:50] slice
+    returns only 15 candidates — and after the same-day re-entry guard
+    cycles through them once the rotator runs dry. Combining tiers gives
+    ~45-50 unique candidates per session, enough to keep the 12-tick
+    rotation cron supplied.
+
+    Asymmetric-tier picks may also be tier-tagged conservative/moderate/
+    aggressive (the `in_asymmetric` flag is what makes them asymmetric),
+    so the TRADE_TIERS filter still applies."""
+    if not PICKS_PATH.exists():
+        log.error("portfolio_picks.json missing — run the engine first")
+        return []
+    d = json.loads(PICKS_PATH.read_text())
+    base = [p for p in (d.get("picks") or []) if p.get("tier") in TRADE_TIERS]
+    asym = [p for p in (d.get("asymmetric_picks") or []) if p.get("tier") in TRADE_TIERS]
+    seen = {p["symbol"] for p in base}
+    extra = [p for p in asym if p["symbol"] not in seen]
+    combined = base + extra
+    combined.sort(key=lambda p: p.get("ensemble_score") or p.get("expected_return") or 0, reverse=True)
+    return combined
+
+
 def picks_for_sleeve(picks: list[dict], sleeve_name: str) -> list[dict]:
     lo, hi = SLEEVES[sleeve_name]["rank_range"]
     return picks[lo:hi]
@@ -812,7 +838,11 @@ def cmd_dry(api: Alpaca, window: str) -> int:
     elif window == "close":
         plan = plan_close_window(acct, pos, state); print_close_plan(plan)
     elif window == "rotate":
-        plan = plan_rotate_window(picks, acct, pos, state); print_rotate_plan(plan)
+        # Rotator uses a wider candidate pool than the open window —
+        # picks + asymmetric_picks deduped — so 12 ticks/day don't dry up.
+        rotation_picks = load_rotation_pool()
+        plan = plan_rotate_window(rotation_picks, acct, pos, state)
+        print_rotate_plan(plan)
     print("(dry-run; no orders submitted)")
     return 0
 
@@ -905,7 +935,7 @@ def cmd_live(api: Alpaca, window: str) -> int:
         discord_alert_close_summary(realized_total, len(sell_rows_today), acct)
         return 0
     elif window == "rotate":
-        picks = load_picks()
+        picks = load_rotation_pool()
         if not picks: print("no picks"); return 4
         plan = plan_rotate_window(picks, acct, pos, state)
         print_rotate_plan(plan)
