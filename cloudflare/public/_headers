@@ -1,47 +1,23 @@
+# Global defaults — security policy + a short HTML cache window.
+# stale-while-revalidate lets the browser show stale content while
+# fetching fresh in the background, eliminating the white-flash between
+# in-app navigations. Per-path rules below override Cache-Control where
+# we want longer-lived caching (assets) or different policy (CSP for HTML).
 /*
   Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=(self "https://js.stripe.com")
+  Cache-Control: public, max-age=300, stale-while-revalidate=86400
 
-# HTML — short cache so deploys land within 5 minutes for repeat visitors,
-# but long enough that rapid in-app navigation reuses bytes from disk cache.
-# stale-while-revalidate lets the browser show stale content while fetching
-# fresh in the background — eliminates the white-flash between page nav.
+# HTML routes also get CSP — the global rule above handles cache.
 /*.html
   Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://*.clerk.accounts.dev https://*.clerk.com https://js.stripe.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.clerk.accounts.dev https://*.clerk.com https://api.stripe.com https://api-production-9fce.up.railway.app https://s-tool.io https://www.s-tool.io; frame-src https://js.stripe.com https://hooks.stripe.com https://*.clerk.accounts.dev; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https://*.stripe.com
-  Cache-Control: public, max-age=300, stale-while-revalidate=86400
 
-# Directory routes (no .html extension) get the same treatment — these are
-# the URLs users actually hit (/picks/, /track-record/, etc).
-/
-  Cache-Control: public, max-age=300, stale-while-revalidate=86400
-
-/picks/*
-  Cache-Control: public, max-age=300, stale-while-revalidate=86400
-
-/track-record/*
-  Cache-Control: public, max-age=300, stale-while-revalidate=86400
-
-/backtest/*
-  Cache-Control: public, max-age=300, stale-while-revalidate=86400
-
-/how/*
-  Cache-Control: public, max-age=300, stale-while-revalidate=86400
-
-/pricing/*
-  Cache-Control: public, max-age=300, stale-while-revalidate=86400
-
-/faq/*
-  Cache-Control: public, max-age=300, stale-while-revalidate=86400
-
-/app/*
-  Cache-Control: public, max-age=300, stale-while-revalidate=86400
-
-# Shared CSS/JS — long cache. Filenames are version-stable; bumping content
-# means we deploy a new file. 1 hour is conservative; could go higher once
-# we add hash-based filenames.
+# Shared CSS/JS — long cache. Filenames are version-stable; bumping
+# content means we deploy a new file. 1 hour is conservative; could go
+# higher once we add hash-based filenames.
 /shared/*
   Cache-Control: public, max-age=3600, stale-while-revalidate=86400
 
