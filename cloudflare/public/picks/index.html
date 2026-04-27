@@ -609,7 +609,7 @@ footer a { color: var(--text-mid); }
 @keyframes pf-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 .pf-paper-tag { font: 500 11px 'Inter'; color: var(--text-dim); border: 1px solid var(--border); padding: 4px 10px; border-radius: 999px; }
 
-.pf-equity-row { display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: end; margin-top: 8px; }
+.pf-equity-row { display: block; margin-top: 8px; }
 .pf-equity-num { font: 400 56px/1 'Crimson Text', Georgia, serif; letter-spacing: -0.022em; color: var(--text-hi); font-variant-numeric: tabular-nums; }
 .pf-equity-sub { display: flex; align-items: center; gap: 14px; margin-top: 10px; flex-wrap: wrap; }
 .pf-day-pill {
@@ -636,6 +636,43 @@ footer a { color: var(--text-mid); }
 .pf-curve { width: 240px; height: 64px; }
 .pf-curve path.line { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .pf-curve path.area { stroke: none; opacity: 0.18; }
+
+/* Interactive equity chart — replaces the cramped sparkline with a full-
+   width 200px chart that has its own row below the equity hero. Three
+   tabs (1D intraday · 1W last 7 daily · 1M last 30 daily) toggle the
+   data window without re-fetching. Hover snaps to nearest data point,
+   surfaces date + value in a floating tooltip. Pure SVG, no library. */
+.pf-chart-row { margin-top: 18px; }
+.pf-chart-tabs { display: flex; gap: 6px; margin-bottom: 10px; justify-content: flex-end; }
+.pf-chart-tab { background: transparent; border: 1px solid var(--border);
+  color: var(--text-dim); font: 600 11px 'Inter'; letter-spacing: 0.10em;
+  text-transform: uppercase; padding: 5px 12px; border-radius: 4px;
+  cursor: pointer; transition: all 0.15s ease; font-variant-numeric: tabular-nums; }
+.pf-chart-tab:hover { color: var(--text-mid); border-color: var(--border-strong); }
+.pf-chart-tab.active { color: var(--text-hi); border-color: var(--accent-lake);
+  background: rgba(95,170,197,0.08); }
+.pf-chart { position: relative; width: 100%; height: 200px; }
+.pf-chart-svg { width: 100%; height: 100%; overflow: visible; }
+.pf-chart-grid { stroke: var(--border); stroke-width: 1; stroke-dasharray: 2 4; opacity: 0.6; }
+.pf-chart-y-label { fill: var(--text-dim); font: 500 10px 'Inter'; text-anchor: end;
+  font-variant-numeric: tabular-nums; }
+.pf-chart-x-label { fill: var(--text-dim); font: 500 10px 'Inter'; text-anchor: middle;
+  font-variant-numeric: tabular-nums; }
+.pf-chart-area { stroke: none; opacity: 0.14; }
+.pf-chart-line { fill: none; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+.pf-chart-cursor { stroke: var(--text-mid); stroke-width: 1; stroke-dasharray: 3 3; pointer-events: none; }
+.pf-chart-dot { pointer-events: none; }
+.pf-chart-hit { cursor: crosshair; }
+.pf-chart-tooltip { position: absolute; pointer-events: none;
+  background: var(--bg-deep); border: 1px solid var(--border-strong);
+  border-radius: 4px; padding: 6px 10px; font: 500 11px 'Inter';
+  font-variant-numeric: tabular-nums; z-index: 10;
+  white-space: nowrap; transform: translate(-50%, -100%); margin-top: -8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+.pf-chart-tt-val { display: block; color: var(--text-hi); font-weight: 600; font-size: 12px; }
+.pf-chart-tt-date { display: block; color: var(--text-dim); margin-top: 2px; font-size: 10px; }
+.pf-chart-empty { padding: 60px 20px; text-align: center; color: var(--text-dim);
+  font: 500 12px 'Inter'; border: 1px dashed var(--border); border-radius: 6px; }
 
 .pf-sleeves { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 22px 0 8px; padding-top: 18px; border-top: 1px solid var(--border); }
 .pf-sleeves.four { grid-template-columns: repeat(4, 1fr); }
@@ -690,6 +727,41 @@ footer a { color: var(--text-mid); }
 .pf-bracket-labels { display: flex; justify-content: space-between; margin-top: 6px; font: 500 10px 'Inter'; color: var(--text-dim); font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
 .pf-bracket-labels .neg { color: var(--neg); }
 .pf-bracket-labels .pos { color: var(--pos); }
+
+/* Closed trades — paired buy/sell rows from today's Alpaca FILL activity.
+   Sits right below the live positions block so a viewer can scan
+   "what's open" then immediately "what just closed" without leaving the
+   page. Same color system as live positions for sleeve continuity. */
+.pf-closed-section { margin-top: 22px; padding-top: 22px; border-top: 1px solid var(--border); }
+.pf-closed-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
+.pf-closed-title { font: 500 13px 'Inter'; color: var(--text-mid); letter-spacing: 0.06em; }
+.pf-closed-summary { font: 500 12px 'Inter'; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+.pf-closed-summary .pos { color: var(--pos); }
+.pf-closed-summary .neg { color: var(--neg); }
+.pf-closed-list { display: flex; flex-direction: column; gap: 4px; }
+.pf-closed-row { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: baseline;
+  padding: 10px 14px; border: 1px solid var(--border); border-radius: 6px;
+  background: rgba(255,255,255,0.02); font: 500 12px 'Inter';
+  font-variant-numeric: tabular-nums; }
+.pf-closed-row:hover { border-color: var(--border-strong); background: rgba(255,255,255,0.035); }
+.pf-closed-time { color: var(--text-dim); min-width: 64px; font-size: 11px; }
+.pf-closed-sym { font: 600 14px 'Inter'; color: var(--text-hi); min-width: 54px; }
+.pf-closed-tag { font: 600 9px 'Inter'; padding: 2px 7px; border-radius: 3px; letter-spacing: 0.10em; text-transform: uppercase; }
+.pf-closed-tag.momentum { background: rgba(186,140,255,0.14); color: #ba8cff; }
+.pf-closed-tag.swing { background: rgba(95,170,197,0.14); color: var(--accent-lake); }
+.pf-closed-tag.daytrade { background: rgba(232,184,106,0.14); color: #e8b86a; }
+.pf-closed-tag.unattributed { background: rgba(155,161,185,0.10); color: var(--text-dim); }
+.pf-closed-flow { color: var(--text-mid); flex: 1 1 220px; }
+.pf-closed-flow .arrow { color: var(--text-dim); margin: 0 4px; }
+.pf-closed-pnl { font: 600 13px 'Inter'; min-width: 90px; text-align: right; }
+.pf-closed-pnl.pos { color: var(--pos); }
+.pf-closed-pnl.neg { color: var(--neg); }
+.pf-closed-pct { font: 500 11px 'Inter'; color: var(--text-dim); min-width: 56px; text-align: right; }
+.pf-closed-empty { padding: 22px; text-align: center; font: 500 13px 'Inter';
+  color: var(--text-mid); border: 1px dashed var(--border); border-radius: 6px; }
+.pf-closed-empty .small { font-size: 11px; color: var(--text-dim); display: block; margin-top: 4px; }
+.pf-closed-cta { margin-top: 10px; padding: 10px 14px; text-align: center; font: 500 12px 'Inter'; color: var(--text-mid); border-top: 1px dashed var(--border); }
+.pf-closed-cta a { color: var(--accent-lake); text-decoration: underline; text-underline-offset: 3px; }
 
 /* Pending-order strip — surfaces in-flight bracket buys submitted by the
    trader but not yet filled at Alpaca. Lake-blue tint to match the live
@@ -751,6 +823,9 @@ footer a { color: var(--text-mid); }
   .pf-pending { flex-direction: column; align-items: flex-start; }
   .pf-pending-label { font-size: 11px; }
   .pf-pending-item { font-size: 11px; }
+  /* Closed-row PnL/pct shrink + push to right on narrow widths */
+  .pf-closed-pnl { min-width: 70px; font-size: 12px; }
+  .pf-closed-pct { min-width: 0; }
 }
 </style>
 <script async
@@ -932,6 +1007,190 @@ function pfSparkline(eq) {
     <path class="line" d="${line}" stroke="${stroke}"/>
   </svg>`;
 }
+
+// ── Interactive equity chart (D / W / M views) ──
+// User selection persists across 30s auto-refreshes via window.__pfChartWindow.
+// Default to 1M for the broadest signal on a 30-day daily history.
+function pfEquityChart(data) {
+  const win = window.__pfChartWindow || '1M';
+  let pts, ts, isIntraday = false;
+  if (win === '1D') {
+    pts = (data.equity_intraday?.equity || []).slice();
+    ts  = (data.equity_intraday?.timestamps || []).slice();
+    isIntraday = true;
+  } else {
+    const allPts = data.equity_history?.equity || [];
+    const allTs  = data.equity_history?.timestamps || [];
+    const n = win === '1W' ? 7 : 30;
+    pts = allPts.slice(-n);
+    ts  = allTs.slice(-n);
+  }
+  const tabs = pfChartTabs(win);
+  if (!pts || pts.length < 2) {
+    return `<div class="pf-chart-row">${tabs}
+      <div class="pf-chart-empty">No data for this window yet — chart fills in as the trader runs.</div>
+    </div>`;
+  }
+  return `<div class="pf-chart-row">${tabs}${pfChartSvg(pts, ts, isIntraday)}</div>`;
+}
+
+function pfChartTabs(active) {
+  const tabs = [['1D', '1D'], ['1W', '1W'], ['1M', '1M']];
+  return `<div class="pf-chart-tabs">
+    ${tabs.map(([v, label]) =>
+      `<button class="pf-chart-tab${v === active ? ' active' : ''}" data-pfwin="${v}">${label}</button>`
+    ).join('')}
+  </div>`;
+}
+
+function pfChartSvg(pts, ts, isIntraday) {
+  // viewBox dimensions — width is responsive via preserveAspectRatio
+  const w = 600, h = 200, padL = 56, padR = 14, padT = 14, padB = 30;
+  const innerW = w - padL - padR;
+  const innerH = h - padT - padB;
+
+  const min = Math.min(...pts), max = Math.max(...pts);
+  const span = (max - min) || 1;
+  const yPad = span * 0.06;
+  const yMin = min - yPad, yMax = max + yPad;
+  const yRange = yMax - yMin;
+
+  const x = (i) => padL + (i / (pts.length - 1)) * innerW;
+  const y = (v) => padT + (1 - (v - yMin) / yRange) * innerH;
+
+  const last = pts[pts.length - 1], first = pts[0];
+  const stroke = last >= first ? 'var(--pos)' : 'var(--neg)';
+  const strokeRaw = last >= first ? '#6EE7B7' : '#FCA5A5';   // for fill (CSS var won't resolve in fill attr)
+
+  const linePts = pts.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`);
+  const linePath = `M ${linePts.join(' L ')}`;
+  const areaPath = `${linePath} L ${x(pts.length - 1).toFixed(1)},${(padT + innerH).toFixed(1)} L ${padL.toFixed(1)},${(padT + innerH).toFixed(1)} Z`;
+
+  // Y-axis: 4 evenly-spaced ticks
+  const yTickN = 4;
+  let yLabels = '';
+  for (let i = 0; i <= yTickN; i++) {
+    const v = yMin + (yRange * i / yTickN);
+    const yPos = y(v);
+    yLabels += `<line x1="${padL}" y1="${yPos.toFixed(1)}" x2="${(w - padR).toFixed(1)}" y2="${yPos.toFixed(1)}" class="pf-chart-grid"/>
+      <text x="${(padL - 8).toFixed(1)}" y="${(yPos + 3).toFixed(1)}" class="pf-chart-y-label">$${Math.round(v).toLocaleString('en-US')}</text>`;
+  }
+
+  // X-axis: up to 6 ticks evenly across the data span
+  const xTickN = Math.min(6, pts.length);
+  let xLabels = '';
+  for (let i = 0; i < xTickN; i++) {
+    const idx = Math.floor((pts.length - 1) * i / (xTickN - 1));
+    const xPos = x(idx);
+    xLabels += `<text x="${xPos.toFixed(1)}" y="${(h - 10).toFixed(1)}" class="pf-chart-x-label">${pfFmtTickLabel(ts[idx], isIntraday)}</text>`;
+  }
+
+  // Hover hit-rects — invisible, one per data point, capture mouseenter/leave
+  const halfStep = pts.length > 1 ? innerW / (pts.length - 1) / 2 : innerW / 2;
+  let hitRects = '';
+  for (let i = 0; i < pts.length; i++) {
+    const cx = x(i);
+    const cy = y(pts[i]);
+    hitRects += `<rect x="${(cx - halfStep).toFixed(1)}" y="${padT}" width="${(halfStep * 2).toFixed(1)}" height="${innerH}" fill="transparent" class="pf-chart-hit" data-cx="${cx.toFixed(1)}" data-cy="${cy.toFixed(1)}" data-val="${pts[i].toFixed(2)}" data-date="${pfFmtTooltipDate(ts[i], isIntraday)}"/>`;
+  }
+
+  return `<div class="pf-chart" id="pfChart">
+    <svg class="pf-chart-svg" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+      ${yLabels}
+      ${xLabels}
+      <path class="pf-chart-area" d="${areaPath}" fill="${strokeRaw}"/>
+      <path class="pf-chart-line" d="${linePath}" stroke="${stroke}"/>
+      ${hitRects}
+      <line class="pf-chart-cursor" x1="0" y1="${padT}" x2="0" y2="${(padT + innerH).toFixed(1)}" style="display:none;"/>
+      <circle class="pf-chart-dot" cx="0" cy="0" r="4" fill="${strokeRaw}" stroke="var(--bg-surface)" stroke-width="2" style="display:none;"/>
+    </svg>
+    <div class="pf-chart-tooltip" style="display:none;">
+      <span class="pf-chart-tt-val"></span>
+      <span class="pf-chart-tt-date"></span>
+    </div>
+  </div>`;
+}
+
+function pfFmtTickLabel(t, isIntraday) {
+  if (t == null) return '';
+  const d = (typeof t === 'number') ? new Date(t * 1000) : new Date(t);
+  if (isIntraday) {
+    return d.toLocaleTimeString(undefined, { hour: 'numeric', hour12: true });
+  }
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+function pfFmtTooltipDate(t, isIntraday) {
+  if (t == null) return '';
+  const d = (typeof t === 'number') ? new Date(t * 1000) : new Date(t);
+  if (isIntraday) {
+    return d.toLocaleString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true, month: 'short', day: 'numeric' });
+  }
+  return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+// Wire chart-tab clicks (delegated, page-wide). Stashes window selection,
+// then re-renders ONLY the chart container so the rest of the panel stays
+// stable. Also wire hover on hit rects to position cursor + tooltip.
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('.pf-chart-tab');
+  if (!btn) return;
+  const win = btn.dataset.pfwin;
+  if (!win || !window.__pfData) return;
+  window.__pfChartWindow = win;
+  const row = document.querySelector('.pf-chart-row');
+  if (!row) return;
+  // Replace just the chart row in place
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = pfEquityChart(window.__pfData);
+  row.replaceWith(wrapper.firstElementChild);
+});
+
+// Hover on hit rects — show cursor line, dot at data point, and floating
+// tooltip with date + value. mouseleave on the SVG hides everything.
+document.addEventListener('mouseover', (e) => {
+  const rect = e.target.closest('.pf-chart-hit');
+  if (!rect) return;
+  const chart = rect.closest('.pf-chart');
+  if (!chart) return;
+  const cx = parseFloat(rect.dataset.cx);
+  const cy = parseFloat(rect.dataset.cy);
+  const cursor = chart.querySelector('.pf-chart-cursor');
+  const dot    = chart.querySelector('.pf-chart-dot');
+  const tip    = chart.querySelector('.pf-chart-tooltip');
+  if (cursor) {
+    cursor.setAttribute('x1', cx); cursor.setAttribute('x2', cx);
+    cursor.style.display = '';
+  }
+  if (dot) {
+    dot.setAttribute('cx', cx); dot.setAttribute('cy', cy);
+    dot.style.display = '';
+  }
+  if (tip) {
+    // Position tooltip in client coords. Convert SVG coords (0-600) → px.
+    const svg = chart.querySelector('.pf-chart-svg');
+    const bbox = svg.getBoundingClientRect();
+    const chartBox = chart.getBoundingClientRect();
+    const px = (cx / 600) * bbox.width + (bbox.left - chartBox.left);
+    const py = (cy / 200) * bbox.height + (bbox.top - chartBox.top);
+    tip.querySelector('.pf-chart-tt-val').textContent = `$${parseFloat(rect.dataset.val).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+    tip.querySelector('.pf-chart-tt-date').textContent = rect.dataset.date;
+    tip.style.left = `${px}px`;
+    tip.style.top  = `${py}px`;
+    tip.style.display = '';
+  }
+});
+document.addEventListener('mouseout', (e) => {
+  const chart = e.target.closest('.pf-chart');
+  if (!chart) return;
+  // Only hide if we're actually leaving the chart area
+  const related = e.relatedTarget;
+  if (related && chart.contains(related)) return;
+  ['.pf-chart-cursor', '.pf-chart-dot', '.pf-chart-tooltip'].forEach(sel => {
+    const el = chart.querySelector(sel);
+    if (el) el.style.display = 'none';
+  });
+});
 function pfSleeveCard(name, summary, label) {
   const upnl = summary?.upnl || 0;
   const realized = summary?.realized_today || 0;
@@ -993,6 +1252,87 @@ function pfPendingOrdersStrip(orders) {
     <span class="pf-pending-icon">↻</span>
     <span class="pf-pending-label">${pending.length} ${noun} pending fill</span>
     ${items}${more}
+  </div>`;
+}
+
+// Closed-trades section — renders the chronological list of trades that
+// closed today (paired buy + sell from Alpaca FILL activities). Sits
+// directly below the live positions block so the eye flows
+// open → closed for cross-reference. closed_today comes pre-paired from
+// /api/portfolio: {symbol, qty, buy_price, sell_price, pnl, sleeve, closed_at}.
+// Non-strategist sees teaser-truncated 3 rows + upgrade nudge.
+function pfClosedTradesPanel(closedToday, isStrategist, totalRealizedToday) {
+  const rows = closedToday || [];
+  // When the trader hasn't fired any closes yet today, show an honest
+  // empty state rather than hiding the section entirely — keeps the
+  // structural placeholder visible so visitors know to expect it later.
+  if (!rows.length) {
+    return `<div class="pf-closed-section">
+      <div class="pf-closed-head">
+        <span class="pf-closed-title">Closed today</span>
+        <span class="pf-closed-summary">No closes yet · daytrade EOD at 19:55 UTC</span>
+      </div>
+      <div class="pf-closed-empty">
+        <strong>The trader hasn't closed any positions today.</strong>
+        <span class="small">Daytrade sleeve force-closes at market close (15:55 ET / 19:55 UTC). Bracket stops/targets close earlier if hit.</span>
+      </div>
+    </div>`;
+  }
+
+  // Aggregate header: count + summed P&L
+  const total = totalRealizedToday != null
+    ? totalRealizedToday
+    : rows.reduce((s, r) => s + (r.pnl || 0), 0);
+  const totalCls = total > 0.5 ? 'pos' : (total < -0.5 ? 'neg' : '');
+  const totalSign = total >= 0 ? '+' : '−';
+  const totalStr = `${totalSign}${fmtUSD(Math.abs(total), { digits: 0 }).replace(/^[\+\-−]/, '')}`;
+
+  const fmtTime = (iso) => {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    return d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: false });
+  };
+  const fmtMoney = (v) => v == null ? '—'
+    : (v >= 100 ? `$${Number(v).toFixed(0)}` : `$${Number(v).toFixed(2)}`);
+
+  const items = rows.map(r => {
+    const sleeve = r.sleeve || 'unattributed';
+    const pnl = r.pnl || 0;
+    const pnlCls = pnl > 0 ? 'pos' : (pnl < 0 ? 'neg' : '');
+    const pnlSign = pnl >= 0 ? '+' : '−';
+    const pnlStr = `${pnlSign}$${Math.abs(pnl).toFixed(2)}`;
+    // Pct = (sell - buy) / buy. Skip when buy_price = 0 (defensive).
+    let pctStr = '';
+    if (r.buy_price && r.buy_price > 0) {
+      const pct = ((r.sell_price - r.buy_price) / r.buy_price) * 100;
+      pctStr = `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%`;
+    }
+    return `<div class="pf-closed-row">
+      <span class="pf-closed-time">${fmtTime(r.closed_at)}</span>
+      <span class="pf-closed-tag ${sleeve}">${sleeve}</span>
+      <span class="pf-closed-sym">${r.symbol || '—'}</span>
+      <span class="pf-closed-flow">
+        ${Math.round(r.qty || 0)} qty · ${fmtMoney(r.buy_price)}<span class="arrow">→</span>${fmtMoney(r.sell_price)}
+      </span>
+      <span class="pf-closed-pnl ${pnlCls}">${pnlStr}</span>
+      <span class="pf-closed-pct">${pctStr}</span>
+    </div>`;
+  }).join('');
+
+  const teaserCta = !isStrategist
+    ? `<div class="pf-closed-cta">Showing ${rows.length} most recent — <a href="/pricing">unlock the full ledger</a> to see every fill, sleeve, and outcome from the past 90 days.</div>`
+    : '';
+
+  return `<div class="pf-closed-section">
+    <div class="pf-closed-head">
+      <span class="pf-closed-title">Closed today</span>
+      <span class="pf-closed-summary">
+        ${rows.length} ${rows.length === 1 ? 'trade' : 'trades'} ·
+        <span class="${totalCls}">${totalStr} realized</span>
+      </span>
+    </div>
+    <div class="pf-closed-list">${items}</div>
+    ${teaserCta}
   </div>`;
 }
 
@@ -1107,15 +1447,18 @@ function renderPortfolio(data) {
   const sign = dc > 0 ? '+' : (dc < 0 ? '−' : '');
   const dcAbs = Math.abs(dc), dcpAbs = Math.abs(dcp * 100);
   const paperTag = acct.is_paper ? `<span class="pf-paper-tag">Paper · ${acct.multiplier || 1}× margin</span>` : '';
-  // Prefer the intraday curve while there's signal in it (any point that
-  // diverges from the starting baseline). Falls back to the daily 1-month
-  // history outside trading hours or before any moves today. Without this
-  // pre-trading the spark would render as a 4-day flat line at $100k.
-  const intradayPts = data.equity_intraday?.equity || [];
-  const intradayHasSignal = intradayPts.length > 1
-    && intradayPts.some(v => Math.abs((v || 0) - (intradayPts[0] || 0)) > 0.01);
-  const sparkSrc = intradayHasSignal ? intradayPts : (data.equity_history?.equity || []);
-  const spark = pfSparkline(sparkSrc);
+  // Stash full payload so the chart's tab buttons can re-render without
+  // re-fetching. Picked up by the document-level click handler.
+  window.__pfData = data;
+  // Pick a default chart window if none set: 1D when intraday has signal,
+  // else 1M (the daily 30-day history).
+  if (!window.__pfChartWindow) {
+    const intradayPts = data.equity_intraday?.equity || [];
+    const intradayHasSignal = intradayPts.length > 1
+      && intradayPts.some(v => Math.abs((v || 0) - (intradayPts[0] || 0)) > 0.01);
+    window.__pfChartWindow = intradayHasSignal ? '1D' : '1M';
+  }
+  const equityChart = pfEquityChart(data);
   const sleeves = data.sleeves || {};
   const positions = data.positions || [];
   const realizedToday = data.realized_today || 0;
@@ -1197,8 +1540,8 @@ function renderPortfolio(data) {
           ${totalPositions > 0 ? `<span class="pf-util">${utilStr} deployed · ${fmtUSD(totalMv, { digits: 0 })} of ${fmtUSD(totalCapacity, { digits: 0 })} cap</span>` : ''}
         </div>
       </div>
-      ${spark}
     </div>
+    ${equityChart}
     ${pfPendingOrdersStrip(data.open_orders)}
     <div class="pf-positions-head">
       <span class="pf-positions-title">Open positions</span>
@@ -1216,6 +1559,7 @@ function renderPortfolio(data) {
       </span>
     </div>
     ${positionsBlock}
+    ${pfClosedTradesPanel(closedToday, !data.teaser, realizedToday)}
     ${sleeveBlock}
   </section>`;
 }
