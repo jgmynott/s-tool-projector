@@ -892,6 +892,28 @@ def portfolio(request: Request, user: Optional[dict] = Depends(auth.optional_use
         except Exception:
             legacy_entries = {}
 
+    # Build sym → source_tier map from the daily picks scan. Asymmetric
+    # picks are checked first so a name appearing in both lists is tagged
+    # "asymmetric" (the more specific signal). Lets the live position card
+    # show users which section of /picks the position originated from —
+    # ties the live execution back to the published thesis.
+    tier_by_sym: dict = {}
+    picks_path = Path(__file__).parent / "portfolio_picks.json"
+    if picks_path.exists():
+        try:
+            picks_data = _json.loads(picks_path.read_text()) or {}
+            for ap in (picks_data.get("asymmetric_picks") or []):
+                s = ap.get("symbol")
+                if s:
+                    tier_by_sym[s] = "asymmetric"
+            for pk in (picks_data.get("picks") or []):
+                s = pk.get("symbol")
+                t = pk.get("tier")
+                if s and t and s not in tier_by_sym:
+                    tier_by_sym[s] = t
+        except Exception:
+            tier_by_sym = {}
+
     from datetime import datetime as _dt2
     now = _dt2.utcnow()
 
@@ -932,6 +954,7 @@ def portfolio(request: Request, user: Optional[dict] = Depends(auth.optional_use
             "unrealized_plpc": float(p["unrealized_plpc"]),
             "change_today_pct": float(p.get("change_today", 0)) if p.get("change_today") else None,
             "sleeve": sleeve,
+            "source_tier": tier_by_sym.get(sym),
             "stop_price": stop_price,
             "target_price": target_price,
             "opened_at": opened_at,
@@ -986,6 +1009,7 @@ def portfolio(request: Request, user: Optional[dict] = Depends(auth.optional_use
                         "symbol": sym, "qty": take,
                         "buy_price": lot_price, "sell_price": price,
                         "pnl": pnl, "sleeve": lot_sleeve,
+                        "source_tier": tier_by_sym.get(sym),
                         "closed_at": a.get("transaction_time"),
                     })
                     lot_qty -= take
@@ -1091,6 +1115,40 @@ def portfolio(request: Request, user: Optional[dict] = Depends(auth.optional_use
         if s in sleeve_summary:
             sleeve_summary[s]["realized_today"] = pnl
 
+    # Build a SPY close-series aligned to equity_history.timestamps so the
+    # frontend chart can overlay SPY as a comparison line without a second
+    # network round-trip. spy_bars is daily; equity_history is also daily —
+    # match by ISO date and forward-fill weekends/holidays where Alpaca's
+    # SPY history skips a day. Returns parallel arrays so chart code can
+    # zip them by index.
+    spy_history_aligned: list = []
+    try:
+        bars_all = (spy_bars or {}).get("bars") or []
+        spy_by_date: dict = {}
+        for b in bars_all:
+            t = b.get("t") or ""
+            c = b.get("c")
+            if t and c is not None:
+                spy_by_date[t[:10]] = float(c)
+        if spy_by_date and hist.get("timestamp"):
+            from datetime import datetime as _dt_spy
+            last_close = None
+            for ts in (hist.get("timestamp") or []):
+                try:
+                    iso = _dt_spy.utcfromtimestamp(ts).date().isoformat()
+                except Exception:
+                    spy_history_aligned.append(None)
+                    continue
+                v = spy_by_date.get(iso)
+                if v is None:
+                    # forward-fill weekends/holidays from the prior known close
+                    spy_history_aligned.append(last_close)
+                else:
+                    last_close = v
+                    spy_history_aligned.append(v)
+    except Exception:
+        spy_history_aligned = []
+
     payload = {
         "is_strategist": is_strategist,
         "as_of": now.isoformat() + "Z",
@@ -1107,6 +1165,7 @@ def portfolio(request: Request, user: Optional[dict] = Depends(auth.optional_use
             "timestamps": hist.get("timestamp", []),
             "equity": hist.get("equity", []),
             "profit_loss": hist.get("profit_loss", []),
+            "spy_close": spy_history_aligned,
         },
         "equity_intraday": {
             "timestamps": intraday.get("timestamp", []),

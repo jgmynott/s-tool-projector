@@ -20,6 +20,14 @@
   --border: rgba(155,161,185,0.14);
   --border-strong: rgba(95,170,197,0.30);
   --pos: #6ee7b7; --neg: #fca5a5; --caution: #f5d58f;
+  /* Canonical tier palette — same hues used on /track-record so a pick's
+     "section of origin" reads identically wherever it surfaces (live
+     positions, picks page, journal feed, track record). Risk progresses
+     cool→warm: lake → amber → orange → violet. */
+  --tier-conservative: #5FAAC5;
+  --tier-moderate:     #e8b86a;
+  --tier-aggressive:   #e8946a;
+  --tier-asymmetric:   #ba8cff;
   --radius-lg: 22px; --radius-md: 16px; --radius-sm: 10px;
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -76,11 +84,22 @@ header.hero { padding: 80px 0 40px; }
 
 /* ── Tier sections ───────────────────────────────────────────── */
 .tier-section { margin: 72px 0; }
-.tier-head { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 12px 24px; margin-bottom: 28px; padding-bottom: 18px; border-bottom: 1px solid var(--border); }
+.tier-head { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 12px 24px; margin-bottom: 28px; padding: 0 0 18px 18px; border-bottom: 1px solid var(--border); border-left: 3px solid var(--accent-lake); }
 .tier-name { font-family: 'Crimson Text', serif; font-size: 36px; font-weight: 400; letter-spacing: -0.015em; }
 .tier-name em { color: var(--accent-lake); font-style: italic; }
 .tier-count { font: 500 13px 'Inter'; color: var(--text-dim); margin-left: 14px; }
 .tier-blurb { color: var(--text-mid); font-size: 15px; max-width: 58ch; line-height: 1.55; }
+/* Tier-specific accents — left bar + italic pop on the section header.
+   The pick rows below inherit the pick-card design; the header carries
+   the tier identity so the eye sweeps across one consistent color band. */
+.tier-section[data-tier="conservative"] .tier-head { border-left-color: var(--tier-conservative); }
+.tier-section[data-tier="conservative"] .tier-name em { color: var(--tier-conservative); }
+.tier-section[data-tier="moderate"]     .tier-head { border-left-color: var(--tier-moderate); }
+.tier-section[data-tier="moderate"]     .tier-name em { color: var(--tier-moderate); }
+.tier-section[data-tier="aggressive"]   .tier-head { border-left-color: var(--tier-aggressive); }
+.tier-section[data-tier="aggressive"]   .tier-name em { color: var(--tier-aggressive); }
+.asym-section .tier-head, .asym-section .asym-head { border-left: 3px solid var(--tier-asymmetric); padding-left: 18px; }
+.asym-section .asym-tier em { color: var(--tier-asymmetric); }
 
 /* ── Pick cards ──────────────────────────────────────────────── */
 .pick-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
@@ -660,9 +679,19 @@ footer a { color: var(--text-mid); }
   font-variant-numeric: tabular-nums; }
 .pf-chart-area { stroke: none; opacity: 0.14; }
 .pf-chart-line { fill: none; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+.pf-chart-spy-line { fill: none; stroke: #9BA1B9; stroke-width: 1.25;
+  stroke-dasharray: 4 3; stroke-linecap: round; stroke-linejoin: round;
+  opacity: 0.85; }
 .pf-chart-cursor { stroke: var(--text-mid); stroke-width: 1; stroke-dasharray: 3 3; pointer-events: none; }
 .pf-chart-dot { pointer-events: none; }
 .pf-chart-hit { cursor: crosshair; }
+.pf-chart-legend { display: flex; gap: 22px; margin-top: 8px;
+  font: 500 11px 'Inter'; color: var(--text-mid); font-variant-numeric: tabular-nums; }
+.pf-chart-legend-item { display: inline-flex; align-items: center; gap: 7px; }
+.pf-chart-legend-item .pos { color: var(--pos); font-weight: 600; }
+.pf-chart-legend-item .neg { color: var(--neg); font-weight: 600; }
+.pf-chart-legend-swatch { display: inline-block; width: 14px; height: 2px; border-radius: 1px; }
+.pf-chart-legend-swatch.spy { background: repeating-linear-gradient(to right, #9BA1B9 0 4px, transparent 4px 7px); height: 2px; }
 .pf-chart-tooltip { position: absolute; pointer-events: none;
   background: var(--bg-deep); border: 1px solid var(--border-strong);
   border-radius: 4px; padding: 6px 10px; font: 500 11px 'Inter';
@@ -670,6 +699,7 @@ footer a { color: var(--text-mid); }
   white-space: nowrap; transform: translate(-50%, -100%); margin-top: -8px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
 .pf-chart-tt-val { display: block; color: var(--text-hi); font-weight: 600; font-size: 12px; }
+.pf-chart-tt-spy { display: block; color: #9BA1B9; font-weight: 500; font-size: 11px; margin-top: 1px; }
 .pf-chart-tt-date { display: block; color: var(--text-dim); margin-top: 2px; font-size: 10px; }
 .pf-chart-empty { padding: 60px 20px; text-align: center; color: var(--text-dim);
   font: 500 12px 'Inter'; border: 1px dashed var(--border); border-radius: 6px; }
@@ -708,6 +738,17 @@ footer a { color: var(--text-mid); }
 .pf-pos-tag.swing { background: rgba(95,170,197,0.14); color: var(--accent-lake); }
 .pf-pos-tag.daytrade { background: rgba(232,184,106,0.14); color: #e8b86a; }
 .pf-pos-tag.unattributed { background: rgba(155,161,185,0.10); color: var(--text-dim); }
+/* Source-tier pill — outline-only so it visually nests next to the
+   sleeve pill without competing for weight. Color tracks the tier
+   palette so a strategist seeing a violet pill knows it came from the
+   Asymmetric tier without having to read it. */
+.pf-pos-tier { font: 600 9px 'Inter'; padding: 2px 7px; border-radius: 4px;
+  letter-spacing: 0.10em; text-transform: uppercase; border: 1px solid currentColor;
+  background: transparent; }
+.pf-pos-tier.conservative { color: var(--tier-conservative); }
+.pf-pos-tier.moderate     { color: var(--tier-moderate); }
+.pf-pos-tier.aggressive   { color: var(--tier-aggressive); }
+.pf-pos-tier.asymmetric   { color: var(--tier-asymmetric); }
 .pf-pos-row2 { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
 .pf-pos-mv { font: 500 14px 'Inter'; color: var(--text-mid); font-variant-numeric: tabular-nums; }
 .pf-pos-pct { font: 600 14px 'Inter'; font-variant-numeric: tabular-nums; }
@@ -1013,17 +1054,35 @@ function pfSparkline(eq) {
 // Default to 1M for the broadest signal on a 30-day daily history.
 function pfEquityChart(data) {
   const win = window.__pfChartWindow || '1M';
-  let pts, ts, isIntraday = false;
+  let pts, ts, isIntraday = false, spyPts = null;
   if (win === '1D') {
     pts = (data.equity_intraday?.equity || []).slice();
     ts  = (data.equity_intraday?.timestamps || []).slice();
     isIntraday = true;
+    // SPY is daily-only from the API — no intraday SPY series yet.
+    // Hide the comparison line in 1D rather than fake a flat baseline.
+    spyPts = null;
   } else {
     const allPts = data.equity_history?.equity || [];
     const allTs  = data.equity_history?.timestamps || [];
+    const allSpy = data.equity_history?.spy_close || [];
     const n = win === '1W' ? 7 : 30;
     pts = allPts.slice(-n);
     ts  = allTs.slice(-n);
+    if (allSpy.length) {
+      const spySlice = allSpy.slice(-n);
+      // Normalize SPY to start at the same equity baseline as the trader
+      // so the alpha gap reads naturally on a single $ axis. Anchor on
+      // the first non-null SPY close paired with the first pts value.
+      const traderStart = pts[0];
+      let spyAnchor = null;
+      for (let i = 0; i < spySlice.length; i++) {
+        if (spySlice[i] != null) { spyAnchor = spySlice[i]; break; }
+      }
+      if (traderStart && spyAnchor) {
+        spyPts = spySlice.map(c => c == null ? null : (c / spyAnchor) * traderStart);
+      }
+    }
   }
   const tabs = pfChartTabs(win);
   if (!pts || pts.length < 2) {
@@ -1031,7 +1090,7 @@ function pfEquityChart(data) {
       <div class="pf-chart-empty">No data for this window yet — chart fills in as the trader runs.</div>
     </div>`;
   }
-  return `<div class="pf-chart-row">${tabs}${pfChartSvg(pts, ts, isIntraday)}</div>`;
+  return `<div class="pf-chart-row">${tabs}${pfChartSvg(pts, ts, isIntraday, spyPts)}</div>`;
 }
 
 function pfChartTabs(active) {
@@ -1043,13 +1102,19 @@ function pfChartTabs(active) {
   </div>`;
 }
 
-function pfChartSvg(pts, ts, isIntraday) {
+function pfChartSvg(pts, ts, isIntraday, spyPts) {
   // viewBox dimensions — width is responsive via preserveAspectRatio
   const w = 600, h = 200, padL = 56, padR = 14, padT = 14, padB = 30;
   const innerW = w - padL - padR;
   const innerH = h - padT - padB;
 
-  const min = Math.min(...pts), max = Math.max(...pts);
+  // Y-range covers BOTH series so SPY's curve doesn't clip out of frame
+  // when the trader has dramatically out- or under-performed.
+  const allVals = pts.slice();
+  if (spyPts && spyPts.length) {
+    for (const v of spyPts) if (v != null) allVals.push(v);
+  }
+  const min = Math.min(...allVals), max = Math.max(...allVals);
   const span = (max - min) || 1;
   const yPad = span * 0.06;
   const yMin = min - yPad, yMax = max + yPad;
@@ -1065,6 +1130,28 @@ function pfChartSvg(pts, ts, isIntraday) {
   const linePts = pts.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`);
   const linePath = `M ${linePts.join(' L ')}`;
   const areaPath = `${linePath} L ${x(pts.length - 1).toFixed(1)},${(padT + innerH).toFixed(1)} L ${padL.toFixed(1)},${(padT + innerH).toFixed(1)} Z`;
+
+  // SPY comparison line — neutral gray, dashed, drawn UNDER the trader
+  // line so the trader curve always reads as the headline. Skips null
+  // entries (forward-fill gaps from weekends/holidays).
+  let spyPath = '';
+  let spyLast = null;
+  if (spyPts && spyPts.length) {
+    const segs = [];
+    let cur = '';
+    for (let i = 0; i < spyPts.length; i++) {
+      const v = spyPts[i];
+      if (v == null) {
+        if (cur) { segs.push(cur); cur = ''; }
+        continue;
+      }
+      const xs = x(i).toFixed(1), ys = y(v).toFixed(1);
+      cur += cur ? ` L ${xs},${ys}` : `M ${xs},${ys}`;
+      spyLast = v;
+    }
+    if (cur) segs.push(cur);
+    spyPath = segs.join(' ');
+  }
 
   // Y-axis: 4 evenly-spaced ticks
   const yTickN = 4;
@@ -1085,13 +1172,36 @@ function pfChartSvg(pts, ts, isIntraday) {
     xLabels += `<text x="${xPos.toFixed(1)}" y="${(h - 10).toFixed(1)}" class="pf-chart-x-label">${pfFmtTickLabel(ts[idx], isIntraday)}</text>`;
   }
 
-  // Hover hit-rects — invisible, one per data point, capture mouseenter/leave
+  // Hover hit-rects — invisible, one per data point, capture mouseenter/leave.
+  // Encode SPY value (if any) on each rect so the tooltip can show both.
   const halfStep = pts.length > 1 ? innerW / (pts.length - 1) / 2 : innerW / 2;
   let hitRects = '';
   for (let i = 0; i < pts.length; i++) {
     const cx = x(i);
     const cy = y(pts[i]);
-    hitRects += `<rect x="${(cx - halfStep).toFixed(1)}" y="${padT}" width="${(halfStep * 2).toFixed(1)}" height="${innerH}" fill="transparent" class="pf-chart-hit" data-cx="${cx.toFixed(1)}" data-cy="${cy.toFixed(1)}" data-val="${pts[i].toFixed(2)}" data-date="${pfFmtTooltipDate(ts[i], isIntraday)}"/>`;
+    const spyV = (spyPts && spyPts[i] != null) ? spyPts[i].toFixed(2) : '';
+    hitRects += `<rect x="${(cx - halfStep).toFixed(1)}" y="${padT}" width="${(halfStep * 2).toFixed(1)}" height="${innerH}" fill="transparent" class="pf-chart-hit" data-cx="${cx.toFixed(1)}" data-cy="${cy.toFixed(1)}" data-val="${pts[i].toFixed(2)}" data-spy="${spyV}" data-date="${pfFmtTooltipDate(ts[i], isIntraday)}"/>`;
+  }
+
+  // Legend — only when SPY is on. Positioned in the chart row (below)
+  // so it doesn't crowd the SVG canvas itself.
+  let legend = '';
+  if (spyPath) {
+    const traderDelta = ((last - first) / first) * 100;
+    const spyFirst = spyPts.find(v => v != null);
+    const spyDelta = spyLast != null && spyFirst ? ((spyLast - spyFirst) / spyFirst) * 100 : null;
+    const traderCls = traderDelta >= 0 ? 'pos' : 'neg';
+    const spyCls = (spyDelta != null && spyDelta >= 0) ? 'pos' : 'neg';
+    legend = `<div class="pf-chart-legend">
+      <span class="pf-chart-legend-item">
+        <span class="pf-chart-legend-swatch trader" style="background:${strokeRaw};"></span>
+        S-Tool <span class="${traderCls}">${traderDelta >= 0 ? '+' : ''}${traderDelta.toFixed(2)}%</span>
+      </span>
+      <span class="pf-chart-legend-item">
+        <span class="pf-chart-legend-swatch spy"></span>
+        S&amp;P 500 ${spyDelta != null ? `<span class="${spyCls}">${spyDelta >= 0 ? '+' : ''}${spyDelta.toFixed(2)}%</span>` : ''}
+      </span>
+    </div>`;
   }
 
   return `<div class="pf-chart" id="pfChart">
@@ -1099,13 +1209,16 @@ function pfChartSvg(pts, ts, isIntraday) {
       ${yLabels}
       ${xLabels}
       <path class="pf-chart-area" d="${areaPath}" fill="${strokeRaw}"/>
+      ${spyPath ? `<path class="pf-chart-spy-line" d="${spyPath}"/>` : ''}
       <path class="pf-chart-line" d="${linePath}" stroke="${stroke}"/>
       ${hitRects}
       <line class="pf-chart-cursor" x1="0" y1="${padT}" x2="0" y2="${(padT + innerH).toFixed(1)}" style="display:none;"/>
       <circle class="pf-chart-dot" cx="0" cy="0" r="4" fill="${strokeRaw}" stroke="var(--bg-surface)" stroke-width="2" style="display:none;"/>
     </svg>
+    ${legend}
     <div class="pf-chart-tooltip" style="display:none;">
       <span class="pf-chart-tt-val"></span>
+      <span class="pf-chart-tt-spy" style="display:none;"></span>
       <span class="pf-chart-tt-date"></span>
     </div>
   </div>`;
@@ -1173,7 +1286,14 @@ document.addEventListener('mouseover', (e) => {
     const chartBox = chart.getBoundingClientRect();
     const px = (cx / 600) * bbox.width + (bbox.left - chartBox.left);
     const py = (cy / 200) * bbox.height + (bbox.top - chartBox.top);
-    tip.querySelector('.pf-chart-tt-val').textContent = `$${parseFloat(rect.dataset.val).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+    tip.querySelector('.pf-chart-tt-val').textContent = `S-Tool $${parseFloat(rect.dataset.val).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+    const spyEl = tip.querySelector('.pf-chart-tt-spy');
+    if (rect.dataset.spy) {
+      spyEl.textContent = `SPY $${parseFloat(rect.dataset.spy).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+      spyEl.style.display = '';
+    } else if (spyEl) {
+      spyEl.style.display = 'none';
+    }
     tip.querySelector('.pf-chart-tt-date').textContent = rect.dataset.date;
     tip.style.left = `${px}px`;
     tip.style.top  = `${py}px`;
@@ -1297,6 +1417,11 @@ function pfClosedTradesPanel(closedToday, isStrategist, totalRealizedToday) {
 
   const items = rows.map(r => {
     const sleeve = r.sleeve || 'unattributed';
+    const tier = r.source_tier || null;
+    const tierLabel = tier ? tier[0].toUpperCase() + tier.slice(1) : '';
+    const tierPill = tier
+      ? `<span class="pf-pos-tier ${tier}" title="From the ${tierLabel} section of /picks">${tierLabel}</span>`
+      : '';
     const pnl = r.pnl || 0;
     const pnlCls = pnl > 0 ? 'pos' : (pnl < 0 ? 'neg' : '');
     const pnlSign = pnl >= 0 ? '+' : '−';
@@ -1310,6 +1435,7 @@ function pfClosedTradesPanel(closedToday, isStrategist, totalRealizedToday) {
     return `<div class="pf-closed-row">
       <span class="pf-closed-time">${fmtTime(r.closed_at)}</span>
       <span class="pf-closed-tag ${sleeve}">${sleeve}</span>
+      ${tierPill}
       <span class="pf-closed-sym">${r.symbol || '—'}</span>
       <span class="pf-closed-flow">
         ${Math.round(r.qty || 0)} qty · ${fmtMoney(r.buy_price)}<span class="arrow">→</span>${fmtMoney(r.sell_price)}
@@ -1371,6 +1497,15 @@ function pfPositionCard(p) {
   const sleeveLabel = sleeve === 'momentum' ? 'Mo' :
                       sleeve === 'swing' ? 'Swing' :
                       sleeve === 'daytrade' ? 'Day' : '—';
+  // Source-tier pill ties the live position back to the /picks section
+  // it originated from. When the symbol is missing from today's picks
+  // (e.g. a leftover from prior days that hasn't dropped yet), fall back
+  // to no-tier rather than guessing.
+  const tier = p.source_tier || null;
+  const tierLabel = tier ? tier[0].toUpperCase() + tier.slice(1) : '';
+  const tierPill = tier
+    ? `<span class="pf-pos-tier ${tier}" title="From the ${tierLabel} section of /picks">${tierLabel}</span>`
+    : '';
   const heldLabel = p.days_held != null ? `${p.days_held}d held` : '';
 
   // Bracket strip: stop ◀ entry ●▶ target — visualises where the
@@ -1400,6 +1535,7 @@ function pfPositionCard(p) {
     <div class="pf-pos-row1">
       <span class="pf-pos-sym">${p.symbol}</span>
       <span class="pf-pos-tag ${sleeve}">${sleeveLabel}</span>
+      ${tierPill}
     </div>
     <div class="pf-pos-row2">
       <span class="pf-pos-mv">${fmtUSD(p.market_value, { digits: 0 })}</span>
@@ -2310,7 +2446,7 @@ function renderTabTierBody(tier, picks) {
          </button>
        </div>`
     : '';
-  return `<section class="tier-section">
+  return `<section class="tier-section" data-tier="${tier}">
     <div class="tier-head">
       <div style="min-width:0;flex:1;">
         <div class="tier-name">${TIER_COPY[tier].label} <span class="tier-count">${picks.length} ${picks.length === 1 ? 'pick' : 'picks'}</span></div>
