@@ -52,25 +52,44 @@ PICKS_PATH = ROOT / "portfolio_picks.json"
 STATE_PATH = ROOT / "research" / "trader_state.json"
 
 # ── Sleeve definitions. Edit here, not in the code below.
+#
+# Three disjoint sleeves, equity-share = each sleeve's fraction of total
+# equity (must sum to ≤ 1). Rank ranges are picks[start:end) and must
+# not overlap or Alpaca's one-position-per-symbol model would collapse
+# the buys with conflicting brackets. Top-5 (momentum) is the highest
+# conviction and gets the tightest hold + brackets; swing takes ranks
+# 5-15 with a 5-day cycle; daytrade picks up 15-25 for the intraday
+# rotation.
 SLEEVES = {
+    "momentum": {
+        "rank_range": (0, 5),          # picks[0..5) — top 5 by score
+        "hold_days": 3,                # tight cycle on highest-conviction
+        "stop_pct": -0.05,             # tighter than swing, looser than daytrade
+        "target_pct": 0.10,             # quicker take-profit
+        "leverage": 1.5,               # of equity_share
+        "equity_share": 1/3,           # equal third of total equity
+        "intraday_only": False,
+    },
     "swing": {
-        "rank_range": (0, 10),         # picks[0..10) — top-10 by score
+        "rank_range": (5, 15),         # picks[5..15) — ranks 6-15
         "hold_days": 5,                # exit after 5 trading days
         "stop_pct": -0.07,             # bracket stop
         "target_pct": 0.15,            # bracket target
-        "leverage": 1.5,               # of half-equity
+        "leverage": 1.5,               # of equity_share
+        "equity_share": 1/3,
         "intraday_only": False,
     },
     "daytrade": {
-        "rank_range": (10, 20),        # picks[10..20) — ranks 11-20
+        "rank_range": (15, 25),        # picks[15..25) — ranks 16-25
         "hold_days": 0,                # exit same day at 15:55 ET
         "stop_pct": -0.03,             # tighter stop, intraday vol is small
         "target_pct": 0.05,             # +5% target — realistic 1d top-tail
         "leverage": 1.0,               # 1x — net-negative EV per backtest
+        "equity_share": 1/3,
         "intraday_only": True,
     },
 }
-SLEEVE_NAMES = list(SLEEVES.keys())  # ['swing', 'daytrade']
+SLEEVE_NAMES = list(SLEEVES.keys())  # ['momentum', 'swing', 'daytrade']
 
 TRADE_TIERS = {"conservative", "moderate", "aggressive"}
 PORTFOLIO_DRAWDOWN_HALT_PCT = -0.03  # close everything if portfolio is down >3% intraday
@@ -380,8 +399,15 @@ def trading_days_since(iso_date: str, today: datetime) -> int:
     return n
 
 
-def equity_per_sleeve(equity: float) -> float:
-    return equity * 0.5  # 50/50 fixed split
+def equity_per_sleeve(equity: float, sleeve_name: str = "swing") -> float:
+    """Each sleeve's share is configured in SLEEVES[*]['equity_share']
+    (a fraction of total equity). Defaults to even-split when a sleeve
+    forgets to declare a share — better than crashing the planner."""
+    cfg = SLEEVES.get(sleeve_name, {})
+    share = cfg.get("equity_share")
+    if share is None:
+        share = 1 / max(1, len(SLEEVES))
+    return equity * share
 
 
 # ── Order planning ──
@@ -399,7 +425,7 @@ def plan_open_window(picks: list[dict], account: dict, positions: list,
 
     for sleeve_name, cfg in SLEEVES.items():
         sleeve_picks = picks_for_sleeve(picks, sleeve_name)
-        sleeve_equity = equity_per_sleeve(equity)
+        sleeve_equity = equity_per_sleeve(equity, sleeve_name)
         target_capital = sleeve_equity * cfg["leverage"]
         n_slots = cfg["rank_range"][1] - cfg["rank_range"][0]
         per_position_target = target_capital / n_slots
@@ -433,8 +459,22 @@ def plan_open_window(picks: list[dict], account: dict, positions: list,
                               "unrealized_pl": pos["unrealized_pl"], "days_held": days_held})
 
         # ── Entries.
+        # Cap new buys at n_slots − (held positions in this sleeve that
+        # AREN'T being sold this run). Without this cap, sleeve transitions
+        # (e.g. swing's rank range moving from 0-10 to 5-15) would buy the
+        # entire new range on top of unexpired old positions, double-
+        # deploying the sleeve. The cap means we only fill up to the
+        # configured slot count; old positions just bleed off naturally
+        # as their hold cycles complete.
         selling_set = {s["symbol"] for s in sells}
+        held_after_sells = sum(1 for sym in sleeve_held if sym not in selling_set)
+        buy_budget = max(0, n_slots - held_after_sells)
+        if buy_budget < n_slots:
+            skipped.append({"symbol": "(cap)",
+                            "reason": f"sleeve at {held_after_sells}/{n_slots} after exits — buy_budget={buy_budget}"})
         for p in sleeve_picks:
+            if len(buys) >= buy_budget:
+                break
             sym = p["symbol"]
             if sym in held_by_symbol and sym not in selling_set:
                 # Already in this or another sleeve — never double up.

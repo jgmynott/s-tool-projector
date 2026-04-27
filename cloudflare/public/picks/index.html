@@ -638,8 +638,10 @@ footer a { color: var(--text-mid); }
 .pf-curve path.area { stroke: none; opacity: 0.18; }
 
 .pf-sleeves { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 22px 0 8px; padding-top: 18px; border-top: 1px solid var(--border); }
+.pf-sleeves.four { grid-template-columns: repeat(4, 1fr); }
 .pf-sleeve { padding: 12px 16px; border-radius: var(--radius-sm); background: rgba(255,255,255,0.02); border: 1px solid var(--border); }
 .pf-sleeve-name { font: 600 10px 'Inter'; color: var(--accent-lake); letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 6px; }
+.pf-sleeve-name.momentum { color: #ba8cff; }   /* high-conviction violet */
 .pf-sleeve-name.daytrade { color: #e8b86a; }
 .pf-sleeve-name.unattributed { color: var(--text-dim); }
 .pf-sleeve-mv { font: 500 16px 'Inter'; color: var(--text-hi); font-variant-numeric: tabular-nums; }
@@ -665,6 +667,7 @@ footer a { color: var(--text-mid); }
 .pf-pos-row1 { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .pf-pos-sym { font: 600 15px 'Inter'; color: var(--text-hi); letter-spacing: -0.005em; }
 .pf-pos-tag { font: 600 9px 'Inter'; padding: 2px 7px; border-radius: 4px; letter-spacing: 0.10em; text-transform: uppercase; }
+.pf-pos-tag.momentum { background: rgba(186,140,255,0.14); color: #ba8cff; }
 .pf-pos-tag.swing { background: rgba(95,170,197,0.14); color: var(--accent-lake); }
 .pf-pos-tag.daytrade { background: rgba(232,184,106,0.14); color: #e8b86a; }
 .pf-pos-tag.unattributed { background: rgba(155,161,185,0.10); color: var(--text-dim); }
@@ -920,7 +923,9 @@ function pfPositionCard(p) {
   const pctCls = pct > 0 ? 'pos' : (pct < 0 ? 'neg' : '');
   const plCls = (p.unrealized_pl || 0) >= 0 ? 'pos' : 'neg';
   const sleeve = p.sleeve || 'unattributed';
-  const sleeveLabel = sleeve === 'swing' ? 'Swing' : (sleeve === 'daytrade' ? 'Day' : '—');
+  const sleeveLabel = sleeve === 'momentum' ? 'Mo' :
+                      sleeve === 'swing' ? 'Swing' :
+                      sleeve === 'daytrade' ? 'Day' : '—';
   const heldLabel = p.days_held != null ? `${p.days_held}d held` : '';
 
   // Bracket strip: stop ◀ entry ●▶ target — visualises where the
@@ -1015,11 +1020,16 @@ function renderPortfolio(data) {
     || positions.reduce((s, p) => s + (p.market_value || 0), 0);
   const totalPositions = Object.values(sleeves).reduce((s, m) => s + (m?.n || 0), 0)
     || positions.length;
+  // Three-sleeve layout (momentum / swing / daytrade). "unattributed"
+  // surfaces only when there are unknown-sleeve positions — historically
+  // pre-CID-encoding entries; should be empty for any new account.
+  const hasUnattributed = (sleeves.unattributed?.n || 0) > 0;
   const sleeveBlock = `
-    <div class="pf-sleeves">
+    <div class="pf-sleeves${hasUnattributed ? ' four' : ''}">
+      ${pfSleeveCard('momentum', sleeves.momentum, '3-day momentum')}
       ${pfSleeveCard('swing', sleeves.swing, '5-day swing')}
       ${pfSleeveCard('daytrade', sleeves.daytrade, 'Day trade')}
-      ${pfSleeveCard('unattributed', sleeves.unattributed, 'Other')}
+      ${hasUnattributed ? pfSleeveCard('unattributed', sleeves.unattributed, 'Other') : ''}
     </div>`;
   let positionsBlock;
   if (totalPositions === 0) {
