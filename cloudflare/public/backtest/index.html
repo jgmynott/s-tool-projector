@@ -152,6 +152,23 @@ footer a:hover { color: var(--text-hi); }
   crossorigin="anonymous"
 ></script>
 <script defer src="/shared/nav.js"></script>
+<!-- s-tool speculation rules -->
+<script type="speculationrules">
+{
+  "prerender": [{
+    "where": { "href_matches": "/*" },
+    "eagerness": "moderate"
+  }]
+}
+</script>
+<!-- s-tool speculation rules -->
+<!-- s-tool sw register -->
+<script>
+  if ('serviceWorker' in navigator) {
+    addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+  }
+</script>
+<!-- s-tool sw register -->
 </head>
 <body>
 

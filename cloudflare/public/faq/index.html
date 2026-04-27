@@ -71,12 +71,29 @@ header.page-hero { padding: 80px 0 40px; }
 footer { border-top: 1px solid var(--border); padding: 40px 32px; text-align: center; color: var(--text-dim); font-size: 13px; margin-top: 80px; }
 footer a { color: var(--text-mid); }
 </style>
-<script async
-  data-clerk-publishable-key="pk_test_Zmx1ZW50LW1vbGUtNzEuY2xlcmsuYWNjb3VudHMuZGV2JA"
-  src="https://fluent-mole-71.clerk.accounts.dev/npm/@clerk/clerk-js@5/dist/clerk.browser.js"
-  crossorigin="anonymous"
-></script>
+<!-- Clerk SDK lazy-loaded on first sign-in click. /faq is pure marketing
+     and most visitors never sign in here. clerk-lazy auto-loads Clerk
+     if a session cookie exists, so signed-in users still see their
+     user pill rendered by nav.js. -->
+<script defer src="/shared/clerk-lazy.js"></script>
 <script defer src="/shared/nav.js"></script>
+<!-- s-tool speculation rules -->
+<script type="speculationrules">
+{
+  "prerender": [{
+    "where": { "href_matches": "/*" },
+    "eagerness": "moderate"
+  }]
+}
+</script>
+<!-- s-tool speculation rules -->
+<!-- s-tool sw register -->
+<script>
+  if ('serviceWorker' in navigator) {
+    addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+  }
+</script>
+<!-- s-tool sw register -->
 </head>
 <body>
 
@@ -93,7 +110,7 @@ footer a { color: var(--text-mid); }
       <a href="/faq" class="active">FAQ</a>
     </div>
     <div class="nav-end" id="navEnd">
-      <button class="signin-btn" onclick="window.Clerk?.openSignIn?.({afterSignInUrl:'/faq'})">Sign in</button>
+      <button class="signin-btn" onclick="lazySignIn('/faq')">Sign in</button>
     </div>
   </div>
 </nav>

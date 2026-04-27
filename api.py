@@ -756,6 +756,11 @@ def picks(
 
 # ── Live paper-trading portfolio (Alpaca) ──
 
+_PORTFOLIO_CACHE: dict = {}  # { is_strategist: (epoch_seconds, payload_dict) }
+_PORTFOLIO_CACHE_TTL = 5.0   # seconds — short enough to feel live, long
+                             # enough to absorb a burst of /picks refreshes
+
+
 @app.get("/api/portfolio")
 @limiter.limit("60/minute")
 def portfolio(request: Request, user: Optional[dict] = Depends(auth.optional_user)):
@@ -769,11 +774,25 @@ def portfolio(request: Request, user: Optional[dict] = Depends(auth.optional_use
     Set ALPACA_API_KEY / ALPACA_API_SECRET / ALPACA_BASE_URL on the
     Railway service. Returns 503 if creds aren't configured (the
     /picks UI degrades to "portfolio not yet wired").
+
+    Response is micro-cached for 5s per (is_strategist) bucket — the
+    fast path now serves cached bytes during refresh bursts instead
+    of fanning out 7 Alpaca calls + 2 SPY fetches on every poll.
     """
     is_strategist = False
     if user:
         user_row = users_db.upsert_user(users_conn, user["user_id"], email=user.get("email"))
         is_strategist = users_db.can_access_picks(user_row)
+
+    # Cache check — if a recent payload exists for this tier, serve it.
+    # The response is a fully-rendered dict; we only need to wrap it in
+    # the same JSONResponse with no-store so the BROWSER doesn't cache
+    # (we want the cache hit to be the only one, not a stale tab).
+    import time as _t_pf
+    _now_pf = _t_pf.time()
+    _hit = _PORTFOLIO_CACHE.get(is_strategist)
+    if _hit and (_now_pf - _hit[0]) < _PORTFOLIO_CACHE_TTL:
+        return JSONResponse(headers={"Cache-Control": "no-store", "X-Cache": "HIT"}, content=_hit[1])
 
     api_key = os.getenv("ALPACA_API_KEY")
     api_secret = os.getenv("ALPACA_API_SECRET")
@@ -1261,7 +1280,8 @@ def portfolio(request: Request, user: Optional[dict] = Depends(auth.optional_use
     if not is_strategist:
         payload["teaser"] = True
         payload["hint"] = "Position-level detail unlocks at Strategist tier."
-    return JSONResponse(headers={"Cache-Control": "no-store"}, content=payload)
+    _PORTFOLIO_CACHE[is_strategist] = (_now_pf, payload)
+    return JSONResponse(headers={"Cache-Control": "no-store", "X-Cache": "MISS"}, content=payload)
 
 
 @app.get("/api/trade-journal")

@@ -196,18 +196,25 @@ def check_picks_json():
 
 def check_frontend_field_refs():
     print("\n[2] Frontend /picks renders all API fields")
-    picks_html = ROOT / "cloudflare/public/picks/index.html"
-    if not picks_html.exists():
-        warn("picks/index.html missing — skipping")
+    # Picks render code lives in two places after the C-pass externalize:
+    # the HTML template + /shared/picks-app.js. Scan both so we don't false-
+    # positive on field references that moved into the external module.
+    sources = [
+        ROOT / "cloudflare/public/picks/index.html",
+        ROOT / "cloudflare/public/shared/picks-app.js",
+    ]
+    haystack = ""
+    for p in sources:
+        if p.exists():
+            haystack += p.read_text()
+    if not haystack:
+        warn("no picks frontend source found — skipping")
         return
-    html = picks_html.read_text()
-    # Smoke: ensure the page references each of the key fields. Tolerant
-    # of different access patterns (p.xxx, p?.xxx, p["xxx"]).
     check_fields = [
         "symbol", "expected_return", "sharpe_proxy", "current_price",
         "p50_target", "rationale", "confidence", "company_name",
     ]
-    missing = [f for f in check_fields if f not in html]
+    missing = [f for f in check_fields if f not in haystack]
     if missing:
         fail(f"frontend doesn't reference fields: {missing}")
     else:

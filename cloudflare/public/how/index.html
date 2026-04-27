@@ -142,12 +142,30 @@ footer a { color: var(--text-mid); }
     .article h1 { font-size: 30px; }
 }
 </style>
-<script async
-  data-clerk-publishable-key="pk_test_Zmx1ZW50LW1vbGUtNzEuY2xlcmsuYWNjb3VudHMuZGV2JA"
-  src="https://fluent-mole-71.clerk.accounts.dev/npm/@clerk/clerk-js@5/dist/clerk.browser.js"
-  crossorigin="anonymous"
-></script>
+<!-- Clerk SDK (~320KB) is lazy-loaded on first sign-in click. Pure
+     marketing page, most visitors never click Sign in. Saves the SDK
+     download + parse off the first-paint critical path. clerk-lazy.js
+     auto-loads Clerk if the __client_uat cookie indicates an existing
+     session, so signed-in users still get their user pill via nav.js. -->
+<script defer src="/shared/clerk-lazy.js"></script>
 <script defer src="/shared/nav.js"></script>
+<!-- s-tool speculation rules -->
+<script type="speculationrules">
+{
+  "prerender": [{
+    "where": { "href_matches": "/*" },
+    "eagerness": "moderate"
+  }]
+}
+</script>
+<!-- s-tool speculation rules -->
+<!-- s-tool sw register -->
+<script>
+  if ('serviceWorker' in navigator) {
+    addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+  }
+</script>
+<!-- s-tool sw register -->
 </head>
 <body>
 
@@ -167,7 +185,7 @@ footer a { color: var(--text-mid); }
             <a href="/faq">FAQ</a>
         </div>
         <div class="nav-end" id="navEnd">
-            <button class="signin-btn" onclick="window.Clerk?.openSignIn?.({afterSignInUrl:'/how'})">Sign in</button>
+            <button class="signin-btn" onclick="lazySignIn('/how')">Sign in</button>
         </div>
     </div>
 </nav>

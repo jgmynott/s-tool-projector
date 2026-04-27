@@ -1,0 +1,1798 @@
+const TIER_COPY = {
+  conservative: { label: 'Conservative', blurb: 'Low-volatility names with positive expected return and quality fundamentals. Built for capital preservation.' },
+  moderate:     { label: 'Moderate',     blurb: 'Mid-volatility tercile. Balanced risk with positive expected return. Core allocation.' },
+  aggressive:   { label: 'Aggressive',   blurb: 'Highest projected volatility with the largest expected moves either direction. Tactical set — size small per name.' },
+};
+
+const SECTOR_HINT = {
+  PLTR: 'Software · Analytics', COIN: 'Financials · Crypto', SOFI: 'Financials · Fintech',
+  NFLX: 'Media · Streaming', AVGO: 'Semis · Infrastructure', MU: 'Semis · Memory',
+  AMD: 'Semis · Compute', INTC: 'Semis · Compute', NVDA: 'Semis · AI',
+  GS: 'Financials · Banking', JPM: 'Financials · Banking', BAC: 'Financials · Banking',
+  CVX: 'Energy · Integrated', XOM: 'Energy · Integrated',
+  AAPL: 'Tech · Consumer', MSFT: 'Tech · Enterprise', GOOGL: 'Tech · Platform',
+  META: 'Tech · Platform', AMZN: 'Tech · Platform',
+  TSLA: 'Auto · EV', AMC: 'Consumer · Entertainment', GME: 'Consumer · Retail',
+  DIS: 'Media · Entertainment', NKE: 'Consumer · Apparel',
+};
+
+const fmtPct = (v, sign = true) => v == null ? '—' : `${sign && v >= 0 ? '+' : ''}${(v*100).toFixed(1)}%`;
+const fmtMoney = (v) => v == null ? '—' : `$${Number(v).toFixed(2)}`;
+const fmtSharpe = (v) => v == null ? '—' : Number(v).toFixed(2);
+
+// ── Tab navigation helpers ──
+// `switchTab(key)` swaps the active pill + the visible panel. Active tab
+// persists to localStorage so a return visit opens where you left off.
+window.switchTab = function(key) {
+  document.querySelectorAll('[data-tab-key]').forEach(btn => {
+    btn.classList.toggle('active', btn.getAttribute('data-tab-key') === key);
+  });
+  document.querySelectorAll('[data-panel-key]').forEach(panel => {
+    panel.classList.toggle('active', panel.getAttribute('data-panel-key') === key);
+  });
+  localStorage.setItem('stool_picks_tab', key);
+  // Scroll the active tab panel into view — user explicitly asked
+  // for a jump to the picks for that tier so they don't have to hunt.
+  // Deferred one frame so the active-class toggle has already laid out.
+  requestAnimationFrame(() => {
+    const panel = document.querySelector(`[data-panel-key="${key}"]`);
+    if (panel) {
+      panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  });
+};
+
+// "Show remaining N picks" toggle — keeps each tab short by default, lets
+// the user reveal the long tail inline without leaving the page.
+window.toggleShowAll = function(tier) {
+  const panel = document.querySelector(`[data-panel-key="${tier}"]`);
+  if (!panel) return;
+  panel.classList.toggle('show-all');
+  const btn = panel.querySelector('.show-all-btn');
+  if (btn) {
+    const hidden = panel.querySelectorAll('[data-overflow]').length;
+    btn.textContent = panel.classList.contains('show-all')
+      ? 'Show top 5 only'
+      : `Show remaining ${hidden} picks →`;
+  }
+};
+
+async function authHeaders() {
+  try { const t = await window.Clerk?.session?.getToken?.(); return t ? { Authorization: `Bearer ${t}` } : {}; } catch { return {}; }
+}
+
+async function startCheckout(tier) {
+  tier = tier || 'strategist';
+  if (!window.Clerk?.session) return window.Clerk?.openSignIn({ afterSignInUrl: '/picks' });
+  try {
+    const res = await fetch(`/api/billing/checkout?tier=${encodeURIComponent(tier)}`, { method: 'POST', headers: await authHeaders() });
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || `HTTP ${res.status}`);
+    const { checkout_url } = await res.json();
+    location.href = checkout_url;
+  } catch (e) { alert(`Checkout failed: ${e.message}`); }
+}
+
+// Nav pill + dropdown + dark-themed Clerk modal are handled by /shared/nav.js.
+// We still need a local refreshNavPill() reference because the load() loop
+// below calls it whenever picks data refreshes. Delegate to the shared impl.
+async function refreshNavPill() { return window.STNav?.refreshPill?.(); }
+
+function renderTrackRecord(summary) {
+  const cards = ['conservative','moderate','aggressive'].map(t => {
+    const s = (summary && summary[t]) || { n: 0 };
+    if (!s.n) {
+      return `<div class="tr-card">
+          <div class="tr-tier">${TIER_COPY[t].label}</div>
+          <div class="tr-waiting">Track record starts once picks mature (7d+). Cards refresh as they land.</div>
+      </div>`;
+    }
+    const cls = s.median_return >= 0 ? 'pos' : 'neg';
+    const hit = `${(s.hit_rate*100).toFixed(0)}%`;
+    return `<div class="tr-card">
+        <div class="tr-tier">${TIER_COPY[t].label}</div>
+        <div class="tr-big ${cls}">${fmtPct(s.median_return)}</div>
+        <div class="tr-bigsub">median realized &middot; <span class="hit-pill">${hit} hit</span> &middot; n=${s.n}</div>
+    </div>`;
+  }).join('');
+  return `<section class="trackrecord">
+      <div class="section-eyebrow">Live track record</div>
+      <h2 class="section-title">How the picks have actually done. <span class="muted">Realized returns on matured names.</span></h2>
+      <div class="tr-grid">${cards}</div>
+  </section>`;
+}
+
+// ── Live paper-portfolio panel ───────────────────────────────
+// Renders the Robinhood-style equity hero, sleeve summary, and per-position
+// cards for the actively-managed Alpaca paper account. Defensive against
+// every degraded state: no creds (503), upstream error (502), no positions
+// yet (empty hint), teaser mode (free user), zero equity_history points.
+function fmtUSD(v, opts) {
+  const o = opts || {};
+  const sign = (o.signed && v > 0) ? '+' : '';
+  const n = Math.abs(v);
+  const digits = (o.digits != null) ? o.digits : (n >= 1000 ? 0 : 2);
+  return `${v < 0 ? '-' : sign}$${n.toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits })}`;
+}
+function pfSparkline(eq) {
+  if (!eq || eq.length < 2) return '';
+  const w = 240, h = 64, pad = 4;
+  const xs = eq.length;
+  const min = Math.min(...eq), max = Math.max(...eq);
+  const range = (max - min) || 1;
+  const x = (i) => pad + (i / (xs - 1)) * (w - 2 * pad);
+  const y = (v) => pad + (1 - (v - min) / range) * (h - 2 * pad);
+  const pts = eq.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`);
+  const line = `M ${pts.join(' L ')}`;
+  const area = `${line} L ${x(xs - 1).toFixed(1)},${(h - pad).toFixed(1)} L ${x(0).toFixed(1)},${(h - pad).toFixed(1)} Z`;
+  const last = eq[eq.length - 1], first = eq[0];
+  const stroke = last >= first ? 'var(--pos)' : 'var(--neg)';
+  return `<svg class="pf-curve" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+    <path class="area" d="${area}" fill="${stroke}"/>
+    <path class="line" d="${line}" stroke="${stroke}"/>
+  </svg>`;
+}
+
+// ── Interactive equity chart (D / W / M views) ──
+// User selection persists across 30s auto-refreshes via window.__pfChartWindow.
+// Default to 1M for the broadest signal on a 30-day daily history.
+function pfEquityChart(data) {
+  const win = window.__pfChartWindow || '1M';
+  let pts, ts, isIntraday = false, spyPts = null;
+  if (win === '1D') {
+    // Filter intraday to regular trading hours (13:30-20:00 UTC = 9:30-16:00 ET)
+    // — Alpaca's portfolio history with extended_hours=true returns pre-market
+    // and after-hours bars that mostly add flat noise to the chart and dwarf
+    // the actual trading window visually.
+    const rawTs  = data.equity_intraday?.timestamps || [];
+    const rawEq  = data.equity_intraday?.equity || [];
+    const rawSpy = data.equity_intraday?.spy_close || [];
+    const keepIdx = pfFilterRTH(rawTs);
+    pts = keepIdx.map(i => rawEq[i]);
+    ts  = keepIdx.map(i => rawTs[i]);
+    isIntraday = true;
+    if (rawSpy.length) {
+      const spySlice = keepIdx.map(i => rawSpy[i] ?? null);
+      // Normalize SPY to trader's first equity value so both lines start
+      // from the same y-coord and the alpha gap reads naturally.
+      const traderStart = pts.find(v => v != null);
+      const spyAnchor = spySlice.find(v => v != null);
+      if (traderStart && spyAnchor) {
+        spyPts = spySlice.map(c => c == null ? null : (c / spyAnchor) * traderStart);
+      }
+    }
+  } else {
+    const allPts = data.equity_history?.equity || [];
+    const allTs  = data.equity_history?.timestamps || [];
+    const allSpy = data.equity_history?.spy_close || [];
+    const n = win === '1W' ? 7 : 30;
+    pts = allPts.slice(-n);
+    ts  = allTs.slice(-n);
+    if (allSpy.length) {
+      const spySlice = allSpy.slice(-n);
+      // Normalize SPY to start at the same equity baseline as the trader
+      // so the alpha gap reads naturally on a single $ axis. Anchor on
+      // the first non-null SPY close paired with the first pts value.
+      const traderStart = pts[0];
+      let spyAnchor = null;
+      for (let i = 0; i < spySlice.length; i++) {
+        if (spySlice[i] != null) { spyAnchor = spySlice[i]; break; }
+      }
+      if (traderStart && spyAnchor) {
+        spyPts = spySlice.map(c => c == null ? null : (c / spyAnchor) * traderStart);
+      }
+    }
+  }
+  const tabs = pfChartTabs(win);
+  if (!pts || pts.length < 2) {
+    return `<div class="pf-chart-row">${tabs}
+      <div class="pf-chart-empty">No data for this window yet — chart fills in as the trader runs.</div>
+    </div>`;
+  }
+  return `<div class="pf-chart-row">${tabs}${pfChartSvg(pts, ts, isIntraday, spyPts)}</div>`;
+}
+
+// Returns the indices of `timestamps` (unix seconds) whose UTC time falls
+// inside 13:30-20:00 UTC (= 9:30-16:00 ET, regular cash session).
+function pfFilterRTH(timestamps) {
+  const out = [];
+  const RTH_START = 13 * 60 + 30;   // 13:30 UTC
+  const RTH_END   = 20 * 60;        // 20:00 UTC
+  for (let i = 0; i < timestamps.length; i++) {
+    const t = timestamps[i];
+    if (t == null) continue;
+    const d = (typeof t === 'number') ? new Date(t * 1000) : new Date(t);
+    const min = d.getUTCHours() * 60 + d.getUTCMinutes();
+    if (min >= RTH_START && min <= RTH_END) out.push(i);
+  }
+  return out;
+}
+
+function pfChartTabs(active) {
+  const tabs = [['1D', '1D'], ['1W', '1W'], ['1M', '1M']];
+  return `<div class="pf-chart-tabs">
+    ${tabs.map(([v, label]) =>
+      `<button class="pf-chart-tab${v === active ? ' active' : ''}" data-pfwin="${v}">${label}</button>`
+    ).join('')}
+  </div>`;
+}
+
+function pfChartSvg(pts, ts, isIntraday, spyPts) {
+  // viewBox at 1200×400 (3:1) so the data ratio matches typical desktop
+  // container shape and stretching is minimal. preserveAspectRatio="none"
+  // still does the final fit; non-scaling-stroke on the line keeps stroke
+  // weight crisp regardless of stretch. Generous padding on the y-axis
+  // for label legibility at 4K.
+  const w = 1200, h = 400, padL = 72, padR = 24, padT = 22, padB = 44;
+  const innerW = w - padL - padR;
+  const innerH = h - padT - padB;
+
+  // Y-range covers BOTH series so SPY's curve doesn't clip out of frame
+  // when the trader has dramatically out- or under-performed.
+  const allVals = pts.slice();
+  if (spyPts && spyPts.length) {
+    for (const v of spyPts) if (v != null) allVals.push(v);
+  }
+  const min = Math.min(...allVals), max = Math.max(...allVals);
+  const span = (max - min) || 1;
+  const yPad = span * 0.06;
+  const yMin = min - yPad, yMax = max + yPad;
+  const yRange = yMax - yMin;
+
+  const x = (i) => padL + (i / (pts.length - 1)) * innerW;
+  const y = (v) => padT + (1 - (v - yMin) / yRange) * innerH;
+
+  const last = pts[pts.length - 1], first = pts[0];
+  const stroke = last >= first ? 'var(--pos)' : 'var(--neg)';
+  const strokeRaw = last >= first ? '#6EE7B7' : '#FCA5A5';   // for fill (CSS var won't resolve in fill attr)
+
+  const linePts = pts.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`);
+  const linePath = `M ${linePts.join(' L ')}`;
+  const areaPath = `${linePath} L ${x(pts.length - 1).toFixed(1)},${(padT + innerH).toFixed(1)} L ${padL.toFixed(1)},${(padT + innerH).toFixed(1)} Z`;
+
+  // SPY comparison line — neutral gray, dashed, drawn UNDER the trader
+  // line so the trader curve always reads as the headline. Skips null
+  // entries (forward-fill gaps from weekends/holidays).
+  let spyPath = '';
+  let spyLast = null;
+  if (spyPts && spyPts.length) {
+    const segs = [];
+    let cur = '';
+    for (let i = 0; i < spyPts.length; i++) {
+      const v = spyPts[i];
+      if (v == null) {
+        if (cur) { segs.push(cur); cur = ''; }
+        continue;
+      }
+      const xs = x(i).toFixed(1), ys = y(v).toFixed(1);
+      cur += cur ? ` L ${xs},${ys}` : `M ${xs},${ys}`;
+      spyLast = v;
+    }
+    if (cur) segs.push(cur);
+    spyPath = segs.join(' ');
+  }
+
+  // Y-axis: 4 evenly-spaced ticks
+  const yTickN = 4;
+  let yLabels = '';
+  for (let i = 0; i <= yTickN; i++) {
+    const v = yMin + (yRange * i / yTickN);
+    const yPos = y(v);
+    yLabels += `<line x1="${padL}" y1="${yPos.toFixed(1)}" x2="${(w - padR).toFixed(1)}" y2="${yPos.toFixed(1)}" class="pf-chart-grid"/>
+      <text x="${(padL - 8).toFixed(1)}" y="${(yPos + 3).toFixed(1)}" class="pf-chart-y-label">$${Math.round(v).toLocaleString('en-US')}</text>`;
+  }
+
+  // X-axis: up to 6 ticks evenly across the data span
+  const xTickN = Math.min(6, pts.length);
+  let xLabels = '';
+  for (let i = 0; i < xTickN; i++) {
+    const idx = Math.floor((pts.length - 1) * i / (xTickN - 1));
+    const xPos = x(idx);
+    xLabels += `<text x="${xPos.toFixed(1)}" y="${(h - 10).toFixed(1)}" class="pf-chart-x-label">${pfFmtTickLabel(ts[idx], isIntraday)}</text>`;
+  }
+
+  // Hover hit-rects — invisible, one per data point, capture mouseenter/leave.
+  // Encode SPY value (if any) on each rect so the tooltip can show both.
+  const halfStep = pts.length > 1 ? innerW / (pts.length - 1) / 2 : innerW / 2;
+  let hitRects = '';
+  for (let i = 0; i < pts.length; i++) {
+    const cx = x(i);
+    const cy = y(pts[i]);
+    const spyV = (spyPts && spyPts[i] != null) ? spyPts[i].toFixed(2) : '';
+    hitRects += `<rect x="${(cx - halfStep).toFixed(1)}" y="${padT}" width="${(halfStep * 2).toFixed(1)}" height="${innerH}" fill="transparent" class="pf-chart-hit" data-cx="${cx.toFixed(1)}" data-cy="${cy.toFixed(1)}" data-val="${pts[i].toFixed(2)}" data-spy="${spyV}" data-date="${pfFmtTooltipDate(ts[i], isIntraday)}"/>`;
+  }
+
+  // Legend — only when SPY is on. Positioned in the chart row (below)
+  // so it doesn't crowd the SVG canvas itself.
+  let legend = '';
+  if (spyPath) {
+    const traderDelta = ((last - first) / first) * 100;
+    const spyFirst = spyPts.find(v => v != null);
+    const spyDelta = spyLast != null && spyFirst ? ((spyLast - spyFirst) / spyFirst) * 100 : null;
+    const traderCls = traderDelta >= 0 ? 'pos' : 'neg';
+    const spyCls = (spyDelta != null && spyDelta >= 0) ? 'pos' : 'neg';
+    legend = `<div class="pf-chart-legend">
+      <span class="pf-chart-legend-item">
+        <span class="pf-chart-legend-swatch trader" style="background:${strokeRaw};"></span>
+        S-Tool <span class="${traderCls}">${traderDelta >= 0 ? '+' : ''}${traderDelta.toFixed(2)}%</span>
+      </span>
+      <span class="pf-chart-legend-item">
+        <span class="pf-chart-legend-swatch spy"></span>
+        S&amp;P 500 ${spyDelta != null ? `<span class="${spyCls}">${spyDelta >= 0 ? '+' : ''}${spyDelta.toFixed(2)}%</span>` : ''}
+      </span>
+    </div>`;
+  }
+
+  return `<div class="pf-chart" id="pfChart">
+    <svg class="pf-chart-svg" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+      ${yLabels}
+      ${xLabels}
+      <path class="pf-chart-area" d="${areaPath}" fill="${strokeRaw}"/>
+      ${spyPath ? `<path class="pf-chart-spy-line" d="${spyPath}"/>` : ''}
+      <path class="pf-chart-line" d="${linePath}" stroke="${stroke}"/>
+      ${hitRects}
+      <line class="pf-chart-cursor" x1="0" y1="${padT}" x2="0" y2="${(padT + innerH).toFixed(1)}" style="display:none;"/>
+      <circle class="pf-chart-dot" cx="0" cy="0" r="4" fill="${strokeRaw}" stroke="var(--bg-surface)" stroke-width="2" style="display:none;"/>
+    </svg>
+    ${legend}
+    <div class="pf-chart-tooltip" style="display:none;">
+      <span class="pf-chart-tt-val"></span>
+      <span class="pf-chart-tt-spy" style="display:none;"></span>
+      <span class="pf-chart-tt-date"></span>
+    </div>
+  </div>`;
+}
+
+function pfFmtTickLabel(t, isIntraday) {
+  if (t == null) return '';
+  const d = (typeof t === 'number') ? new Date(t * 1000) : new Date(t);
+  if (isIntraday) {
+    return d.toLocaleTimeString(undefined, { hour: 'numeric', hour12: true });
+  }
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+function pfFmtTooltipDate(t, isIntraday) {
+  if (t == null) return '';
+  const d = (typeof t === 'number') ? new Date(t * 1000) : new Date(t);
+  if (isIntraday) {
+    return d.toLocaleString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true, month: 'short', day: 'numeric' });
+  }
+  return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+// Wire chart-tab clicks (delegated, page-wide). Stashes window selection,
+// then re-renders ONLY the chart container so the rest of the panel stays
+// stable. Also wire hover on hit rects to position cursor + tooltip.
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('.pf-chart-tab');
+  if (!btn) return;
+  const win = btn.dataset.pfwin;
+  if (!win || !window.__pfData) return;
+  window.__pfChartWindow = win;
+  const row = document.querySelector('.pf-chart-row');
+  if (!row) return;
+  // Replace just the chart row in place
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = pfEquityChart(window.__pfData);
+  row.replaceWith(wrapper.firstElementChild);
+});
+
+// Hover on hit rects — show cursor line, dot at data point, and floating
+// tooltip with date + value. mouseleave on the SVG hides everything.
+document.addEventListener('mouseover', (e) => {
+  const rect = e.target.closest('.pf-chart-hit');
+  if (!rect) return;
+  const chart = rect.closest('.pf-chart');
+  if (!chart) return;
+  const cx = parseFloat(rect.dataset.cx);
+  const cy = parseFloat(rect.dataset.cy);
+  const cursor = chart.querySelector('.pf-chart-cursor');
+  const dot    = chart.querySelector('.pf-chart-dot');
+  const tip    = chart.querySelector('.pf-chart-tooltip');
+  if (cursor) {
+    cursor.setAttribute('x1', cx); cursor.setAttribute('x2', cx);
+    cursor.style.display = '';
+  }
+  if (dot) {
+    dot.setAttribute('cx', cx); dot.setAttribute('cy', cy);
+    dot.style.display = '';
+  }
+  if (tip) {
+    // Position tooltip in client coords. Read viewBox so the math stays
+    // correct if we ever resize the SVG canvas — hardcoding 600/200 once
+    // bit us when the viewBox grew to 1200/400.
+    const svg = chart.querySelector('.pf-chart-svg');
+    const bbox = svg.getBoundingClientRect();
+    const chartBox = chart.getBoundingClientRect();
+    const vb = svg.viewBox?.baseVal;
+    const vbW = vb?.width || 1200, vbH = vb?.height || 400;
+    const px = (cx / vbW) * bbox.width + (bbox.left - chartBox.left);
+    const py = (cy / vbH) * bbox.height + (bbox.top - chartBox.top);
+    tip.querySelector('.pf-chart-tt-val').textContent = `S-Tool $${parseFloat(rect.dataset.val).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+    const spyEl = tip.querySelector('.pf-chart-tt-spy');
+    if (rect.dataset.spy) {
+      spyEl.textContent = `SPY $${parseFloat(rect.dataset.spy).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+      spyEl.style.display = '';
+    } else if (spyEl) {
+      spyEl.style.display = 'none';
+    }
+    tip.querySelector('.pf-chart-tt-date').textContent = rect.dataset.date;
+    tip.style.left = `${px}px`;
+    tip.style.top  = `${py}px`;
+    tip.style.display = '';
+  }
+});
+document.addEventListener('mouseout', (e) => {
+  const chart = e.target.closest('.pf-chart');
+  if (!chart) return;
+  // Only hide if we're actually leaving the chart area
+  const related = e.relatedTarget;
+  if (related && chart.contains(related)) return;
+  ['.pf-chart-cursor', '.pf-chart-dot', '.pf-chart-tooltip'].forEach(sel => {
+    const el = chart.querySelector(sel);
+    if (el) el.style.display = 'none';
+  });
+});
+function pfSleeveCard(name, summary, label) {
+  const upnl = summary?.upnl || 0;
+  const realized = summary?.realized_today || 0;
+  const upnlCls = upnl > 0 ? 'pos' : (upnl < 0 ? 'neg' : '');
+  const n = summary?.n || 0;
+  // Surface realized P&L when the sleeve has had any closes today —
+  // otherwise it'd just clutter the card with "+$0". Always shown for
+  // daytrade after 19:55 UTC since EVERY daytrade closes by EOD.
+  const realizedRow = Math.abs(realized) > 0.5
+    ? `<div class="pf-sleeve-realized ${realized > 0 ? 'pos' : 'neg'}">+ ${fmtUSD(realized, { signed: true, digits: 0 })} realized today</div>`
+    : '';
+  // Rotation cycle indicator — only on the daytrade card. The rotator
+  // fires every 30 min during 14:00-19:30 UTC weekdays; outside that
+  // window we either say "complete for today" or "weekday only".
+  let rotationRow = '';
+  if (name === 'daytrade') {
+    const tick = pfNextRotationTick();
+    if (tick && tick.mins != null) {
+      const ago = tick.mins === 0 ? 'now' : `~${tick.mins}m`;
+      rotationRow = `<div class="pf-sleeve-rotation"><span class="live">●</span>next rotate ${ago}</div>`;
+    } else if (tick && tick.note) {
+      rotationRow = `<div class="pf-sleeve-rotation">${tick.note}</div>`;
+    }
+  }
+  return `<div class="pf-sleeve">
+    <div class="pf-sleeve-name ${name}">${label}</div>
+    <div class="pf-sleeve-mv">${fmtUSD(summary?.mv || 0, { digits: 0 })}</div>
+    <div class="pf-sleeve-meta ${upnlCls}">${n} pos · ${fmtUSD(upnl, { signed: true, digits: 0 })}</div>
+    ${realizedRow}
+    ${rotationRow}
+  </div>`;
+}
+
+// Pending-order strip — renders open_orders[] from /api/portfolio as a
+// thin "in-flight" banner above positions. Filters to side=buy entries
+// whose client_order_id matches the sleeve naming convention; that
+// excludes auto-generated stop/target child legs which would otherwise
+// double-count the same position.
+function pfPendingOrdersStrip(orders) {
+  if (!orders || !orders.length) return '';
+  const SLEEVE_PREFIXES = ['momentum-', 'swing-', 'daytrade-'];
+  const pending = orders.filter(o => {
+    if ((o.side || '').toLowerCase() !== 'buy') return false;
+    const cid = o.client_order_id || '';
+    return SLEEVE_PREFIXES.some(p => cid.startsWith(p));
+  });
+  if (!pending.length) return '';
+  const items = pending.slice(0, 6).map(o => {
+    const sleeve = (o.client_order_id || '').split('-')[0] || '';
+    return `<span class="pf-pending-item">
+      <span class="pf-pending-sym">${o.symbol}</span>
+      <span class="pf-pending-meta">${o.qty} qty · ${sleeve}</span>
+    </span>`;
+  }).join('');
+  const more = pending.length > 6
+    ? `<span class="pf-pending-more">+ ${pending.length - 6} more</span>` : '';
+  const noun = pending.length === 1 ? 'entry' : 'entries';
+  return `<div class="pf-pending">
+    <span class="pf-pending-icon">↻</span>
+    <span class="pf-pending-label">${pending.length} ${noun} pending fill</span>
+    ${items}${more}
+  </div>`;
+}
+
+// Closed-trades section — renders the chronological list of trades that
+// closed today (paired buy + sell from Alpaca FILL activities). Sits
+// directly below the live positions block so the eye flows
+// open → closed for cross-reference. closed_today comes pre-paired from
+// /api/portfolio: {symbol, qty, buy_price, sell_price, pnl, sleeve, closed_at}.
+// Non-strategist sees teaser-truncated 3 rows + upgrade nudge.
+function pfClosedTradesPanel(closedToday, isStrategist, totalRealizedToday) {
+  const rows = closedToday || [];
+  // When the trader hasn't fired any closes yet today, show an honest
+  // empty state rather than hiding the section entirely — keeps the
+  // structural placeholder visible so visitors know to expect it later.
+  if (!rows.length) {
+    return `<div class="pf-closed-section">
+      <div class="pf-closed-head">
+        <span class="pf-closed-title">Closed today</span>
+        <span class="pf-closed-summary">No closes yet · daytrade EOD at 19:55 UTC</span>
+      </div>
+      <div class="pf-closed-empty">
+        <strong>The trader hasn't closed any positions today.</strong>
+        <span class="small">Daytrade sleeve force-closes at market close (15:55 ET / 19:55 UTC). Bracket stops/targets close earlier if hit.</span>
+      </div>
+    </div>`;
+  }
+
+  // Aggregate header: count + summed P&L
+  const total = totalRealizedToday != null
+    ? totalRealizedToday
+    : rows.reduce((s, r) => s + (r.pnl || 0), 0);
+  const totalCls = total > 0.5 ? 'pos' : (total < -0.5 ? 'neg' : '');
+  const totalSign = total >= 0 ? '+' : '−';
+  const totalStr = `${totalSign}${fmtUSD(Math.abs(total), { digits: 0 }).replace(/^[\+\-−]/, '')}`;
+
+  const fmtTime = (iso) => {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    return d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: false });
+  };
+  const fmtMoney = (v) => v == null ? '—'
+    : (v >= 100 ? `$${Number(v).toFixed(0)}` : `$${Number(v).toFixed(2)}`);
+
+  const items = rows.map(r => {
+    const sleeve = r.sleeve || 'unattributed';
+    const tier = r.source_tier || null;
+    const tierLabel = tier ? tier[0].toUpperCase() + tier.slice(1) : '';
+    const tierPill = tier
+      ? `<span class="pf-pos-tier ${tier}" title="From the ${tierLabel} section of /picks">${tierLabel}</span>`
+      : '';
+    const pnl = r.pnl || 0;
+    const pnlCls = pnl > 0 ? 'pos' : (pnl < 0 ? 'neg' : '');
+    const pnlSign = pnl >= 0 ? '+' : '−';
+    const pnlStr = `${pnlSign}$${Math.abs(pnl).toFixed(2)}`;
+    // Pct = (sell - buy) / buy. Skip when buy_price = 0 (defensive).
+    let pctStr = '';
+    if (r.buy_price && r.buy_price > 0) {
+      const pct = ((r.sell_price - r.buy_price) / r.buy_price) * 100;
+      pctStr = `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%`;
+    }
+    return `<div class="pf-closed-row">
+      <span class="pf-closed-time">${fmtTime(r.closed_at)}</span>
+      <span class="pf-closed-tag ${sleeve}">${sleeve}</span>
+      ${tierPill}
+      <span class="pf-closed-sym">${r.symbol || '—'}</span>
+      <span class="pf-closed-flow">
+        ${Math.round(r.qty || 0)} qty · ${fmtMoney(r.buy_price)}<span class="arrow">→</span>${fmtMoney(r.sell_price)}
+      </span>
+      <span class="pf-closed-pnl ${pnlCls}">${pnlStr}</span>
+      <span class="pf-closed-pct">${pctStr}</span>
+    </div>`;
+  }).join('');
+
+  const teaserCta = !isStrategist
+    ? `<div class="pf-closed-cta">Showing ${rows.length} most recent — <a href="/pricing">unlock the full ledger</a> to see every fill, sleeve, and outcome from the past 90 days.</div>`
+    : '';
+
+  return `<div class="pf-closed-section">
+    <div class="pf-closed-head">
+      <span class="pf-closed-title">Closed today</span>
+      <span class="pf-closed-summary">
+        ${rows.length} ${rows.length === 1 ? 'trade' : 'trades'} ·
+        <span class="${totalCls}">${totalStr} realized</span>
+      </span>
+    </div>
+    <div class="pf-closed-list">${items}</div>
+    ${teaserCta}
+  </div>`;
+}
+
+// Next rotation tick during US market hours (14:00-19:30 UTC weekdays,
+// every 30 min). Returns { mins } when there's an upcoming tick today,
+// { note } for off-hours messaging, or null if we shouldn't render.
+function pfNextRotationTick() {
+  const now = new Date();
+  const dow = now.getUTCDay();
+  if (dow === 0 || dow === 6) {
+    return { note: 'rotation: weekday market hours' };
+  }
+  const minutesNow = now.getUTCHours() * 60 + now.getUTCMinutes();
+  const WINDOW_START = 14 * 60;          // 14:00 UTC
+  const WINDOW_END = 19 * 60 + 30;       // 19:30 UTC (last rotate; close fires 19:55)
+  if (minutesNow >= WINDOW_END) {
+    return { note: 'rotation: complete for today' };
+  }
+  let next;
+  if (minutesNow < WINDOW_START) {
+    next = WINDOW_START;
+  } else {
+    // Round up to next 30-min mark, but if we're exactly on one, push to next
+    next = Math.ceil((minutesNow + 0.5) / 30) * 30;
+  }
+  if (next > WINDOW_END) {
+    return { note: 'rotation: complete for today' };
+  }
+  return { mins: Math.max(0, next - minutesNow) };
+}
+function pfPositionCard(p) {
+  const pct = (p.unrealized_plpc || 0) * 100;
+  const pctCls = pct > 0 ? 'pos' : (pct < 0 ? 'neg' : '');
+  const plCls = (p.unrealized_pl || 0) >= 0 ? 'pos' : 'neg';
+  const sleeve = p.sleeve || 'unattributed';
+  const sleeveLabel = sleeve === 'momentum' ? 'Mo' :
+                      sleeve === 'swing' ? 'Swing' :
+                      sleeve === 'daytrade' ? 'Day' : '—';
+  // Source-tier pill ties the live position back to the /picks section
+  // it originated from. When the symbol is missing from today's picks
+  // (e.g. a leftover from prior days that hasn't dropped yet), fall back
+  // to no-tier rather than guessing.
+  const tier = p.source_tier || null;
+  const tierLabel = tier ? tier[0].toUpperCase() + tier.slice(1) : '';
+  const tierPill = tier
+    ? `<span class="pf-pos-tier ${tier}" title="From the ${tierLabel} section of /picks">${tierLabel}</span>`
+    : '';
+  const heldLabel = p.days_held != null ? `${p.days_held}d held` : '';
+
+  // Bracket strip: stop ◀ entry ●▶ target — visualises where the
+  // current price sits between the two protective levels. Position is
+  // (cur - stop) / (target - stop) clamped to [0,1].
+  let bracketRow = '';
+  if (p.stop_price != null && p.target_price != null && p.current_price) {
+    const stop = p.stop_price, tgt = p.target_price, cur = p.current_price, entry = p.avg_entry_price;
+    const span = tgt - stop;
+    const curPos = span > 0 ? Math.max(0, Math.min(1, (cur - stop) / span)) : 0.5;
+    const entryPos = span > 0 ? Math.max(0, Math.min(1, (entry - stop) / span)) : 0.5;
+    bracketRow = `<div class="pf-pos-bracket">
+      <div class="pf-bracket-bar">
+        <div class="pf-bracket-fill" style="left:${(entryPos*100).toFixed(1)}%;width:${((curPos-entryPos)*100).toFixed(1)}%;${cur>=entry?'background:rgba(110,231,183,0.30)':'background:rgba(252,165,165,0.30);left:'+(curPos*100).toFixed(1)+'%;width:'+((entryPos-curPos)*100).toFixed(1)+'%'}"></div>
+        <div class="pf-bracket-tick entry" style="left:${(entryPos*100).toFixed(1)}%"></div>
+        <div class="pf-bracket-tick cur ${pctCls}" style="left:${(curPos*100).toFixed(1)}%"></div>
+      </div>
+      <div class="pf-bracket-labels">
+        <span class="neg">$${stop.toFixed(stop<10?2:0)}</span>
+        <span>$${entry.toFixed(entry<10?2:0)}</span>
+        <span class="pos">$${tgt.toFixed(tgt<10?2:0)}</span>
+      </div>
+    </div>`;
+  }
+
+  return `<div class="pf-pos">
+    <div class="pf-pos-row1">
+      <span class="pf-pos-sym">${p.symbol}</span>
+      <span class="pf-pos-tag ${sleeve}">${sleeveLabel}</span>
+      ${tierPill}
+    </div>
+    <div class="pf-pos-row2">
+      <span class="pf-pos-mv">${fmtUSD(p.market_value, { digits: 0 })}</span>
+      <span class="pf-pos-pct ${pctCls}">${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%</span>
+    </div>
+    <div class="pf-pos-row3">
+      <span class="pf-pos-pl ${plCls}">${fmtUSD(p.unrealized_pl, { signed: true, digits: 0 })}</span>
+      <span>${heldLabel}</span>
+    </div>
+    ${bracketRow}
+  </div>`;
+}
+// Returns "Mon 09:30 ET (in 14h 32m)" style copy for the next trader fire.
+// We don't have a clock from /api/portfolio so we infer from the user's
+// local time + the trader's known schedule (13:30 UTC open, 19:55 UTC
+// close, Mon-Fri).
+function pfNextEntryWindow() {
+  const now = new Date();
+  // Build candidate Date objects for the next open + close in UTC.
+  const nextWeekdayAt = (h, m) => {
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + i, h, m));
+      const dow = d.getUTCDay();  // 0=Sun, 6=Sat
+      if (dow === 0 || dow === 6) continue;
+      if (d.getTime() > now.getTime()) return d;
+    }
+    return null;
+  };
+  const nextOpen = nextWeekdayAt(13, 30);
+  if (!nextOpen) return null;
+  const ms = nextOpen.getTime() - now.getTime();
+  const h = Math.floor(ms / 3600000);
+  const m = Math.floor((ms % 3600000) / 60000);
+  // Render in viewer's local time so the countdown is meaningful regardless of TZ.
+  const local = nextOpen.toLocaleString(undefined, { weekday: 'short', hour: '2-digit', minute: '2-digit' });
+  const inStr = h >= 1 ? `${h}h ${m}m` : `${m}m`;
+  return { iso: nextOpen.toISOString(), local, inStr };
+}
+function renderPortfolio(data) {
+  if (!data || data.error) return '';  // 503/502 → render nothing, just keep the rest of the page
+  const acct = data.account || {};
+  const eq = acct.equity || 0;
+  const dc = acct.day_change || 0, dcp = acct.day_change_pct || 0;
+  const dcCls = dc > 0 ? 'pos' : (dc < 0 ? 'neg' : 'flat');
+  const sign = dc > 0 ? '+' : (dc < 0 ? '−' : '');
+  const dcAbs = Math.abs(dc), dcpAbs = Math.abs(dcp * 100);
+  const paperTag = acct.is_paper ? `<span class="pf-paper-tag">Paper · ${acct.multiplier || 1}× margin</span>` : '';
+  // Stash full payload so the chart's tab buttons can re-render without
+  // re-fetching. Picked up by the document-level click handler.
+  window.__pfData = data;
+  // Pick a default chart window if none set: 1D when intraday has signal,
+  // else 1M (the daily 30-day history).
+  if (!window.__pfChartWindow) {
+    const intradayPts = data.equity_intraday?.equity || [];
+    const intradayHasSignal = intradayPts.length > 1
+      && intradayPts.some(v => Math.abs((v || 0) - (intradayPts[0] || 0)) > 0.01);
+    window.__pfChartWindow = intradayHasSignal ? '1D' : '1M';
+  }
+  const equityChart = pfEquityChart(data);
+  const sleeves = data.sleeves || {};
+  const positions = data.positions || [];
+  const realizedToday = data.realized_today || 0;
+  const closedToday = data.closed_today || [];
+  // Sleeve totals reflect the entire book; positions[] may be teaser-truncated.
+  const totalMv = Object.values(sleeves).reduce((s, m) => s + (m?.mv || 0), 0)
+    || positions.reduce((s, p) => s + (p.market_value || 0), 0);
+  const totalPositions = Object.values(sleeves).reduce((s, m) => s + (m?.n || 0), 0)
+    || positions.length;
+  // Three-sleeve layout (momentum / swing / daytrade). "unattributed"
+  // surfaces only when there are unknown-sleeve positions — historically
+  // pre-CID-encoding entries; should be empty for any new account.
+  const hasUnattributed = (sleeves.unattributed?.n || 0) > 0;
+  const sleeveBlock = `
+    <div class="pf-sleeves${hasUnattributed ? ' four' : ''}">
+      ${pfSleeveCard('momentum', sleeves.momentum, '3-day momentum')}
+      ${pfSleeveCard('swing', sleeves.swing, '5-day swing')}
+      ${pfSleeveCard('daytrade', sleeves.daytrade, 'Day trade')}
+      ${hasUnattributed ? pfSleeveCard('unattributed', sleeves.unattributed, 'Other') : ''}
+    </div>`;
+  let positionsBlock;
+  if (totalPositions === 0) {
+    // Empty state — most viewers see this outside trading hours. Show a
+    // live countdown to the next entry window so the panel still feels
+    // active rather than dormant. The strategy strip below the count
+    // (-7%/+15% swing brackets, -3%/+5% daytrade brackets) is general
+    // enough not to give away methodology specifics.
+    const nxt = pfNextEntryWindow();
+    const countdown = nxt
+      ? `<div class="pf-countdown">
+           <span class="pf-countdown-label">Next entry window</span>
+           <span class="pf-countdown-time">${nxt.local}</span>
+           <span class="pf-countdown-in">in ${nxt.inStr}</span>
+         </div>`
+      : '';
+    positionsBlock = `<div class="pf-empty">
+      <strong>Idle between sessions.</strong>
+      The book holds 20 positions during the trading day. Two sleeves: a 5-day swing on top-ranked names with an asymmetric reward profile, and an intraday lane that opens at the bell and exits at the close.
+      ${countdown}
+    </div>`;
+  } else {
+    const wrapCls = data.teaser ? 'pf-positions pf-teaser-fade' : 'pf-positions';
+    positionsBlock = `<div class="${wrapCls}">${positions.map(pfPositionCard).join('')}</div>`;
+    if (data.teaser) {
+      positionsBlock += `<div class="pf-teaser-cta">Showing ${positions.length} of total — <a href="/pricing">unlock the full book</a> to see every fill, sleeve allocation, and intraday rebalance.</div>`;
+    }
+  }
+  // Utilization = fraction of buying power currently in market value of
+  // open positions. Useful at a glance: empty between sessions = 0%,
+  // mid-day fully deployed = ~60-65% (because we run 1.5× swing + 1×
+  // daytrade across half-equity each, on a 2× margin account).
+  // Utilization denominator is *total* deployable buying power (equity ×
+  // margin multiplier), NOT the live buying_power field — that field is
+  // remaining headroom, so dividing by it overstates utilization once
+  // we're partly deployed. With $100k equity and 2× margin the engine
+  // can put up to $200k in the market; mid-day we run ~57% (1.5×
+  // swing on half-equity + 1× daytrade on half-equity).
+  const totalCapacity = (parseFloat(acct.equity) || 0) * (parseFloat(acct.multiplier) || 1);
+  const utilization = totalCapacity > 0 ? Math.min(1, totalMv / totalCapacity) : 0;
+  const utilStr = `${(utilization * 100).toFixed(0)}%`;
+
+  return `<section class="pf-panel" id="pf-panel">
+    <div class="pf-head">
+      <div class="pf-eyebrow"><span class="pf-live-dot"></span> Live paper portfolio</div>
+      ${paperTag}
+    </div>
+    <div class="pf-equity-row">
+      <div>
+        <div class="pf-equity-num">${fmtUSD(eq, { digits: 2 })}</div>
+        <div class="pf-equity-sub">
+          <span class="pf-day-pill ${dcCls}">${sign}${fmtUSD(dcAbs, { digits: 0 }).replace(/^[-]/, '')} · ${sign}${dcpAbs.toFixed(2)}%</span>
+          <span class="pf-day-label">today</span>
+          ${Math.abs(realizedToday) > 0.5 ? (() => {
+            const rCls = realizedToday > 0 ? 'pos' : 'neg';
+            const rSign = realizedToday > 0 ? '+' : '−';
+            const rAbs = fmtUSD(Math.abs(realizedToday), { digits: 0 });
+            return `<span class="pf-realized-pill ${rCls}" title="Realized P&L from today's closed positions">${rSign}${rAbs} realized</span>`;
+          })() : ''}
+          ${totalPositions > 0 ? `<span class="pf-util">${utilStr} deployed · ${fmtUSD(totalMv, { digits: 0 })} of ${fmtUSD(totalCapacity, { digits: 0 })} cap</span>` : ''}
+        </div>
+      </div>
+    </div>
+    ${equityChart}
+    ${pfPendingOrdersStrip(data.open_orders)}
+    <div class="pf-positions-head">
+      <span class="pf-positions-title">Open positions</span>
+      <span class="pf-positions-count">
+        ${(() => {
+          if (totalPositions === 0) return '0';
+          // Tally in/out-of-money on the visible positions only — even
+          // for the teaser, since we have full sleeve UPL totals up top.
+          const wins = positions.filter(p => (p.unrealized_pl || 0) > 0).length;
+          const losses = positions.filter(p => (p.unrealized_pl || 0) < 0).length;
+          const flat = positions.length - wins - losses;
+          if (data.teaser) return `${positions.length} of ${totalPositions} shown`;
+          return `<span class="pf-tally-w">${wins}</span> in green · <span class="pf-tally-l">${losses}</span> in red${flat ? ` · ${flat} flat` : ''}`;
+        })()}
+      </span>
+    </div>
+    ${positionsBlock}
+    ${pfClosedTradesPanel(closedToday, !data.teaser, realizedToday)}
+    ${sleeveBlock}
+  </section>`;
+}
+
+// Per-pick footer line. Rotates between useful unique facts rather than
+// repeating "Source: SEC EDGAR" on every card. Order of preference:
+//   1. 80% projection band ($P10 → $P90) — most scannable at-a-glance
+//   2. SEC filing period-end + form type — shows fundamentals freshness
+//   3. Market cap, if we got it from FMP
+//   4. Absolute fallback (should never hit in normal data)
+function footerText(p) {
+  const fmtMoney = (v) => v == null ? '—' : (v >= 100 ? `$${Math.round(v)}` : `$${Number(v).toFixed(2)}`);
+  // Prefer the 80% band as percent moves from current price — more
+  // scannable than raw $ and more honest than ±% of P50.
+  if (p.p10 != null && p.p90 != null && p.current_price) {
+    const lo = (p.p10 - p.current_price) / p.current_price;
+    const hi = (p.p90 - p.current_price) / p.current_price;
+    const fp = (v) => `${v >= 0 ? '+' : ''}${Math.round(v*100)}%`;
+    return `1y 80% band &nbsp;<b style="color:var(--text-hi);font-weight:500;">${fp(lo)} → ${fp(hi)}</b> &nbsp;(${fmtMoney(p.p10)}–${fmtMoney(p.p90)})`;
+  }
+  const sec = p.sec_fundamentals || {};
+  if (sec.as_of) {
+    const form = sec.form || 'filing';
+    return `Fundamentals as of ${sec.as_of} · ${form}`;
+  }
+  const mc = p.fundamentals?.market_cap;
+  if (mc) {
+    const bn = mc / 1e9;
+    return `Market cap ~$${bn >= 10 ? bn.toFixed(0) : bn.toFixed(1)}B`;
+  }
+  return 'Ranked by projection-engine Sharpe proxy';
+}
+
+function sizeTier(mktCap) {
+  if (!mktCap) return null;
+  const bn = mktCap / 1e9;
+  if (bn >= 200) return 'Mega';
+  if (bn >= 10)  return 'Large';
+  if (bn >= 2)   return 'Mid';
+  if (bn >= 0.25) return 'Small';
+  return 'Micro';
+}
+
+function formatMktCap(mktCap) {
+  if (!mktCap) return null;
+  const bn = mktCap / 1e9;
+  if (bn >= 100) return `$${Math.round(bn)}B`;
+  if (bn >= 10)  return `$${bn.toFixed(1)}B`;
+  if (bn >= 1)   return `$${bn.toFixed(2)}B`;
+  if (bn >= 0.01) return `$${Math.round(bn*1000)}M`;
+  return `$${Math.round(mktCap/1e6)}M`;
+}
+
+function renderPickCard(p) {
+  const sec = p.sec_fundamentals || {};
+  const erClass = (p.expected_return ?? 0) >= 0 ? 'pos' : 'neg';
+  const yoy = sec.revenue_yoy_growth;
+  const companyName = p.company_name || (SECTOR_HINT[p.symbol]?.split(' · ')[0]) || '';
+  const sector = p.sector || 'Equity';
+  const industry = p.industry || '';
+  // Prefer top-level market_cap (yfinance cache, high coverage) with
+  // legacy fundamentals.market_cap as fallback.
+  const mktCap = p.market_cap ?? p.fundamentals?.market_cap;
+  const size = sizeTier(mktCap);
+  const capStr = formatMktCap(mktCap);
+  const avgVol = p.avg_volume;
+  const thesis = p.rationale ? `${p.rationale}.` : 'Ranked on projection-engine signal.';
+  const thesisClass = '';
+  const stats = [
+    { l: 'Rev YoY',       v: fmtPct(sec.revenue_yoy_growth), pos: (sec.revenue_yoy_growth ?? 0) >= 0 },
+    { l: 'Gross margin',  v: fmtPct(sec.gross_margin, false) },
+    { l: 'Op margin',     v: fmtPct(sec.operating_margin, false) },
+    { l: 'FCF / sales',   v: fmtPct(sec.fcf_to_revenue, false) },
+    { l: 'Buyback / sales', v: fmtPct(sec.buyback_intensity, false) },
+    { l: 'Net debt Δ',    v: fmtPct(sec.net_debt_change_pct), pos: (sec.net_debt_change_pct ?? 0) < 0 /* deleveraging good */ },
+    { l: 'Sharpe proxy',  v: fmtSharpe(p.sharpe_proxy) },
+    { l: 'Proj. vol',     v: fmtPct(p.risk, false) },
+  ];
+  const statsHtml = stats.map(s => `
+      <div class="pc-stat">
+        <div class="s-label">${s.l}</div>
+        <div class="s-val ${s.v === '—' ? 'dim' : (s.pos === true ? 'pos' : s.pos === false ? 'neg' : '')}">${s.v}</div>
+      </div>`).join('');
+
+  // Meta row: sector · industry · size-tier · market cap.
+  // Market cap is the liquidity proxy — a Strategist buying a micro-cap
+  // needs to know they'll move the price; a mega-cap can absorb size.
+  const metaBits = [];
+  if (sector && sector !== 'Equity') metaBits.push(sector);
+  if (industry && industry !== sector) metaBits.push(industry);
+  let sizeBadge = '';
+  if (size) {
+    const tone = size === 'Micro' ? 'warn' : size === 'Small' ? 'caution' : 'neutral';
+    sizeBadge = `<span class="size-pill ${tone}" title="${size}-cap${capStr ? ' · ' + capStr : ''}">${size}${capStr ? ` &middot; ${capStr}` : ''}</span>`;
+  }
+  const metaHtml = (metaBits.length || sizeBadge)
+    ? `<div class="pc-meta">
+         ${metaBits.map((b, i) => `${i > 0 ? '<span class="dot-sep">·</span>' : ''}<span>${b}</span>`).join('')}
+         ${sizeBadge ? (metaBits.length ? '<span class="dot-sep">·</span>' : '') + sizeBadge : ''}
+       </div>`
+    : '';
+
+  const conf = Math.max(0, Math.min(100, Number(p.confidence ?? 0)));
+  const confClass = conf >= 70 ? 'conf-high' : conf >= 45 ? 'conf-mid' : 'conf-low';
+  const confLabel = p.confidence_label || (conf >= 70 ? 'High conviction' : conf >= 45 ? 'Solid' : 'Speculative');
+  const comp = p.confidence_components || {};
+  const confBreakdown = `
+    <div class="pc-conf-break">
+      <div class="brk-row"><span>Risk-adjusted</span><span>${(comp.risk_adjusted ?? 0).toFixed(0)}/40</span></div>
+      <div class="brk-row"><span>Fundamentals</span><span>${(comp.fundamentals ?? 0).toFixed(0)}/35</span></div>
+      <div class="brk-row"><span>Model tightness</span><span>${(comp.model_tightness ?? 0).toFixed(0)}/25</span></div>
+    </div>`;
+
+  return `<div class="pick-card">
+    <div class="pc-head">
+      <div class="pc-id">
+        <div class="pc-ticker-row">
+          <span class="pc-sym">${p.symbol}</span>
+          ${companyName ? `<span class="pc-name">${companyName}</span>` : ''}
+        </div>
+        ${metaHtml}
+      </div>
+      <div class="pc-conf">
+        <div class="pc-conf-num ${confClass}">${conf}</div>
+        <div class="pc-conf-label">${confLabel}</div>
+        <div class="pc-conf-bar"><span style="width:${conf}%;"></span></div>
+        ${confBreakdown}
+      </div>
+    </div>
+    <div class="pc-hero">
+      <div class="h-item"><div class="h-label">Current</div><div class="h-val">${fmtMoney(p.current_price)}</div></div>
+      <div class="h-item"><div class="h-label">P50 target · 1y</div><div class="h-val">${fmtMoney(p.p50_target)}</div></div>
+      <div class="h-item"><div class="h-label">Expected</div><div class="h-val ${erClass}">${fmtPct(p.expected_return)}</div></div>
+    </div>
+    <div class="pc-thesis">
+      <div class="pc-thesis-eyebrow">Thesis</div>
+      <div class="pc-thesis-body ${thesisClass}">${thesis}</div>
+    </div>
+    <div class="pc-stats">${statsHtml}</div>
+    ${(() => {
+      const allocKey = `${p.symbol}|${p.tier}`;
+      const amt = ALLOC.byPick?.[allocKey];
+      return amt ? `<div class="pc-alloc">Allocate ${fmtUsd(amt)}</div>` : '';
+    })()}
+    <div class="pc-foot">
+      <span>${footerText(p)}</span>
+      <a href="/app?ticker=${encodeURIComponent(p.symbol)}">Open full projection &rarr;</a>
+    </div>
+  </div>`;
+}
+
+// Sector normalization — collapse GICS variants so the pills stay tight.
+const SECTOR_SHORT = {
+  'Financial Services': 'Financials',
+  'Communication Services': 'Communications',
+  'Consumer Cyclical': 'Consumer Cyclical',
+  'Consumer Defensive': 'Consumer Staples',
+  'Basic Materials': 'Materials',
+  'Real Estate': 'Real Estate',
+};
+
+function shortSector(s) {
+  if (!s) return 'Unclassified';
+  return SECTOR_SHORT[s] || s;
+}
+
+function tallySectors(picks) {
+  const counts = new Map();
+  for (const p of picks) {
+    const s = shortSector(p.sector);
+    counts.set(s, (counts.get(s) || 0) + 1);
+  }
+  // Sort descending by count, then alpha for ties.
+  return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+}
+
+function renderSectorStrip(picks, heavyThreshold = 0.40) {
+  const tally = tallySectors(picks);
+  if (!tally.length) return '';
+  const classified = tally.filter(([s]) => s !== 'Unclassified');
+  const classifiedTotal = classified.reduce((a, [, c]) => a + c, 0);
+  // If fewer than a third of this tier's picks are classified, hide the
+  // sector mix entirely — a row of "Unclassified" pills is worse than
+  // nothing. Falls back gracefully as FMP coverage fills nightly.
+  if (classifiedTotal < picks.length * 0.33) return '';
+  const pills = classified.map(([sector, count]) => {
+    const share = count / classifiedTotal;
+    const cls = share >= heavyThreshold ? 'sp-heavy' : '';
+    return `<span class="sector-pill ${cls}"><span>${sector}</span><span class="sp-count">${count}</span></span>`;
+  }).join('');
+  const topShare = classified[0][1] / classifiedTotal;
+  const topSector = classified[0][0];
+  const warn = topShare >= heavyThreshold
+    ? `<div class="sector-warn"><b>Concentration flag:</b> ${Math.round(topShare*100)}% of this tier is in ${topSector}. A taker of all ${classifiedTotal} classified picks would be overweight — trim or substitute if your portfolio is already heavy there.</div>`
+    : '';
+  return `<div class="sector-strip"><span class="sector-label">Sector mix</span>${pills}</div>${warn}`;
+}
+
+function renderPortfolioSignal(allPicks, picksData) {
+  if (!allPicks.length) return '';
+  const total = allPicks.length;
+  // Always-available engine data — no external API dependencies, so these
+  // stats never render in a "data pending" state.
+  const returns = allPicks.map(p => p.expected_return).filter(v => v != null).sort((a, b) => a - b);
+  const median = returns.length ? returns[Math.floor(returns.length / 2)] : 0;
+  const best = allPicks.reduce((b, p) => (p.expected_return || 0) > (b.expected_return || 0) ? p : b, allPicks[0]);
+  const topConf = allPicks.reduce((b, p) => (p.confidence || 0) > (b.confidence || 0) ? p : b, allPicks[0]);
+  const topUpside = allPicks.reduce((b, p) => {
+    const r = p.asymmetric?.p90_ratio || (p.p90 ? p.p90 / p.current_price : 0);
+    const br = b.asymmetric?.p90_ratio || (b.p90 ? b.p90 / b.current_price : 0);
+    return r > br ? p : b;
+  }, allPicks[0]);
+  const topUpsideRatio = topUpside?.asymmetric?.p90_ratio
+    || (topUpside?.p90 && topUpside?.current_price ? topUpside.p90 / topUpside.current_price : null);
+
+  const fmtPctS = (v) => v == null ? '—' : `${v >= 0 ? '+' : ''}${(v*100).toFixed(1)}%`;
+  // Title + sub only. The per-tier distribution viz lives in the donut
+  // below; the tab pills show pick counts. No redundant bar here.
+  return `<div class="diversification" style="grid-template-columns:1fr;">
+    <div>
+      <div class="div-title">Today's book: <em style="color:var(--accent-lake);font-style:normal;">${total}</em> picks &middot; median expected <em style="color:#6ee7b7;font-style:normal;">${fmtPctS(median)}</em></div>
+      <div class="div-sub">Top conviction: <b style="color:var(--text-hi);">${topConf?.symbol || '—'}</b> at ${topConf?.confidence || 0}/100. Biggest projected upside: <b style="color:var(--text-hi);">${topUpside?.symbol || '—'}</b> &middot; ${topUpsideRatio ? topUpsideRatio.toFixed(1) + 'x P90' : '—'}. Best expected return: <b style="color:var(--text-hi);">${best?.symbol || '—'}</b> &middot; ${fmtPctS(best?.expected_return)}.</div>
+    </div>
+  </div>`;
+}
+
+function renderMethodology(data) {
+  return `<section class="methodology">
+    <div class="kicker">Methodology</div>
+    <h3>How the picks work</h3>
+    <p><b>Universe.</b> Nightly scan of the broad US equity universe. Mega-caps and index constituents are filtered &mdash; this list surfaces names you may not already own.</p>
+    <p><b>Ranking.</b> Each ticker runs through our proprietary stochastic projection model, then through a scoring function calibrated to the tier. Conservative/Moderate/Aggressive bucket by projected volatility with a positive-return + quality filter. Asymmetric picks are ranked separately under our <a href="/how">volatility-regime-adaptive model</a> to target the upside tail.</p>
+    <p><b>Thesis.</b> Each pick carries a point-in-time context line derived from the latest regulatory filings &mdash; growth, margin, free-cash-flow, and balance-sheet direction. When nothing stands out in the filings, the thesis reflects the price dynamics instead, honestly.</p>
+    <p><b>Track record.</b> Every pick is logged to an immutable ledger on pick date. Realized return is computed against the entry price every night. Only picks that have had at least 7 days to age count toward the stats above &mdash; we'd rather show a small honest sample than an impressive one you can't trust.</p>
+  </section>`;
+}
+
+function renderGate(data) {
+  const teaserRows = (data.teaser || []).reduce((acc, t) => {
+    (acc[t.tier] = acc[t.tier] || []).push(t.symbol); return acc;
+  }, {});
+  const teaserHtml = Object.entries(teaserRows).map(([tier, syms]) => `
+    <div style="margin-bottom:18px;">
+      <div style="font:600 11px 'Inter';color:var(--accent-lake);letter-spacing:0.2em;text-transform:uppercase;margin-bottom:10px;">${TIER_COPY[tier]?.label || tier}</div>
+      <div class="teaser" style="color:var(--text-hi);font-family:'Crimson Text',serif;font-size:22px;">${syms.join(' · ')}</div>
+    </div>`).join('');
+  const trackSummary = data.summary ? renderTrackRecord(data.summary) : '';
+  return `
+    ${trackSummary}
+    <div class="gate">
+      <div class="eyebrow" style="margin-bottom:14px;">Strategist &middot; $29/mo</div>
+      <h2>The full list, the full <em>thesis</em>, and the track record.</h2>
+      <p>Strategist unlocks the ranked list across all three risk tiers, with every pick's SEC-filed fundamentals, 1-year P50 target, expected return, and the daily realized-return ledger that makes the engine falsifiable.</p>
+      <div class="gate-cta-row">
+        <button class="btn" onclick="startCheckout('strategist')">Upgrade &mdash; $29/mo</button>
+        <a href="/pricing" class="btn ghost">Compare tiers</a>
+      </div>
+      <div style="margin-top:40px;padding-top:28px;border-top:1px solid var(--border);">
+        <div style="font:600 11px 'Inter';color:var(--text-dim);letter-spacing:0.14em;text-transform:uppercase;margin-bottom:16px;">Today's picks — top 3 per tier</div>
+        ${teaserHtml}
+      </div>
+    </div>`;
+}
+
+function riskBand(p10Ratio) {
+  if (p10Ratio == null) return { cls: 'meaningful', label: 'Downside uncertain' };
+  if (p10Ratio >= 0.70) return { cls: 'limited',     label: `Limited downside — P10 at ${Math.round((1-p10Ratio)*100)}% loss` };
+  if (p10Ratio >= 0.40) return { cls: 'meaningful',  label: `Meaningful downside — P10 at ${Math.round((1-p10Ratio)*100)}% loss` };
+  if (p10Ratio >= 0.20) return { cls: 'severe',      label: `Severe downside — P10 at ${Math.round((1-p10Ratio)*100)}% loss` };
+  return { cls: 'binary', label: `Binary outcome — P10 at ${Math.round((1-p10Ratio)*100)}% loss` };
+}
+
+function renderAsymCard(p, rank) {
+  const asym = p.asymmetric || {};
+  const p90 = asym.p90_ratio; const p10 = asym.p10_ratio; const p50 = asym.p50_ratio;
+  const fmtMult = (v) => v == null ? '—' : `${v.toFixed(2)}x`;
+  const fmtMove = (v) => v == null ? '—' : `${v >= 1 ? '+' : ''}${Math.round((v-1)*100)}%`;
+  const risk = riskBand(p10);
+  const sector = p.sector || 'Equity';
+  const mcap = p.market_cap ?? p.fundamentals?.market_cap;
+  const size = sizeTier(mcap);
+  const sizeStr = size ? `${size}-cap${formatMktCap(mcap) ? ` · ${formatMktCap(mcap)}` : ''}` : '';
+  const thesis = p.rationale ? `${p.rationale}.` : 'Price dynamics carry the case — no standout SEC metric this quarter.';
+
+  return `<div class="asym-card">
+    <div class="asym-card-head">
+      <div class="asym-card-ticker">
+        <span class="asym-card-sym">${p.symbol}</span>
+        <span class="asym-card-name">${p.company_name || ''}</span>
+      </div>
+      <span class="asym-card-rank">#${rank} &middot; Upside score ${fmtMult(p90)}</span>
+    </div>
+    <div class="asym-band">
+      <div class="bcol">
+        <div class="lbl">Downside · P10</div>
+        <div class="val down">${fmtMove(p10)}</div>
+        <div class="sub">${fmtMult(p10)} of current</div>
+      </div>
+      <div class="bcol mid">
+        <div class="lbl">Median · P50</div>
+        <div class="val mid">${fmtMove(p50)}</div>
+        <div class="sub">${fmtMult(p50)} of current</div>
+      </div>
+      <div class="bcol hi">
+        <div class="lbl">Upside · P90</div>
+        <div class="val up">${fmtMove(p90)}</div>
+        <div class="sub">${fmtMult(p90)} of current</div>
+      </div>
+    </div>
+    <div class="asym-thesis">
+      <div class="asym-thesis-eyebrow">Thesis</div>
+      ${thesis}
+    </div>
+    <div class="asym-risk ${risk.cls}">${risk.label}</div>
+    ${(() => {
+      const amt = ALLOC.byPick?.[`${p.symbol}|asymmetric`];
+      return amt ? `<div class="asym-alloc">Allocate ${fmtUsd(amt)}</div>` : '';
+    })()}
+    <div class="asym-foot">
+      <span>${sector}${sizeStr ? ' · ' + sizeStr : ''}</span>
+      <a href="/app?ticker=${encodeURIComponent(p.symbol)}">Full projection &rarr;</a>
+    </div>
+  </div>`;
+}
+
+// ── Allocation engine ──
+// Risk profile = tier-level weights. Within each tier, weight by
+// (confidence × 1/vol) so conviction-rich, low-vol picks get more capital.
+const RISK_PROFILES = {
+  defensive:  { conservative: 0.60, moderate: 0.30, aggressive: 0.10, asymmetric: 0.00, label: 'Defensive',  sub: 'Capital preservation — no asymmetric allocation' },
+  balanced:   { conservative: 0.40, moderate: 0.35, aggressive: 0.20, asymmetric: 0.05, label: 'Balanced',   sub: 'Core 75/25 with a small 5% asymmetric allocation' },
+  aggressive: { conservative: 0.20, moderate: 0.30, aggressive: 0.30, asymmetric: 0.20, label: 'Aggressive', sub: 'Tilt to volatility and tail — 20% asymmetric' },
+};
+
+// In-memory allocation state; read from localStorage on load.
+// Legacy 'wild' profile was removed 2026-04-17 — migrate to 'aggressive'.
+const _storedProfile = localStorage.getItem('stool_alloc_profile');
+const _profile = (_storedProfile === 'wild') ? 'aggressive' : (_storedProfile || 'balanced');
+if (_storedProfile === 'wild') localStorage.setItem('stool_alloc_profile', 'aggressive');
+let ALLOC = {
+  totalUsd: Number(localStorage.getItem('stool_alloc_total') || 10000),
+  profile:  _profile,
+  byPick:   {},      // sym → dollars
+  byTier:   {},      // tier → dollars
+};
+
+function tierWeight(pick) {
+  // Intra-tier weight: confidence × (1 / vol) with a floor so zero-conf
+  // picks still get a non-zero share.
+  const c = Math.max(5, pick.confidence ?? 30);
+  const v = Math.max(0.05, pick.risk ?? 0.3);
+  return c / v;
+}
+
+function computeAllocations(picksData) {
+  const profile = RISK_PROFILES[ALLOC.profile] || RISK_PROFILES.balanced;
+  const dollars = Math.max(0, Number(ALLOC.totalUsd) || 0);
+  const byPick = {};
+  const byTier = { conservative: 0, moderate: 0, aggressive: 0, asymmetric: 0 };
+
+  const grouped = { conservative: [], moderate: [], aggressive: [] };
+  for (const p of picksData.picks) if (grouped[p.tier]) grouped[p.tier].push(p);
+  for (const t of ['conservative','moderate','aggressive']) grouped[t] = grouped[t].slice(0, 10);
+  const asymPicks = (picksData.asymmetric_picks || []).slice(0, 10);
+
+  const tiers = [
+    { name: 'conservative', picks: grouped.conservative },
+    { name: 'moderate',     picks: grouped.moderate },
+    { name: 'aggressive',   picks: grouped.aggressive },
+    { name: 'asymmetric',   picks: asymPicks },
+  ];
+  for (const t of tiers) {
+    const share = profile[t.name] || 0;
+    const tierBudget = dollars * share;
+    byTier[t.name] = tierBudget;
+    if (tierBudget <= 0 || !t.picks.length) continue;
+    const weights = t.picks.map(tierWeight);
+    const wsum = weights.reduce((a, b) => a + b, 0) || 1;
+    t.picks.forEach((p, i) => {
+      // Key asymmetric by `symbol + _asym` to avoid collision with same-symbol
+      // standard pick. Display reads `${sym}|${tier}`.
+      const key = `${p.symbol}|${t.name}`;
+      byPick[key] = (byPick[key] || 0) + tierBudget * (weights[i] / wsum);
+    });
+  }
+  ALLOC.byPick = byPick;
+  ALLOC.byTier = byTier;
+}
+
+function fmtUsd(v) {
+  if (v == null || !isFinite(v)) return '—';
+  if (v >= 1000) return `$${Math.round(v).toLocaleString()}`;
+  return `$${v.toFixed(0)}`;
+}
+
+// Tier → palette colour. Shared by donut, composition rows, tab dots.
+const TIER_PALETTE = {
+  conservative: '#6ee7b7',
+  moderate:     '#5FAAC5',
+  aggressive:   '#f5d58f',
+  asymmetric:   '#d2ddea',
+};
+
+// Master donut: one arc per individual ticker across ALL risk tiers.
+// Arcs are grouped contiguously by tier (conservative → moderate →
+// aggressive → asymmetric) so tier colors form clean bands, and the
+// intra-tier stroke-opacity variation shows which ticker inside a band
+// carries the most weight. r=15.9155 makes the circumference exactly
+// 100, so each arc's stroke-dasharray segment in percent maps 1:1 to
+// its share of the total portfolio.
+function renderMasterDonut(allTickers, total, center) {
+  const GAP = 0.25;  // tiny gap between adjacent slices for visual separation
+  let offset = 0;
+  const safeTotal = Math.max(1e-6, total);
+
+  // Precompute per-tier max so opacity scales inside each tier.
+  const tierMax = {};
+  for (const tk of allTickers) {
+    if (tk.amt > (tierMax[tk.tier] || 0)) tierMax[tk.tier] = tk.amt;
+  }
+
+  const arcs = allTickers.map(tk => {
+    const pct = (tk.amt / safeTotal) * 100;
+    if (pct <= 0) return '';
+    const visiblePct = Math.max(0.05, pct - GAP);
+    const dashArr = `${visiblePct.toFixed(3)} ${(100 - visiblePct).toFixed(3)}`;
+    const dashOff = (-offset).toFixed(3);
+    const tMax = tierMax[tk.tier] || tk.amt;
+    const op = (0.55 + 0.45 * (tk.amt / tMax)).toFixed(2);
+    // Data attrs feed the custom hover tooltip. No <title> — native SVG
+    // tooltips are slow and OS-styled, the custom one is instant.
+    const arc = `<circle cx="21" cy="21" r="15.9155" fill="transparent"
+      stroke="${TIER_PALETTE[tk.tier]}" stroke-width="7"
+      stroke-dasharray="${dashArr}" stroke-dashoffset="${dashOff}"
+      stroke-opacity="${op}"
+      transform="rotate(-90 21 21)"
+      data-sym="${tk.sym}" data-tier="${tk.tier}"
+      data-amt="${tk.amt.toFixed(2)}"
+      data-pct-total="${pct.toFixed(2)}"></circle>`;
+    offset += pct;
+    return arc;
+  }).join('');
+
+  // Wrap center text in a width-constrained inner div so long profile
+  // captions never overflow behind the donut ring. The .dt-inner at 58%
+  // sits entirely inside the donut's negative space.
+  // Center total scales down when the formatted string gets long AND
+  // when the viewport is small. "$10,000,000" at 46pt overflows the
+  // inner 58%-wide zone on desktop; same string at 40pt overflows the
+  // 240px mobile donut even harder. Combine length + viewport scaling.
+  const _totalStr = (center && center.total) || '';
+  const _totalLen = _totalStr.replace(/[^\d$.,]/g, '').length;
+  const _vw = (typeof window !== 'undefined' && window.innerWidth) || 1200;
+  const _baseMax = _vw < 540 ? 32 : _vw < 920 ? 38 : 46;
+  const _scale = _totalLen > 11 ? 0.55
+               : _totalLen > 9  ? 0.68
+               : _totalLen > 7  ? 0.82
+               : 1.00;
+  const _totalFontPx = Math.max(18, Math.round(_baseMax * _scale));
+  const centerHtml = center
+    ? `<div class="dt-center">
+         <div class="dt-inner">
+           <div class="dt-total" style="font-size:${_totalFontPx}px;">${center.total}</div>
+           <div class="dt-sub">${center.label}</div>
+           ${center.caption ? `<div class="dt-caption">${center.caption}</div>` : ''}
+         </div>
+       </div>`
+    : '';
+
+  return `<div class="alloc-donut master">
+    <svg viewBox="0 0 42 42" aria-label="Portfolio composition by ticker">
+      <circle cx="21" cy="21" r="15.9155" fill="transparent"
+        stroke="rgba(155,161,185,0.08)" stroke-width="7"/>
+      ${arcs}
+    </svg>
+    ${centerHtml}
+  </div>`;
+}
+
+// Mini pie for a single tier — shows the intra-tier distribution across
+// that tier's ~10 tickers. Same r=15.9155 trick; thicker stroke because
+// the pie is small and each slice needs physical weight to read at 140px.
+function renderTierPie(tier, entries) {
+  if (!entries.length) return '';
+  const tierTotal = entries.reduce((s, e) => s + e.amt, 0);
+  if (tierTotal <= 0) return '';
+  const maxAmt = Math.max(...entries.map(e => e.amt), 1e-6);
+  const GAP = 0.5;
+  let offset = 0;
+  const arcs = entries.map(e => {
+    const pct = (e.amt / tierTotal) * 100;
+    if (pct <= 0) return '';
+    const visiblePct = Math.max(0.1, pct - GAP);
+    const dashArr = `${visiblePct.toFixed(3)} ${(100 - visiblePct).toFixed(3)}`;
+    const dashOff = (-offset).toFixed(3);
+    const op = (0.5 + 0.5 * (e.amt / maxAmt)).toFixed(2);
+    const arc = `<circle cx="21" cy="21" r="15.9155" fill="transparent"
+      stroke="${TIER_PALETTE[tier]}" stroke-width="9"
+      stroke-dasharray="${dashArr}" stroke-dashoffset="${dashOff}"
+      stroke-opacity="${op}"
+      transform="rotate(-90 21 21)"
+      data-sym="${e.sym}" data-tier="${tier}"
+      data-amt="${e.amt.toFixed(2)}"
+      data-pct-tier="${pct.toFixed(2)}"></circle>`;
+    offset += pct;
+    return arc;
+  }).join('');
+  return `<svg class="mini-pie" viewBox="0 0 42 42" aria-label="${TIER_LABELS[tier]} allocation">
+    <circle cx="21" cy="21" r="15.9155" fill="transparent"
+      stroke="rgba(155,161,185,0.06)" stroke-width="9"/>
+    ${arcs}
+  </svg>`;
+}
+
+const TIER_LABELS = {
+  conservative: 'Conservative',
+  moderate: 'Moderate',
+  aggressive: 'Aggressive',
+  asymmetric: 'Asymmetric',
+};
+
+function renderAllocWidget(picksData) {
+  const profile = RISK_PROFILES[ALLOC.profile] || RISK_PROFILES.balanced;
+  const total = ALLOC.totalUsd || 0;
+  const tiers = ['conservative','moderate','aggressive','asymmetric'];
+
+  const byTier = { conservative: [], moderate: [], aggressive: [] };
+  for (const p of picksData.picks || []) {
+    if (byTier[p.tier] && byTier[p.tier].length < 10) byTier[p.tier].push(p);
+  }
+  const asymPicks = (picksData.asymmetric_picks || []).slice(0, 10);
+  const tierPicks = {
+    conservative: byTier.conservative,
+    moderate:     byTier.moderate,
+    aggressive:   byTier.aggressive,
+    asymmetric:   asymPicks,
+  };
+
+  const SUBS = {
+    conservative: 'Low vol · quality',
+    moderate:     'Core · balanced',
+    aggressive:   'High vol · tactical',
+    asymmetric:   'Tail upside · speculative',
+  };
+
+  // Assemble every per-ticker allocation into a single flat list, grouped
+  // by tier in canonical order (conservative → asymmetric) and sorted by
+  // $ descending within each tier. The master donut reads this directly:
+  // one arc per ticker, tier colors forming contiguous bands.
+  const allTickers = [];
+  const tierEntries = {};
+  for (const t of tiers) {
+    const share = profile[t] || 0;
+    const dollars = total * share;
+    const picks = tierPicks[t] || [];
+    const entries = picks.map(p => ({
+      sym: p.symbol, tier: t,
+      amt: ALLOC.byPick?.[`${p.symbol}|${t}`] || 0,
+    })).sort((a, b) => b.amt - a.amt);
+    tierEntries[t] = { share, dollars, entries, pickN: picks.length };
+    for (const e of entries) if (e.amt > 0) allTickers.push(e);
+  }
+
+  const opts = Object.entries(RISK_PROFILES).map(([key, cfg]) =>
+    `<option value="${key}" ${ALLOC.profile === key ? 'selected' : ''}>${cfg.label}</option>`).join('');
+
+  // Center caption: the PROFILE name gets a "profile" qualifier so it
+  // can't be mistaken for the aggressive/conservative TIER of the same
+  // name. Sub-copy kept short — anything longer would bleed outside the
+  // donut's inner clear-zone regardless of the width constraint.
+  const masterDonutHtml = renderMasterDonut(allTickers, total, {
+    total: fmtUsd(total),
+    label: `${profile.label} profile`,
+    caption: `${allTickers.length} names`,
+  });
+
+  // Per-tier cards: mini pie + header with tier name/%/$ + the top tickers
+  // listed below the pie. Every tier gets its own chart so the user can
+  // actually see intra-tier distribution, not just tier-level totals.
+  const tierCards = tiers.map(t => {
+    const { share, dollars, entries, pickN } = tierEntries[t];
+    const emptyCls = share === 0 ? ' tp-empty' : '';
+
+    let bodyHtml;
+    if (share === 0) {
+      bodyHtml = `<div class="tp-msg">Not allocated in the ${profile.label} profile.</div>`;
+    } else if (!pickN) {
+      bodyHtml = `<div class="tp-msg">No picks in today's scan.</div>`;
+    } else {
+      const pieHtml = renderTierPie(t, entries);
+      // Legend: every ticker, rows sorted by $. Compact enough that all
+      // 10 fit without overflow. Dollar column is tabular-num aligned.
+      const legendRows = entries.map(e => {
+        const pctTier = dollars > 0 ? (e.amt / dollars) * 100 : 0;
+        return `<div class="tp-legend-row">
+          <span class="tp-lg-sym">${e.sym}</span>
+          <span class="tp-lg-bar" style="--w:${pctTier.toFixed(1)}%;--c:${TIER_PALETTE[t]};"></span>
+          <span class="tp-lg-amt">${fmtUsd(e.amt)}</span>
+        </div>`;
+      }).join('');
+      bodyHtml = `<div class="tp-pie-wrap">${pieHtml}</div>
+                  <div class="tp-legend">${legendRows}</div>`;
+    }
+
+    return `<div class="tp-card${emptyCls}">
+      <div class="tp-head">
+        <div class="tp-head-left">
+          <span class="tp-dot" style="background:${TIER_PALETTE[t]};"></span>
+          <div>
+            <div class="tp-name">${TIER_LABELS[t]}</div>
+            <div class="tp-sub">${SUBS[t]}</div>
+          </div>
+        </div>
+        <div class="tp-head-right">
+          <div class="tp-pct">${Math.round(share * 100)}%</div>
+          <div class="tp-dollar">${share > 0 ? fmtUsd(dollars) : '$0'}</div>
+        </div>
+      </div>
+      ${bodyHtml}
+    </div>`;
+  }).join('');
+
+  return `<div class="alloc-widget">
+    <div class="alloc-top">
+      ${masterDonutHtml}
+      <div class="alloc-intro">
+        <div class="aw-title">Allocation &middot; build your book</div>
+        <div class="aw-sub"><b>${profile.label}</b>: ${profile.sub}. Every arc above is one ticker, sized by its dollar allocation and colored by risk tier. Per-tier detail below.</div>
+      </div>
+      <div class="alloc-controls">
+        <div class="alloc-control">
+          <label>Portfolio size</label>
+          <input type="number" id="allocTotal" min="100" step="500" value="${total}" />
+        </div>
+        <div class="alloc-control">
+          <label>Risk profile</label>
+          <select id="allocProfile">${opts}</select>
+        </div>
+      </div>
+    </div>
+    <div class="tier-pies-grid">${tierCards}</div>
+  </div>`;
+}
+
+function wireAllocControls(picksData, trackData) {
+  const total = document.getElementById('allocTotal');
+  const profile = document.getElementById('allocProfile');
+  const onChange = () => {
+    ALLOC.totalUsd = Math.max(0, Number(total.value) || 0);
+    ALLOC.profile = profile.value;
+    localStorage.setItem('stool_alloc_total', String(ALLOC.totalUsd));
+    localStorage.setItem('stool_alloc_profile', ALLOC.profile);
+    computeAllocations(picksData);
+    document.getElementById('content').innerHTML = renderPage(picksData, trackData);
+    wireAllocControls(picksData, trackData);
+    wireChartTooltips();
+  };
+  total?.addEventListener('change', onChange);
+  total?.addEventListener('input', onChange);
+  profile?.addEventListener('change', onChange);
+}
+
+// Custom hover tooltip for pie/donut slices. Shows instantly on hover
+// with the ticker, tier, $ amount, % of portfolio, % of tier. Replaces
+// browser-native <title> which is slow and OS-styled.
+function wireChartTooltips() {
+  let tip = document.getElementById('chartTip');
+  if (!tip) {
+    tip = document.createElement('div');
+    tip.id = 'chartTip';
+    tip.className = 'chart-tooltip';
+    tip.innerHTML = `
+      <div class="ct-head">
+        <span class="ct-dot"></span>
+        <span class="ct-sym"></span>
+        <span class="ct-tier"></span>
+      </div>
+      <div class="ct-rows">
+        <div class="ct-row"><span class="ct-label">Amount</span><span class="ct-value big ct-amt"></span></div>
+        <div class="ct-row"><span class="ct-label">% of portfolio</span><span class="ct-value ct-pct-total"></span></div>
+        <div class="ct-row"><span class="ct-label">% of tier</span><span class="ct-value ct-pct-tier"></span></div>
+      </div>`;
+    document.body.appendChild(tip);
+  }
+
+  const tierTotals = ALLOC.byTier || {};
+  const portfolioTotal = ALLOC.totalUsd || 0;
+
+  const show = (circle, evt) => {
+    const sym   = circle.getAttribute('data-sym');
+    const tier  = circle.getAttribute('data-tier');
+    const amt   = parseFloat(circle.getAttribute('data-amt') || '0');
+    const tierTotal = tierTotals[tier] || 0;
+    const pctTotal = portfolioTotal > 0 ? (amt / portfolioTotal) * 100 : 0;
+    const pctTier  = tierTotal     > 0 ? (amt / tierTotal)     * 100 : 0;
+    const tierColor = TIER_PALETTE[tier] || '#5faac5';
+
+    tip.querySelector('.ct-dot').style.background = tierColor;
+    tip.querySelector('.ct-sym').textContent = sym;
+    tip.querySelector('.ct-tier').textContent = TIER_LABELS[tier] || tier;
+    tip.querySelector('.ct-amt').textContent = fmtUsd(amt);
+    tip.querySelector('.ct-pct-total').textContent = pctTotal.toFixed(2) + '%';
+    tip.querySelector('.ct-pct-tier').textContent  = pctTier.toFixed(1)  + '%';
+    circle.classList.add('hover');
+    tip.classList.add('visible');
+    positionTip(evt);
+  };
+  const hide = (circle) => { circle?.classList.remove('hover'); tip.classList.remove('visible'); };
+  const positionTip = (evt) => {
+    const w = tip.offsetWidth || 220;
+    const h = tip.offsetHeight || 140;
+    const x = Math.min(evt.clientX + 16, window.innerWidth - w - 12);
+    const y = Math.min(evt.clientY + 16, window.innerHeight - h - 12);
+    tip.style.left = x + 'px';
+    tip.style.top  = y + 'px';
+  };
+
+  document.querySelectorAll('circle[data-sym]').forEach(c => {
+    c.addEventListener('mouseenter', e => show(c, e));
+    c.addEventListener('mousemove',  e => positionTip(e));
+    c.addEventListener('mouseleave', () => hide(c));
+  });
+}
+
+// Tier section that opens a tab — splits picks into first-5 (always
+// visible) and overflow (data-overflow="1", hidden until "Show remaining"
+// is clicked). Matches the existing pick-grid layout.
+function renderTabTierBody(tier, picks) {
+  if (!picks.length) {
+    return `<div class="loading">No ${tier} picks in today's scan.</div>`;
+  }
+  const visible = picks.slice(0, 5);
+  const overflow = picks.slice(5);
+  const sectorStrip = renderSectorStrip(picks);
+  const visibleCards = visible.map(renderPickCard).join('');
+  const overflowCards = overflow.map(p => {
+    // Mark overflow pick cards with data-overflow so CSS can hide them by
+    // default. Same card shape as the visible ones.
+    return renderPickCard(p).replace(
+      '<div class="pick-card">',
+      '<div class="pick-card" data-overflow="1">'
+    );
+  }).join('');
+  const showAll = overflow.length
+    ? `<div class="show-all-row">
+         <button class="show-all-btn" type="button" onclick="toggleShowAll('${tier}')">
+           Show remaining ${overflow.length} pick${overflow.length === 1 ? '' : 's'} &rarr;
+         </button>
+       </div>`
+    : '';
+  return `<section class="tier-section" data-tier="${tier}">
+    <div class="tier-head">
+      <div style="min-width:0;flex:1;">
+        <div class="tier-name">${TIER_COPY[tier].label} <span class="tier-count">${picks.length} ${picks.length === 1 ? 'pick' : 'picks'}</span></div>
+        ${sectorStrip}
+      </div>
+      <div class="tier-blurb">${TIER_COPY[tier].blurb}</div>
+    </div>
+    <div class="pick-grid">${visibleCards}${overflowCards}</div>
+    ${showAll}
+  </section>`;
+}
+
+// Same idea for the asymmetric tab — 5 visible cards, rest hidden until
+// the toggle is flipped. Uses the existing asym card design.
+function renderTabAsymBody(picks) {
+  if (!picks || !picks.length) {
+    return `<div class="loading">No asymmetric picks in today's scan.</div>`;
+  }
+  const visible = picks.slice(0, 5);
+  const overflow = picks.slice(5);
+  const avgP90 = picks.reduce((s, p) => s + (p.asymmetric?.p90_ratio || 0), 0) / picks.length;
+  const avgP10 = picks.reduce((s, p) => s + (p.asymmetric?.p10_ratio || 0), 0) / picks.length;
+  const visibleCards = visible.map((p, i) => renderAsymCard(p, i + 1)).join('');
+  const overflowCards = overflow.map((p, i) => {
+    return renderAsymCard(p, i + 6).replace(
+      '<div class="asym-card">',
+      '<div class="asym-card" data-overflow="1">'
+    );
+  }).join('');
+  const showAll = overflow.length
+    ? `<div class="show-all-row">
+         <button class="show-all-btn" type="button" onclick="toggleShowAll('asymmetric')">
+           Show remaining ${overflow.length} pick${overflow.length === 1 ? '' : 's'} &rarr;
+         </button>
+       </div>`
+    : '';
+  return `<section class="asym-section">
+    <div class="asym-head">
+      <div>
+        <div style="font:600 11px 'Inter';color:var(--accent-lake);letter-spacing:0.24em;text-transform:uppercase;margin-bottom:14px;">Asymmetric Upside</div>
+        <h2 class="asym-tier">Names the engine thinks could <em>multiply</em>.</h2>
+        <p class="asym-blurb">Ranked by our <b>self-training asymmetric-upside model</b> &mdash; a scoring function that <b>retrains every night</b> on the most recent realized-return data, picking whichever signal combination has been identifying 100%+ movers out-of-sample in the current regime. Filtered for real liquidity so every name is actually investable. Every pick carries its own <b>honest P10 downside</b>. High-variance &mdash; <b>size each name small</b>.</p>
+      </div>
+      <div class="asym-stats">
+        <div><div class="s-val">${avgP90.toFixed(1)}x</div><div class="s-label">Avg P90</div></div>
+        <div><div class="s-val">${avgP10.toFixed(2)}x</div><div class="s-label">Avg P10</div></div>
+        <div><div class="s-val">${picks.length}</div><div class="s-label">Names</div></div>
+      </div>
+    </div>
+    <div class="asym-grid">${visibleCards}${overflowCards}</div>
+    ${showAll}
+  </section>`;
+}
+
+// Pill tab row — shows tier name, pick count, allocated dollars. Every
+// tab itself is numeric so the nav earns its space.
+function renderPicksTabs(picksData) {
+  const tiers = [
+    { key: 'conservative', label: 'Conservative' },
+    { key: 'moderate',     label: 'Moderate' },
+    { key: 'aggressive',   label: 'Aggressive' },
+    { key: 'asymmetric',   label: 'Asymmetric' },
+  ];
+  const grouped = {};
+  for (const p of picksData.picks || []) (grouped[p.tier] = grouped[p.tier] || []).push(p);
+  const asymPicks = picksData.asymmetric_picks || [];
+
+  const stored = localStorage.getItem('stool_picks_tab');
+  const firstAvailable = tiers.find(t => {
+    if (t.key === 'asymmetric') return asymPicks.length > 0;
+    return (grouped[t.key] || []).length > 0;
+  })?.key || 'conservative';
+  const activeKey = tiers.some(t => t.key === stored) ? stored : firstAvailable;
+
+  const btns = tiers.map(t => {
+    const count = t.key === 'asymmetric'
+      ? Math.min(10, asymPicks.length)
+      : Math.min(10, (grouped[t.key] || []).length);
+    const budget = ALLOC.byTier?.[t.key] || 0;
+    const active = t.key === activeKey ? ' active' : '';
+    const dollarStr = budget > 0 ? fmtUsd(budget) : '$0';
+    return `<button class="pt-btn${active}" type="button"
+      data-tab-key="${t.key}" onclick="switchTab('${t.key}')">
+      <div class="pt-head">
+        <span class="pt-dot" style="background:${TIER_PALETTE[t.key]};"></span>
+        <span class="pt-name">${t.label}</span>
+      </div>
+      <div class="pt-meta">${count} pick${count === 1 ? '' : 's'} &middot; ${dollarStr}</div>
+    </button>`;
+  }).join('');
+  return { html: `<nav class="picks-tabs" role="tablist">${btns}</nav>`, activeKey };
+}
+
+function renderPage(picksData, trackData, portfolioData) {
+  const grouped = {};
+  for (const p of picksData.picks) (grouped[p.tier] = grouped[p.tier] || []).push(p);
+  const tiered = ['conservative','moderate','aggressive']
+    .flatMap(t => (grouped[t] || []).slice(0, 10));
+  computeAllocations(picksData);
+
+  // Only show live Track record if we have at least one matured tier — the
+  // placeholder-only version was clutter. Backtest evidence lives on the
+  // dedicated /track-record page, so we just link there compactly.
+  const hasLiveTrack = trackData?.summary &&
+    Object.values(trackData.summary).some(s => s && s.n);
+  const trackBlock = hasLiveTrack
+    ? renderTrackRecord(trackData.summary)
+    : `<div class="track-link-row">
+         <div class="tl-copy">
+           <span class="tl-eyebrow">Evidence</span>
+           <span class="tl-title">Live tracking starts once picks mature (7d+).</span>
+         </div>
+         <a class="tl-cta" href="/track-record">See full backtest &rarr;</a>
+       </div>`;
+
+  const tabs = renderPicksTabs(picksData);
+  const tierPanels = ['conservative','moderate','aggressive'].map(t => {
+    const picks = (grouped[t] || []).slice(0, 10);
+    const activeCls = t === tabs.activeKey ? ' active' : '';
+    return `<div class="tab-panel${activeCls}" data-panel-key="${t}">${renderTabTierBody(t, picks)}</div>`;
+  }).join('');
+  const asymActive = tabs.activeKey === 'asymmetric' ? ' active' : '';
+  const asymPanel = `<div class="tab-panel${asymActive}" data-panel-key="asymmetric">${renderTabAsymBody(picksData.asymmetric_picks || [])}</div>`;
+
+  const portfolioBlock = portfolioData ? renderPortfolio(portfolioData) : '';
+
+  return `${portfolioBlock}
+          <section class="hero-block">
+            ${renderPortfolioSignal(tiered, picksData)}
+            ${renderAllocWidget(picksData)}
+          </section>
+          ${trackBlock}
+          ${tabs.html}
+          ${tierPanels}
+          ${asymPanel}
+          ${renderMethodology(picksData)}`;
+}
+
+// Auto-refresh handle for the live portfolio panel. Cleared on tab hide
+// to stop hammering Alpaca when the user isn't looking.
+let _pfRefreshTimer = null;
+async function refreshPortfolioOnly() {
+  try {
+    const res = await fetch('/api/portfolio', { headers: await authHeaders() });
+    if (!res.ok) return;
+    const data = await res.json();
+    const node = document.getElementById('pf-panel');
+    if (!node) return;
+    const html = renderPortfolio(data);
+    if (html) node.outerHTML = html;
+  } catch (_) { /* swallow — next tick will retry */ }
+}
+function startPortfolioRefresh() {
+  if (_pfRefreshTimer) return;
+  _pfRefreshTimer = setInterval(() => {
+    if (document.visibilityState === 'visible') refreshPortfolioOnly();
+  }, 30000);
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') refreshPortfolioOnly();
+});
+
+async function load() {
+  const content = document.getElementById('content');
+  const scanMeta = document.getElementById('scanMeta');
+
+  const [picksRes, trackRes, pfRes] = await Promise.all([
+    fetch('/api/picks', { headers: await authHeaders() }),
+    fetch('/api/track-record?lookback_days=90', { headers: await authHeaders() }),
+    fetch('/api/portfolio', { headers: await authHeaders() }).catch(() => null),
+  ]);
+  const picksData = await picksRes.json().catch(() => null);
+  const trackData = await trackRes.json().catch(() => null);
+  // Portfolio is best-effort: 503 (no creds), 502 (Alpaca down), or
+  // strategist-gated all return a JSON body we can pass through to
+  // renderPortfolio, which renders nothing on error.
+  let portfolioData = null;
+  if (pfRes && pfRes.ok) portfolioData = await pfRes.json().catch(() => null);
+
+  if (picksRes.status === 402 && picksData?.error === 'strategist_required') {
+    scanMeta.innerHTML = `<span class="meta-item"><span class="dot waiting"></span><span>Scan last updated ${picksData.scan_age_hours != null ? picksData.scan_age_hours.toFixed(1) + 'h ago' : 'recently'}</span></span>
+      <span class="meta-item">Upgrade to see the full list</span>`;
+    // Render the live portfolio panel ABOVE the gate as proof-of-life
+    // for anonymous / non-strategist visitors. The /api/portfolio
+    // response in this case is gated to a 3-position teaser.
+    const portfolioBlock = portfolioData ? renderPortfolio(portfolioData) : '';
+    content.innerHTML = portfolioBlock + renderGate({ ...picksData, summary: trackData?.summary });
+    if (portfolioData && !portfolioData.error) startPortfolioRefresh();
+    return;
+  }
+  if (picksRes.status === 404) {
+    scanMeta.innerHTML = '';
+    content.innerHTML = `<div class="gate"><h2>Overnight scan hasn't run yet.</h2><p>Picks refresh after the daily cron at 10:00 UTC (6am ET). Check back then — or <a href="/app" style="color:var(--accent-lake);">try an individual projection</a> in the meantime.</p></div>`;
+    return;
+  }
+  if (!picksRes.ok || !picksData) {
+    scanMeta.innerHTML = '';
+    content.innerHTML = `<div class="gate"><h2>Couldn't load picks.</h2><p>Refresh in a moment.</p></div>`;
+    return;
+  }
+
+  const scanAge = picksData.scan_age_hours != null ? `${picksData.scan_age_hours.toFixed(1)}h ago` : 'recent';
+  scanMeta.innerHTML = `
+    <span class="meta-item"><span class="dot"></span><span>Last scan ${scanAge}</span></span>
+    <span class="meta-item">${picksData.count} picks across 3 tiers</span>
+    <span class="meta-item">1-year horizon · nightly refresh</span>`;
+
+  content.innerHTML = renderPage(picksData, trackData, portfolioData);
+  wireAllocControls(picksData, trackData);
+  wireChartTooltips();
+  if (portfolioData && !portfolioData.error) startPortfolioRefresh();
+}
+
+// Start the shared nav (handles pill + dark Clerk appearance) and hook the
+// picks-specific `load()` call on Clerk auth changes.
+(function () {
+  const wait = () => {
+    if (!window.STNav?.init) return setTimeout(wait, 50);
+    window.STNav.init({ signInRedirect: '/picks' });
+    const loop = () => {
+      if (!window.Clerk?.load) return setTimeout(loop, 80);
+      window.Clerk.load().then(() => { load(); window.Clerk.addListener(load); });
+    };
+    loop();
+  };
+  wait();
+})();

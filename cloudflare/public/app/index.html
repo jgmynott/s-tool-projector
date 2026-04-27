@@ -74,7 +74,8 @@ body {
 .header {
     background:
         linear-gradient(135deg, rgba(31,35,45,0.92) 0%, rgba(2,40,52,0.85) 50%, rgba(10,101,119,0.7) 100%),
-        url('/img/accent-peaks.jpg') center/cover no-repeat;
+        image-set(url('/img/accent-peaks.webp') type('image/webp'),
+                  url('/img/accent-peaks.jpg') type('image/jpeg')) center/cover no-repeat;
     border: 1px solid var(--border);
     border-radius: var(--radius);
     padding: 32px 36px;
@@ -779,7 +780,8 @@ body {
 .hero {
     background:
         linear-gradient(135deg, rgba(10,101,119,0.12) 0%, rgba(95,170,197,0.06) 100%),
-        url('/img/accent-lake.jpg') center/cover no-repeat;
+        image-set(url('/img/accent-lake.webp') type('image/webp'),
+                  url('/img/accent-lake.jpg') type('image/jpeg')) center/cover no-repeat;
     background-blend-mode: overlay;
     border: 1px solid var(--border);
     border-radius: var(--radius);
@@ -898,6 +900,23 @@ nav.evergreen { position: sticky; top: 0; z-index: 100; backdrop-filter: blur(14
 .evergreen .ev-logo, .evergreen .ev-end { flex-shrink: 0; }
 .evergreen .ev-center { min-width: 0; overflow: hidden; white-space: nowrap; }
 </style>
+<!-- s-tool speculation rules -->
+<script type="speculationrules">
+{
+  "prerender": [{
+    "where": { "href_matches": "/*" },
+    "eagerness": "moderate"
+  }]
+}
+</script>
+<!-- s-tool speculation rules -->
+<!-- s-tool sw register -->
+<script>
+  if ('serviceWorker' in navigator) {
+    addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+  }
+</script>
+<!-- s-tool sw register -->
 </head>
 <body>
 <nav class="evergreen">
