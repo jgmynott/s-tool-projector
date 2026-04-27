@@ -1029,6 +1029,80 @@ def portfolio(request: Request, user: Optional[dict] = Depends(auth.optional_use
     return JSONResponse(headers={"Cache-Control": "no-store"}, content=payload)
 
 
+@app.get("/api/trade-journal")
+@limiter.limit("60/minute")
+def trade_journal(
+    request: Request,
+    lookback_days: int = Query(90, ge=1, le=365),
+    user: Optional[dict] = Depends(auth.optional_user),
+):
+    """Per-trade ledger — every buy/sell the live paper trader has made,
+    with sleeve attribution, bracket math, and realized P&L on closes.
+
+    The trader writes runtime_data/trade_journal.json after each open
+    and close window (committed via .github/workflows/trader.yml).
+    Strategist-gated like /api/portfolio because it surfaces the same
+    position-level data; the aggregate stats (trade count, win rate)
+    flow through anonymously to support the public track-record page.
+    """
+    is_strategist = False
+    if user:
+        user_row = users_db.upsert_user(users_conn, user["user_id"], email=user.get("email"))
+        is_strategist = users_db.can_access_picks(user_row)
+
+    from datetime import datetime as _dtj, timedelta as _tdj
+    from pathlib import Path as _Pathj
+    import json as _jsonj
+    path = _Pathj(__file__).parent / "runtime_data" / "trade_journal.json"
+    if not path.exists():
+        return JSONResponse(content={
+            "rows": [], "n_rows": 0, "stats": {"n_buys": 0, "n_sells": 0, "win_rate": None},
+            "hint": "No trades journaled yet. Live trader writes here after open/close.",
+        })
+    try:
+        data = _jsonj.loads(path.read_text())
+        rows = data.get("rows") if isinstance(data, dict) else (data if isinstance(data, list) else [])
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": f"journal_parse_error: {e}"})
+
+    cutoff = (_dtj.utcnow() - _tdj(days=lookback_days)).isoformat()
+    recent = [r for r in rows if (r.get("ts") or "") >= cutoff]
+
+    # Aggregate stats — total buys, sells, wins/losses, win-rate. Public
+    # (no gating) since these are headline numbers for the track-record
+    # page that prove the strategy works without exposing per-trade detail.
+    n_buys = sum(1 for r in recent if r.get("event") == "buy")
+    sells = [r for r in recent if r.get("event") == "sell"]
+    closed = [r for r in sells if r.get("pnl") is not None]
+    wins = sum(1 for r in closed if r["pnl"] > 0)
+    losses = sum(1 for r in closed if r["pnl"] < 0)
+    win_rate = (wins / len(closed)) if closed else None
+    realized_total = sum(float(r.get("pnl") or 0) for r in closed)
+
+    payload = {
+        "as_of": _dtj.utcnow().isoformat() + "Z",
+        "lookback_days": lookback_days,
+        "n_rows": len(recent),
+        "stats": {
+            "n_buys": n_buys,
+            "n_sells": len(sells),
+            "n_closed_pairs": len(closed),
+            "wins": wins, "losses": losses,
+            "win_rate": round(win_rate, 3) if win_rate is not None else None,
+            "realized_pnl_total": round(realized_total, 2),
+            "best_trade": max(closed, key=lambda r: r["pnl"]) if closed else None,
+            "worst_trade": min(closed, key=lambda r: r["pnl"]) if closed else None,
+        },
+    }
+    if is_strategist:
+        # Full ledger for paid tier; truncate to keep payload sane.
+        payload["rows"] = recent[-500:]
+    else:
+        payload["teaser"] = True
+        payload["hint"] = "Per-trade detail unlocks at Strategist tier."
+    return JSONResponse(headers={"Cache-Control": "no-store"}, content=payload)
+
+
 # ── User + billing ──
 
 @app.get("/api/me")

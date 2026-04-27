@@ -121,23 +121,27 @@ jobs:
         run: |
           python3 research/trader.py live --window=${{ steps.resolve.outputs.window }}
 
-      # Persist trader_state.json so the next run sees prior sleeve
-      # attribution. Without this, every run would start with empty
-      # entries and treat every existing Alpaca position as "unattributed",
-      # which breaks the sleeve-scoped exit logic in plan_open_window.
-      - name: Commit trader_state
+      # Persist trader_state.json + trade_journal.json so the next run
+      # sees prior sleeve attribution AND so the track-record page has
+      # historical fills with sleeve/tier/rationale annotations.
+      # Without trader_state we'd treat existing positions as
+      # "unattributed" and break sleeve-scoped exit logic; without
+      # trade_journal the evidence ledger never reaches Railway.
+      - name: Commit trader_state + trade_journal
         if: steps.resolve.outputs.mode == 'live'
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          if [ ! -f research/trader_state.json ]; then
-            echo "no state to commit"; exit 0
+          if [ -f research/trader_state.json ]; then
+            git add -f research/trader_state.json
           fi
-          git add -f research/trader_state.json
+          if [ -f runtime_data/trade_journal.json ]; then
+            git add -f runtime_data/trade_journal.json
+          fi
           if git diff --staged --quiet; then
-            echo "trader_state.json unchanged"
+            echo "no trader artifacts changed"
           else
-            git commit -m "chore(trader): sleeve attribution after ${{ steps.resolve.outputs.window }} window $(date -u +%Y-%m-%dT%H:%MZ)"
+            git commit -m "chore(trader): sleeve attribution + journal after ${{ steps.resolve.outputs.window }} window $(date -u +%Y-%m-%dT%H:%MZ)"
             git pull --rebase || true
             git push
           fi

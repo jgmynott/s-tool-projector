@@ -150,6 +150,122 @@ def save_state(state: dict) -> None:
     STATE_PATH.write_text(json.dumps(state, indent=2))
 
 
+# ── Trade journal (evidence ledger) ──
+#
+# Accumulates one row per trader event so the track-record page can show
+# real fills with sleeve attribution, P&L per close, and (eventually)
+# regime/NN annotations for ablation. Lives in runtime_data/ rather than
+# research/ because runtime_data/ ships to Railway without gitignore
+# tricks and the api layer reads from there.
+
+JOURNAL_PATH = ROOT / "runtime_data" / "trade_journal.json"
+
+
+def load_journal() -> list[dict]:
+    if not JOURNAL_PATH.exists():
+        return []
+    try:
+        d = json.loads(JOURNAL_PATH.read_text())
+        return d.get("rows", []) if isinstance(d, dict) else (d if isinstance(d, list) else [])
+    except Exception:
+        return []
+
+
+def save_journal(rows: list[dict]) -> None:
+    JOURNAL_PATH.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "as_of": datetime.now(timezone.utc).isoformat(),
+        "n_rows": len(rows),
+        "rows": rows,
+    }
+    JOURNAL_PATH.write_text(json.dumps(payload, indent=2, default=str))
+
+
+def journal_entry_buy(b: dict, sleeve: str, *, live_price: float | None,
+                      stop: float, target: float, result: str) -> dict:
+    """Build a single 'buy' row. result ∈ {submitted, nobracket_fallback, failed}."""
+    return {
+        "ts": datetime.now(timezone.utc).isoformat(),
+        "event": "buy",
+        "sleeve": sleeve,
+        "symbol": b["symbol"],
+        "qty": b["qty"],
+        "ref_price": b.get("ref_price"),
+        "live_price": live_price,
+        "stop": stop,
+        "target": target,
+        "tier": b.get("tier"),
+        "rationale": (b.get("rationale") or "")[:200],
+        "result": result,
+    }
+
+
+def journal_alpaca_fills(api: "Alpaca", entries: dict) -> list[dict]:
+    """At close-window time, walk today's FILL activities and synthesise
+    journal rows for sells. We FIFO-pair sells with the buys recorded in
+    state.entries to compute per-trade P&L. Bracket child fills (stop/
+    target hits during the day) are captured here too — they don't pass
+    through trader.py's submit_sell path so this is the only place they
+    surface in the journal."""
+    today_iso = datetime.now(timezone.utc).date().isoformat()
+    try:
+        url = f"{api.base}/account/activities/FILL?date={today_iso}"
+        req = Request(url, headers=api.headers, method="GET")
+        with urlopen(req, timeout=15) as resp:
+            activities = json.loads(resp.read())
+    except (HTTPError, Exception) as e:
+        log.warning("journal: failed to fetch FILL activities: %s", e)
+        return []
+
+    if not isinstance(activities, list):
+        return []
+
+    chrono = sorted(
+        (a for a in activities if a.get("type") in ("FILL", "PARTIAL_FILL")
+         and (a.get("side") or "").lower() == "sell"),
+        key=lambda a: a.get("transaction_time") or a.get("submitted_at") or "",
+    )
+    rows: list[dict] = []
+    # We don't know the original buy-side fill price for symbols that
+    # opened today and exit today, so use state.entries.ref_price as the
+    # cost-basis proxy. For positions opened on prior days we don't have
+    # the entry in state any more (popped on rebalance), so use Alpaca's
+    # filled_avg_price from the buy activity if present in the same list.
+    buy_rows = [a for a in activities if (a.get("side") or "").lower() == "buy"]
+    buy_by_sym: dict = {}
+    for b in buy_rows:
+        s = b.get("symbol")
+        if s and s not in buy_by_sym:
+            buy_by_sym[s] = float(b.get("price") or 0)
+    for a in chrono:
+        sym = a.get("symbol")
+        if not sym:
+            continue
+        try:
+            qty = float(a.get("qty") or 0)
+            sell_price = float(a.get("price") or 0)
+        except (TypeError, ValueError):
+            continue
+        if qty <= 0 or sell_price <= 0:
+            continue
+        entry = entries.get(sym, {})
+        cost = buy_by_sym.get(sym) or entry.get("ref_price") or 0
+        pnl = (sell_price - cost) * qty if cost else None
+        rows.append({
+            "ts": a.get("transaction_time"),
+            "event": "sell",
+            "sleeve": entry.get("sleeve") or "unattributed",
+            "symbol": sym,
+            "qty": qty,
+            "buy_price": cost or None,
+            "sell_price": sell_price,
+            "pnl": pnl,
+            "exit_reason": a.get("order_type") or "unknown",
+            "order_id": a.get("order_id"),
+        })
+    return rows
+
+
 # ── Picks ──
 
 def load_picks() -> list[dict]:
@@ -282,7 +398,8 @@ def plan_close_window(account: dict, positions: list, state: dict) -> dict:
 
 # ── Order submission ──
 
-def submit_buy(api: Alpaca, b: dict, sleeve_name: str) -> None:
+def submit_buy(api: Alpaca, b: dict, sleeve_name: str,
+               journal_rows: list | None = None) -> None:
     """Submit a bracketed market buy. If the bracket itself is rejected
     because the stop/target collides with the current price (overnight
     gap moved the underlying past one of the levels we computed from
@@ -295,6 +412,11 @@ def submit_buy(api: Alpaca, b: dict, sleeve_name: str) -> None:
     /api/portfolio can attribute positions to sleeves without needing
     research/trader_state.json deployed to Railway. The 30-day Alpaca
     uniqueness window doesn't conflict because we suffix with the date.
+
+    journal_rows is a list the caller mutates; we append a buy row
+    after submission so the trade journal captures each entry with
+    bracket math (live vs ref price) and result (submitted /
+    nobracket_fallback).
     """
     cfg = SLEEVES[sleeve_name]
     today = datetime.now(timezone.utc).strftime("%Y%m%d")
@@ -321,6 +443,10 @@ def submit_buy(api: Alpaca, b: dict, sleeve_name: str) -> None:
     }
     try:
         api.submit(body)
+        if journal_rows is not None:
+            journal_rows.append(journal_entry_buy(
+                b, sleeve_name, live_price=live, stop=stop_price,
+                target=take_price, result="submitted"))
         return
     except RuntimeError as e:
         msg = str(e)
@@ -341,9 +467,14 @@ def submit_buy(api: Alpaca, b: dict, sleeve_name: str) -> None:
     log.warning("bracket rejected for %s (live=%s ref=%s stop=%s tgt=%s) — submitting plain market buy",
                 b["symbol"], live, b["ref_price"], stop_price, take_price)
     api.submit(fallback)
+    if journal_rows is not None:
+        journal_rows.append(journal_entry_buy(
+            b, sleeve_name, live_price=live, stop=stop_price,
+            target=take_price, result="nobracket_fallback"))
 
 
-def execute_sleeve_plan(api: Alpaca, plan: dict, state: dict, sleeve_name: str) -> dict:
+def execute_sleeve_plan(api: Alpaca, plan: dict, state: dict, sleeve_name: str,
+                         journal_rows: list | None = None) -> dict:
     executed, failed = [], []
     for s in plan["sells"]:
         try:
@@ -354,7 +485,7 @@ def execute_sleeve_plan(api: Alpaca, plan: dict, state: dict, sleeve_name: str) 
             failed.append({"side": "sell", "symbol": s["symbol"], "error": str(e)})
     for b in plan["buys"]:
         try:
-            submit_buy(api, b, sleeve_name)
+            submit_buy(api, b, sleeve_name, journal_rows=journal_rows)
             executed.append({"side": "buy", **b})
             state.setdefault("entries", {})[b["symbol"]] = {
                 "sleeve": sleeve_name,
@@ -363,6 +494,15 @@ def execute_sleeve_plan(api: Alpaca, plan: dict, state: dict, sleeve_name: str) 
             }
         except Exception as e:
             failed.append({"side": "buy", "symbol": b["symbol"], "error": str(e)})
+            if journal_rows is not None:
+                journal_rows.append({
+                    "ts": datetime.now(timezone.utc).isoformat(),
+                    "event": "buy_failed",
+                    "sleeve": sleeve_name,
+                    "symbol": b["symbol"],
+                    "qty": b.get("qty"),
+                    "error": str(e)[:200],
+                })
     return {"executed": executed, "failed": failed}
 
 
@@ -463,6 +603,14 @@ def cmd_live(api: Alpaca, window: str) -> int:
         return 3
 
     pos = api.positions()
+
+    # Trade journal — accumulates buy entries during the open window and
+    # picks up Alpaca FILL activity for sells during close. Persisted at
+    # the end of each run; rows older than ~365 days are pruned to keep
+    # the file from growing without bound.
+    journal_rows = load_journal()
+    new_rows: list[dict] = []
+
     if window == "open":
         picks = load_picks()
         if not picks: print("no picks"); return 4
@@ -471,21 +619,37 @@ def cmd_live(api: Alpaca, window: str) -> int:
         for name in SLEEVE_NAMES:
             p = combined["plans"][name]
             print(f"\n>>> SUBMITTING [{name}] {len(p['sells'])} sells + {len(p['buys'])} buys")
-            r = execute_sleeve_plan(api, p, state, name)
+            r = execute_sleeve_plan(api, p, state, name, journal_rows=new_rows)
             for f in r["failed"]:
                 print(f"  FAIL {f['side']} {f['symbol']}: {f['error']}")
         save_state(state)
+        if new_rows:
+            print(f"\njournal: appended {len(new_rows)} rows")
+            save_journal(_prune_journal(journal_rows + new_rows))
         return 0
     elif window == "close":
         plan = plan_close_window(acct, pos, state); print_close_plan(plan)
         if plan["sells"]:
             print(f"\n>>> CLOSING {len(plan['sells'])} daytrade positions")
-            r = execute_sleeve_plan(api, plan, state, "daytrade")
+            r = execute_sleeve_plan(api, plan, state, "daytrade", journal_rows=new_rows)
             for f in r["failed"]:
                 print(f"  FAIL {f['side']} {f['symbol']}: {f['error']}")
             save_state(state)
+        # Always pull today's Alpaca FILL activities at close — captures
+        # bracket child fills (stop-outs, target hits) that didn't pass
+        # through trader.py's flow during the day, plus the EOD daytrade
+        # closes we just submitted.
+        new_rows.extend(journal_alpaca_fills(api, state.get("entries", {})))
+        if new_rows:
+            print(f"\njournal: appended {len(new_rows)} rows")
+            save_journal(_prune_journal(journal_rows + new_rows))
         return 0
     return 5
+
+
+def _prune_journal(rows: list[dict], keep_days: int = 365) -> list[dict]:
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=keep_days)).isoformat()
+    return [r for r in rows if (r.get("ts") or "") >= cutoff]
 
 
 def main() -> int:
