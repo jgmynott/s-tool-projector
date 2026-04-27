@@ -71,7 +71,7 @@ jobs:
       contents: write   # commit research/trader_state.json
       issues: write     # alert on failure
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up Python
         uses: actions/setup-python@v5
