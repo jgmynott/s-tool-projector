@@ -1,0 +1,118 @@
+{
+  "entries": {
+    "VRT": {
+      "sleeve": "swing",
+      "opened_at": "2026-04-27T13:47:28.503137+00:00",
+      "ref_price": 313.23,
+      "qty": 23
+    },
+    "GEV": {
+      "sleeve": "swing",
+      "opened_at": "2026-04-27T13:47:28.644302+00:00",
+      "ref_price": 1149.19,
+      "qty": 6
+    },
+    "WDC": {
+      "sleeve": "swing",
+      "opened_at": "2026-04-27T13:47:28.780420+00:00",
+      "ref_price": 405.36,
+      "qty": 18
+    },
+    "FIX": {
+      "sleeve": "swing",
+      "opened_at": "2026-04-27T13:47:28.925452+00:00",
+      "ref_price": 1726.12,
+      "qty": 4
+    },
+    "AGX": {
+      "sleeve": "swing",
+      "opened_at": "2026-04-27T13:47:29.063673+00:00",
+      "ref_price": 601.83,
+      "qty": 12
+    },
+    "CIEN": {
+      "sleeve": "swing",
+      "opened_at": "2026-04-27T13:47:29.184013+00:00",
+      "ref_price": 520.8,
+      "qty": 14
+    },
+    "STX": {
+      "sleeve": "swing",
+      "opened_at": "2026-04-27T13:47:29.519392+00:00",
+      "ref_price": 592.33,
+      "qty": 12
+    },
+    "AMRX": {
+      "sleeve": "swing",
+      "opened_at": "2026-04-27T13:47:29.675796+00:00",
+      "ref_price": 13.09,
+      "qty": 572
+    },
+    "AHR": {
+      "sleeve": "swing",
+      "opened_at": "2026-04-27T13:47:29.836025+00:00",
+      "ref_price": 50.58,
+      "qty": 148
+    },
+    "CRS": {
+      "sleeve": "swing",
+      "opened_at": "2026-04-27T13:47:29.951971+00:00",
+      "ref_price": 426.16,
+      "qty": 17
+    },
+    "HWM": {
+      "sleeve": "daytrade",
+      "opened_at": "2026-04-27T13:47:30.122561+00:00",
+      "ref_price": 242.44,
+      "qty": 20
+    },
+    "AVGO": {
+      "sleeve": "daytrade",
+      "opened_at": "2026-04-27T13:47:30.283498+00:00",
+      "ref_price": 422.76,
+      "qty": 11
+    },
+    "DY": {
+      "sleeve": "daytrade",
+      "opened_at": "2026-04-27T13:47:30.591132+00:00",
+      "ref_price": 409.32,
+      "qty": 12
+    },
+    "TSM": {
+      "sleeve": "daytrade",
+      "opened_at": "2026-04-27T13:47:30.738532+00:00",
+      "ref_price": 411.0,
+      "qty": 12
+    },
+    "RL": {
+      "sleeve": "daytrade",
+      "opened_at": "2026-04-27T13:47:31.008317+00:00",
+      "ref_price": 370.21,
+      "qty": 13
+    },
+    "GE": {
+      "sleeve": "daytrade",
+      "opened_at": "2026-04-27T13:47:31.184016+00:00",
+      "ref_price": 284.6,
+      "qty": 17
+    },
+    "IBKR": {
+      "sleeve": "daytrade",
+      "opened_at": "2026-04-27T13:47:31.320538+00:00",
+      "ref_price": 76.62,
+      "qty": 65
+    },
+    "CASY": {
+      "sleeve": "daytrade",
+      "opened_at": "2026-04-27T13:47:31.453839+00:00",
+      "ref_price": 799.55,
+      "qty": 6
+    },
+    "CW": {
+      "sleeve": "daytrade",
+      "opened_at": "2026-04-27T13:47:31.598038+00:00",
+      "ref_price": 719.99,
+      "qty": 6
+    }
+  }
+}
