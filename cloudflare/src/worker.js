@@ -37,6 +37,23 @@ function applySecurityHeaders(response, { html }) {
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }
 
+// Cache-Control override — env.ASSETS.fetch() returns "public, max-age=0,
+// must-revalidate" on every static response and the _headers file does
+// NOT propagate through the Worker assets binding the same way it does
+// for pure Pages projects (verified live 2026-04-27). Setting it here
+// in the Worker is the only reliable way to get real browser caching,
+// which is what makes repeat in-app navigation feel instant. SWR keeps
+// the page warm for 24h after max-age expires — eliminates white flash.
+function applyCacheControl(response, { html, pathname }) {
+  const headers = new Headers(response.headers);
+  if (pathname.startsWith("/shared/") || pathname.startsWith("/img/")) {
+    headers.set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400");
+  } else if (html) {
+    headers.set("Cache-Control", "public, max-age=300, stale-while-revalidate=86400");
+  }
+  return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -60,6 +77,7 @@ export default {
 
     const assetResponse = await env.ASSETS.fetch(request);
     const isHtml = (assetResponse.headers.get("content-type") || "").includes("text/html");
-    return applySecurityHeaders(assetResponse, { html: isHtml });
+    const withCache = applyCacheControl(assetResponse, { html: isHtml, pathname: url.pathname });
+    return applySecurityHeaders(withCache, { html: isHtml });
   },
 };
