@@ -889,7 +889,14 @@ def portfolio(request: Request, user: Optional[dict] = Depends(auth.optional_use
                 "submitted_at": o.get("submitted_at"),
             }
             for o in (open_orders or [])
-            if not o.get("parent_order_id")  # hide bracket child legs
+            # Only surface our trader-submitted entry parents. Bracket
+            # child legs (auto-generated stop/target sells) come back
+            # with parent_order_id null in /v2/orders listings once the
+            # parent has filled, so we can't filter on that field. Match
+            # on side=buy + our "<sleeve>-SYM-YYYYMMDD" client_order_id
+            # prefix instead — that captures live entry orders that
+            # haven't filled yet without picking up their child legs.
+            if o.get("side") == "buy" and (o.get("client_order_id") or "").split("-")[0] in {"swing", "daytrade"}
         ],
         "strategy_doc": "swing=ranks 1-10, 5-day hold, 1.5× lev. daytrade=ranks 11-20, intraday only, 1× lev.",
     }
