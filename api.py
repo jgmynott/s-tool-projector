@@ -766,6 +766,11 @@ def portfolio(request: Request, user: Optional[dict] = Depends(auth.optional_use
         # state-file deploy. Pull the last 30 days of buys; that covers
         # 5-day swing holds + same-day daytrade rotations comfortably.
         orders = _alpaca("orders?status=closed&direction=desc&limit=200&side=buy")
+        # Open / pending orders too, so the panel can show "X buys still
+        # working" instead of looking under-deployed when the trader has
+        # just fired and parents are queued. Bracket parents are what we
+        # care about — child stop/target legs are noise here.
+        open_orders = _alpaca("orders?status=open&direction=desc&limit=100")
     except (_ue.HTTPError, _ue.URLError, ValueError) as e:
         return JSONResponse(status_code=502, content={
             "error": "alpaca_upstream_error", "detail": str(e)[:200],
@@ -873,6 +878,19 @@ def portfolio(request: Request, user: Optional[dict] = Depends(auth.optional_use
         },
         "positions": pos_out if is_strategist else pos_out[:3],  # teaser when not paid
         "sleeves": sleeve_summary,
+        "open_orders": [
+            {
+                "symbol": o.get("symbol"),
+                "side": o.get("side"),
+                "qty": o.get("qty"),
+                "status": o.get("status"),
+                "order_class": o.get("order_class"),
+                "client_order_id": o.get("client_order_id"),
+                "submitted_at": o.get("submitted_at"),
+            }
+            for o in (open_orders or [])
+            if not o.get("parent_order_id")  # hide bracket child legs
+        ],
         "strategy_doc": "swing=ranks 1-10, 5-day hold, 1.5× lev. daytrade=ranks 11-20, intraday only, 1× lev.",
     }
     if not is_strategist:
