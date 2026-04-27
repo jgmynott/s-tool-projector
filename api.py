@@ -748,54 +748,52 @@ def portfolio(request: Request, user: Optional[dict] = Depends(auth.optional_use
 
     import urllib.request as _ur, urllib.error as _ue
     import json as _json
+    from concurrent.futures import ThreadPoolExecutor
     headers = {"APCA-API-KEY-ID": api_key, "APCA-API-SECRET-KEY": api_secret}
     def _alpaca(path: str):
         url = f"{base_url}/{path.lstrip('/')}"
         req = _ur.Request(url, headers=headers)
         with _ur.urlopen(req, timeout=10) as r:
             return _json.loads(r.read())
+    def _alpaca_safe(path: str, default):
+        """Best-effort fetch; returns default on any error so one slow or
+        unavailable Alpaca endpoint doesn't crater the whole panel."""
+        try:
+            return _alpaca(path)
+        except (_ue.HTTPError, _ue.URLError, ValueError):
+            return default
 
-    try:
-        acct = _alpaca("account")
-        positions = _alpaca("positions")
-        # Two equity curves so the spark can show whichever is most
-        # informative. Intraday (15-min bars over the last day) captures
-        # today's live action — that's what makes the panel feel alive
-        # while the trader is open. Daily over 1 month is the longer
-        # trend the spark currently uses; we keep it as a fallback for
-        # weekends or any time the intraday window is empty/flat.
-        hist = _alpaca("account/portfolio/history?period=1M&timeframe=1D")
+    from datetime import datetime as _dt_local
+    today_iso = _dt_local.utcnow().date().isoformat()
+
+    # Fan out the 7 Alpaca reads in parallel — sequential they cost ~2.5s
+    # which is brutal on a 30-second auto-refresh. account + positions are
+    # mandatory; everything else degrades to defaults if it errors.
+    fan_paths = {
+        "acct":        ("account", None),
+        "positions":   ("positions", None),
+        "hist":        ("account/portfolio/history?period=1M&timeframe=1D", {}),
+        "intraday":    ("account/portfolio/history?period=1D&timeframe=15Min&extended_hours=true", {}),
+        "orders":      ("orders?status=closed&direction=desc&limit=200&side=buy", []),
+        "open_orders": ("orders?status=open&direction=desc&limit=100", []),
+        "activities":  (f"account/activities/FILL?date={today_iso}", []),
+    }
+    with ThreadPoolExecutor(max_workers=len(fan_paths)) as ex:
+        futs = {k: ex.submit(_alpaca_safe if default is not None else _alpaca, path,
+                             *( (default,) if default is not None else () ))
+                for k, (path, default) in fan_paths.items()}
         try:
-            intraday = _alpaca("account/portfolio/history?period=1D&timeframe=15Min&extended_hours=true")
-        except (_ue.HTTPError, _ue.URLError, ValueError):
-            intraday = {}
-        # Sleeve attribution comes from the entry order's client_order_id
-        # ("<sleeve>-<sym>-<YYYYMMDD>"). That's the cleanest source — it
-        # crosses the GH-Action ↔ Railway boundary without needing a
-        # state-file deploy. Pull the last 30 days of buys; that covers
-        # 5-day swing holds + same-day daytrade rotations comfortably.
-        orders = _alpaca("orders?status=closed&direction=desc&limit=200&side=buy")
-        # Open / pending orders too, so the panel can show "X buys still
-        # working" instead of looking under-deployed when the trader has
-        # just fired and parents are queued. Bracket parents are what we
-        # care about — child stop/target legs are noise here.
-        open_orders = _alpaca("orders?status=open&direction=desc&limit=100")
-        # Realized P&L for the current trading day. Activities (FILL)
-        # gives us every buy/sell fill with its avg price; we pair them
-        # FIFO per symbol to compute realized = (sell − buy) × qty.
-        # Mostly daytrade rotations after 19:55 UTC, plus the occasional
-        # swing exit. Empty before any sells happen on the day, which
-        # is fine — frontend can hide the section then.
-        from datetime import datetime as _dt_local
-        today_iso = _dt_local.utcnow().date().isoformat()
-        try:
-            activities = _alpaca(f"account/activities/FILL?date={today_iso}")
-        except (_ue.HTTPError, _ue.URLError, ValueError):
-            activities = []
-    except (_ue.HTTPError, _ue.URLError, ValueError) as e:
-        return JSONResponse(status_code=502, content={
-            "error": "alpaca_upstream_error", "detail": str(e)[:200],
-        })
+            acct = futs["acct"].result()
+            positions = futs["positions"].result()
+        except (_ue.HTTPError, _ue.URLError, ValueError) as e:
+            return JSONResponse(status_code=502, content={
+                "error": "alpaca_upstream_error", "detail": str(e)[:200],
+            })
+        hist = futs["hist"].result()
+        intraday = futs["intraday"].result()
+        orders = futs["orders"].result()
+        open_orders = futs["open_orders"].result()
+        activities = futs["activities"].result()
 
     # Build sym → {sleeve, opened_at} from the most recent FILLED buy per
     # symbol. We walk newest-first so the first hit wins — that's the
