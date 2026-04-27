@@ -513,11 +513,12 @@ def check_workflow_crons():
 
 def check_nav_consistency():
     """Every public page's top nav must list the SAME items in the SAME
-    order. Caught this 2026-04-27 — Pricing/FAQ were missing Track record
-    + Backtest, and Picks/Track-record/Backtest/App/How were missing FAQ.
-    Result: links visibly appeared and disappeared as users moved between
-    pages, which reads like a broken site. The canonical order is set by
-    the home page; every other page must match exactly."""
+    order AND share the canonical 3-column structure (logo / nav-center /
+    nav-end). Caught 2026-04-27 — Pricing/FAQ were missing Track record
+    + Backtest, every page except home was missing FAQ. Then /how shipped
+    with a 2-column layout (nav-links class, no nav-end) so the links
+    sat flush right while every other page centered them. Both modes of
+    drift get caught here."""
     import re
     print("\n[*] Top-nav consistency across public pages")
     pages = [
@@ -531,7 +532,7 @@ def check_nav_consistency():
         Path("cloudflare/public/faq/index.html"),
     ]
     nav_re = re.compile(
-        r'<(?:div|nav)[^>]*(?:nav-center|ev-center|nav-links)[^>]*>(.*?)</div>',
+        r'<(?:div|nav)[^>]*(?:nav-center|ev-center)[^>]*>(.*?)</div>',
         re.DOTALL,
     )
     link_re = re.compile(r'<a [^>]*href="([^"]+)"[^>]*>([^<]+)</a>')
@@ -540,23 +541,30 @@ def check_nav_consistency():
     for p in pages:
         if not p.exists():
             warn(f"{p} missing — can't verify nav"); continue
-        m = nav_re.search(p.read_text())
+        html = p.read_text()
+        m = nav_re.search(html)
         if not m:
-            fail(f"{p} has no recognizable top-nav block"); bad += 1; continue
+            fail(f"{p} has no recognizable top-nav block (need .nav-center or .ev-center)"); bad += 1; continue
         items = [(h, l.strip()) for h, l in link_re.findall(m.group(1))]
         labels = tuple(l for _, l in items)
         if canonical is None:
             canonical = labels
-            continue
-        if labels != canonical:
+        elif labels != canonical:
             missing = [l for l in canonical if l not in labels]
             extra   = [l for l in labels if l not in canonical]
             detail = []
             if missing: detail.append("missing " + ",".join(missing))
             if extra:   detail.append("extra " + ",".join(extra))
-            if labels != canonical and not missing and not extra:
+            if not missing and not extra:
                 detail.append("reordered")
             fail(f"{p} nav diverges — {'; '.join(detail)}"); bad += 1
+        # Structural check — every page must use 3-column layout (logo |
+        # nav-center | nav-end) so links land in the same horizontal slot.
+        # Pages using ev-center (the projector chrome) get ev-end instead.
+        is_ev = 'class="ev-center"' in html
+        end_class = "ev-end" if is_ev else "nav-end"
+        if f'class="{end_class}"' not in html:
+            fail(f"{p} missing .{end_class} — links will sit flush right instead of centered"); bad += 1
     if canonical and bad == 0:
         ok(f"all {len(pages)} pages have identical top nav: {' | '.join(canonical)}")
 

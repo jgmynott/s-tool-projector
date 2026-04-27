@@ -37,15 +37,25 @@ body {
 a { color: var(--accent-lake); text-decoration: none; }
 a:hover { text-decoration: underline; }
 
-/* Nav (minimal, shared with landing) */
-nav { position: sticky; top: 0; z-index: 50; backdrop-filter: blur(12px); background: rgba(11,16,6,0.75); border-bottom: 1px solid var(--border); }
-.nav-row { max-width: 1180px; margin: 0 auto; padding: 18px 32px; display: flex; align-items: center; justify-content: space-between; }
+/* Nav — must match the canonical structure used on every other public
+   page so the chrome doesn't shift between routes. Three-column flex
+   layout: logo (left) | nav-center (middle) | nav-end (right). The
+   nav-end column reserves min-width: 120px so the center column lands
+   in the same horizontal position regardless of whether sign-in is
+   rendered or not. */
+nav { position: sticky; top: 0; z-index: 50; backdrop-filter: blur(14px); background: rgba(11,16,6,0.82); border-bottom: 1px solid var(--border); }
+.container { max-width: 1240px; margin: 0 auto; padding: 0 32px; }
+.nav-row { display: flex; align-items: center; justify-content: space-between; padding: 18px 0; gap: 24px; }
 .logo { display: flex; align-items: center; gap: 10px; font: 700 18px 'Inter'; letter-spacing: -0.04em; color: var(--text-hi); text-decoration: none; }
 .logo-mark { width: 28px; height: 28px; border-radius: 7px; background: linear-gradient(135deg, var(--accent-deep), var(--accent-alpine), var(--accent-lake)); display: flex; align-items: center; justify-content: center; }
 .logo-mark svg { stroke: var(--text-hi); }
-.nav-links { display: flex; gap: 24px; font: 500 14px 'Inter'; }
-.nav-links a { color: var(--text-mid); text-decoration: none; }
-.nav-links a:hover { color: var(--text-hi); }
+.nav-center { display: flex; gap: 28px; font: 500 14px 'Inter'; color: var(--text-mid); }
+.nav-center a { color: var(--text-mid); text-decoration: none; }
+.nav-center a:hover { color: var(--text-hi); }
+.nav-center a.active { color: var(--text-hi); border-bottom: 1px solid var(--accent-lake); padding-bottom: 2px; }
+.nav-end { display: flex; align-items: center; gap: 14px; min-width: 120px; justify-content: flex-end; }
+.signin-btn { font: 500 14px 'Inter'; color: var(--text-hi); border: 1px solid var(--border-strong); padding: 9px 18px; border-radius: 999px; cursor: pointer; background: transparent; }
+.signin-btn:hover { background: rgba(95,170,197,0.08); }
 
 /* Article layout */
 .article { max-width: 760px; margin: 0 auto; padding: 80px 32px 120px; }
@@ -97,8 +107,9 @@ footer a { color: var(--text-mid); }
  * headings down. At <480 the secondary FAQ/Pricing links collapse since
  * they'd wrap otherwise. */
 @media (max-width: 720px) {
-    .nav-row { padding: 14px 20px; gap: 12px; flex-wrap: wrap; }
-    .nav-links { gap: 16px; font-size: 13px; }
+    .container { padding: 0 20px; }
+    .nav-row { padding: 14px 0; gap: 12px; flex-wrap: wrap; }
+    .nav-center { gap: 16px; font-size: 13px; }
     .article { padding: 48px 20px 72px; }
     .article h2 { font-size: 24px; padding-top: 28px; margin: 40px 0 16px; }
     .article h3 { font-size: 16px; margin: 24px 0 10px; }
@@ -110,28 +121,37 @@ footer a { color: var(--text-mid); }
     .callout { padding: 16px 18px; }
 }
 @media (max-width: 480px) {
-    .nav-links { gap: 12px; font-size: 12px; }
-    .nav-links a:nth-child(4), .nav-links a:nth-child(5) { display: none; }
+    .nav-center { gap: 12px; font-size: 12px; }
+    .nav-center a:nth-child(4), .nav-center a:nth-child(5) { display: none; }
     .article h1 { font-size: 30px; }
 }
 </style>
+<script async
+  data-clerk-publishable-key="pk_test_Zmx1ZW50LW1vbGUtNzEuY2xlcmsuYWNjb3VudHMuZGV2JA"
+  src="https://fluent-mole-71.clerk.accounts.dev/npm/@clerk/clerk-js@5/dist/clerk.browser.js"
+  crossorigin="anonymous"
+></script>
+<script defer src="/shared/nav.js"></script>
 </head>
 <body>
 
 <nav>
-    <div class="nav-row">
+    <div class="container nav-row">
         <a href="/" class="logo">
-            <span class="logo-mark"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 18 9 12 13 16 21 4"></polyline></svg></span>
+            <span class="logo-mark"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#EDECE6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 18 9 12 13 16 21 4"></polyline></svg></span>
             <span>s-tool</span>
         </a>
-        <div class="nav-links">
+        <div class="nav-center">
             <a href="/app">App</a>
             <a href="/picks">Picks</a>
             <a href="/track-record">Track record</a>
             <a href="/backtest">Backtest</a>
-            <a href="/how" class="active" style="color:var(--text-hi);border-bottom:1px solid var(--accent-lake);padding-bottom:2px;">How</a>
+            <a href="/how" class="active">How</a>
             <a href="/pricing">Pricing</a>
             <a href="/faq">FAQ</a>
+        </div>
+        <div class="nav-end" id="navEnd">
+            <button class="signin-btn" onclick="window.Clerk?.openSignIn?.({afterSignInUrl:'/how'})">Sign in</button>
         </div>
     </div>
 </nav>
