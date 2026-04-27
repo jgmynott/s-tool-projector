@@ -584,18 +584,24 @@ def save_picks(results: list[dict], conn=None) -> None:
         # views.
         p["in_asymmetric"] = True
 
-    # Drop the asymmetric tier entirely if 100% of picks are missing
-    # bands. Happens when enrich_asymmetric.py wrote an empty
-    # asymmetric_scores.json (typically because PRICES_DIR was empty in
-    # CI). Better to omit the tier than ship blank cards. The other
-    # tiers (conservative/moderate/aggressive) ship normally.
+    # Filter asymmetric picks against missing p10/p90 bands. Three cases:
+    #   100% missing → drop the entire tier (upstream pipeline broke,
+    #     typically empty asymmetric_scores.json from PRICES_DIR cold-cache)
+    #   1..N-1 missing → drop the bandless picks, ship the rest
+    #   0 missing → ship as-is
+    # The partial-miss case used to ship through and trip preflight's
+    # "partial data corruption" hard-fail (preflight.py:163-164), which
+    # blocked the entire deploy. After 2026-04-27 we drop bandless picks
+    # at source so the preflight check becomes unreachable from a real
+    # run; it stays as a defense in case bands disappear elsewhere.
     if asym_picks:
-        with_bands = sum(
-            1 for p in asym_picks
+        with_bands_list = [
+            p for p in asym_picks
             if (p.get("asymmetric") or {}).get("p90_ratio")
             and (p.get("asymmetric") or {}).get("p10_ratio")
-        )
-        if with_bands == 0:
+        ]
+        n_dropped = len(asym_picks) - len(with_bands_list)
+        if n_dropped == len(asym_picks):
             log.error(
                 "save_picks: dropping asymmetric tier — 0/%d picks have "
                 "p10/p90 bands. Likely cause: empty asymmetric_scores.json "
@@ -603,6 +609,21 @@ def save_picks(results: list[dict], conn=None) -> None:
                 len(asym_picks),
             )
             asym_picks = []
+        elif n_dropped > 0:
+            dropped_syms = ",".join(
+                p["symbol"] for p in asym_picks
+                if not ((p.get("asymmetric") or {}).get("p90_ratio")
+                        and (p.get("asymmetric") or {}).get("p10_ratio"))
+            )
+            log.warning(
+                "save_picks: dropping %d/%d asymmetric picks missing "
+                "p10/p90 bands (%s). Likely cause: enrich_asymmetric.py "
+                "partially populated asymmetric_scores.json. Tier ships "
+                "with %d remaining picks.",
+                n_dropped, len(asym_picks), dropped_syms,
+                len(with_bands_list),
+            )
+            asym_picks = with_bands_list
 
     payload = {
         "scanned_at": datetime.now(timezone.utc).isoformat(),

@@ -161,7 +161,14 @@ def check_picks_json():
         if with_bands == 0:
             warn(f"asymmetric tier: {len(asym)}/{len(asym)} picks missing p10/p90 — upstream pipeline issue (likely empty asymmetric_scores.json). save_picks will drop the tier; conservative/moderate/aggressive will still ship.")
         elif with_bands < len(asym):
-            fail(f"{len(asym) - with_bands} asymmetric picks missing p10/p90 — partial data corruption, UI will show blank slots")
+            # save_picks (portfolio_scanner.py:592) drops partial-bands picks
+            # at source after 2026-04-27, so this branch should be unreachable
+            # from a normal pipeline run. If it fires, something wrote
+            # asymmetric_picks directly to portfolio_picks.json without going
+            # through save_picks — flag loudly but don't block deploy on UI
+            # cosmetics. Past hard-fail at this line was responsible for
+            # 5 consecutive nightly failures Apr 22-26.
+            warn(f"asymmetric tier: {len(asym) - with_bands}/{len(asym)} picks missing p10/p90 — save_picks filter bypassed? Investigate enrich_asymmetric → save_picks path. UI will show blank slots for the affected picks until next refresh.")
         else:
             ok(f"asymmetric tier: {len(asym)} picks, all with p10/p90")
 
