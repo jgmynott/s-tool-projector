@@ -691,6 +691,32 @@ footer a { color: var(--text-mid); }
 .pf-bracket-labels .neg { color: var(--neg); }
 .pf-bracket-labels .pos { color: var(--pos); }
 
+/* Pending-order strip — surfaces in-flight bracket buys submitted by the
+   trader but not yet filled at Alpaca. Lake-blue tint to match the live
+   eyebrow but with a subtle spinning "↻" so the live-action quality reads
+   without text. Renders above positions, below equity hero. */
+.pf-pending { margin: 14px 0 0; padding: 10px 14px; border-radius: var(--radius-sm);
+  background: rgba(95,170,197,0.06); border: 1px solid rgba(95,170,197,0.18);
+  display: flex; align-items: center; gap: 10px 14px; flex-wrap: wrap; }
+.pf-pending-icon { font: 600 14px 'Inter'; color: var(--accent-lake);
+  animation: pf-spin 2.4s linear infinite; line-height: 1; }
+@keyframes pf-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.pf-pending-label { font: 500 12px 'Inter'; color: var(--text-mid); letter-spacing: 0.02em; }
+.pf-pending-item { display: inline-flex; gap: 6px; align-items: baseline;
+  padding: 2px 8px; border-radius: 4px; background: rgba(255,255,255,0.03); }
+.pf-pending-sym { font: 600 12px 'Inter'; color: var(--text-hi); font-variant-numeric: tabular-nums; }
+.pf-pending-meta { font: 500 10px 'Inter'; color: var(--text-dim); }
+.pf-pending-more { font: 500 11px 'Inter'; color: var(--text-dim); font-style: italic; }
+
+/* Rotation indicator — small footer line on the daytrade sleeve card.
+   Static off-hours, live-pulsing during 14:00-19:30 UTC weekdays. */
+.pf-sleeve-rotation { font: 500 10px 'Inter'; color: var(--text-dim);
+  margin-top: 6px; padding-top: 4px; border-top: 1px dotted rgba(155,161,185,0.18);
+  letter-spacing: 0.02em; font-variant-numeric: tabular-nums; }
+.pf-sleeve-rotation .live { color: #e8b86a; margin-right: 4px;
+  animation: pf-pulse 1.6s ease-in-out infinite; display: inline-block; }
+@keyframes pf-pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 1.0; } }
+
 .pf-empty { padding: 36px 28px 28px; text-align: center; color: var(--text-mid); font: 500 14px 'Inter'; line-height: 1.6; border: 1px dashed var(--border); border-radius: var(--radius-sm); max-width: 720px; margin: 0 auto; }
 .pf-empty strong { color: var(--text-hi); display: block; margin-bottom: 8px; font: 400 22px 'Crimson Text', serif; letter-spacing: -0.012em; }
 .pf-countdown { margin-top: 22px; padding-top: 22px; border-top: 1px solid var(--border); display: flex; justify-content: center; align-items: baseline; gap: 8px 16px; flex-wrap: wrap; }
@@ -713,12 +739,18 @@ footer a { color: var(--text-mid); }
   .pf-equity-num { font-size: 44px; }
   .pf-sleeves { grid-template-columns: 1fr; gap: 8px; }
   .pf-positions { grid-template-columns: 1fr 1fr; }
+  .pf-pending { padding: 8px 12px; gap: 8px 10px; }
 }
 @media (max-width: 480px) {
   .pf-panel { padding: 20px 18px 18px; }
   .pf-equity-num { font-size: 38px; }
   .pf-positions { grid-template-columns: 1fr; }
   .pf-head { gap: 8px; }
+  /* Pending strip at narrow widths: stack the label, then wrap pills onto
+     their own line so each one stays atomic and readable. */
+  .pf-pending { flex-direction: column; align-items: flex-start; }
+  .pf-pending-label { font-size: 11px; }
+  .pf-pending-item { font-size: 11px; }
 }
 </style>
 <script async
@@ -911,12 +943,85 @@ function pfSleeveCard(name, summary, label) {
   const realizedRow = Math.abs(realized) > 0.5
     ? `<div class="pf-sleeve-realized ${realized > 0 ? 'pos' : 'neg'}">+ ${fmtUSD(realized, { signed: true, digits: 0 })} realized today</div>`
     : '';
+  // Rotation cycle indicator — only on the daytrade card. The rotator
+  // fires every 30 min during 14:00-19:30 UTC weekdays; outside that
+  // window we either say "complete for today" or "weekday only".
+  let rotationRow = '';
+  if (name === 'daytrade') {
+    const tick = pfNextRotationTick();
+    if (tick && tick.mins != null) {
+      const ago = tick.mins === 0 ? 'now' : `~${tick.mins}m`;
+      rotationRow = `<div class="pf-sleeve-rotation"><span class="live">●</span>next rotate ${ago}</div>`;
+    } else if (tick && tick.note) {
+      rotationRow = `<div class="pf-sleeve-rotation">${tick.note}</div>`;
+    }
+  }
   return `<div class="pf-sleeve">
     <div class="pf-sleeve-name ${name}">${label}</div>
     <div class="pf-sleeve-mv">${fmtUSD(summary?.mv || 0, { digits: 0 })}</div>
     <div class="pf-sleeve-meta ${upnlCls}">${n} pos · ${fmtUSD(upnl, { signed: true, digits: 0 })}</div>
     ${realizedRow}
+    ${rotationRow}
   </div>`;
+}
+
+// Pending-order strip — renders open_orders[] from /api/portfolio as a
+// thin "in-flight" banner above positions. Filters to side=buy entries
+// whose client_order_id matches the sleeve naming convention; that
+// excludes auto-generated stop/target child legs which would otherwise
+// double-count the same position.
+function pfPendingOrdersStrip(orders) {
+  if (!orders || !orders.length) return '';
+  const SLEEVE_PREFIXES = ['momentum-', 'swing-', 'daytrade-'];
+  const pending = orders.filter(o => {
+    if ((o.side || '').toLowerCase() !== 'buy') return false;
+    const cid = o.client_order_id || '';
+    return SLEEVE_PREFIXES.some(p => cid.startsWith(p));
+  });
+  if (!pending.length) return '';
+  const items = pending.slice(0, 6).map(o => {
+    const sleeve = (o.client_order_id || '').split('-')[0] || '';
+    return `<span class="pf-pending-item">
+      <span class="pf-pending-sym">${o.symbol}</span>
+      <span class="pf-pending-meta">${o.qty} qty · ${sleeve}</span>
+    </span>`;
+  }).join('');
+  const more = pending.length > 6
+    ? `<span class="pf-pending-more">+ ${pending.length - 6} more</span>` : '';
+  const noun = pending.length === 1 ? 'entry' : 'entries';
+  return `<div class="pf-pending">
+    <span class="pf-pending-icon">↻</span>
+    <span class="pf-pending-label">${pending.length} ${noun} pending fill</span>
+    ${items}${more}
+  </div>`;
+}
+
+// Next rotation tick during US market hours (14:00-19:30 UTC weekdays,
+// every 30 min). Returns { mins } when there's an upcoming tick today,
+// { note } for off-hours messaging, or null if we shouldn't render.
+function pfNextRotationTick() {
+  const now = new Date();
+  const dow = now.getUTCDay();
+  if (dow === 0 || dow === 6) {
+    return { note: 'rotation: weekday market hours' };
+  }
+  const minutesNow = now.getUTCHours() * 60 + now.getUTCMinutes();
+  const WINDOW_START = 14 * 60;          // 14:00 UTC
+  const WINDOW_END = 19 * 60 + 30;       // 19:30 UTC (last rotate; close fires 19:55)
+  if (minutesNow >= WINDOW_END) {
+    return { note: 'rotation: complete for today' };
+  }
+  let next;
+  if (minutesNow < WINDOW_START) {
+    next = WINDOW_START;
+  } else {
+    // Round up to next 30-min mark, but if we're exactly on one, push to next
+    next = Math.ceil((minutesNow + 0.5) / 30) * 30;
+  }
+  if (next > WINDOW_END) {
+    return { note: 'rotation: complete for today' };
+  }
+  return { mins: Math.max(0, next - minutesNow) };
 }
 function pfPositionCard(p) {
   const pct = (p.unrealized_plpc || 0) * 100;
@@ -1094,6 +1199,7 @@ function renderPortfolio(data) {
       </div>
       ${spark}
     </div>
+    ${pfPendingOrdersStrip(data.open_orders)}
     <div class="pf-positions-head">
       <span class="pf-positions-title">Open positions</span>
       <span class="pf-positions-count">
