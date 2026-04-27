@@ -758,8 +758,17 @@ def portfolio(request: Request, user: Optional[dict] = Depends(auth.optional_use
     try:
         acct = _alpaca("account")
         positions = _alpaca("positions")
-        # 1-week daily equity curve for the chart at the top of /picks
-        hist = _alpaca("account/portfolio/history?period=1W&timeframe=1D")
+        # Two equity curves so the spark can show whichever is most
+        # informative. Intraday (15-min bars over the last day) captures
+        # today's live action — that's what makes the panel feel alive
+        # while the trader is open. Daily over 1 month is the longer
+        # trend the spark currently uses; we keep it as a fallback for
+        # weekends or any time the intraday window is empty/flat.
+        hist = _alpaca("account/portfolio/history?period=1M&timeframe=1D")
+        try:
+            intraday = _alpaca("account/portfolio/history?period=1D&timeframe=15Min&extended_hours=true")
+        except (_ue.HTTPError, _ue.URLError, ValueError):
+            intraday = {}
         # Sleeve attribution comes from the entry order's client_order_id
         # ("<sleeve>-<sym>-<YYYYMMDD>"). That's the cleanest source — it
         # crosses the GH-Action ↔ Railway boundary without needing a
@@ -771,6 +780,18 @@ def portfolio(request: Request, user: Optional[dict] = Depends(auth.optional_use
         # just fired and parents are queued. Bracket parents are what we
         # care about — child stop/target legs are noise here.
         open_orders = _alpaca("orders?status=open&direction=desc&limit=100")
+        # Realized P&L for the current trading day. Activities (FILL)
+        # gives us every buy/sell fill with its avg price; we pair them
+        # FIFO per symbol to compute realized = (sell − buy) × qty.
+        # Mostly daytrade rotations after 19:55 UTC, plus the occasional
+        # swing exit. Empty before any sells happen on the day, which
+        # is fine — frontend can hide the section then.
+        from datetime import datetime as _dt_local
+        today_iso = _dt_local.utcnow().date().isoformat()
+        try:
+            activities = _alpaca(f"account/activities/FILL?date={today_iso}")
+        except (_ue.HTTPError, _ue.URLError, ValueError):
+            activities = []
     except (_ue.HTTPError, _ue.URLError, ValueError) as e:
         return JSONResponse(status_code=502, content={
             "error": "alpaca_upstream_error", "detail": str(e)[:200],
@@ -844,20 +865,81 @@ def portfolio(request: Request, user: Optional[dict] = Depends(auth.optional_use
         })
     pos_out.sort(key=lambda x: x["unrealized_pl"], reverse=True)
 
+    # ── Realized P&L for today, FIFO-paired from FILL activities.
+    # Each activity row has side (buy/sell), symbol, qty, price. Walk
+    # in chronological order so daytrade entries pair with their EOD
+    # exits cleanly. Per-symbol FIFO queue of buy lots; each sell pops
+    # from the queue and accumulates realized P&L.
+    closed_today: list[dict] = []
+    realized_today_total = 0.0
+    realized_by_sleeve: dict = {"swing": 0.0, "daytrade": 0.0, "unattributed": 0.0}
+    if activities:
+        # Activities come back newest-first; oldest-first is the natural
+        # FIFO direction.
+        chrono = sorted(
+            (a for a in activities if a.get("type") in ("FILL", "PARTIAL_FILL")),
+            key=lambda a: a.get("transaction_time") or a.get("submitted_at") or "",
+        )
+        buy_lots: dict = {}  # sym → list[(qty, price, sleeve)]
+        for a in chrono:
+            sym = a.get("symbol")
+            if not sym:
+                continue
+            try:
+                qty = float(a.get("qty") or 0)
+                price = float(a.get("price") or 0)
+            except (TypeError, ValueError):
+                continue
+            if qty <= 0 or price <= 0:
+                continue
+            side = (a.get("side") or "").lower()
+            if side == "buy":
+                # Sleeve attribution from the original entry's cid; if
+                # the activity row lacks order_id linkage we fall back
+                # to whatever sleeve_by_sym has (most recent buy wins).
+                sleeve = (sleeve_by_sym.get(sym) or {}).get("sleeve") or "unattributed"
+                buy_lots.setdefault(sym, []).append([qty, price, sleeve])
+            elif side == "sell":
+                remaining = qty
+                lots = buy_lots.get(sym, [])
+                while remaining > 0 and lots:
+                    lot_qty, lot_price, lot_sleeve = lots[0]
+                    take = min(lot_qty, remaining)
+                    pnl = (price - lot_price) * take
+                    realized_today_total += pnl
+                    realized_by_sleeve[lot_sleeve if lot_sleeve in realized_by_sleeve else "unattributed"] += pnl
+                    closed_today.append({
+                        "symbol": sym, "qty": take,
+                        "buy_price": lot_price, "sell_price": price,
+                        "pnl": pnl, "sleeve": lot_sleeve,
+                        "closed_at": a.get("transaction_time"),
+                    })
+                    lot_qty -= take
+                    remaining -= take
+                    if lot_qty <= 0:
+                        lots.pop(0)
+                    else:
+                        lots[0][0] = lot_qty
+    # Most recent close first for display.
+    closed_today.sort(key=lambda r: r.get("closed_at") or "", reverse=True)
+
     eq = float(acct["equity"])
     last_eq = float(acct.get("last_equity") or 0) or eq
     day_change = eq - last_eq
     day_change_pct = (day_change / last_eq) if last_eq else 0.0
 
     # Sleeve-level attribution: total P&L grouped by sleeve.
-    sleeve_summary: dict = {"swing": {"n": 0, "mv": 0.0, "upnl": 0.0},
-                            "daytrade": {"n": 0, "mv": 0.0, "upnl": 0.0},
-                            "unattributed": {"n": 0, "mv": 0.0, "upnl": 0.0}}
+    sleeve_summary: dict = {"swing": {"n": 0, "mv": 0.0, "upnl": 0.0, "realized_today": 0.0},
+                            "daytrade": {"n": 0, "mv": 0.0, "upnl": 0.0, "realized_today": 0.0},
+                            "unattributed": {"n": 0, "mv": 0.0, "upnl": 0.0, "realized_today": 0.0}}
     for p in pos_out:
         s = p["sleeve"] if p["sleeve"] in sleeve_summary else "unattributed"
         sleeve_summary[s]["n"] += 1
         sleeve_summary[s]["mv"] += p["market_value"]
         sleeve_summary[s]["upnl"] += p["unrealized_pl"]
+    for s, pnl in realized_by_sleeve.items():
+        if s in sleeve_summary:
+            sleeve_summary[s]["realized_today"] = pnl
 
     payload = {
         "is_strategist": is_strategist,
@@ -876,8 +958,15 @@ def portfolio(request: Request, user: Optional[dict] = Depends(auth.optional_use
             "equity": hist.get("equity", []),
             "profit_loss": hist.get("profit_loss", []),
         },
+        "equity_intraday": {
+            "timestamps": intraday.get("timestamp", []),
+            "equity": intraday.get("equity", []),
+            "profit_loss": intraday.get("profit_loss", []),
+        },
         "positions": pos_out if is_strategist else pos_out[:3],  # teaser when not paid
         "sleeves": sleeve_summary,
+        "realized_today": realized_today_total,
+        "closed_today": closed_today if is_strategist else closed_today[:3],
         "open_orders": [
             {
                 "symbol": o.get("symbol"),
