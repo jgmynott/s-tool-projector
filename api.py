@@ -1042,6 +1042,25 @@ def portfolio(request: Request, user: Optional[dict] = Depends(auth.optional_use
                 benchmark_first_day = _dt_a.utcfromtimestamp(anchor_ts).date().isoformat()
             except Exception:
                 benchmark_first_day = None
+        else:
+            # Daily history is flat — trader started fresh today, so
+            # daily snapshots haven't captured movement yet. Fall back
+            # to intraday equity to surface a meaningful day-1 number;
+            # SPY uses today's session-open as the matching anchor.
+            intra_eq = intraday.get("equity") or []
+            intra_ts = intraday.get("timestamp") or []
+            if len(intra_eq) >= 2:
+                baseline_seed = intra_eq[0]
+                eq_now = intra_eq[-1]
+                if baseline_seed and eq_now and abs(eq_now - baseline_seed) > 5.0:
+                    trader_return = (eq_now - baseline_seed) / baseline_seed
+                    if intra_ts:
+                        try:
+                            from datetime import datetime as _dt_a
+                            anchor_ts = intra_ts[0]
+                            benchmark_first_day = _dt_a.utcfromtimestamp(anchor_ts).date().isoformat()
+                        except Exception:
+                            pass
 
         bars = (spy_bars or {}).get("bars") or []
         if bars and benchmark_first_day:
