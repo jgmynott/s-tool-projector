@@ -187,6 +187,10 @@ header.hero { padding: 80px 0 40px; }
 .btn:hover { background: #82c1d6; transform: translateY(-1px); }
 .btn.ghost { background: transparent; color: var(--text-hi); border-color: var(--border-strong); }
 .btn.ghost:hover { background: rgba(95,170,197,0.08); border-color: var(--accent-lake); }
+.gate-cta-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px; }
+@media (max-width: 380px) {
+  .gate-cta-row .btn { padding: 12px 20px; font-size: 14px; }
+}
 .teaser { filter: blur(6px); pointer-events: none; user-select: none; }
 
 /* ── Methodology ─────────────────────────────────────────────── */
@@ -979,8 +983,14 @@ function renderPortfolio(data) {
   // open positions. Useful at a glance: empty between sessions = 0%,
   // mid-day fully deployed = ~60-65% (because we run 1.5× swing + 1×
   // daytrade across half-equity each, on a 2× margin account).
-  const utilization = (acct.buying_power && acct.buying_power > 0)
-    ? Math.min(1, totalMv / acct.buying_power) : 0;
+  // Utilization denominator is *total* deployable buying power (equity ×
+  // margin multiplier), NOT the live buying_power field — that field is
+  // remaining headroom, so dividing by it overstates utilization once
+  // we're partly deployed. With $100k equity and 2× margin the engine
+  // can put up to $200k in the market; mid-day we run ~57% (1.5×
+  // swing on half-equity + 1× daytrade on half-equity).
+  const totalCapacity = (parseFloat(acct.equity) || 0) * (parseFloat(acct.multiplier) || 1);
+  const utilization = totalCapacity > 0 ? Math.min(1, totalMv / totalCapacity) : 0;
   const utilStr = `${(utilization * 100).toFixed(0)}%`;
 
   return `<section class="pf-panel" id="pf-panel">
@@ -994,7 +1004,7 @@ function renderPortfolio(data) {
         <div class="pf-equity-sub">
           <span class="pf-day-pill ${dcCls}">${sign}${fmtUSD(dcAbs, { digits: 0 }).replace(/^[-]/, '')} · ${sign}${dcpAbs.toFixed(2)}%</span>
           <span class="pf-day-label">today</span>
-          ${totalPositions > 0 ? `<span class="pf-util">${utilStr} deployed · ${fmtUSD(totalMv, { digits: 0 })} of ${fmtUSD(acct.buying_power || 0, { digits: 0 })} BP</span>` : ''}
+          ${totalPositions > 0 ? `<span class="pf-util">${utilStr} deployed · ${fmtUSD(totalMv, { digits: 0 })} of ${fmtUSD(totalCapacity, { digits: 0 })} cap</span>` : ''}
         </div>
       </div>
       ${spark}
@@ -1268,8 +1278,8 @@ function renderGate(data) {
       <div class="eyebrow" style="margin-bottom:14px;">Strategist &middot; $29/mo</div>
       <h2>The full list, the full <em>thesis</em>, and the track record.</h2>
       <p>Strategist unlocks the ranked list across all three risk tiers, with every pick's SEC-filed fundamentals, 1-year P50 target, expected return, and the daily realized-return ledger that makes the engine falsifiable.</p>
-      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;">
-        <button class="btn" onclick="startCheckout('strategist')">Upgrade to Strategist &mdash; $29/mo</button>
+      <div class="gate-cta-row">
+        <button class="btn" onclick="startCheckout('strategist')">Upgrade &mdash; $29/mo</button>
         <a href="/pricing" class="btn ghost">Compare tiers</a>
       </div>
       <div style="margin-top:40px;padding-top:28px;border-top:1px solid var(--border);">
