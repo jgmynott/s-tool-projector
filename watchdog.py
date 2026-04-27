@@ -245,11 +245,26 @@ def check_picks_freshness() -> CheckResult:
 
 
 def check_railway_sha() -> CheckResult:
-    runs = gh_run_list("daily-refresh-fast.yml", limit=1)
+    """Compare Railway-deployed SHA (last successful fast pipeline) to
+    origin/main HEAD. Some lag is expected during the day — commits
+    accumulate between the scheduled 20:00 UTC fast deploy. Auto-correct
+    only when both:
+      • deployed != head (some lag exists)
+      • last successful fast deploy is > 12h old (stale by daily cadence)
+    Otherwise warn-only and let the natural pipeline cadence catch up.
+    Drops the rev-list lag count: shallow checkout (fetch-depth=1) doesn't
+    have the deployed commit locally, and the count is just diagnostic."""
+    runs = gh_run_list("daily-refresh-fast.yml", limit=10)
     if not runs:
         return CheckResult("railway_sha", False, "warning",
                            "could not query latest fast run")
-    deployed = runs[0].get("headSha") or ""
+    successes = [r for r in runs if r.get("conclusion") == "success"]
+    if not successes:
+        return CheckResult("railway_sha", False, "warning",
+                           "no recent fast-pipeline successes")
+    last = max(successes, key=lambda r: r["createdAt"])
+    deployed = last.get("headSha") or ""
+    deploy_age_h = (NOW - parse_iso(last["createdAt"])).total_seconds() / 3600
     try:
         head = subprocess.check_output(
             ["git", "rev-parse", "origin/main"], cwd=str(ROOT), timeout=10
@@ -258,15 +273,13 @@ def check_railway_sha() -> CheckResult:
         return CheckResult("railway_sha", False, "warning",
                            "could not git rev-parse origin/main")
     if deployed == head:
-        return CheckResult("railway_sha", True, "info", f"in sync ({head[:7]})")
-    try:
-        lag = int(subprocess.check_output(
-            ["git", "rev-list", "--count", f"{deployed}..{head}"],
-            cwd=str(ROOT), timeout=10).decode().strip())
-    except Exception:
-        lag = -1
-    severity = "critical" if (lag < 0 or lag > 5) else "warning"
-    detail = f"deployed={deployed[:7]} head={head[:7]} lag={lag}"
+        return CheckResult("railway_sha", True, "info",
+                           f"in sync ({head[:7]}, deployed {deploy_age_h:.1f}h ago)")
+    detail = (f"deployed={deployed[:7]} head={head[:7]} "
+              f"deploy_age={deploy_age_h:.1f}h")
+    if deploy_age_h <= 12:
+        return CheckResult("railway_sha", True, "info",
+                           detail + " — within daily cadence, no action")
     sh_action = sh_result = None
     if selfheal_eligible("daily-refresh-fast.yml"):
         if gh_dispatch("daily-refresh-fast.yml"):
@@ -275,7 +288,8 @@ def check_railway_sha() -> CheckResult:
             sh_action, sh_result = "fast_pipeline_dispatch", "failed"
     else:
         sh_action, sh_result = "fast_pipeline_dispatch", "skipped (cooldown)"
-    return CheckResult("railway_sha", False, severity, detail, sh_action, sh_result)
+    return CheckResult("railway_sha", False, "critical", detail,
+                       sh_action, sh_result)
 
 
 def check_rotation_recent() -> CheckResult:
