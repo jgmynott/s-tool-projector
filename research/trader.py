@@ -122,6 +122,19 @@ class Alpaca:
     def close_position(self, symbol: str) -> dict:
         return self._req("DELETE", f"positions/{symbol}")
 
+    def latest_trade(self, symbol: str) -> float | None:
+        """Last printed trade price from Alpaca's market-data API. Lives at
+        data.alpaca.markets, NOT paper-api.alpaca.markets — same creds work.
+        Returns None on any error so the caller can fall back to ref_price."""
+        url = f"https://data.alpaca.markets/v2/stocks/{symbol}/trades/latest"
+        req = Request(url, headers=self.headers, method="GET")
+        try:
+            with urlopen(req, timeout=10) as resp:
+                d = json.loads(resp.read())
+            return float(d.get("trade", {}).get("p") or 0) or None
+        except (HTTPError, Exception):
+            return None
+
 
 # ── State ──
 
@@ -286,12 +299,24 @@ def submit_buy(api: Alpaca, b: dict, sleeve_name: str) -> None:
     cfg = SLEEVES[sleeve_name]
     today = datetime.now(timezone.utc).strftime("%Y%m%d")
     cid = f"{sleeve_name}-{b['symbol']}-{today}"
+
+    # Refresh bracket math against the live quote. The plan was built off
+    # current_price from portfolio_picks.json which reflects yesterday's
+    # close — gap-ups/downs put the precomputed stop/target on the wrong
+    # side of the live price and Alpaca 422s. Re-anchoring on the live
+    # last-trade price closes that window. If the data API call fails we
+    # fall through to the original (yesterday's-close-based) levels.
+    live = api.latest_trade(b["symbol"])
+    ref = live or float(b["ref_price"])
+    stop_price = round(ref * (1 + cfg["stop_pct"]), 2)
+    take_price = round(ref * (1 + cfg["target_pct"]), 2)
+
     body = {
         "symbol": b["symbol"], "qty": str(b["qty"]),
         "side": "buy", "type": "market", "time_in_force": "day",
         "order_class": "bracket",
-        "stop_loss": {"stop_price": str(b["stop_loss"])},
-        "take_profit": {"limit_price": str(b["take_profit"])},
+        "stop_loss": {"stop_price": str(stop_price)},
+        "take_profit": {"limit_price": str(take_price)},
         "client_order_id": cid,
     }
     try:
@@ -305,13 +330,16 @@ def submit_buy(api: Alpaca, b: dict, sleeve_name: str) -> None:
         if "422" not in msg or not any(t in msg for t in ("take_profit", "stop_loss", "base_price")):
             raise
 
-    # Bracket-collision fallback: submit plain market buy.
+    # Bracket-collision fallback: submit plain market buy. Reachable when
+    # latest_trade() returned None or the live price moved between the
+    # quote and the submit (fast tape).
     fallback = {
         "symbol": b["symbol"], "qty": str(b["qty"]),
         "side": "buy", "type": "market", "time_in_force": "day",
         "client_order_id": cid + "-nobracket",
     }
-    log.warning("bracket rejected for %s (gap moved past stop/target) — submitting plain market buy", b["symbol"])
+    log.warning("bracket rejected for %s (live=%s ref=%s stop=%s tgt=%s) — submitting plain market buy",
+                b["symbol"], live, b["ref_price"], stop_price, take_price)
     api.submit(fallback)
 
 
