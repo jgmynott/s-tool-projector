@@ -419,7 +419,7 @@ def fetch_stocktwits(symbol: str) -> dict | None:
             return None
         bull = bear = 0
         for m in messages:
-            sent = (m.get("entities") or {}).get("sentiment", {}).get("basic")
+            sent = ((m.get("entities") or {}).get("sentiment") or {}).get("basic")
             if sent == "Bullish":
                 bull += 1
             elif sent == "Bearish":

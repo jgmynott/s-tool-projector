@@ -150,7 +150,7 @@ class Alpaca:
         try:
             with urlopen(req, timeout=10) as resp:
                 d = json.loads(resp.read())
-            return float(d.get("trade", {}).get("p") or 0) or None
+            return float((d.get("trade") or {}).get("p") or 0) or None
         except (HTTPError, Exception):
             return None
 
