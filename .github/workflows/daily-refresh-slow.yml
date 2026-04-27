@@ -20,7 +20,11 @@ permissions:
 
 on:
   schedule:
-    - cron: "0 23 * * 1-5"
+    # Sun-Thu 23:00 UTC. Slow pipeline trains the NN + re-scores asym
+    # tier with the fresh model. Runs the night before each trading day
+    # so Mon-Fri opens get freshly-trained picks. No Friday slow run —
+    # Sunday catches Monday open.
+    - cron: "0 23 * * 0-4"
   workflow_dispatch:
 
 jobs:

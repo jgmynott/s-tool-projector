@@ -17,7 +17,12 @@ permissions:
 
 on:
   schedule:
-    - cron: "0 20 * * 1-5"
+    # Sun-Fri 20:00 UTC. Sunday fires for Monday open (the trader's
+    # 13:30 UTC weekday window expects fresh picks). Mon-Fri keep
+    # rolling forward for the next-day open. Saturday excluded —
+    # no fresh market data, and the slow pipeline doesn't run Sat
+    # to follow up.
+    - cron: "0 20 * * 0-5"
   workflow_dispatch:
 
 jobs:
