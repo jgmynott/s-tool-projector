@@ -6,6 +6,13 @@ account_id = "18479801bf03932e04409c95b49e358a"
 [assets]
 directory = "./public"
 binding = "ASSETS"
+# Run the Worker before serving static assets so applyCacheControl +
+# applySecurityHeaders (HSTS, CSP, real Cache-Control with SWR) fire on
+# every static-file response. Verified 2026-04-27 that without this flag,
+# CF serves /shared/*.js and HTML directly from the edge with the default
+# "max-age=0, must-revalidate" and no security headers — the Worker is
+# only invoked for paths that don't match an asset.
+run_worker_first = true
 
 # The frontend currently hardcodes publishable keys directly in index.html
 # (pk_ keys are client-safe by design, visible in any page source). If we later
