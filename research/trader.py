@@ -80,7 +80,8 @@ SLEEVES = {
         "intraday_only": False,
     },
     "daytrade": {
-        "rank_range": (15, 25),        # picks[15..25) — ranks 16-25
+        "rank_range": (15, 25),        # picks[15..25) — open-window draw, defines slot count
+        "rotation_pool_range": (15, 50),  # picks[15..50) — deeper pool for intraday refills
         "hold_days": 0,                # exit same day at 15:55 ET
         "stop_pct": -0.03,             # tighter stop, intraday vol is small
         "target_pct": 0.05,             # +5% target — realistic 1d top-tail
@@ -519,6 +520,104 @@ def plan_close_window(account: dict, positions: list, state: dict) -> dict:
     return {"sells": sells, "buys": [], "sleeve": "daytrade"}
 
 
+def plan_rotate_window(picks: list[dict], account: dict, positions: list,
+                        state: dict) -> dict:
+    """Fires every 30 min during US market hours (14:00-19:30 UTC). Daytrade
+    sleeve only — refills any empty slots from a deeper pool than the open
+    window draws (`rotation_pool_range` vs `rank_range`). Brackets handle
+    exits in-market; we don't issue sells from the rotator. Same-day re-entry
+    guard via `state.traded_today` prevents the rotator from cycling back
+    into a name that already filled and stopped/took-profit earlier today.
+    """
+    cfg = SLEEVES["daytrade"]
+    equity = float(account["equity"])
+    sleeve_equity = equity_per_sleeve(equity, "daytrade")
+    target_capital = sleeve_equity * cfg["leverage"]
+    n_slots = cfg["rank_range"][1] - cfg["rank_range"][0]
+    per_position_target = target_capital / n_slots
+
+    held_by_symbol = {p["symbol"]: p for p in positions}
+    entries = state.get("entries", {})
+    sleeve_held = {sym: pos for sym, pos in held_by_symbol.items()
+                   if entries.get(sym, {}).get("sleeve") == "daytrade"}
+    n_held = len(sleeve_held)
+    n_free = max(0, n_slots - n_held)
+
+    today_iso = datetime.now(timezone.utc).date().isoformat()
+    traded_map = state.setdefault("traded_today", {})
+    # Prune state to today's date only — yesterday's traded list is stale
+    # (positions force-closed at 19:55 UTC; symbols are eligible again today).
+    for k in list(traded_map.keys()):
+        if k != today_iso:
+            del traded_map[k]
+    traded_today = set(traded_map.setdefault(today_iso, []))
+
+    pool_lo, pool_hi = cfg.get("rotation_pool_range", cfg["rank_range"])
+    pool = picks[pool_lo:pool_hi]
+
+    skipped: list[dict] = []
+    candidates: list[dict] = []
+    held_syms = set(sleeve_held.keys())
+    for p in pool:
+        sym = p["symbol"]
+        if sym in held_syms:
+            continue  # silent — sleeve already holds this name
+        if sym in held_by_symbol:
+            skipped.append({"symbol": sym, "reason": "held in another sleeve"})
+            continue
+        if sym in traded_today:
+            skipped.append({"symbol": sym, "reason": "already traded today"})
+            continue
+        if (p.get("current_price") or 0) <= 0:
+            skipped.append({"symbol": sym, "reason": "no current_price"})
+            continue
+        candidates.append(p)
+
+    buys: list[dict] = []
+    for p in candidates:
+        if len(buys) >= n_free:
+            break
+        price = p["current_price"]
+        qty = int(per_position_target / price)
+        if qty < 1:
+            skipped.append({"symbol": p["symbol"],
+                            "reason": f"price ${price:.2f} > slot ${per_position_target:.0f}"})
+            continue
+        stop = round(price * (1 + cfg["stop_pct"]), 2)
+        tgt  = round(price * (1 + cfg["target_pct"]), 2)
+        buys.append({"symbol": p["symbol"], "qty": qty, "ref_price": price,
+                     "stop_loss": stop, "take_profit": tgt,
+                     "tier": p.get("tier")})
+
+    return {
+        "config": cfg,
+        "equity_allocated": sleeve_equity,
+        "target_capital": target_capital,
+        "n_slots": n_slots,
+        "per_position_target": per_position_target,
+        "n_held": n_held,
+        "n_free": n_free,
+        "sells": [],   # rotator never sells — brackets at Alpaca handle exits
+        "buys": buys,
+        "skipped": skipped,
+    }
+
+
+def _record_traded_today(state: dict, executed: list) -> None:
+    """Append every successful daytrade buy symbol to state.traded_today
+    keyed by today's UTC date, so the rotator's same-day re-entry guard
+    catches names already filled (and possibly bracket-exited) earlier."""
+    today_iso = datetime.now(timezone.utc).date().isoformat()
+    traded_map = state.setdefault("traded_today", {})
+    for k in list(traded_map.keys()):
+        if k != today_iso:
+            del traded_map[k]
+    bucket = traded_map.setdefault(today_iso, [])
+    for x in executed:
+        if x.get("side") == "buy" and x.get("symbol") and x["symbol"] not in bucket:
+            bucket.append(x["symbol"])
+
+
 # ── Order submission ──
 
 def submit_buy(api: Alpaca, b: dict, sleeve_name: str,
@@ -655,6 +754,24 @@ def print_close_plan(plan: dict) -> None:
     print()
 
 
+def print_rotate_plan(plan: dict) -> None:
+    print(f"\n=== Rotate-window plan === [daytrade]")
+    print(f"  slots: {plan['n_held']}/{plan['n_slots']} filled, {plan['n_free']} free  "
+          f"(${plan['per_position_target']:,.0f} per slot)")
+    if not plan["buys"]:
+        if plan["n_free"] == 0:
+            print("  sleeve full — no rotation entries this tick")
+        else:
+            print(f"  {plan['n_free']} free slots but no eligible candidates from pool")
+    for b in plan["buys"]:
+        print(f"    BUY  {b['symbol']:>6} qty={b['qty']:>5} @ ${b['ref_price']:>7.2f}  "
+              f"stop=${b['stop_loss']:>7.2f}  tgt=${b['take_profit']:>7.2f}  [{b['tier']}]")
+    if plan["skipped"]:
+        for s in plan["skipped"][:6]:
+            print(f"    skip {s['symbol']:>6}  {s['reason']}")
+    print()
+
+
 # ── Subcommands ──
 
 def cmd_status(api: Alpaca) -> int:
@@ -694,6 +811,8 @@ def cmd_dry(api: Alpaca, window: str) -> int:
         plan = plan_open_window(picks, acct, pos, state); print_open_plan(plan)
     elif window == "close":
         plan = plan_close_window(acct, pos, state); print_close_plan(plan)
+    elif window == "rotate":
+        plan = plan_rotate_window(picks, acct, pos, state); print_rotate_plan(plan)
     print("(dry-run; no orders submitted)")
     return 0
 
@@ -749,6 +868,11 @@ def cmd_live(api: Alpaca, window: str) -> int:
             for f in r["failed"]:
                 print(f"  FAIL {f['side']} {f['symbol']}: {f['error']}")
                 all_failed.append(f)
+            # Tag daytrade entries into the same-day re-entry guard so the
+            # rotator (running every 30 min after) won't re-buy any name
+            # that opened in this batch and then bracket-exited.
+            if name == "daytrade":
+                _record_traded_today(state, r["executed"])
         save_state(state)
         if new_rows:
             print(f"\njournal: appended {len(new_rows)} rows")
@@ -780,6 +904,27 @@ def cmd_live(api: Alpaca, window: str) -> int:
         realized_total = sum(float(r.get("pnl") or 0) for r in sell_rows_today)
         discord_alert_close_summary(realized_total, len(sell_rows_today), acct)
         return 0
+    elif window == "rotate":
+        picks = load_picks()
+        if not picks: print("no picks"); return 4
+        plan = plan_rotate_window(picks, acct, pos, state)
+        print_rotate_plan(plan)
+        if not plan["buys"]:
+            # No-op runs are normal during rotation (sleeve full, no new
+            # candidates, prices ineligible). Save state so the pruned
+            # `traded_today` map persists, then exit clean.
+            save_state(state)
+            return 0
+        print(f"\n>>> ROTATING [daytrade] {len(plan['buys'])} buys")
+        r = execute_sleeve_plan(api, plan, state, "daytrade", journal_rows=new_rows)
+        for f in r["failed"]:
+            print(f"  FAIL {f['side']} {f['symbol']}: {f['error']}")
+        _record_traded_today(state, r["executed"])
+        save_state(state)
+        if new_rows:
+            print(f"\njournal: appended {len(new_rows)} rows")
+            save_journal(_prune_journal(journal_rows + new_rows))
+        return 0
     return 5
 
 
@@ -791,8 +936,10 @@ def _prune_journal(rows: list[dict], keep_days: int = 365) -> list[dict]:
 def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument("mode", choices=["status", "dry", "live"])
-    p.add_argument("--window", choices=["open", "close"], default="open",
-                   help="open=swing rebalance + daytrade entries; close=daytrade EOD exits")
+    p.add_argument("--window", choices=["open", "close", "rotate"], default="open",
+                   help="open=swing rebalance + daytrade entries; "
+                        "close=daytrade EOD exits; "
+                        "rotate=intraday daytrade refill (every 30 min)")
     args = p.parse_args()
     env = {**os.environ, **load_env()}
     if not env.get("ALPACA_API_KEY"):

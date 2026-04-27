@@ -34,6 +34,13 @@ on:
   schedule:
     # 13:30 UTC Mon-Fri = 09:30 ET (DST). Open: rebalance + daytrade entries.
     - cron: "30 13 * * 1-5"
+    # Intraday rotation: every 30 min between 14:00 and 19:30 UTC Mon-Fri
+    # (10:00-15:30 ET, DST). Daytrade sleeve only: bracket orders handle
+    # exits in-market; this fires to refill any slots that bracket-exited
+    # since the last tick. 12 firings/day. Same-day re-entry guard in
+    # trader_state.json prevents the rotator from cycling back into a
+    # name that already filled and stopped/took-profit earlier.
+    - cron: "*/30 14-19 * * 1-5"
     # 19:55 UTC Mon-Fri = 15:55 ET (DST). Close: daytrade EOD exits.
     - cron: "55 19 * * 1-5"
   workflow_dispatch:
@@ -49,7 +56,7 @@ on:
         required: true
         default: "open"
         type: choice
-        options: ["open", "close"]
+        options: ["open", "close", "rotate"]
 
 # Never run two trader instances concurrently — duplicate orders would
 # breach the per-position cap.
@@ -93,9 +100,10 @@ jobs:
           else
             # Schedule run: pick window from cron expression.
             case "$SCHEDULED_CRON" in
-              "30 13 * * 1-5") echo "window=open"  >> "$GITHUB_OUTPUT" ;;
-              "55 19 * * 1-5") echo "window=close" >> "$GITHUB_OUTPUT" ;;
-              *)               echo "window=open"  >> "$GITHUB_OUTPUT" ;;
+              "30 13 * * 1-5")    echo "window=open"   >> "$GITHUB_OUTPUT" ;;
+              "55 19 * * 1-5")    echo "window=close"  >> "$GITHUB_OUTPUT" ;;
+              "*/30 14-19 * * 1-5") echo "window=rotate" >> "$GITHUB_OUTPUT" ;;
+              *)                  echo "window=open"   >> "$GITHUB_OUTPUT" ;;
             esac
             echo "mode=live" >> "$GITHUB_OUTPUT"
           fi
