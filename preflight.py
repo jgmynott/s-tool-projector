@@ -326,7 +326,8 @@ def check_imports():
     print("\n[3] Python imports compile")
     import importlib, importlib.util, py_compile, traceback
     for mod in ("api.py", "portfolio_scanner.py", "billing.py",
-                "signals_sec_edgar.py", "worker.py", "users_db.py"):
+                "signals_sec_edgar.py", "worker.py", "users_db.py",
+                "watchdog.py", "research/trader.py"):
         path = ROOT / mod
         if not path.exists():
             fail(f"{mod} missing")
@@ -340,6 +341,176 @@ def check_imports():
         ok("all modules compile")
 
 
+def check_trader_smoke():
+    """Run trader.py's print functions against synthetic plan dicts that
+    mix string-encoded numerics (Alpaca's wire format) with native floats.
+    The 13:30 UTC scheduled trader run on 2026-04-27 crashed here on
+    `f'upnl=${s["unrealized_pl"]:>+9}'` because Alpaca returns numerics
+    as JSON strings; the `:+` flag rejects strings. This check exercises
+    the same code path so future format-string changes can't ship a
+    regression without preflight catching it."""
+    print("\n[*] Trader format-string smoke")
+    import sys as _sys
+    _sys.path.insert(0, str(ROOT / "research"))
+    try:
+        import trader  # noqa: F401
+    except Exception as e:
+        fail(f"could not import research/trader: {e}")
+        return
+
+    # Synthetic combined plan with mixed float/string upnl, mixed
+    # held types, and skipped reasons that include parens / dashes.
+    fake_plan_open = {
+        "equity": 101000,
+        "plans": {
+            "momentum": {
+                "config": trader.SLEEVES["momentum"],
+                "equity_allocated": 33667,
+                "target_capital": 50500,
+                "n_slots": 5,
+                "per_position_target": 10100,
+                "sells": [
+                    {"symbol": "AAA", "qty": 10, "days_held": 3,
+                     "unrealized_pl": "45.32", "reason": "5d hold complete"},
+                ],
+                "buys": [
+                    {"symbol": "BBB", "qty": 25, "ref_price": 50.0,
+                     "stop_loss": 47.5, "take_profit": 55.0, "tier": "moderate"},
+                ],
+                "skipped": [{"symbol": "(cap)", "reason": "sleeve full"}],
+            },
+            "swing": {
+                "config": trader.SLEEVES["swing"],
+                "equity_allocated": 33667, "target_capital": 50500,
+                "n_slots": 10, "per_position_target": 5050,
+                "sells": [
+                    {"symbol": "CCC", "qty": 20, "days_held": 5,
+                     "unrealized_pl": -127.66, "reason": "stop -7%"},
+                ],
+                "buys": [], "skipped": [],
+            },
+            "daytrade": {
+                "config": trader.SLEEVES["daytrade"],
+                "equity_allocated": 33667, "target_capital": 33667,
+                "n_slots": 10, "per_position_target": 3367,
+                "sells": [], "buys": [], "skipped": [],
+            },
+        },
+    }
+    fake_plan_close = {
+        "sells": [
+            {"symbol": "DDD", "qty": 12, "unrealized_pl": "+12.50",
+             "reason": "daytrade EOD force-close"},
+            {"symbol": "EEE", "qty": 8, "unrealized_pl": -8.0,
+             "reason": "daytrade EOD force-close"},
+        ],
+        "buys": [],
+    }
+    fake_plan_rotate = {
+        "config": trader.SLEEVES["daytrade"],
+        "equity_allocated": 33667, "target_capital": 33667,
+        "n_slots": 10, "per_position_target": 3367,
+        "n_held": 9, "n_free": 1,
+        "sells": [],
+        "buys": [{"symbol": "FFF", "qty": 75, "ref_price": 44.39,
+                  "stop_loss": 43.06, "take_profit": 46.61, "tier": "moderate"}],
+        "skipped": [{"symbol": "GGG", "reason": "already traded today"}],
+    }
+
+    import io, contextlib
+    buf = io.StringIO()
+    try:
+        with contextlib.redirect_stdout(buf):
+            trader.print_open_plan(fake_plan_open)
+            trader.print_close_plan(fake_plan_close)
+            trader.print_rotate_plan(fake_plan_rotate)
+    except Exception as e:
+        fail(f"trader print function crashed on synthetic plan: {type(e).__name__}: {e}")
+        return
+    out = buf.getvalue()
+    # Cheap content sanity — make sure the print actually formatted the rows
+    if "SELL" not in out or "BUY" not in out:
+        warn("trader print functions ran but produced no SELL/BUY lines (synthetic test data may be incomplete)")
+    else:
+        ok("trader print_open / print_close / print_rotate handle string + float upnl cleanly")
+
+
+def check_rotation_pool():
+    """The daytrade rotator slices ranks rotation_pool_range[0]:[1] from
+    load_rotation_pool(). If the configured upper bound exceeds the actual
+    pool depth, the rotator runs out of unique candidates after one cycle
+    through the same-day re-entry guard. This check asserts the pool
+    actually has enough names to fill the configured window."""
+    print("\n[*] Daytrade rotation pool depth")
+    import sys as _sys
+    _sys.path.insert(0, str(ROOT / "research"))
+    try:
+        import trader
+    except Exception as e:
+        fail(f"could not import research/trader: {e}")
+        return
+    cfg = trader.SLEEVES.get("daytrade") or {}
+    pool_lo, pool_hi = cfg.get("rotation_pool_range") or cfg.get("rank_range") or (0, 0)
+    n_slots = cfg["rank_range"][1] - cfg["rank_range"][0]
+    try:
+        pool = trader.load_rotation_pool()
+    except Exception as e:
+        fail(f"load_rotation_pool() raised: {e}")
+        return
+    if len(pool) < pool_hi:
+        warn(f"rotation pool has {len(pool)} candidates, rotation_pool_range upper bound is {pool_hi} — slice will be {min(pool_hi, len(pool)) - pool_lo} unique names ({n_slots} slots, same-day guard exhausts after ~{(min(pool_hi, len(pool)) - pool_lo) // n_slots} cycles)")
+    else:
+        ok(f"rotation pool has {len(pool)} candidates, ≥ pool_range[{pool_lo}:{pool_hi}] = {pool_hi - pool_lo} unique names available")
+
+
+def check_workflow_crons():
+    """Validate every cron string in .github/workflows/*.yml. Catches:
+      • wrong field count (4 or 6 instead of 5)
+      • out-of-range values (e.g. hour=25)
+      • obviously malformed step / range syntax
+    Doesn't try to be a complete cron parser — it catches the typos that
+    would silently make a schedule never fire."""
+    print("\n[*] Workflow cron syntax")
+    workflows_dir = ROOT / ".github" / "workflows"
+    if not workflows_dir.exists():
+        warn("no .github/workflows directory")
+        return
+    import re
+    cron_re = re.compile(r'cron:\s*["\']([^"\']+)["\']')
+    bad = 0
+    total = 0
+    for yml in sorted(workflows_dir.glob("*.yml")):
+        text = yml.read_text()
+        for m in cron_re.finditer(text):
+            total += 1
+            cron = m.group(1)
+            fields = cron.split()
+            if len(fields) != 5:
+                fail(f"{yml.name}: cron '{cron}' has {len(fields)} fields, expected 5"); bad += 1; continue
+            mins, hrs, dom, mon, dow = fields
+            # Each field: digits, comma, dash, slash, asterisk only
+            for label, fld, lo, hi in [
+                ("min", mins, 0, 59), ("hour", hrs, 0, 23),
+                ("dom", dom, 1, 31), ("month", mon, 1, 12),
+                ("dow", dow, 0, 6),
+            ]:
+                if not re.fullmatch(r"[\d\*/,\-]+", fld):
+                    fail(f"{yml.name}: cron '{cron}' field '{label}={fld}' has invalid chars"); bad += 1; break
+                # Pull standalone digits (ignore */ steps and ranges) and
+                # spot-check at least one against bounds.
+                for tok in re.findall(r"\d+", fld):
+                    n = int(tok)
+                    if n < lo or n > hi:
+                        fail(f"{yml.name}: cron '{cron}' field '{label}={fld}' value {n} out of range [{lo}-{hi}]"); bad += 1; break
+                else:
+                    continue
+                break
+    if total == 0:
+        warn("no cron schedules found across workflows")
+    elif bad == 0:
+        ok(f"{total} cron schedules across workflows — all parse cleanly")
+
+
 def main() -> int:
     print("=" * 50)
     print("s-tool preflight")
@@ -348,6 +519,9 @@ def main() -> int:
     check_picks_json()
     check_frontend_field_refs()
     check_imports()
+    check_trader_smoke()
+    check_rotation_pool()
+    check_workflow_crons()
     check_no_committed_secrets()
     check_nn_artifacts()
     check_users_sanity()
