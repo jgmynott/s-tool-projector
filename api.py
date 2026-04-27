@@ -1002,33 +1002,56 @@ def portfolio(request: Request, user: Optional[dict] = Depends(auth.optional_use
     day_change = eq - last_eq
     day_change_pct = (day_change / last_eq) if last_eq else 0.0
 
-    # Live alpha vs SPY: trader return − SPY return over the equity
-    # history window. Uses the daily portfolio_history (1M) for the
-    # trader leg and Alpaca's SPY 1D bars for the benchmark. Both are
-    # closed-on-close so they're directly comparable. Stat is hidden
-    # when there's not enough history yet (need ≥ 2 trading days).
+    # Live alpha vs SPY: trader return − SPY return *over the same
+    # window*. Naive "first non-zero equity" anchoring breaks when the
+    # account sat idle at $100k for weeks before the trader fired —
+    # eq_baseline ≈ eq_now → trader_return ≈ 0, but SPY's 30-day window
+    # is 30 days long, so alpha looks like −SPY_return. Wrong window
+    # alignment.
+    #
+    # Fix: anchor on the first day where equity *actually moved* (first
+    # day the trader was live, not the first day the account had funds).
+    # Then truncate SPY bars to that same date range.
     live_alpha = None
     spy_return = None
     trader_return = None
+    benchmark_first_day = None
     try:
         eq_series = hist.get("equity") or []
-        # First non-zero equity = where the account actually started
-        # (Alpaca pads pre-funding days with the seed value, which would
-        # otherwise zero out our return). We anchor the trader return
-        # off that point.
-        eq_baseline = next((v for v in eq_series if v), None)
-        eq_now = eq_series[-1] if eq_series else None
-        if eq_baseline and eq_now:
-            trader_return = (eq_now - eq_baseline) / eq_baseline
+        ts_series = hist.get("timestamp") or []
+        # Find first day where equity diverged > $5 from the day-before
+        # baseline. $5 (5 bps on $100k) is below normal jitter so we
+        # don't lose precision but well above any rounding noise.
+        first_active_idx = None
+        if len(eq_series) >= 2:
+            baseline_seed = eq_series[0]
+            for i in range(1, len(eq_series)):
+                v = eq_series[i]
+                if v and abs(v - baseline_seed) > 5.0:
+                    first_active_idx = i - 1  # use the day BEFORE first move as the entry point
+                    break
+        if first_active_idx is not None:
+            eq_anchor = eq_series[first_active_idx] or eq_series[-1]
+            eq_now = eq_series[-1]
+            if eq_anchor and eq_now:
+                trader_return = (eq_now - eq_anchor) / eq_anchor
+            # Pin SPY to the same anchor date
+            try:
+                from datetime import datetime as _dt_a
+                anchor_ts = ts_series[first_active_idx]
+                benchmark_first_day = _dt_a.utcfromtimestamp(anchor_ts).date().isoformat()
+            except Exception:
+                benchmark_first_day = None
 
         bars = (spy_bars or {}).get("bars") or []
-        if bars and len(bars) >= 2:
-            # Match SPY window to the trader's live period — anchor on the
-            # first SPY bar at-or-after the equity baseline date.
-            spy_first = float(bars[0].get("c") or 0)
-            spy_last = float(bars[-1].get("c") or 0)
-            if spy_first and spy_last:
-                spy_return = (spy_last - spy_first) / spy_first
+        if bars and benchmark_first_day:
+            # Filter SPY bars to those at-or-after the trader's anchor date
+            aligned = [b for b in bars if (b.get("t") or "")[:10] >= benchmark_first_day]
+            if len(aligned) >= 2:
+                spy_first = float(aligned[0].get("c") or 0)
+                spy_last = float(aligned[-1].get("c") or 0)
+                if spy_first and spy_last:
+                    spy_return = (spy_last - spy_first) / spy_first
 
         if trader_return is not None and spy_return is not None:
             live_alpha = trader_return - spy_return
@@ -1079,6 +1102,7 @@ def portfolio(request: Request, user: Optional[dict] = Depends(auth.optional_use
             "trader_return": trader_return,
             "spy_return": spy_return,
             "alpha": live_alpha,
+            "since_date": benchmark_first_day,
             "as_of": now.isoformat() + "Z",
         },
         "open_orders": [
