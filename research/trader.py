@@ -270,14 +270,20 @@ def plan_close_window(account: dict, positions: list, state: dict) -> dict:
 # ── Order submission ──
 
 def submit_buy(api: Alpaca, b: dict, sleeve_name: str) -> None:
+    """Submit a bracketed market buy. If the bracket itself is rejected
+    because the stop/target collides with the current price (overnight
+    gap moved the underlying past one of the levels we computed from
+    yesterday's close), fall back to a plain market buy and log the
+    bracket-loss. Per-symbol "no bracket" positions are still managed
+    by the rebalance and close-window logic — they just don't have an
+    in-market stop/target sitting at Alpaca.
+
+    Encode sleeve in client_order_id ("<sleeve>-<sym>-<YYYYMMDD>") so
+    /api/portfolio can attribute positions to sleeves without needing
+    research/trader_state.json deployed to Railway. The 30-day Alpaca
+    uniqueness window doesn't conflict because we suffix with the date.
+    """
     cfg = SLEEVES[sleeve_name]
-    # Encode sleeve in client_order_id so the api layer (which doesn't
-    # have access to trader_state.json across the GH-Action ↔ Railway
-    # boundary) can attribute positions by querying Alpaca instead of
-    # depending on a state-file deploy. Format: <sleeve>-<sym>-<YYYYMMDD>.
-    # Alpaca enforces 128-char limit on client_order_id, but rejects any
-    # ID that's already been used in the past 30 days, so we suffix with
-    # the date to keep daily entries unique without colliding.
     today = datetime.now(timezone.utc).strftime("%Y%m%d")
     cid = f"{sleeve_name}-{b['symbol']}-{today}"
     body = {
@@ -288,7 +294,25 @@ def submit_buy(api: Alpaca, b: dict, sleeve_name: str) -> None:
         "take_profit": {"limit_price": str(b["take_profit"])},
         "client_order_id": cid,
     }
-    api.submit(body)
+    try:
+        api.submit(body)
+        return
+    except RuntimeError as e:
+        msg = str(e)
+        # Alpaca's bracket-collision rejections all come back HTTP 422
+        # with messages mentioning take_profit / stop_loss / base_price.
+        # Anything else is a real failure — re-raise.
+        if "422" not in msg or not any(t in msg for t in ("take_profit", "stop_loss", "base_price")):
+            raise
+
+    # Bracket-collision fallback: submit plain market buy.
+    fallback = {
+        "symbol": b["symbol"], "qty": str(b["qty"]),
+        "side": "buy", "type": "market", "time_in_force": "day",
+        "client_order_id": cid + "-nobracket",
+    }
+    log.warning("bracket rejected for %s (gap moved past stop/target) — submitting plain market buy", b["symbol"])
+    api.submit(fallback)
 
 
 def execute_sleeve_plan(api: Alpaca, plan: dict, state: dict, sleeve_name: str) -> dict:
@@ -386,7 +410,12 @@ def cmd_dry(api: Alpaca, window: str) -> int:
 def cmd_live(api: Alpaca, window: str) -> int:
     clock = api.clock()
     if not clock.get("is_open"):
-        print(f"market closed — refusing. next_open={clock.get('next_open')}"); return 1
+        # Exit 0 (not 1) so the GH-Action issue-on-failure tripwire doesn't
+        # fire when the cron lands a few minutes before market open. The
+        # trader simply refuses to trade until the market is actually
+        # open; that's correct, not an error.
+        print(f"market closed — refusing (clean exit). next_open={clock.get('next_open')}")
+        return 0
     acct = api.account()
     if acct.get("trading_blocked"):
         print("trading_blocked=true on account"); return 2
