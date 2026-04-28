@@ -177,15 +177,6 @@
         "stop": 326.05,
         "target": 331.63
       },
-      "TNA": {
-        "symbol": "TNA",
-        "qty": 8,
-        "entry_price": 58.74,
-        "opened_at": "2026-04-28T18:25:43.626939+00:00",
-        "signal": "relvol",
-        "stop": 58.33,
-        "target": 59.33
-      },
       "ASML": {
         "symbol": "ASML",
         "qty": 1,
@@ -221,6 +212,24 @@
         "signal": "relvol",
         "stop": 285.9,
         "target": 290.8
+      },
+      "DE": {
+        "symbol": "DE",
+        "qty": 1,
+        "entry_price": 562.48,
+        "opened_at": "2026-04-28T19:40:40.321129+00:00",
+        "signal": "relvol",
+        "stop": 558.54,
+        "target": 568.1
+      },
+      "IWM": {
+        "symbol": "IWM",
+        "qty": 1,
+        "entry_price": 273.56,
+        "opened_at": "2026-04-28T19:40:40.379110+00:00",
+        "signal": "relvol",
+        "stop": 271.65,
+        "target": 276.3
       }
     },
     "fired_today": [
@@ -253,6 +262,16 @@
         "symbol": "GE",
         "signal": "relvol",
         "ts": "2026-04-28T19:35:43.700330+00:00"
+      },
+      {
+        "symbol": "DE",
+        "signal": "relvol",
+        "ts": "2026-04-28T19:40:40.321147+00:00"
+      },
+      {
+        "symbol": "IWM",
+        "signal": "relvol",
+        "ts": "2026-04-28T19:40:40.379125+00:00"
       }
     ],
     "last_scan": null,
