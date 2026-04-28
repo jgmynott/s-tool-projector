@@ -178,6 +178,27 @@ footer { border-top: 1px solid var(--border); padding: 40px 0; text-align: cente
 footer a { color: var(--text-mid); }
 
 .loading { padding: 48px 0; text-align: center; color: var(--text-dim); font-size: 14px; }
+
+@media (max-width: 480px) {
+  /* Container is 32px each side at desktop — at 390px that consumes 64px,
+   * leaving 326px for cards. Tighten to 16px each so headline cards have
+   * room to breathe and "+12.4%" pos figures don't bump the right edge. */
+  .container { padding: 0 16px; }
+  header.hero { padding: 56px 0 32px; }
+  .title { font-size: clamp(36px, 9vw, 60px); }
+  .subtitle { font-size: 15px; margin-top: 14px; }
+  /* Headline cards already collapse to 1fr at 520px; just trim padding so
+   * the 40px serif "val" has more room and doesn't sit cramped. */
+  .h-card { padding: 20px 18px 18px; }
+  .h-card .val { font-size: 34px; }
+  /* Tier strip + bench rows wrap on flex but the 18px gap eats space; tighten. */
+  .tier-strip, .lt-bench { padding: 10px 12px; gap: 10px; }
+  /* Caveats + pipeline-events shrink padding so the 3px border-left doesn't
+   * eat into already-small content area. */
+  .caveats { padding: 20px 18px; margin-top: 56px; }
+  .pipeline-events { padding: 14px 16px; }
+}
+
 </style>
 <script async
   data-clerk-publishable-key="pk_test_Zmx1ZW50LW1vbGUtNzEuY2xlcmsuYWNjb3VudHMuZGV2JA"

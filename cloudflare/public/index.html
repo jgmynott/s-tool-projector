@@ -97,8 +97,11 @@ nav { position: sticky; top: 0; z-index: 50; backdrop-filter: blur(14px); backgr
 .hero-eyebrow { margin-bottom: 22px; }
 .hero-headline {
   font-family: 'Crimson Text', Georgia, serif;
-  font-size: clamp(32px, 6.2vw, 76px);
-  font-weight: 400; line-height: 1.04; letter-spacing: -0.022em;
+  /* Lower min from 32→26 so 6.2vw kicks in below 420px viewports — at
+   * 320px screen width the previous floor wrapped to 3-4 lines and pushed
+   * the CTA below the fold. 26px floor still reads strong. */
+  font-size: clamp(26px, 6.6vw, 76px);
+  font-weight: 400; line-height: 1.06; letter-spacing: -0.022em;
   max-width: 20ch;
   overflow-wrap: break-word;
 }

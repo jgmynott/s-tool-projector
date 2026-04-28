@@ -261,7 +261,7 @@ header.hero { padding: 80px 0 40px; }
 }
 .diversification .div-title { font-family: 'Crimson Text', serif; font-size: 20px; line-height: 1.25; color: var(--text-hi); margin-bottom: 6px; }
 .diversification .div-sub { font: 500 13px 'Inter'; color: var(--text-mid); line-height: 1.55; }
-.diversification .div-bar { display: flex; width: 220px; height: 10px; border-radius: 999px; overflow: hidden; background: rgba(155,161,185,0.12); }
+.diversification .div-bar { display: flex; width: 220px; max-width: 100%; height: 10px; border-radius: 999px; overflow: hidden; background: rgba(155,161,185,0.12); }
 .diversification .div-bar > span { display: block; height: 100%; }
 .diversification .div-legend { display: flex; flex-wrap: wrap; gap: 10px 18px; margin-top: 14px; font: 500 12px 'Inter'; color: var(--text-mid); }
 .diversification .legend-item { display: inline-flex; align-items: center; gap: 6px; }
@@ -962,6 +962,40 @@ footer a { color: var(--text-mid); }
   /* Closed-row PnL/pct shrink + push to right on narrow widths */
   .pf-closed-pnl { min-width: 70px; font-size: 12px; }
   .pf-closed-pct { min-width: 0; }
+}
+
+/* ── 390px tier (standard iPhone 12-15 Pro). The 480px breakpoint above
+ * already collapses grids; this tier reclaims canvas the bigger paddings
+ * waste at standard mobile width. ── */
+@media (max-width: 480px) {
+  /* Container padding: 32px each side at desktop is 64px gone; reduce to
+   * 14px each at <480px so a 390px viewport shows 362px of usable canvas
+   * (vs 326px before). Cards inside stay at their own padding. */
+  .container { padding: 0 14px; }
+  /* Pick-card confidence column was forcing 92px even at 320px — let it
+   * shrink. Min reduces to 60px which still fits "82%" + "STRONG" label. */
+  .pc-conf { min-width: 60px; }
+  /* Donut controls stacked underneath the donut at <920px but kept a
+   * 200px min-width that overflowed at <360px. Let them flow full-width. */
+  .alloc-controls .alloc-control { min-width: 0; }
+  /* Diversification widget: title + bar were grid 1fr/auto so the 220px
+   * bar pushed the title narrow. Stack at mobile so each gets full width. */
+  .diversification .div-row { grid-template-columns: 1fr; gap: 12px; }
+  /* size-pill on pick card header: keep on its own line if needed, never
+   * force a horizontal squeeze with the ticker + name. */
+  .pc-head { flex-wrap: wrap; }
+}
+
+/* ── 360px tier (iPhone SE / older Androids / inside-app embed). At this
+ * size every fixed-width element has to give. ── */
+@media (max-width: 360px) {
+  .container { padding: 0 10px; }
+  .pf-panel { padding: 18px 14px 16px; }
+  .pf-equity-num { font-size: 32px; }
+  /* Donut shrinks one more step so the legend below has room for full
+   * sleeve labels without truncating. */
+  .pf-pos-donut.alloc-donut { width: 200px; height: 200px; }
+  .alloc-donut.master { width: 220px; height: 220px; }
 }
 </style>
 <script async

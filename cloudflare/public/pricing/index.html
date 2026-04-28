@@ -90,6 +90,21 @@ footer { border-top: 1px solid var(--border); padding: 40px 32px; text-align: ce
 footer a { color: var(--text-mid); }
 
 @media (max-width: 1000px) { .price-grid { grid-template-columns: 1fr; } }
+@media (max-width: 480px) {
+  /* Card padding 40px on a 320–390px viewport is too aggressive — eats
+   * 80px width and pushes "$8/mo" toward visible overflow. Trim to 24px
+   * each side; price font also drops one step (64→52). */
+  .price-card { padding: 24px 22px; }
+  .price-card .price { font-size: 52px; }
+  /* Note column: full-bleed minus container padding so the left rule
+   * doesn't visually offset on tiny screens. */
+  .note { padding: 16px 18px; font-size: 13px; }
+  footer { padding: 28px 18px; }
+}
+@media (max-width: 360px) {
+  .price-card { padding: 20px 18px; }
+  .price-card .price { font-size: 46px; }
+}
 </style>
 <script async
   data-clerk-publishable-key="pk_test_Zmx1ZW50LW1vbGUtNzEuY2xlcmsuYWNjb3VudHMuZGV2JA"

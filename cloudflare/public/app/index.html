@@ -492,6 +492,35 @@ body {
     .card { padding: 16px; overflow-x: hidden; }
     .stat-box .value { font-size: 18px; }
     .stat-box { padding: 14px 10px; }
+    /* Enriched row: 4 cols at 600px+ stayed cramped at 390-480px until
+     * 600px's 1fr override kicked in. We're already in the <600px tier
+     * here so 1fr is correct — the gap was at 700px–600px. Add the 700px
+     * override below so 600-700px isn't 4-wide-cramped either. */
+}
+@media (max-width: 700px) {
+    /* Bridge the gap: 4-col → 2-col before we hit 600px's 1-col rule.
+     * Without this, 4 stat boxes at ~140px each at 700px is OK but the
+     * enriched row's analyst-bar + counts overflows below 700px. */
+    .enriched-row { grid-template-columns: repeat(2, 1fr); }
+    .sent-intel { grid-template-columns: 1fr; }
+}
+@media (max-width: 480px) {
+    /* Standard iPhone tier. Every multi-column grid collapses; padding
+     * tightens; oversized stat values shrink so they don't push siblings. */
+    .stat-grid { grid-template-columns: repeat(2, 1fr); }
+    .momentum-row { grid-template-columns: 1fr; }
+    .stat-box .value { font-size: 17px; }
+    .stat-box .label { font-size: 9px; }
+    .header { padding: 20px 16px; gap: 10px; }
+    .container { padding: 10px; }
+    /* Milestone table: keep the horizontal scroll affordance (it's data),
+     * but trim cell padding so more columns peek before requiring scroll. */
+    .milestone-table { font-size: 12px; }
+    .milestone-table th, .milestone-table td { padding: 8px 8px; }
+}
+@media (max-width: 360px) {
+    /* iPhone SE / older Androids. One-col stats so labels never truncate. */
+    .stat-grid { grid-template-columns: 1fr; }
 }
 
 /* ── Public Pulse panel ── */

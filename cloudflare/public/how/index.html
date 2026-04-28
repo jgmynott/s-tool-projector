@@ -96,6 +96,10 @@ nav { position: sticky; top: 0; z-index: 50; backdrop-filter: blur(14px); backgr
     font-family: 'SF Mono', 'Fira Code', monospace; font-size: 13.5px;
     background: var(--bg-surface); padding: 2px 7px; border-radius: 5px;
     color: var(--accent-lake);
+    /* Long inline code (e.g. clamp(32px, 6.2vw, 76px)) must wrap on
+     * mobile rather than overflow the article column. word-break:
+     * break-word stays gentler than break-all for prose-mixed code. */
+    word-break: break-word; overflow-wrap: anywhere;
 }
 .formula-box {
     background: var(--bg-surface); border: 1px solid var(--border);

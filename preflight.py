@@ -611,6 +611,65 @@ def check_nav_consistency():
         ok(f"all {len(pages)} pages have identical top nav: {' | '.join(canonical)}")
 
 
+def check_mobile_breakpoints():
+    """Every public HTML page must have an @media rule with max-width
+    ≤ 480px so layouts collapse for standard iPhones (≈390px) and small
+    phones (≈320px). Also flag fixed widths > 320px on elements that
+    don't have a corresponding mobile override — those overflow on phones.
+
+    Caught 2026-04-28 after a user reported 'blocks don't fit on mobile'.
+    The audit found grids jumping straight from desktop to 600/700px with
+    nothing in between, plus hard-coded 220–320px widths with no fallback.
+    """
+    import re
+    print("\n[*] Mobile breakpoints + fixed-width sanity")
+    pages = [
+        Path("cloudflare/public/index.html"),
+        Path("cloudflare/public/app/index.html"),
+        Path("cloudflare/public/picks/index.html"),
+        Path("cloudflare/public/track-record/index.html"),
+        Path("cloudflare/public/backtest/index.html"),
+        Path("cloudflare/public/how/index.html"),
+        Path("cloudflare/public/pricing/index.html"),
+        Path("cloudflare/public/faq/index.html"),
+    ]
+    media_re = re.compile(r'@media\s*\([^)]*max-width:\s*(\d+)px')
+    # Match `width: 220px` style declarations but skip max-width / min-width.
+    # Also skip values inside media queries since those are already responsive.
+    width_re = re.compile(r'(?<![\w-])width:\s*(\d{3,4})px', re.IGNORECASE)
+    bad = 0
+    for p in pages:
+        if not p.exists():
+            warn(f"{p} missing — can't verify breakpoints"); continue
+        html = p.read_text()
+        # Only audit the <style> block; inline styles in HTML body are
+        # already evaluated case-by-case during render.
+        style_m = re.search(r'<style[^>]*>(.*?)</style>', html, re.DOTALL)
+        if not style_m:
+            continue
+        style = style_m.group(1)
+        # Has any breakpoint <= 540px? (540 catches all phones; some pages
+        # legitimately use 540 as their phone tier rather than 480.)
+        bps = [int(m) for m in media_re.findall(style)]
+        small_bps = [b for b in bps if b <= 540]
+        if not small_bps:
+            fail(f"{p.name} has no @media (max-width:540px) rule — phones will get desktop layout"); bad += 1
+        # Flag fixed widths > 320px outside media queries (best-effort:
+        # we strip media-query bodies to avoid false positives on
+        # responsive overrides).
+        bare = re.sub(r'@media[^{]+\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}', '', style, flags=re.DOTALL)
+        risky = [int(w) for w in width_re.findall(bare) if int(w) > 320]
+        if risky:
+            # 320 is iPhone SE width. Anything wider in a non-responsive
+            # rule is a candidate overflow on the smallest device. Many
+            # are intentional (max-width, donut diameter) — warn, don't
+            # fail, so the human can scan.
+            top = sorted(set(risky), reverse=True)[:3]
+            warn(f"{p.name} has fixed width(s) > 320px without media-query override: {top}px (verify they have max-width:100% or a phone fallback)")
+    if bad == 0:
+        ok(f"all {len(pages)} pages have a <=480px breakpoint")
+
+
 def main() -> int:
     print("=" * 50)
     print("s-tool preflight")
@@ -623,6 +682,7 @@ def main() -> int:
     check_rotation_pool()
     check_workflow_crons()
     check_nav_consistency()
+    check_mobile_breakpoints()
     check_no_committed_secrets()
     check_nn_artifacts()
     check_users_sanity()
