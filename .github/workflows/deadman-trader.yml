@@ -45,7 +45,11 @@ jobs:
           NOW_EPOCH=$(date -u +%s)
           STALE_THRESHOLD=5400   # 90 minutes — open + first rotate covered
 
+          # --repo required because we don't actions/checkout to keep this
+          # job sub-10s. Without it gh tries to read the cwd's git remote
+          # and bails: "not a git repository".
           RUNS=$(gh run list \
+            --repo "${{ github.repository }}" \
             --workflow=trader.yml \
             --limit 5 \
             --json databaseId,createdAt,conclusion,status \
