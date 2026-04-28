@@ -20,10 +20,16 @@ import sys
 import time
 import urllib.error
 import urllib.request
+from datetime import date, datetime, timezone
 
 SITE_URL = "https://s-tool.io"
 MAX_WAIT_SEC = 180
 POLL_INTERVAL = 10
+# Pick freshness tolerance: a healthy slow-pipeline run produces today's
+# (UTC) pick set, but the run may straddle UTC midnight, so up to 1 day old
+# is fine. Anything older means the deploy step skipped (preflight likely
+# blocked) and the API is serving the prior container's data.
+PICKS_MAX_AGE_DAYS = 1
 
 
 def http_json(url: str, timeout: int = 15):
@@ -84,10 +90,37 @@ def check_track_record() -> tuple[bool, str]:
     return True, f"HTTP {code}, keys={sorted(data.keys())[:5]}"
 
 
+def check_data_freshness() -> tuple[bool, str]:
+    """Catches the 'preflight blocked deploy' failure mode that the other
+    checks miss: API is up and shape is right, but it's still serving the
+    previous container's data because the deploy step was skipped."""
+    code, data, body = http_json(f"{SITE_URL}/api/data-status?_v={int(time.time())}")
+    if code != 200 or not isinstance(data, dict):
+        return False, f"HTTP {code}: {body[:160]}"
+    feeds = data.get("feeds") or {}
+    ph = feeds.get("picks_history") or {}
+    latest = ph.get("latest_pick_date")
+    if not latest:
+        return False, f"missing picks_history.latest_pick_date; feeds={sorted(feeds.keys())}"
+    try:
+        latest_date = date.fromisoformat(latest)
+    except (TypeError, ValueError):
+        return False, f"unparseable latest_pick_date: {latest!r}"
+    today_utc = datetime.now(timezone.utc).date()
+    age_days = (today_utc - latest_date).days
+    if age_days > PICKS_MAX_AGE_DAYS:
+        return False, (
+            f"latest_pick_date={latest} is {age_days}d old "
+            f"(>{PICKS_MAX_AGE_DAYS}d) — deploy likely skipped (preflight blocked?)"
+        )
+    return True, f"latest_pick_date={latest} (age {age_days}d)"
+
+
 CHECKS = [
     ("portfolio", check_portfolio),
     ("picks", check_picks),
     ("track_record", check_track_record),
+    ("data_freshness", check_data_freshness),
 ]
 
 

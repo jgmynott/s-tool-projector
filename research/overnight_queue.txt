@@ -1,0 +1,19 @@
+# Overnight research queue — popped one line per night at 23:00 local by
+# scripts/overnight_runner.py (launchd: com.jgmynott.stool-overnight).
+#
+# Format: one entry per line.
+#   "research/foo.py"                     -> runs as: /usr/bin/python3 research/foo.py
+#   "python3 research/foo.py --flag X"    -> runs literally via bash -c
+#   "anything that is a shell command"    -> runs literally via bash -c
+# Blank lines and lines starting with '#' are skipped.
+#
+# When the queue is empty the runner falls back to research/horizon_scan.py
+# so the laptop is never idle overnight.
+#
+# To check on the latest run:
+#   cat research/overnight_status.json
+#   tail -f research/overnight_<latest_ts>.log
+# To unload the launchd agent:
+#   launchctl bootout gui/$(id -u)/com.jgmynott.stool-overnight
+
+

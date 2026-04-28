@@ -39,6 +39,11 @@ overnight_v*.log
 price_backfill.log
 macro_combined_run.log
 
+# Local launchd-driven overnight runner artifacts (per-machine runtime state)
+research/overnight_status.json
+research/overnight.pid
+research/findings.jsonl
+
 # Claude Code internals
 .claude/worktrees/
 

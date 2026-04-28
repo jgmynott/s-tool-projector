@@ -1,0 +1,58 @@
+# Pushes a notification to ntfy.sh and/or Discord when watchdog opens a new
+# critical-failure issue. Closes the gap where watchdog already detects + opens
+# a GH issue, but you only see it on next manual GitHub visit.
+#
+# Setup (pick one or both):
+#   - ntfy.sh (free, no account, iPhone app at ntfy.sh):
+#       1. Pick a unique topic name, e.g. stool-alerts-jgmynott-7k3p
+#       2. gh secret set NTFY_TOPIC -R jgmynott/s-tool-projector --body 'stool-alerts-jgmynott-7k3p'
+#       3. Subscribe to that topic in the ntfy iOS app
+#   - Discord webhook:
+#       1. Server settings → Integrations → Webhooks → New Webhook → Copy URL
+#       2. gh secret set DISCORD_WEBHOOK_URL -R jgmynott/s-tool-projector --body '<url>'
+#
+# If neither secret is set, this workflow is a harmless no-op.
+
+name: alert-on-watchdog-issue
+
+on:
+  issues:
+    types: [opened, reopened]
+
+permissions:
+  contents: read
+  issues: read
+
+jobs:
+  notify:
+    if: contains(github.event.issue.labels.*.name, 'watchdog')
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Push to ntfy.sh
+        if: env.NTFY_TOPIC != ''
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_URL: ${{ github.event.issue.html_url }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+        run: |
+          BODY="${ISSUE_BODY:0:500} ${ISSUE_URL}"
+          curl -fsS -H "Title: S-Tool watchdog: ${ISSUE_TITLE}" -H "Priority: high" -H "Tags: rotating_light,warning" -H "Click: ${ISSUE_URL}" -d "${BODY}" "https://ntfy.sh/${NTFY_TOPIC}"
+
+      - name: Push to Discord
+        if: env.DISCORD_WEBHOOK_URL != ''
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_URL: ${{ github.event.issue.html_url }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+        run: |
+          # Discord enforces a 2000-char content limit. Trim body to fit.
+          BODY="${ISSUE_BODY:0:1500}"
+          PAYLOAD=$(jq -nc \
+            --arg title "$ISSUE_TITLE" \
+            --arg url "$ISSUE_URL" \
+            --arg body "$BODY" \
+            '{content: ("**S-Tool watchdog: \($title)**\n\($body)\n\($url)")}')
+          curl -fsS -H "Content-Type: application/json" -d "$PAYLOAD" "${DISCORD_WEBHOOK_URL}"
