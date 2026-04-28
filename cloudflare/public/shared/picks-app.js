@@ -138,6 +138,14 @@ function pfSparkline(eq) {
 function pfEquityChart(data) {
   const win = window.__pfChartWindow || '1M';
   let pts, ts, isIntraday = false, spyPts = null;
+  // Legend baselines per window. On 1D, both series are measured vs
+  // YESTERDAY'S CLOSE so the legend pct matches the headline pill — without
+  // this the legend silently excludes the overnight gap and disagrees with
+  // every other dollar number on the page. On 1W/1M, baseline is the first
+  // visible point (the natural "since X ago" comparison).
+  let traderBaseline = null;  // dollars; pfChartSvg uses if set, else falls back to first pt
+  let spyBaselineRaw = null;  // raw SPY close that pairs with traderBaseline
+  let spyLastRaw = null;      // most recent raw SPY close in the window
   if (win === '1D') {
     // Filter intraday to regular trading hours (13:30-20:00 UTC = 9:30-16:00 ET)
     // — Alpaca's portfolio history with extended_hours=true returns pre-market
@@ -150,6 +158,11 @@ function pfEquityChart(data) {
     pts = keepIdx.map(i => rawEq[i]);
     ts  = keepIdx.map(i => rawTs[i]);
     isIntraday = true;
+    // Trader baseline = yesterday's close, sourced from acct.last_equity
+    // (Alpaca's authoritative prior-day close). This is what the headline
+    // pill compares against, so the chart legend now lines up.
+    const acctLastEq = data.account?.last_equity;
+    if (acctLastEq && acctLastEq > 0) traderBaseline = acctLastEq;
     if (rawSpy.length) {
       const spySlice = keepIdx.map(i => rawSpy[i] ?? null);
       // Normalize SPY to trader's first equity value so both lines start
@@ -158,6 +171,19 @@ function pfEquityChart(data) {
       const spyAnchor = spySlice.find(v => v != null);
       if (traderStart && spyAnchor) {
         spyPts = spySlice.map(c => c == null ? null : (c / spyAnchor) * traderStart);
+      }
+      // SPY baseline for legend = yesterday's SPY close. The daily history
+      // ends "today" (we re-stamp the last bar to now), so [-2] is the
+      // most recent prior-day close — the SPY equivalent of last_equity.
+      const histSpy = data.equity_history?.spy_close || [];
+      if (histSpy.length >= 2) {
+        for (let i = histSpy.length - 2; i >= 0; i--) {
+          if (histSpy[i] != null) { spyBaselineRaw = histSpy[i]; break; }
+        }
+      }
+      // Latest raw SPY close from today's intraday series.
+      for (let i = rawSpy.length - 1; i >= 0; i--) {
+        if (rawSpy[i] != null) { spyLastRaw = rawSpy[i]; break; }
       }
     }
   } else {
@@ -188,7 +214,7 @@ function pfEquityChart(data) {
       <div class="pf-chart-empty">No data for this window yet — chart fills in as the trader runs.</div>
     </div>`;
   }
-  return `<div class="pf-chart-row">${tabs}${pfChartSvg(pts, ts, isIntraday, spyPts)}</div>`;
+  return `<div class="pf-chart-row">${tabs}${pfChartSvg(pts, ts, isIntraday, spyPts, { traderBaseline, spyBaselineRaw, spyLastRaw, win })}</div>`;
 }
 
 // Returns the indices of `timestamps` (unix seconds) whose UTC time falls
@@ -216,7 +242,7 @@ function pfChartTabs(active) {
   </div>`;
 }
 
-function pfChartSvg(pts, ts, isIntraday, spyPts) {
+function pfChartSvg(pts, ts, isIntraday, spyPts, opts = {}) {
   // viewBox at 1200×400 (3:1) so the data ratio matches typical desktop
   // container shape and stretching is minimal. preserveAspectRatio="none"
   // still does the final fit; non-scaling-stroke on the line keeps stroke
@@ -305,11 +331,25 @@ function pfChartSvg(pts, ts, isIntraday, spyPts) {
   // so it doesn't crowd the SVG canvas itself.
   let legend = '';
   if (spyPath) {
-    const traderDelta = ((last - first) / first) * 100;
-    const spyFirst = spyPts.find(v => v != null);
-    const spyDelta = spyLast != null && spyFirst ? ((spyLast - spyFirst) / spyFirst) * 100 : null;
+    // Compute pct deltas in raw units (not normalized chart units) so
+    // the legend matches the dollar headline. On 1D both series compare
+    // vs PRIOR DAY CLOSE — including the overnight gap, which is what
+    // every other dollar number on the page reflects. On 1W/1M, baseline
+    // is the chart's first point.
+    const traderRef = (opts.traderBaseline && opts.traderBaseline > 0) ? opts.traderBaseline : first;
+    const traderDelta = ((last - traderRef) / traderRef) * 100;
+    let spyDelta = null;
+    if (opts.spyBaselineRaw && opts.spyLastRaw && opts.spyBaselineRaw > 0) {
+      spyDelta = ((opts.spyLastRaw - opts.spyBaselineRaw) / opts.spyBaselineRaw) * 100;
+    } else {
+      const spyFirst = spyPts.find(v => v != null);
+      spyDelta = spyLast != null && spyFirst ? ((spyLast - spyFirst) / spyFirst) * 100 : null;
+    }
     const traderCls = traderDelta >= 0 ? 'pos' : 'neg';
     const spyCls = (spyDelta != null && spyDelta >= 0) ? 'pos' : 'neg';
+    const winLabel = opts.win === '1D' ? 'today'
+                    : opts.win === '1W' ? '1 week'
+                    : opts.win === '1M' ? '1 month' : '';
     legend = `<div class="pf-chart-legend">
       <span class="pf-chart-legend-item">
         <span class="pf-chart-legend-swatch trader" style="background:${strokeRaw};"></span>
@@ -319,6 +359,7 @@ function pfChartSvg(pts, ts, isIntraday, spyPts) {
         <span class="pf-chart-legend-swatch spy"></span>
         S&amp;P 500 ${spyDelta != null ? `<span class="${spyCls}">${spyDelta >= 0 ? '+' : ''}${spyDelta.toFixed(2)}%</span>` : ''}
       </span>
+      ${winLabel ? `<span class="pf-chart-legend-window">vs ${winLabel === 'today' ? 'prior close' : `${winLabel} ago`}</span>` : ''}
     </div>`;
   }
 
