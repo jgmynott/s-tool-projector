@@ -1,6 +1,6 @@
 {
-  "as_of": "2026-04-28T19:40:40.379718+00:00",
-  "n_rows": 73,
+  "as_of": "2026-04-28T19:56:05.374058+00:00",
+  "n_rows": 75,
   "rows": [
     {
       "ts": "2026-04-27T13:47:29.206731Z",
@@ -1001,6 +1001,34 @@
       "target": 276.3,
       "tier": "relvol",
       "rationale": "{\"vol_multiple\": 2.124002122476381, \"range_pos\": 0.9655172413793441, \"cur_vol\": 18700}",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-04-28T19:56:04.783700+00:00",
+      "event": "buy",
+      "sleeve": "scalper",
+      "symbol": "BA",
+      "qty": 2,
+      "ref_price": 230.32,
+      "live_price": 230.32,
+      "stop": 228.71,
+      "target": 232.62,
+      "tier": "relvol",
+      "rationale": "{\"vol_multiple\": 2.379101348888079, \"range_pos\": 0.8571428571428571, \"cur_vol\": 3071}",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-04-28T19:56:05.373386+00:00",
+      "event": "buy",
+      "sleeve": "scalper",
+      "symbol": "COST",
+      "qty": 1,
+      "ref_price": 993.59,
+      "live_price": 993.59,
+      "stop": 986.63,
+      "target": 1003.53,
+      "tier": "relvol",
+      "rationale": "{\"vol_multiple\": 3.8539209905660377, \"range_pos\": 1.0, \"cur_vol\": 1245}",
       "result": "submitted"
     }
   ]

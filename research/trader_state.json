@@ -230,6 +230,24 @@
         "signal": "relvol",
         "stop": 271.65,
         "target": 276.3
+      },
+      "BA": {
+        "symbol": "BA",
+        "qty": 2,
+        "entry_price": 230.32,
+        "opened_at": "2026-04-28T19:56:04.783679+00:00",
+        "signal": "relvol",
+        "stop": 228.71,
+        "target": 232.62
+      },
+      "COST": {
+        "symbol": "COST",
+        "qty": 1,
+        "entry_price": 993.59,
+        "opened_at": "2026-04-28T19:56:05.373365+00:00",
+        "signal": "relvol",
+        "stop": 986.63,
+        "target": 1003.53
       }
     },
     "fired_today": [
@@ -272,6 +290,16 @@
         "symbol": "IWM",
         "signal": "relvol",
         "ts": "2026-04-28T19:40:40.379125+00:00"
+      },
+      {
+        "symbol": "BA",
+        "signal": "relvol",
+        "ts": "2026-04-28T19:56:04.783696+00:00"
+      },
+      {
+        "symbol": "COST",
+        "signal": "relvol",
+        "ts": "2026-04-28T19:56:05.373382+00:00"
       }
     ],
     "last_scan": null,
