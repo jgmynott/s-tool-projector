@@ -1,6 +1,6 @@
 {
-  "as_of": "2026-04-28T15:42:02.125272+00:00",
-  "n_rows": 65,
+  "as_of": "2026-04-28T18:20:42.780946+00:00",
+  "n_rows": 66,
   "rows": [
     {
       "ts": "2026-04-27T13:47:29.206731Z",
@@ -889,6 +889,20 @@
       "target": 222.68,
       "tier": "conservative",
       "rationale": "Ranked on model output alone \u2014 +11% expected return against 21% realized vol. The Sharpe proxy of 0.",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-04-28T18:20:42.780445+00:00",
+      "event": "buy",
+      "sleeve": "scalper",
+      "symbol": "HD",
+      "qty": 1,
+      "ref_price": 328.35,
+      "live_price": 328.35,
+      "stop": 326.05,
+      "target": 331.63,
+      "tier": "relvol",
+      "rationale": "{\"vol_multiple\": 2.3084451331403173, \"range_pos\": 1.0, \"cur_vol\": 3330}",
       "result": "submitted"
     }
   ]

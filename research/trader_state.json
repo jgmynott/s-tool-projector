@@ -167,8 +167,24 @@
   },
   "breaker_fired_date": "2026-04-28",
   "scalper": {
-    "positions": {},
-    "fired_today": [],
+    "positions": {
+      "HD": {
+        "symbol": "HD",
+        "qty": 1,
+        "entry_price": 328.35,
+        "opened_at": "2026-04-28T18:20:42.780425+00:00",
+        "signal": "relvol",
+        "stop": 326.05,
+        "target": 331.63
+      }
+    },
+    "fired_today": [
+      {
+        "symbol": "HD",
+        "signal": "relvol",
+        "ts": "2026-04-28T18:20:42.780442+00:00"
+      }
+    ],
     "last_scan": null,
     "last_scan_date": "2026-04-28"
   }
