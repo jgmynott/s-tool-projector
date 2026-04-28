@@ -60,7 +60,7 @@ jobs:
       # full universe is populated, so we cache it between runs rather
       # than commit it. Same for the price csvs under data_cache/prices/.
       - name: Restore engine cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             projector_cache.db
@@ -173,7 +173,7 @@ jobs:
       # GitHub's cache free tier). Key includes run_id so each run writes
       # a new entry; restore-keys above grabs the most recent.
       - name: Save engine cache
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         if: always()
         with:
           path: |
