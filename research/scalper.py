@@ -87,6 +87,13 @@ ORB_OPENING_MIN = 30          # measure opening range over first 30 min of cash 
 ORB_BREAKOUT_PCT = 0.0015     # need price > opening_high * (1 + this) — 0.15% buffer
 ORB_VOL_MULTIPLE = 1.3        # 5-min volume must be ≥ 1.3× the avg of the opening range bars
 
+# Relative-volume spike — fires throughout the session when a stock sees
+# unusual buying pressure relative to its own session-so-far rhythm.
+# Mid-day setup that ORB can't catch (ORB clusters in the first hour).
+RELVOL_MULTIPLE = 2.0         # latest 5-min volume > 2× session-average-so-far
+RELVOL_RANGE_POSITION = 0.6   # close must be in top 40% of bar's range (0.6 ⇒ upper 40%)
+RELVOL_MIN_BARS_BEFORE = 6    # skip first 30 min — avoid double-firing with ORB
+
 # Risk caps. Hard-coded so a runaway scalper run can't blow up the account.
 MAX_POSITIONS = 8             # never more than N scalper positions at once
 PER_POSITION_NOTIONAL = 500   # dollars per scalper entry
@@ -198,6 +205,49 @@ def orb_signal(bars: list[dict]) -> dict | None:
     }
 
 
+# ── Signal: Relative-Volume Spike ───────────────────────────────────────
+
+def relvol_signal(bars: list[dict]) -> dict | None:
+    """Return signal dict if the most recent bar shows a volume spike with
+    momentum bias to the buy side, else None.
+
+    Conditions:
+      1. Latest bar's volume > RELVOL_MULTIPLE × avg of bars[N..-1] (today's
+         session-average-so-far excluding the latest bar)
+      2. Latest bar's close is in the upper (1 - RANGE_POSITION) fraction
+         of its high-low range (rules out volume spikes on selloffs)
+      3. Latest close > previous close (additional buy-side filter)
+
+    Skips the first RELVOL_MIN_BARS_BEFORE bars so we don't fire on the
+    opening-range setup that ORB already covers.
+    """
+    if len(bars) <= RELVOL_MIN_BARS_BEFORE:
+        return None
+    current = bars[-1]
+    prev = bars[-2]
+    history = bars[RELVOL_MIN_BARS_BEFORE:-1]
+    if not history:
+        return None
+    avg_vol = sum(b["v"] for b in history) / len(history)
+    if avg_vol <= 0 or current["v"] < avg_vol * RELVOL_MULTIPLE:
+        return None
+    bar_range = current["h"] - current["l"]
+    if bar_range <= 0:
+        return None
+    range_pos = (current["c"] - current["l"]) / bar_range
+    if range_pos < RELVOL_RANGE_POSITION:
+        return None
+    if current["c"] <= prev["c"]:
+        return None
+    return {
+        "signal": "relvol",
+        "ref_price": current["c"],
+        "vol_multiple": current["v"] / avg_vol,
+        "range_pos": range_pos,
+        "cur_vol": current["v"],
+    }
+
+
 # ── Planner ─────────────────────────────────────────────────────────────
 
 def scalper_state_key(state: dict) -> dict:
@@ -276,7 +326,10 @@ def plan(api: Alpaca, state: dict) -> dict:
         if any(s["symbol"] == sym for s in sc["fired_today"]):
             continue
         bars = bars_by_sym.get(sym) or []
-        sig = orb_signal(bars)
+        # Try ORB first (clusters in first hour), then relvol (mid-day).
+        # First-hit wins per scan; per-day dedupe above means a name can
+        # still get bought via either signal — but only once per day.
+        sig = orb_signal(bars) or relvol_signal(bars)
         if not sig:
             continue
         qty = max(1, int(PER_POSITION_NOTIONAL // sig["ref_price"]))
