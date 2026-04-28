@@ -299,21 +299,6 @@
     "result": "submitted"
   },
   {
-    "ts": "2026-04-27T17:42:23.878703Z",
-    "event": "buy",
-    "sleeve": "unattributed",
-    "symbol": "APG",
-    "qty": 75.0,
-    "ref_price": 49.28,
-    "live_price": 49.28,
-    "stop": null,
-    "target": null,
-    "tier": null,
-    "rationale": "",
-    "result": "backfilled",
-    "order_id": "6b2f9388-5376-4f54-97ce-facde69d119a"
-  },
-  {
     "ts": "2026-04-28T14:23:07.381111Z",
     "event": "sell",
     "sleeve": "unattributed",
