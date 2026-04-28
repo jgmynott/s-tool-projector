@@ -73,20 +73,48 @@ def load_journal() -> list[dict]:
     return raw if isinstance(raw, list) else (raw.get("rows") or [])
 
 
-def existing_keys(rows: list[dict]) -> set:
-    keys: set = set()
+def _ts_to_epoch(ts: str) -> float:
+    """Parse an ISO ts (with or without TZ / Z / fractional seconds) into
+    epoch seconds. Returns 0 if unparseable."""
+    if not ts:
+        return 0.0
+    try:
+        s = ts.replace("Z", "+00:00")
+        return datetime.fromisoformat(s).timestamp()
+    except Exception:
+        return 0.0
+
+
+def existing_index(rows: list[dict]) -> tuple[set, list]:
+    """Return (oid_keys, time_index) where time_index is a list of
+    (epoch_ts, symbol, event, qty) tuples. We dedup new rows against
+    BOTH order_id AND a fuzzy time match (±90s) so a 'submitted' intent
+    row written by trader.py and the corresponding Alpaca FILL row pulled
+    by backfill don't both end up in the journal as separate buys."""
+    oid_keys: set = set()
+    time_index: list = []
     for r in rows:
         oid = r.get("order_id")
         if oid:
-            keys.add(("oid", oid))
-        keys.add((
-            "tup",
-            (r.get("ts") or "")[:19],
+            oid_keys.add(("oid", oid))
+        time_index.append((
+            _ts_to_epoch(r.get("ts") or ""),
             r.get("symbol"),
             r.get("event"),
             float(r.get("qty") or 0),
         ))
-    return keys
+    return oid_keys, time_index
+
+
+def fuzzy_dupe(time_index: list, t: float, sym: str, ev: str, qty: float) -> bool:
+    for ts2, sym2, ev2, qty2 in time_index:
+        if sym != sym2 or ev != ev2:
+            continue
+        if abs(qty - qty2) > 1e-6:
+            continue
+        if abs(t - ts2) <= 90:
+            return True
+    return False
 
 
 def aggregate_by_order(activities: list[dict]) -> list[dict]:
@@ -219,7 +247,7 @@ def main() -> int:
         existing = [r for r in existing if r.get("result") != "backfilled"
                     and r.get("exit_reason") != "backfilled"]
         print(f"backfill: BACKFILL_RESET stripped {before - len(existing)} prior backfilled rows")
-    keys = existing_keys(existing)
+    oid_keys, time_index = existing_index(existing)
 
     orders = aggregate_by_order(activities)
     print(f"backfill: aggregated to {len(orders)} unique orders")
@@ -228,18 +256,14 @@ def main() -> int:
     for o in orders:
         row = order_to_row(o)
         sig_oid = ("oid", row["order_id"])
-        sig_tup = (
-            "tup",
-            (row.get("ts") or "")[:19],
-            row.get("symbol"),
-            row.get("event"),
-            float(row.get("qty") or 0),
-        )
-        if sig_oid in keys or sig_tup in keys:
+        if sig_oid in oid_keys:
+            continue
+        t = _ts_to_epoch(row.get("ts") or "")
+        if fuzzy_dupe(time_index, t, row["symbol"], row["event"], float(row["qty"])):
             continue
         new_rows.append(row)
-        keys.add(sig_oid)
-        keys.add(sig_tup)
+        oid_keys.add(sig_oid)
+        time_index.append((t, row["symbol"], row["event"], float(row["qty"])))
 
     print(f"backfill: {len(new_rows)} new rows to append")
     if not new_rows:
