@@ -1,9 +1,9 @@
 {
-  "generated_at": 1776439735.33101,
+  "generated_at": 1777335822.6818397,
   "baseline": {
-    "rate_100": 0.625,
-    "mean_return": 4.788838924366654,
-    "n": 80
+    "rate_100": 0.0,
+    "mean_return": 0.0,
+    "n": 0
   },
   "features": [
     "log_price",
@@ -18,102 +18,102 @@
   "ablation": {
     "log_price": {
       "without_feature": {
-        "rate_100": 0.525,
-        "mean_return": 4.164269281083158,
-        "n": 80
+        "rate_100": 0.0,
+        "mean_return": 0.0,
+        "n": 0
       },
-      "delta_rate_100": -0.09999999999999998,
-      "delta_mean_return": -0.624569643283496,
-      "importance_rate": 0.09999999999999998,
-      "importance_mean": 0.624569643283496
+      "delta_rate_100": 0.0,
+      "delta_mean_return": 0.0,
+      "importance_rate": -0.0,
+      "importance_mean": -0.0
     },
     "sigma": {
       "without_feature": {
-        "rate_100": 0.6125,
-        "mean_return": 4.319928666944248,
-        "n": 80
+        "rate_100": 0.0,
+        "mean_return": 0.0,
+        "n": 0
       },
-      "delta_rate_100": -0.012499999999999956,
-      "delta_mean_return": -0.46891025742240533,
-      "importance_rate": 0.012499999999999956,
-      "importance_mean": 0.46891025742240533
+      "delta_rate_100": 0.0,
+      "delta_mean_return": 0.0,
+      "importance_rate": -0.0,
+      "importance_mean": -0.0
     },
     "p90_ratio": {
       "without_feature": {
-        "rate_100": 0.6875,
-        "mean_return": 4.920446571042641,
-        "n": 80
+        "rate_100": 0.0,
+        "mean_return": 0.0,
+        "n": 0
       },
-      "delta_rate_100": 0.0625,
-      "delta_mean_return": 0.13160764667598723,
-      "importance_rate": -0.0625,
-      "importance_mean": -0.13160764667598723
+      "delta_rate_100": 0.0,
+      "delta_mean_return": 0.0,
+      "importance_rate": -0.0,
+      "importance_mean": -0.0
     },
     "p10_ratio": {
       "without_feature": {
-        "rate_100": 0.6375,
-        "mean_return": 4.990038655258813,
-        "n": 80
+        "rate_100": 0.0,
+        "mean_return": 0.0,
+        "n": 0
       },
-      "delta_rate_100": 0.012499999999999956,
-      "delta_mean_return": 0.20119973089215915,
-      "importance_rate": -0.012499999999999956,
-      "importance_mean": -0.20119973089215915
+      "delta_rate_100": 0.0,
+      "delta_mean_return": 0.0,
+      "importance_rate": -0.0,
+      "importance_mean": -0.0
     },
     "asymmetry": {
       "without_feature": {
-        "rate_100": 0.675,
-        "mean_return": 5.164610240703999,
-        "n": 80
+        "rate_100": 0.0,
+        "mean_return": 0.0,
+        "n": 0
       },
-      "delta_rate_100": 0.050000000000000044,
-      "delta_mean_return": 0.37577131633734506,
-      "importance_rate": -0.050000000000000044,
-      "importance_mean": -0.37577131633734506
+      "delta_rate_100": 0.0,
+      "delta_mean_return": 0.0,
+      "importance_rate": -0.0,
+      "importance_mean": -0.0
     },
     "vol_low": {
       "without_feature": {
-        "rate_100": 0.6375,
-        "mean_return": 5.295970597184007,
-        "n": 80
+        "rate_100": 0.0,
+        "mean_return": 0.0,
+        "n": 0
       },
-      "delta_rate_100": 0.012499999999999956,
-      "delta_mean_return": 0.5071316728173532,
-      "importance_rate": -0.012499999999999956,
-      "importance_mean": -0.5071316728173532
+      "delta_rate_100": 0.0,
+      "delta_mean_return": 0.0,
+      "importance_rate": -0.0,
+      "importance_mean": -0.0
     },
     "vol_hi": {
       "without_feature": {
-        "rate_100": 0.6625,
-        "mean_return": 5.1152423910863405,
-        "n": 80
+        "rate_100": 0.0,
+        "mean_return": 0.0,
+        "n": 0
       },
-      "delta_rate_100": 0.03749999999999998,
-      "delta_mean_return": 0.3264034667196869,
-      "importance_rate": -0.03749999999999998,
-      "importance_mean": -0.3264034667196869
+      "delta_rate_100": 0.0,
+      "delta_mean_return": 0.0,
+      "importance_rate": -0.0,
+      "importance_mean": -0.0
     },
     "H7_ewma_p90": {
       "without_feature": {
-        "rate_100": 0.6625,
-        "mean_return": 4.895739597488673,
-        "n": 80
+        "rate_100": 0.0,
+        "mean_return": 0.0,
+        "n": 0
       },
-      "delta_rate_100": 0.03749999999999998,
-      "delta_mean_return": 0.10690067312201901,
-      "importance_rate": -0.03749999999999998,
-      "importance_mean": -0.10690067312201901
+      "delta_rate_100": 0.0,
+      "delta_mean_return": 0.0,
+      "importance_rate": -0.0,
+      "importance_mean": -0.0
     }
   },
   "ranking": [
     "log_price",
     "sigma",
+    "p90_ratio",
     "p10_ratio",
+    "asymmetry",
     "vol_low",
     "vol_hi",
-    "H7_ewma_p90",
-    "asymmetry",
-    "p90_ratio"
+    "H7_ewma_p90"
   ],
   "notes": [
     "Trains an NN with ONE feature removed at a time. Delta is the drop in top-20 +100% hit rate on the recent windows.",
