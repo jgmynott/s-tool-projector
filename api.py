@@ -89,6 +89,57 @@ app.add_middleware(SlowAPIMiddleware)
 _request_count = 0
 _error_4xx = 0
 _error_5xx = 0
+
+
+# ── Trade-journal fetch with 60s cache ────────────────────────────────────
+# The journal lives at runtime_data/trade_journal.json on disk inside the
+# Docker image. The trader workflow commits updates to main but Railway
+# only redeploys via the fast/slow pipelines — so without this hop the API
+# serves the journal as it was at last `railway up`, sometimes days stale.
+# Resolution: fetch the file from GitHub raw on every request, cached 60s
+# in-process. Falls back to the baked-in local file when GitHub is down.
+_TRADE_JOURNAL_RAW = (
+    "https://raw.githubusercontent.com/jgmynott/s-tool-projector/main/"
+    "runtime_data/trade_journal.json"
+)
+_TRADE_JOURNAL_CACHE_TTL_S = 60
+_trade_journal_cache: dict = {"ts": 0.0, "rows": None}
+
+
+def _fetch_trade_journal_rows():
+    """Return list of journal rows, or [] if no journal exists, or None for a
+    hard parse failure. Cached 60s in-process."""
+    import time as _tjt, urllib.request as _tju, urllib.error as _tje
+    import json as _tjj
+    from pathlib import Path as _TJPath
+
+    if _tjt.time() - _trade_journal_cache["ts"] < _TRADE_JOURNAL_CACHE_TTL_S \
+            and _trade_journal_cache["rows"] is not None:
+        return _trade_journal_cache["rows"]
+
+    rows = None
+    try:
+        req = _tju.Request(_TRADE_JOURNAL_RAW, headers={"Cache-Control": "no-cache"})
+        with _tju.urlopen(req, timeout=4) as r:
+            data = _tjj.loads(r.read().decode("utf-8", "replace"))
+        rows = data.get("rows") if isinstance(data, dict) else (data if isinstance(data, list) else [])
+    except (_tje.URLError, _tje.HTTPError, _tjj.JSONDecodeError, TimeoutError, OSError):
+        rows = None
+
+    if rows is None:
+        # GitHub unreachable — fall back to whatever shipped in the container.
+        path = _TJPath(__file__).parent / "runtime_data" / "trade_journal.json"
+        if not path.exists():
+            return []
+        try:
+            data = _tjj.loads(path.read_text())
+            rows = data.get("rows") if isinstance(data, dict) else (data if isinstance(data, list) else [])
+        except Exception:
+            return []
+
+    _trade_journal_cache["ts"] = _tjt.time()
+    _trade_journal_cache["rows"] = rows
+    return rows
 _stats_lock = threading.Lock()
 
 
@@ -1344,17 +1395,19 @@ def trade_journal(
     from datetime import datetime as _dtj, timedelta as _tdj
     from pathlib import Path as _Pathj
     import json as _jsonj
-    path = _Pathj(__file__).parent / "runtime_data" / "trade_journal.json"
-    if not path.exists():
+    # Fetch the journal from GitHub raw with a 60s in-process cache so each
+    # trader.yml push is visible within ~1 min without redeploying Railway.
+    # Falls back to the local file (baked into the container at build time)
+    # if GitHub is unreachable. Without this hop the API is forever stale by
+    # however long since the last `railway up` — which means breaker
+    # liquidations and end-of-day sells never reach the dashboard until the
+    # next nightly deploy.
+    rows = _fetch_trade_journal_rows()
+    if rows is None:
         return JSONResponse(content={
             "rows": [], "n_rows": 0, "stats": {"n_buys": 0, "n_sells": 0, "win_rate": None},
             "hint": "No trades journaled yet. Live trader writes here after open/close.",
         })
-    try:
-        data = _jsonj.loads(path.read_text())
-        rows = data.get("rows") if isinstance(data, dict) else (data if isinstance(data, list) else [])
-    except Exception as e:
-        return JSONResponse(status_code=500, content={"error": f"journal_parse_error: {e}"})
 
     cutoff = (_dtj.utcnow() - _tdj(days=lookback_days)).isoformat()
     recent = [r for r in rows if (r.get("ts") or "") >= cutoff]

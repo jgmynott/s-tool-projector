@@ -866,12 +866,50 @@ def cmd_live(api: Alpaca, window: str) -> int:
     last_eq = float(acct.get("last_equity", 0))
     eq = float(acct["equity"])
     if last_eq > 0 and (eq - last_eq) / last_eq <= PORTFOLIO_DRAWDOWN_HALT_PCT:
+        drawdown_pct = (eq - last_eq) / last_eq * 100
         log.error("circuit breaker: portfolio down %.1f%% intraday (eq=%s last=%s) — closing everything",
-                  (eq - last_eq) / last_eq * 100, eq, last_eq)
-        for p in api.positions():
-            try: api.close_position(p["symbol"])
-            except Exception as e: log.error("halt-close %s failed: %s", p["symbol"], e)
+                  drawdown_pct, eq, last_eq)
+        # Snapshot positions BEFORE closing so we can journal each one. Without
+        # this, breaker liquidations vanish from /api/portfolio.closed_today
+        # and the dashboard shows "0 closed today" while equity drops 3%+.
+        snapshot = api.positions()
+        breaker_rows: list[dict] = []
+        ts = datetime.now(timezone.utc).isoformat()
+        for p in snapshot:
+            sym = p.get("symbol")
+            qty = p.get("qty")
+            avg = p.get("avg_entry_price")
+            cur = p.get("current_price") or p.get("last_price")
+            upl = p.get("unrealized_pl")
+            sleeve = (state.get("entries", {}).get(sym, {}) or {}).get("sleeve") or "unattributed"
+            close_result = "submitted"
+            try:
+                api.close_position(sym)
+            except Exception as e:
+                log.error("halt-close %s failed: %s", sym, e)
+                close_result = f"failed: {str(e)[:60]}"
+            breaker_rows.append({
+                "ts": ts, "event": "sell", "sleeve": sleeve, "symbol": sym,
+                "qty": qty, "ref_price": avg, "live_price": cur,
+                "realized_pl": upl, "reason": "circuit_breaker",
+                "result": close_result,
+            })
+        if breaker_rows:
+            save_journal(_prune_journal(load_journal() + breaker_rows))
         state["entries"] = {}; save_state(state)
+        # Loud Discord ping so this doesn't become a "where's my portfolio?"
+        # surprise. The default Trader-complete embed only fires after the
+        # normal open/close window — breaker exits before either. ntfy.sh
+        # gets the GH issue via alert-on-watchdog-issue.yml.
+        try:
+            discord_post(
+                f"🚨 **Circuit breaker fired** — portfolio down {drawdown_pct:.1f}% intraday "
+                f"(eq=${eq:,.0f} vs last_close=${last_eq:,.0f}). "
+                f"Closed {len(breaker_rows)} position(s): {', '.join(r['symbol'] for r in breaker_rows)}.",
+                embed=None,
+            )
+        except Exception:
+            pass
         return 3
 
     pos = api.positions()

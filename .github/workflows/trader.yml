@@ -103,12 +103,17 @@ jobs:
             echo "mode=$DISPATCH_MODE"   >> "$GITHUB_OUTPUT"
             echo "window=$DISPATCH_WINDOW" >> "$GITHUB_OUTPUT"
           else
-            # Schedule run: pick window from cron expression.
+            # Schedule run: pick window from cron expression. Cron strings
+            # MUST exactly match the schedule block above — when those shift
+            # (e.g., off contested :00/:30 minutes) update both places or
+            # every scheduled fire silently falls through to the default
+            # and runs the wrong window (e.g., rotate firing as open and
+            # re-rebalancing the swing sleeve mid-day).
             case "$SCHEDULED_CRON" in
-              "30 13 * * 1-5")    echo "window=open"   >> "$GITHUB_OUTPUT" ;;
-              "55 19 * * 1-5")    echo "window=close"  >> "$GITHUB_OUTPUT" ;;
-              "*/30 14-19 * * 1-5") echo "window=rotate" >> "$GITHUB_OUTPUT" ;;
-              *)                  echo "window=open"   >> "$GITHUB_OUTPUT" ;;
+              "34 13 * * 1-5")      echo "window=open"   >> "$GITHUB_OUTPUT" ;;
+              "52 19 * * 1-5")      echo "window=close"  >> "$GITHUB_OUTPUT" ;;
+              "7,37 14-19 * * 1-5") echo "window=rotate" >> "$GITHUB_OUTPUT" ;;
+              *)                    echo "window=open"   >> "$GITHUB_OUTPUT" ;;
             esac
             echo "mode=live" >> "$GITHUB_OUTPUT"
           fi

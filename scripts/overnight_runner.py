@@ -21,7 +21,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-REPO = Path("/Users/jamesmynott_macbook/Documents/Claude/s2tool-projector")
+REPO = Path(__file__).resolve().parent.parent
 QUEUE = REPO / "research" / "overnight_queue.txt"
 STATUS = REPO / "research" / "overnight_status.json"
 PIDFILE = REPO / "research" / "overnight.pid"
@@ -108,9 +108,13 @@ def main() -> int:
     # Spawn a wrapper that runs the inner command, waits, and appends a
     # one-line finding to findings.jsonl on exit (success, failure, or signal).
     # The runner itself returns immediately so launchd doesn't track an hours-long
-    # job; the wrapper is the long-running detached child.
+    # job; the wrapper is the long-running detached child. Use --sync to make
+    # the runner block on the wrapper (used by the CI overnight workflow so it
+    # can commit findings.jsonl after the script finishes).
+    sync = "--sync" in sys.argv[1:]
     wrapper = REPO / "scripts" / "_overnight_wrapper.py"
-    argv = ["/usr/bin/python3", str(wrapper), source, str(log_path), cmd_line]
+    python_exe = sys.executable or "/usr/bin/python3"
+    argv = [python_exe, str(wrapper), source, str(log_path), cmd_line]
 
     log_fp = open(log_path, "w")
     log_fp.write(f"{now_iso()} overnight_runner: starting (source={source})\n")
@@ -125,7 +129,7 @@ def main() -> int:
         stdout=log_fp,
         stderr=subprocess.STDOUT,
         env=env,
-        start_new_session=True,
+        start_new_session=not sync,
     )
     PIDFILE.write_text(str(proc.pid))
 
@@ -147,6 +151,10 @@ def main() -> int:
     )
 
     print(f"{now_iso()} overnight_runner: launched pid={proc.pid} -> {log_path}")
+    if sync:
+        rc = proc.wait()
+        print(f"{now_iso()} overnight_runner: child exited rc={rc}")
+        return rc
     return 0
 
 
