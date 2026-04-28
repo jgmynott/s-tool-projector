@@ -45,3 +45,4 @@ macro_combined_run.log
 # Local QC scratch (Playwright screenshots, ad-hoc check scripts)
 cloudflare/.qc-shots/
 cloudflare/.qc-*.mjs
+public_pulse_data/form4_raw_*.csv

@@ -1,0 +1,161 @@
+{
+  "generated_at": "2026-04-27T20:27:24.230983",
+  "experiment": "form4_cluster_2026_04_27",
+  "scored_csv": "upside_hunt_scored.csv",
+  "n_scored_rows": 67599,
+  "n_scored_symbols": 2272,
+  "n_form4_candidates": 107,
+  "n_join_rows": 2851,
+  "join_coverage_pct": 4.2,
+  "feature_window_days": 30,
+  "top_n_per_window": 50,
+  "thresholds": [
+    0.1,
+    0.25,
+    0.5,
+    1.0
+  ],
+  "cohorts": [
+    {
+      "label": "A. Form 4 universe baseline (all symbol-windows)",
+      "n": 2851,
+      "mean_return": 0.36851878968893637,
+      "median_return": 0.1101894549924524,
+      "hit_10": 0.5142055419151175,
+      "hit_25": 0.34724658014731674,
+      "hit_50": 0.1834444054717643,
+      "hit_100": 0.07786741494212557
+    },
+    {
+      "label": "B. Top-50/win by ensemble_score (current production)",
+      "n": 1750,
+      "mean_return": 0.5041917580762574,
+      "median_return": 0.1231801010158928,
+      "hit_10": 0.5245714285714286,
+      "hit_25": 0.37542857142857144,
+      "hit_50": 0.21085714285714285,
+      "hit_100": 0.10171428571428572
+    },
+    {
+      "label": "C[gate_strict]. Top-50 AND \u22653 insiders AND z>1.0",
+      "n": 0
+    },
+    {
+      "label": "D[gate_strict]. Top-50 AND NOT \u22653 insiders AND z>1.0",
+      "n": 1750,
+      "mean_return": 0.5041917580762574,
+      "median_return": 0.1231801010158928,
+      "hit_10": 0.5245714285714286,
+      "hit_25": 0.37542857142857144,
+      "hit_50": 0.21085714285714285,
+      "hit_100": 0.10171428571428572
+    },
+    {
+      "label": "E[gate_strict]. \u22653 insiders AND z>1.0 (any score)",
+      "n": 0
+    },
+    {
+      "label": "C[gate_moderate]. Top-50 AND \u22652 insiders AND z>0.5",
+      "n": 0
+    },
+    {
+      "label": "D[gate_moderate]. Top-50 AND NOT \u22652 insiders AND z>0.5",
+      "n": 1750,
+      "mean_return": 0.5041917580762574,
+      "median_return": 0.1231801010158928,
+      "hit_10": 0.5245714285714286,
+      "hit_25": 0.37542857142857144,
+      "hit_50": 0.21085714285714285,
+      "hit_100": 0.10171428571428572
+    },
+    {
+      "label": "E[gate_moderate]. \u22652 insiders AND z>0.5 (any score)",
+      "n": 0
+    },
+    {
+      "label": "C[gate_loose]. Top-50 AND \u22651 insider AND \u2265$100k",
+      "n": 1,
+      "mean_return": 0.017964132355768,
+      "median_return": 0.017964132355768,
+      "hit_10": 0.0,
+      "hit_25": 0.0,
+      "hit_50": 0.0,
+      "hit_100": 0.0
+    },
+    {
+      "label": "D[gate_loose]. Top-50 AND NOT \u22651 insider AND \u2265$100k",
+      "n": 1749,
+      "mean_return": 0.5044697612927929,
+      "median_return": 0.1235521473821175,
+      "hit_10": 0.5248713550600344,
+      "hit_25": 0.37564322469982847,
+      "hit_50": 0.2109777015437393,
+      "hit_100": 0.1017724413950829
+    },
+    {
+      "label": "E[gate_loose]. \u22651 insider AND \u2265$100k (any score)",
+      "n": 3,
+      "mean_return": -0.031110888740691706,
+      "median_return": 0.017964132355768,
+      "hit_10": 0.3333333333333333,
+      "hit_25": 0.0,
+      "hit_50": 0.0,
+      "hit_100": 0.0
+    },
+    {
+      "label": "C[gate_z_only]. Top-50 AND z>1.0 (any insider count)",
+      "n": 0
+    },
+    {
+      "label": "D[gate_z_only]. Top-50 AND NOT z>1.0 (any insider count)",
+      "n": 1750,
+      "mean_return": 0.5041917580762574,
+      "median_return": 0.1231801010158928,
+      "hit_10": 0.5245714285714286,
+      "hit_25": 0.37542857142857144,
+      "hit_50": 0.21085714285714285,
+      "hit_100": 0.10171428571428572
+    },
+    {
+      "label": "E[gate_z_only]. z>1.0 (any insider count) (any score)",
+      "n": 0
+    },
+    {
+      "label": "C[any_buy]. Top-50 AND any insider buy in 30d",
+      "n": 1,
+      "mean_return": 0.017964132355768,
+      "median_return": 0.017964132355768,
+      "hit_10": 0.0,
+      "hit_25": 0.0,
+      "hit_50": 0.0,
+      "hit_100": 0.0
+    },
+    {
+      "label": "D[any_buy]. Top-50 AND NOT any insider buy in 30d",
+      "n": 1749,
+      "mean_return": 0.5044697612927929,
+      "median_return": 0.1235521473821175,
+      "hit_10": 0.5248713550600344,
+      "hit_25": 0.37564322469982847,
+      "hit_50": 0.2109777015437393,
+      "hit_100": 0.1017724413950829
+    },
+    {
+      "label": "E[any_buy]. any insider buy in 30d (any score)",
+      "n": 3,
+      "mean_return": -0.031110888740691706,
+      "median_return": 0.017964132355768,
+      "hit_10": 0.3333333333333333,
+      "hit_25": 0.0,
+      "hit_50": 0.0,
+      "hit_100": 0.0
+    }
+  ],
+  "gate_population_counts": {
+    "gate_strict": 0,
+    "gate_moderate": 0,
+    "gate_loose": 3,
+    "gate_z_only": 0,
+    "any_buy": 3
+  }
+}
