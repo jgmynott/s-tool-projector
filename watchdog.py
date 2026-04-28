@@ -292,6 +292,42 @@ def check_railway_sha() -> CheckResult:
                        sh_action, sh_result)
 
 
+def check_open_recent() -> CheckResult:
+    """On weekdays after 13:39 UTC (open cron + 5min slippage budget), expect
+    at least one successful trader run today. Catches the failure mode where
+    GH Actions silently drops the open cron — rotate dispatch (check_rotation_recent)
+    won't recover it because rotate doesn't re-run the swing rebalance, only
+    refills daytrade slots.
+    """
+    if NOW.weekday() >= 5:
+        return CheckResult("open_recent", True, "info", "weekend")
+    open_threshold_min = 13 * 60 + 39  # 13:39 UTC: 13:34 cron + 5min slippage
+    now_min = NOW.hour * 60 + NOW.minute
+    if now_min < open_threshold_min:
+        return CheckResult("open_recent", True, "info", "before open window")
+    runs = gh_run_list("trader.yml", limit=15)
+    today = NOW.date().isoformat()
+    today_successes = [
+        r for r in runs
+        if r.get("conclusion") == "success" and r.get("createdAt", "").startswith(today)
+    ]
+    if today_successes:
+        oldest = min(today_successes, key=lambda r: r["createdAt"])
+        return CheckResult("open_recent", True, "info",
+                           f"first trader success today at {oldest['createdAt'][11:16]} UTC")
+    sh_action = sh_result = None
+    if selfheal_eligible("trader.yml", max_age_min=60):
+        if gh_dispatch("trader.yml", {"mode": "live", "window": "open"}):
+            sh_action, sh_result = "open_dispatch", "ok"
+        else:
+            sh_action, sh_result = "open_dispatch", "failed"
+    else:
+        sh_action, sh_result = "open_dispatch", "skipped (cooldown)"
+    return CheckResult("open_recent", False, "warning",
+                       "no successful trader run today after 13:34 UTC open cron",
+                       sh_action, sh_result)
+
+
 def check_rotation_recent() -> CheckResult:
     """During market hours, expect a successful trader run within last 60 min."""
     if not is_market_hours():
@@ -332,6 +368,7 @@ def main() -> int:
         check_api_picks(),
         check_picks_freshness(),
         check_railway_sha(),
+        check_open_recent(),
         check_rotation_recent(),
     ]
 

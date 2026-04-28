@@ -32,17 +32,22 @@ name: paper-portfolio-trader
 
 on:
   schedule:
-    # 13:30 UTC Mon-Fri = 09:30 ET (DST). Open: rebalance + daytrade entries.
-    - cron: "30 13 * * 1-5"
-    # Intraday rotation: every 30 min between 14:00 and 19:30 UTC Mon-Fri
-    # (10:00-15:30 ET, DST). Daytrade sleeve only: bracket orders handle
-    # exits in-market; this fires to refill any slots that bracket-exited
-    # since the last tick. 12 firings/day. Same-day re-entry guard in
-    # trader_state.json prevents the rotator from cycling back into a
-    # name that already filled and stopped/took-profit earlier.
-    - cron: "*/30 14-19 * * 1-5"
-    # 19:55 UTC Mon-Fri = 15:55 ET (DST). Close: daytrade EOD exits.
-    - cron: "55 19 * * 1-5"
+    # All cron minutes deliberately off :00, :15, :30, :45 — those are the
+    # popular slots GitHub explicitly warns get silently dropped under load
+    # (https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#schedule).
+    # 4-min offset from market open / close keeps swing entry near the print
+    # without losing reliability to cron contention.
+    #
+    # 13:34 UTC Mon-Fri = 09:34 ET (DST). Open: rebalance + daytrade entries.
+    - cron: "34 13 * * 1-5"
+    # Intraday rotation: every 30 min, off :00/:30. Daytrade sleeve only:
+    # bracket orders handle exits in-market; this fires to refill any slots
+    # that bracket-exited since the last tick. 12 firings/day. Same-day
+    # re-entry guard in trader_state.json prevents the rotator from cycling
+    # back into a name that already filled and stopped/took-profit earlier.
+    - cron: "7,37 14-19 * * 1-5"
+    # 19:52 UTC Mon-Fri = 15:52 ET (DST). Close: daytrade EOD exits.
+    - cron: "52 19 * * 1-5"
   workflow_dispatch:
     inputs:
       mode:

@@ -28,8 +28,11 @@ name: watchdog
 
 on:
   schedule:
-    - cron: "*/15 14-19 * * 1-5"   # 15-min cadence during market
-    - cron: "0 * * * *"             # hourly otherwise
+    # All cron minutes off :00, :15, :30, :45 — those popular slots get
+    # silently dropped under GitHub Actions load. Same offset shape is
+    # applied to trader.yml so they don't desynchronize.
+    - cron: "7,22,37,52 14-19 * * 1-5"   # 15-min cadence during market
+    - cron: "7 * * * *"                   # hourly otherwise
   workflow_dispatch:
 
 permissions:
