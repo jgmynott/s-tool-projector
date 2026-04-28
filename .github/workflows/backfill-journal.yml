@@ -1,0 +1,53 @@
+name: backfill-trade-journal
+# One-shot dispatch: walk Alpaca activity history, merge missing fills into
+# runtime_data/trade_journal.json, commit. Use this whenever the track-record
+# page is missing trades (close window slipped past EOD, breaker fired before
+# the journaling fix, etc.).
+
+on:
+  workflow_dispatch:
+    inputs:
+      days:
+        description: "How many days back to backfill"
+        required: true
+        default: "14"
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: backfill-trade-journal
+  cancel-in-progress: false
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run backfill
+        env:
+          ALPACA_API_KEY:    ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
+          ALPACA_BASE_URL:   ${{ secrets.ALPACA_BASE_URL }}
+          BACKFILL_DAYS:     ${{ github.event.inputs.days }}
+        run: python3 scripts/backfill_journal.py
+
+      - name: Commit journal
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if [ -f runtime_data/trade_journal.json ]; then
+            git add -f runtime_data/trade_journal.json
+          fi
+          if git diff --staged --quiet; then
+            echo "no journal changes"
+          else
+            git commit -m "chore(journal): backfill ${{ github.event.inputs.days }}d Alpaca FILL activities $(date -u +%Y-%m-%dT%H:%MZ)"
+            git pull --rebase || true
+            git push
+          fi
