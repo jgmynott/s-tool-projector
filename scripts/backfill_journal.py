@@ -89,43 +89,80 @@ def existing_keys(rows: list[dict]) -> set:
     return keys
 
 
-def fill_to_row(a: dict, side: str) -> dict | None:
-    sym = a.get("symbol")
-    try:
-        qty = float(a.get("qty") or 0)
-        price = float(a.get("price") or 0)
-    except (TypeError, ValueError):
-        return None
-    if not sym or qty <= 0 or price <= 0:
-        return None
-    ts = a.get("transaction_time") or a.get("submitted_at") or ""
-    if side == "buy":
+def aggregate_by_order(activities: list[dict]) -> list[dict]:
+    """Alpaca returns one activity per partial fill; the same order_id can
+    appear 20+ times. Aggregate to one row per order_id with summed qty
+    and qty-weighted avg price."""
+    by_oid: dict[str, dict] = {}
+    for a in activities:
+        atype = a.get("activity_type") or a.get("type")
+        if atype not in ("FILL", "PARTIAL_FILL"):
+            continue
+        side = (a.get("side") or "").lower()
+        if side not in ("buy", "sell"):
+            continue
+        oid = a.get("order_id") or f"_{a.get('id')}"
+        try:
+            qty = float(a.get("qty") or 0)
+            price = float(a.get("price") or 0)
+        except (TypeError, ValueError):
+            continue
+        if qty <= 0 or price <= 0:
+            continue
+        sym = a.get("symbol")
+        if not sym:
+            continue
+        ts = a.get("transaction_time") or a.get("submitted_at") or ""
+        agg = by_oid.get(oid)
+        if agg is None:
+            by_oid[oid] = {
+                "order_id": oid,
+                "side": side,
+                "symbol": sym,
+                "qty_total": qty,
+                "notional": qty * price,
+                "ts_first": ts,
+                "ts_last": ts,
+            }
+        else:
+            agg["qty_total"] += qty
+            agg["notional"] += qty * price
+            if ts and ts < agg["ts_first"]:
+                agg["ts_first"] = ts
+            if ts and ts > agg["ts_last"]:
+                agg["ts_last"] = ts
+    return list(by_oid.values())
+
+
+def order_to_row(o: dict) -> dict:
+    avg_price = o["notional"] / o["qty_total"] if o["qty_total"] else 0
+    if o["side"] == "buy":
         return {
-            "ts": ts,
+            "ts": o["ts_last"],
             "event": "buy",
             "sleeve": "unattributed",
-            "symbol": sym,
-            "qty": qty,
-            "ref_price": price,
-            "live_price": price,
+            "symbol": o["symbol"],
+            "qty": o["qty_total"],
+            "ref_price": avg_price,
+            "live_price": avg_price,
             "stop": None,
             "target": None,
             "tier": None,
             "rationale": "",
             "result": "backfilled",
-            "order_id": a.get("order_id"),
+            "order_id": o["order_id"],
         }
     return {
-        "ts": ts,
+        "ts": o["ts_last"],
         "event": "sell",
         "sleeve": "unattributed",
-        "symbol": sym,
-        "qty": qty,
+        "symbol": o["symbol"],
+        "qty": o["qty_total"],
         "buy_price": None,
-        "sell_price": price,
+        "sell_price": avg_price,
         "pnl": None,
-        "exit_reason": a.get("order_type") or "backfilled",
-        "order_id": a.get("order_id"),
+        "exit_reason": "backfilled",
+        "order_id": o["order_id"],
     }
 
 
@@ -177,30 +214,20 @@ def main() -> int:
 
     existing = load_journal()
     print(f"backfill: existing journal has {len(existing)} rows")
+    if os.environ.get("BACKFILL_RESET") == "1":
+        before = len(existing)
+        existing = [r for r in existing if r.get("result") != "backfilled"
+                    and r.get("exit_reason") != "backfilled"]
+        print(f"backfill: BACKFILL_RESET stripped {before - len(existing)} prior backfilled rows")
     keys = existing_keys(existing)
 
-    if activities:
-        print(f"backfill: sample activity keys={list(activities[0].keys())}")
-        print(f"backfill: sample activity={json.dumps(activities[0])[:500]}")
-        from collections import Counter as _C
-        types = _C(a.get("activity_type") or a.get("type") for a in activities)
-        sides = _C((a.get("side") or "") for a in activities)
-        print(f"backfill: type counts={dict(types)}")
-        print(f"backfill: side counts={dict(sides)}")
+    orders = aggregate_by_order(activities)
+    print(f"backfill: aggregated to {len(orders)} unique orders")
 
     new_rows: list[dict] = []
-    for a in activities:
-        atype = a.get("activity_type") or a.get("type")
-        if atype not in ("FILL", "PARTIAL_FILL"):
-            continue
-        side = (a.get("side") or "").lower()
-        if side not in ("buy", "sell"):
-            continue
-        row = fill_to_row(a, side)
-        if not row:
-            continue
-        oid = row.get("order_id")
-        sig_oid = ("oid", oid) if oid else None
+    for o in orders:
+        row = order_to_row(o)
+        sig_oid = ("oid", row["order_id"])
         sig_tup = (
             "tup",
             (row.get("ts") or "")[:19],
@@ -208,13 +235,10 @@ def main() -> int:
             row.get("event"),
             float(row.get("qty") or 0),
         )
-        if sig_oid and sig_oid in keys:
-            continue
-        if sig_tup in keys:
+        if sig_oid in keys or sig_tup in keys:
             continue
         new_rows.append(row)
-        if sig_oid:
-            keys.add(sig_oid)
+        keys.add(sig_oid)
         keys.add(sig_tup)
 
     print(f"backfill: {len(new_rows)} new rows to append")
