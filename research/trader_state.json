@@ -165,5 +165,11 @@
       "WELL"
     ]
   },
-  "breaker_fired_date": "2026-04-28"
+  "breaker_fired_date": "2026-04-28",
+  "scalper": {
+    "positions": {},
+    "fired_today": [],
+    "last_scan": null,
+    "last_scan_date": "2026-04-28"
+  }
 }
