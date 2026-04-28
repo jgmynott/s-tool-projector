@@ -1,0 +1,39 @@
+name: morning-digest
+# Daily P&L push to your phone via ntfy + Discord. Replaces the
+# laptop-tied SessionStart hook so you get a one-line "here's how the
+# trader did overnight" without needing Claude open.
+#
+# Fires at 12:00 UTC = 08:00 ET (DST) and 13:00 UTC = 08:00 ET (ST) so it
+# lands at the same local time year-round. The off-season fire is fine
+# (it's just an extra digest 1h apart).
+#
+# Required secrets:
+#   NTFY_TOPIC            (already set if watchdog alerts work)
+#   DISCORD_WEBHOOK_URL   (optional; if absent, ntfy-only)
+
+on:
+  schedule:
+    - cron: "0 12 * * 1-5"   # 08:00 ET DST
+    - cron: "0 13 * * 1-5"   # 08:00 ET ST
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: read
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Push digest
+        env:
+          NTFY_TOPIC:          ${{ secrets.NTFY_TOPIC }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          GH_REPO:             ${{ github.repository }}
+          API_BASE:            https://s-tool.io
+        run: python3 scripts/morning_digest.py

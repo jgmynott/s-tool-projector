@@ -54,7 +54,90 @@ function applyCacheControl(response, { html, pathname }) {
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }
 
+// Cron-trigger → trader dispatcher.
+// GitHub Actions cron has documented 0–60 min slippage. We had a 60-min
+// slip on 2026-04-27 close that left daytrade positions held overnight,
+// triggered the breaker the next morning, and lost a full day of trading.
+// Cloudflare Workers cron is sub-minute reliable, so we use the Worker as
+// the primary scheduler. It just calls workflow_dispatch on trader.yml at
+// the exact UTC minute we want — trader.py still runs in GH Actions where
+// it already lives. The GH Actions schedule in trader.yml is kept as a
+// fallback (concurrency: cancel-in-progress=false handles the rare double
+// fire as a queued no-op).
+//
+// Required secrets (wrangler secret put):
+//   GITHUB_PAT     fine-grained token, repo scope, contents:write+actions:write
+//   GITHUB_REPO    "owner/repo" e.g. "jgmynott/s-tool-projector"
+//
+// Trigger → window mapping. Each cron expression maps to one window. We
+// fire BOTH a DST and ST variant for open + close so the right ET time
+// fires year-round; the off-season fire hits trader.py's market-closed
+// guard or its late-close journal pull and is a clean no-op. Rotate cron
+// covers 14:00–19:30 UTC every 30 min — captures both seasons.
+function windowForCron(cron) {
+  // Open: 13:30 UTC (DST = 09:30 ET) or 14:30 UTC (ST = 09:30 ET)
+  if (cron === "30 13 * * 1-5" || cron === "30 14 * * 1-5") return "open";
+  // Close: 19:55 UTC (DST = 15:55 ET) or 20:55 UTC (ST = 15:55 ET)
+  if (cron === "55 19 * * 1-5" || cron === "55 20 * * 1-5") return "close";
+  // Rotate: every 30 min 14:00–19:30 UTC
+  if (cron === "0,30 14-19 * * 1-5") return "rotate";
+  return null;
+}
+
+async function dispatchTrader(env, window) {
+  const repo = env.GITHUB_REPO;
+  const pat = env.GITHUB_PAT;
+  if (!repo || !pat) {
+    return { ok: false, error: "GITHUB_REPO/GITHUB_PAT secrets not set on Worker" };
+  }
+  const url = `https://api.github.com/repos/${repo}/actions/workflows/trader.yml/dispatches`;
+  const resp = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Accept": "application/vnd.github+json",
+      "Authorization": `Bearer ${pat}`,
+      "X-GitHub-Api-Version": "2022-11-28",
+      "User-Agent": "s-tool-cf-cron",
+    },
+    body: JSON.stringify({
+      ref: "main",
+      inputs: { mode: "live", window },
+    }),
+  });
+  if (resp.status === 204) return { ok: true };
+  const body = await resp.text();
+  return { ok: false, status: resp.status, body: body.slice(0, 300) };
+}
+
+async function notifyOnFailure(env, message) {
+  const topic = env.NTFY_TOPIC;
+  if (!topic) return;
+  try {
+    await fetch(`https://ntfy.sh/${topic}`, {
+      method: "POST",
+      headers: { "Title": "S-Tool CF cron failure", "Priority": "high", "Tags": "warning" },
+      body: message.slice(0, 500),
+    });
+  } catch (_) { /* best effort */ }
+}
+
 export default {
+  async scheduled(event, env, ctx) {
+    const window = windowForCron(event.cron);
+    if (!window) {
+      console.log(`unmapped cron: ${event.cron}`);
+      return;
+    }
+    const result = await dispatchTrader(env, window);
+    if (!result.ok) {
+      const msg = `dispatch ${window} failed: ${JSON.stringify(result)}`;
+      console.error(msg);
+      ctx.waitUntil(notifyOnFailure(env, msg));
+    } else {
+      console.log(`dispatched window=${window} via cron=${event.cron}`);
+    }
+  },
+
   async fetch(request, env) {
     const url = new URL(request.url);
 

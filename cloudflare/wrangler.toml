@@ -28,3 +28,23 @@ zone_name = "s-tool.io"
 [[routes]]
 pattern = "www.s-tool.io/*"
 zone_name = "s-tool.io"
+
+# Cron triggers — primary trader scheduler. CF Workers cron is sub-minute
+# reliable; GH Actions cron in trader.yml stays as belt-and-suspenders.
+# Each expression maps to a window via windowForCron() in worker.js.
+# DST/ST: we fire both 09:30 ET windows so the right one is correct year-
+# round; the off-season fire is a clean no-op (market not yet open / late-
+# close journal pull only). 5 triggers — exactly the free-tier max.
+#
+# After deploying these, you must set the worker's secrets once:
+#   wrangler secret put GITHUB_PAT      (paste fine-grained PAT, contents:w + actions:w)
+#   wrangler secret put GITHUB_REPO     (jgmynott/s-tool-projector)
+#   wrangler secret put NTFY_TOPIC      (optional — pushes alerts on dispatch failure)
+[triggers]
+crons = [
+  "30 13 * * 1-5",       # open  — 13:30 UTC = 09:30 ET (DST)
+  "30 14 * * 1-5",       # open  — 14:30 UTC = 09:30 ET (ST)
+  "0,30 14-19 * * 1-5",  # rotate every 30 min 14:00–19:30 UTC
+  "55 19 * * 1-5",       # close — 19:55 UTC = 15:55 ET (DST)
+  "55 20 * * 1-5",       # close — 20:55 UTC = 15:55 ET (ST)
+]
