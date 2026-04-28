@@ -161,7 +161,11 @@ jobs:
       # "unattributed" and break sleeve-scoped exit logic; without
       # trade_journal the evidence ledger never reaches Railway.
       - name: Commit trader_state + trade_journal
-        if: steps.resolve.outputs.mode == 'live'
+        # always() so the breaker fire (rc=3) and friends still persist
+        # state.entries={} + breaker_fired_date — without this the next
+        # run sees stale entries and the breaker fires repeatedly because
+        # the one-shot flag never reaches the repo.
+        if: always() && steps.resolve.outputs.mode == 'live'
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"

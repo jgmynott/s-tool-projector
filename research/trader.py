@@ -878,9 +878,20 @@ def cmd_live(api: Alpaca, window: str) -> int:
 
     # Portfolio drawdown circuit breaker. Looks at today's equity vs
     # last_equity (yesterday close per Alpaca semantics).
+    #
+    # One-shot per day: once the breaker fires and liquidates, equity is
+    # already realized at the loss. Without this guard, every subsequent
+    # window (rotate, close, next open) re-evaluates eq vs last_eq, sees
+    # the same drawdown, and skips trading for the rest of the session.
+    # That means a single overnight gap nukes trading for the full day.
+    # After firing once, mark today; subsequent runs skip the gate so the
+    # rotator/swing can rebuild positions with the smaller post-breaker
+    # equity. The breaker re-arms tomorrow because last_equity rolls.
+    today_iso_breaker = datetime.now(timezone.utc).date().isoformat()
+    breaker_fired_today = state.get("breaker_fired_date") == today_iso_breaker
     last_eq = float(acct.get("last_equity", 0))
     eq = float(acct["equity"])
-    if last_eq > 0 and (eq - last_eq) / last_eq <= PORTFOLIO_DRAWDOWN_HALT_PCT:
+    if not breaker_fired_today and last_eq > 0 and (eq - last_eq) / last_eq <= PORTFOLIO_DRAWDOWN_HALT_PCT:
         drawdown_pct = (eq - last_eq) / last_eq * 100
         log.error("circuit breaker: portfolio down %.1f%% intraday (eq=%s last=%s) — closing everything",
                   drawdown_pct, eq, last_eq)
@@ -911,7 +922,9 @@ def cmd_live(api: Alpaca, window: str) -> int:
             })
         if breaker_rows:
             save_journal(_prune_journal(load_journal() + breaker_rows))
-        state["entries"] = {}; save_state(state)
+        state["entries"] = {}
+        state["breaker_fired_date"] = today_iso_breaker
+        save_state(state)
         # Loud Discord ping so this doesn't become a "where's my portfolio?"
         # surprise. The default Trader-complete embed only fires after the
         # normal open/close window — breaker exits before either. ntfy.sh
