@@ -42,6 +42,50 @@ def latest_close(sym: str) -> float | None:
     return None
 
 
+def _load_spy_series() -> dict[str, float]:
+    """Date-string → SPY Close map from the cached daily bars.
+    Loaded once per export so per-row lookups are O(1)."""
+    csv_path = PRICES_DIR / "SPY.csv"
+    if not csv_path.exists():
+        return {}
+    out: dict[str, float] = {}
+    try:
+        with csv_path.open() as fh:
+            for row in csv.DictReader(fh):
+                d = (row.get("Date") or "")[:10]
+                c = row.get("Close")
+                if d and c:
+                    try:
+                        out[d] = float(c)
+                    except ValueError:
+                        pass
+    except Exception:
+        return {}
+    return out
+
+
+def _spy_close_on_or_before(spy: dict[str, float], iso_date: str) -> float | None:
+    """SPY Close on the requested date, or the nearest prior trading day.
+    Picks made on weekends/holidays look up the previous Friday's close."""
+    if not spy:
+        return None
+    target = iso_date[:10]
+    if target in spy:
+        return spy[target]
+    # Walk back up to 7 days for weekends + market holidays.
+    from datetime import date, timedelta
+    try:
+        d = date.fromisoformat(target)
+    except Exception:
+        return None
+    for _ in range(7):
+        d = d - timedelta(days=1)
+        key = d.isoformat()
+        if key in spy:
+            return spy[key]
+    return None
+
+
 def main(lookback_days: int = 365) -> int:
     if not DB.exists():
         print(f"DB not found at {DB} — nothing to export")
@@ -63,6 +107,18 @@ def main(lookback_days: int = 365) -> int:
     con.close()
 
     today = datetime.now(timezone.utc).date()
+    spy_series = _load_spy_series()
+    # 'spy_today' = the rightmost anchor we can compare picks against. If
+    # SPY.csv is fresh (slow pipeline ran today) we use today's close;
+    # otherwise we fall back to the latest cached close so alpha numbers
+    # are still computable when the data pipeline has hiccupped — better
+    # to ship a slightly-stale alpha than no alpha at all.
+    spy_today = _spy_close_on_or_before(spy_series, today.isoformat()) if spy_series else None
+    spy_today_date = today.isoformat()
+    if spy_today is None and spy_series:
+        latest = max(spy_series.keys())
+        spy_today = spy_series[latest]
+        spy_today_date = latest
     out_rows = []
     for r in rows:
         sym = r["symbol"]
@@ -77,6 +133,13 @@ def main(lookback_days: int = 365) -> int:
             days_held = (today - pd).days
         except Exception:
             days_held = None
+        # SPY-relative — same window [pick_date, today]. Alpha is just
+        # realized − SPY return, so the track-record page can show how
+        # much the pick beat (or trailed) a passive index buy on the
+        # same day. None if either anchor is missing.
+        spy_entry = _spy_close_on_or_before(spy_series, r["pick_date"]) if spy_series else None
+        spy_return = (spy_today - spy_entry) / spy_entry if (spy_today and spy_entry) else None
+        alpha_vs_spy = (realized - spy_return) if (realized is not None and spy_return is not None) else None
         sec = None
         if r["sec_fundamentals_json"]:
             try:
@@ -100,7 +163,36 @@ def main(lookback_days: int = 365) -> int:
             "realized_return": realized,
             "toward_target_pct": toward_target,
             "days_held": days_held,
+            "spy_return": spy_return,
+            "alpha_vs_spy": alpha_vs_spy,
         })
+
+    # Aggregate vs-SPY summary so /api/track-record can render alpha
+    # without re-iterating the full row set on every request. Tier-level
+    # because the product UX surfaces conservative/moderate/aggressive/
+    # asymmetric separately and lumping all picks together hides the
+    # signal — asymmetric tier should beat SPY by far more than the
+    # broad universe scan.
+    def _agg(rows: list[dict]) -> dict:
+        wins = [r for r in rows if r.get("alpha_vs_spy") is not None]
+        if not wins:
+            return {"n": 0}
+        n = len(wins)
+        alphas = sorted(r["alpha_vs_spy"] for r in wins)
+        realized = [r["realized_return"] for r in wins if r.get("realized_return") is not None]
+        spys = [r["spy_return"] for r in wins if r.get("spy_return") is not None]
+        return {
+            "n": n,
+            "mean_alpha": sum(alphas) / n,
+            "median_alpha": alphas[n // 2],
+            "win_rate_vs_spy": sum(1 for a in alphas if a > 0) / n,
+            "mean_realized": (sum(realized) / len(realized)) if realized else None,
+            "mean_spy_return": (sum(spys) / len(spys)) if spys else None,
+        }
+
+    by_tier: dict[str, list[dict]] = {}
+    for r in out_rows:
+        by_tier.setdefault(r["tier"] or "unknown", []).append(r)
 
     payload = {
         "as_of": datetime.now(timezone.utc).isoformat(),
@@ -108,6 +200,10 @@ def main(lookback_days: int = 365) -> int:
         "n_rows": len(out_rows),
         "earliest_pick_date": out_rows[-1]["pick_date"] if out_rows else None,
         "latest_pick_date": out_rows[0]["pick_date"] if out_rows else None,
+        "spy_anchor_date": spy_today_date if spy_today else None,
+        "spy_anchor_close": spy_today,
+        "vs_spy_overall": _agg(out_rows),
+        "vs_spy_by_tier": {tier: _agg(rs) for tier, rs in by_tier.items()},
         "rows": out_rows,
     }
     OUT.write_text(json.dumps(payload, default=str, separators=(",", ":")))

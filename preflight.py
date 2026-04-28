@@ -268,28 +268,43 @@ def check_no_committed_secrets():
 
 
 def check_nn_artifacts():
-    """Make sure the nightly learning pipeline wrote its outputs.
+    """Make sure the nightly learning pipeline wrote its outputs and that
+    they are fresh enough to serve picks. The scorer fallback chain in
+    portfolio_scanner.py is moonshot → ensemble → nn → asymmetric (EWMA);
+    if all four are stale the engine is essentially backtest-only.
 
-    Missing NN cache = Asymmetric tier silently falls back to EWMA scoring
-    (still decent but not the 9.5x lift). Worth a warning."""
+    Hard-fail thresholds (>168h / 7d for production_scorer) catch the case
+    where overnight_learn hasn't run for a week and the engine is silently
+    deciding picks against last-week's regime. Soft warns at 72h flag a
+    single missed nightly without blocking deploys.
+
+    confidence_nn_scores.json was retired 2026-04-27 — overnight_learn still
+    writes it for compatibility, but no production code reads it (verified
+    grep: only preflight + the writer reference it)."""
     print("\n[*] NN learning artifacts")
     dc = ROOT / "data_cache"
+    # (filename, label, hard_fail_hours, soft_warn_hours)
     checks = [
-        ("production_scorer.json", "nightly learning decision"),
-        ("nn_scores.json", "asymmetric NN scores for today"),
-        ("confidence_nn_scores.json", "confidence NN scores for today"),
-        ("asymmetric_scores.json", "EWMA P90 fallback scores"),
+        ("production_scorer.json", "nightly learning decision", 168, 72),
+        ("moonshot_scores.json",   "primary asymmetric ML scorer", 168, 72),
+        ("ensemble_scores.json",   "stacker fallback", 168, 72),
+        ("nn_scores.json",         "regression fallback", 168, 72),
+        ("asymmetric_scores.json", "EWMA last-resort fallback", 168, 72),
     ]
-    for fname, label in checks:
+    import time as _time
+    now = _time.time()
+    for fname, label, fail_h, warn_h in checks:
         p = dc / fname
         if not p.exists():
-            warn(f"{fname} missing — run overnight_learn.py / enrich_asymmetric.py")
+            fail(f"{fname} missing — run overnight_learn.py / enrich_asymmetric.py")
             continue
-        age_hours = (__import__("time").time() - p.stat().st_mtime) / 3600
-        if age_hours > 48:
-            warn(f"{fname} is {age_hours:.1f}h old — NN drifting from market")
+        age_hours = (now - p.stat().st_mtime) / 3600
+        if age_hours > fail_h:
+            fail(f"{fname} is {age_hours:.1f}h old (>{fail_h}h hard-fail) — overnight_learn pipeline is dead")
+        elif age_hours > warn_h:
+            warn(f"{fname} is {age_hours:.1f}h old — nightly may have hiccupped")
         else:
-            ok(f"{fname} fresh ({age_hours:.1f}h old)")
+            ok(f"{fname} fresh ({age_hours:.1f}h old) — {label}")
 
 
 def check_users_sanity():
