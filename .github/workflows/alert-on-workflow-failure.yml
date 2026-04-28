@@ -1,0 +1,53 @@
+name: alert-on-workflow-failure
+# When ANY production workflow fails, push to your phone within 60s.
+# Replaces "Claude noticed an error in QA" with "ntfy notification on lock screen".
+#
+# Triggers off GitHub's workflow_run event, which fires after another workflow
+# completes. We filter to conclusion=failure so success runs are silent.
+#
+# Required secret: NTFY_TOPIC (already configured)
+
+on:
+  workflow_run:
+    workflows:
+      - paper-portfolio-trader     # trader.yml — every cron fire
+      - scalper-sleeve             # scalper.yml — every 5 min
+      - watchdog                   # watchdog.yml
+      - morning-digest             # morning-digest.yml — once a day
+      - nightly-pipeline-fast      # daily-refresh-fast.yml — picks deploy
+      - nightly-pipeline-slow      # daily-refresh-slow.yml — NN train
+      # Manual one-offs (backfill-journal) are intentionally omitted —
+      # no need to alert on a workflow you only fire by hand.
+    types: [completed]
+
+permissions:
+  contents: read
+
+jobs:
+  alert:
+    if: github.event.workflow_run.conclusion == 'failure'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Push failure to ntfy
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          WORKFLOW_NAME: ${{ github.event.workflow_run.name }}
+          RUN_URL: ${{ github.event.workflow_run.html_url }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+        run: |
+          if [ -z "$NTFY_TOPIC" ]; then
+            echo "NTFY_TOPIC not set — skipping alert"
+            exit 0
+          fi
+          # Priority "high" makes ntfy push to lock screen with sound on iOS.
+          # Title encodes the workflow so you can see at a glance which thing
+          # broke without unlocking the phone.
+          BODY="Workflow $WORKFLOW_NAME failed (attempt $ATTEMPT). Open the run for logs."
+          curl -fsS \
+            -H "Title: 🚨 S-Tool: $WORKFLOW_NAME failed" \
+            -H "Priority: high" \
+            -H "Tags: rotating_light,broken_heart" \
+            -H "Click: $RUN_URL" \
+            -d "$BODY" \
+            "https://ntfy.sh/$NTFY_TOPIC"

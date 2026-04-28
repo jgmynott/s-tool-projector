@@ -1,0 +1,92 @@
+name: deadman-trader
+# Alerts on SILENCE — the failure mode the workflow_run alerter can't see.
+#
+# If GitHub Actions cron is degraded and trader.yml never fires at all, no
+# "workflow_run completed" event is emitted, so alert-on-workflow-failure.yml
+# stays silent. This deadman runs on its own cron and checks: did the trader
+# (or its CF-Worker-dispatched twin) actually fire in the last hour during
+# market hours? If not, push high-priority ntfy.
+#
+# Cron logic:
+#   Runs at :15 and :45 past the hour during US market hours (DST window:
+#   13–20 UTC = 09–16 ET). That gives every trader cron at least 30 minutes
+#   to have completed before we check, but not so long that a silent failure
+#   goes more than 45 min undetected.
+#
+# We tolerate the trader having NO new run if the most-recent run was
+# successful and recent enough — i.e. we're not crying wolf when a rotate
+# hasn't fired yet but the open did 25 min ago.
+#
+# Required secret: NTFY_TOPIC
+
+on:
+  schedule:
+    # Off :00/:15/:30/:45 minutes (GitHub drops those under load).
+    - cron: "17 13-19 * * 1-5"
+    - cron: "47 13-19 * * 1-5"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check trader liveness
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: |
+          # Look at the last 5 trader runs. If the newest one is older than
+          # 90 minutes during market hours OR the newest one is a failure,
+          # something is wrong.
+          NOW_EPOCH=$(date -u +%s)
+          STALE_THRESHOLD=5400   # 90 minutes — open + first rotate covered
+
+          RUNS=$(gh run list \
+            --workflow=trader.yml \
+            --limit 5 \
+            --json databaseId,createdAt,conclusion,status \
+            --jq '.[]')
+
+          if [ -z "$RUNS" ]; then
+            BODY="No trader runs found at all. Workflow may be disabled or repo permissions broken."
+            STALE=1
+          else
+            NEWEST_TS=$(echo "$RUNS" | jq -r 'select(.status == "completed") | .createdAt' | head -1)
+            NEWEST_CONCL=$(echo "$RUNS" | jq -r 'select(.status == "completed") | .conclusion' | head -1)
+
+            if [ -z "$NEWEST_TS" ]; then
+              BODY="No completed trader runs in the last 5 attempts. All in-flight or queued."
+              STALE=1
+            else
+              NEWEST_EPOCH=$(date -u -d "$NEWEST_TS" +%s 2>/dev/null || python3 -c "import datetime; print(int(datetime.datetime.fromisoformat('$NEWEST_TS'.replace('Z','+00:00')).timestamp()))")
+              AGE=$((NOW_EPOCH - NEWEST_EPOCH))
+              MINS=$((AGE / 60))
+
+              if [ "$AGE" -gt "$STALE_THRESHOLD" ]; then
+                BODY="Last trader run was $MINS min ago (>90m). GH cron may be skipping; CF Worker dispatch may be broken."
+                STALE=1
+              elif [ "$NEWEST_CONCL" = "failure" ]; then
+                # The failure-alerter already fired for this. Skip — don't
+                # double-page on the same incident.
+                echo "Newest run failed but workflow_run alerter handles that. Skipping."
+                STALE=0
+              else
+                echo "OK: newest trader run was $MINS min ago, conclusion=$NEWEST_CONCL"
+                STALE=0
+              fi
+            fi
+          fi
+
+          if [ "$STALE" = "1" ] && [ -n "$NTFY_TOPIC" ]; then
+            curl -fsS \
+              -H "Title: 🚨 S-Tool deadman: trader silent" \
+              -H "Priority: high" \
+              -H "Tags: rotating_light,zzz" \
+              -H "Click: https://github.com/${{ github.repository }}/actions/workflows/trader.yml" \
+              -d "$BODY" \
+              "https://ntfy.sh/$NTFY_TOPIC"
+          fi

@@ -132,6 +132,184 @@ async function notifyOnFailure(env, message) {
   } catch (_) { /* best effort */ }
 }
 
+// =============================================================
+// /status route — phone-pull-refresh health view.
+// =============================================================
+//
+// Aggregates the signals you'd otherwise have to check across Railway,
+// GitHub, and the live API. Everything fetches in parallel so the page
+// renders in <2s even if one upstream is slow.
+//
+// Each row is one ✅/❌ check. Reading order = dependency order: the
+// trader can't fire if the data is stale, so data-status lives above
+// trader-liveness, and you can stop reading the moment you hit a ❌.
+
+async function gh(env, path) {
+  // GitHub API needs a UA; PAT optional (rate-limit better with).
+  const headers = { "User-Agent": "s-tool-status", "Accept": "application/vnd.github+json" };
+  if (env.GITHUB_PAT) headers["Authorization"] = `Bearer ${env.GITHUB_PAT}`;
+  const r = await fetch(`https://api.github.com${path}`, { headers });
+  if (!r.ok) return null;
+  return await r.json();
+}
+
+async function checkApiHealth() {
+  try {
+    const r = await fetch(`${RAILWAY_API}/api/health`, { signal: AbortSignal.timeout(5000) });
+    return { ok: r.ok, detail: r.ok ? "200" : `HTTP ${r.status}` };
+  } catch (e) {
+    return { ok: false, detail: `unreachable: ${e.message || e}` };
+  }
+}
+
+async function checkDataFreshness() {
+  try {
+    const r = await fetch(`${RAILWAY_API}/api/data-status`, { signal: AbortSignal.timeout(5000) });
+    if (!r.ok) return { ok: false, detail: `data-status ${r.status}` };
+    const d = await r.json();
+    const ph = (d.feeds || {}).picks_history || {};
+    const latest = ph.latest_pick_date;
+    if (!latest) return { ok: false, detail: "no latest_pick_date" };
+    const today = new Date().toISOString().slice(0, 10);
+    return { ok: latest === today, detail: `picks: ${latest} (today=${today})` };
+  } catch (e) {
+    return { ok: false, detail: `error: ${e.message || e}` };
+  }
+}
+
+async function checkPortfolio() {
+  try {
+    const r = await fetch(`${RAILWAY_API}/api/portfolio`, { signal: AbortSignal.timeout(5000) });
+    if (!r.ok) return { ok: false, detail: `portfolio ${r.status}` };
+    const d = await r.json();
+    const eq = (d.account || {}).equity;
+    const dcp = (d.account || {}).day_change_pct;
+    if (eq == null) return { ok: false, detail: "no equity" };
+    const pct = dcp == null ? "—" : `${(dcp * 100).toFixed(2)}%`;
+    return { ok: true, detail: `$${Math.round(eq).toLocaleString()} · ${pct}` };
+  } catch (e) {
+    return { ok: false, detail: `error: ${e.message || e}` };
+  }
+}
+
+function isMarketHours() {
+  // Returns true if we're inside RTH (loose: any weekday 13:00–20:30 UTC).
+  // Used to decide whether trader/scalper silence is alarming or expected.
+  const d = new Date();
+  const dow = d.getUTCDay();
+  if (dow === 0 || dow === 6) return false;
+  const utcMin = d.getUTCHours() * 60 + d.getUTCMinutes();
+  return utcMin >= 13 * 60 && utcMin <= 20 * 60 + 30;
+}
+
+async function checkWorkflowRecent(env, workflowFile, maxMinutes, label) {
+  try {
+    const repo = env.GITHUB_REPO || "jgmynott/s-tool-projector";
+    const data = await gh(env, `/repos/${repo}/actions/workflows/${workflowFile}/runs?per_page=5`);
+    if (!data || !data.workflow_runs || data.workflow_runs.length === 0) {
+      return { ok: false, detail: `${label}: no runs` };
+    }
+    const latest = data.workflow_runs[0];
+    const ageMin = (Date.now() - new Date(latest.created_at).getTime()) / 60000;
+    const ageStr = ageMin < 60 ? `${Math.round(ageMin)}m` : `${(ageMin / 60).toFixed(1)}h`;
+    if (!isMarketHours()) {
+      // After-hours: silence is expected. Just report.
+      return { ok: true, detail: `${label}: ${ageStr} ago, ${latest.conclusion || latest.status} (off-hours)` };
+    }
+    if (ageMin > maxMinutes) {
+      return { ok: false, detail: `${label}: ${ageStr} ago (>${maxMinutes}m stale)` };
+    }
+    if (latest.conclusion === "failure") {
+      return { ok: false, detail: `${label}: ${ageStr} ago, FAILED` };
+    }
+    return { ok: true, detail: `${label}: ${ageStr} ago, ${latest.conclusion || latest.status}` };
+  } catch (e) {
+    return { ok: false, detail: `${label}: error ${e.message || e}` };
+  }
+}
+
+async function checkOpenIssues(env) {
+  try {
+    const repo = env.GITHUB_REPO || "jgmynott/s-tool-projector";
+    const issues = await gh(env, `/repos/${repo}/issues?state=open&labels=watchdog,trader-failure&per_page=20`);
+    if (!Array.isArray(issues)) return { ok: false, detail: "GH issues unreachable" };
+    if (issues.length === 0) return { ok: true, detail: "no open watchdog/trader issues" };
+    return { ok: false, detail: `${issues.length} open: ${issues.slice(0, 2).map(i => `#${i.number}`).join(", ")}` };
+  } catch (e) {
+    return { ok: false, detail: `error: ${e.message || e}` };
+  }
+}
+
+async function renderStatus(env) {
+  const [api, freshness, portfolio, trader, scalper, issues] = await Promise.all([
+    checkApiHealth(),
+    checkDataFreshness(),
+    checkPortfolio(),
+    checkWorkflowRecent(env, "trader.yml", 90, "trader"),
+    checkWorkflowRecent(env, "scalper.yml", 15, "scalper"),
+    checkOpenIssues(env),
+  ]);
+  const checks = [
+    { name: "API",                ...api },
+    { name: "Data freshness",     ...freshness },
+    { name: "Portfolio",          ...portfolio },
+    { name: "Trader liveness",    ...trader },
+    { name: "Scalper liveness",   ...scalper },
+    { name: "Open issues",        ...issues },
+  ];
+  const allOk = checks.every(c => c.ok);
+  const overall = allOk ? "✅ all systems" : "❌ attention needed";
+  const generated = new Date().toISOString().replace("T", " ").slice(0, 19) + "Z";
+  const rows = checks.map(c => {
+    const icon = c.ok ? "✅" : "❌";
+    const cls = c.ok ? "ok" : "bad";
+    return `<div class="row ${cls}"><span class="icon">${icon}</span><span class="name">${c.name}</span><span class="detail">${c.detail || ""}</span></div>`;
+  }).join("");
+  const html = `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="${allOk ? "#10b981" : "#ef4444"}" />
+<title>S-Tool status — ${overall}</title>
+<style>
+:root { color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin:0; padding:16px; background:#0b0e14; color:#e6e6e6; font:15px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+h1 { font-size:18px; margin:0 0 4px; font-weight:600; }
+.sub { color:#9aa0a6; font-size:12px; margin-bottom:18px; }
+.row { display:flex; align-items:flex-start; gap:10px; padding:14px 12px; border-radius:10px; margin-bottom:8px; background:#141821; }
+.row.bad { background:#1f1015; border:1px solid #4a1d24; }
+.icon { width:22px; flex-shrink:0; }
+.name { width:130px; font-weight:600; flex-shrink:0; color:#cfd2d9; }
+.detail { color:#9aa0a6; font-size:13px; word-break:break-word; }
+.row.bad .detail { color:#fca5a5; }
+.foot { margin-top:18px; color:#6b7280; font-size:11px; text-align:center; }
+.foot a { color:#9aa0a6; text-decoration:none; }
+</style>
+</head>
+<body>
+<h1>${overall}</h1>
+<div class="sub">${generated} · pull to refresh</div>
+${rows}
+<div class="foot">
+  <a href="https://github.com/${env.GITHUB_REPO || "jgmynott/s-tool-projector"}/actions">actions</a> ·
+  <a href="/picks/">picks</a> ·
+  <a href="/track-record/">track record</a>
+</div>
+</body>
+</html>`;
+  return new Response(html, {
+    status: 200,
+    headers: {
+      "Content-Type": "text/html; charset=utf-8",
+      "Cache-Control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+    },
+  });
+}
+
 export default {
   async scheduled(event, env, ctx) {
     const target = targetForCron(event.cron);
@@ -151,6 +329,14 @@ export default {
 
   async fetch(request, env) {
     const url = new URL(request.url);
+
+    // Phone-friendly health dashboard. Aggregates the same signals you'd
+    // otherwise have to check across Railway, GitHub, and the live API.
+    // No auth — public OK because every signal here is also visible on
+    // /api/portfolio or the public Actions tab.
+    if (url.pathname === "/status" || url.pathname === "/status/") {
+      return await renderStatus(env);
+    }
 
     if (url.pathname.startsWith("/api/")) {
       const upstream = RAILWAY_API + url.pathname + url.search;
