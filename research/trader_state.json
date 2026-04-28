@@ -194,6 +194,15 @@
         "signal": "relvol",
         "stop": 1375.09,
         "target": 1398.63
+      },
+      "BAC": {
+        "symbol": "BAC",
+        "qty": 9,
+        "entry_price": 52.71,
+        "opened_at": "2026-04-28T19:05:39.062748+00:00",
+        "signal": "relvol",
+        "stop": 52.34,
+        "target": 53.24
       }
     },
     "fired_today": [
@@ -211,6 +220,11 @@
         "symbol": "ASML",
         "signal": "relvol",
         "ts": "2026-04-28T18:55:41.759588+00:00"
+      },
+      {
+        "symbol": "BAC",
+        "signal": "relvol",
+        "ts": "2026-04-28T19:05:39.062765+00:00"
       }
     ],
     "last_scan": null,

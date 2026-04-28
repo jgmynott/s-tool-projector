@@ -1,6 +1,6 @@
 {
-  "as_of": "2026-04-28T18:55:41.760068+00:00",
-  "n_rows": 68,
+  "as_of": "2026-04-28T19:05:39.063395+00:00",
+  "n_rows": 69,
   "rows": [
     {
       "ts": "2026-04-27T13:47:29.206731Z",
@@ -931,6 +931,20 @@
       "target": 1398.63,
       "tier": "relvol",
       "rationale": "{\"vol_multiple\": 2.792512523068811, \"range_pos\": 1.0, \"cur_vol\": 2648}",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-04-28T19:05:39.062768+00:00",
+      "event": "buy",
+      "sleeve": "scalper",
+      "symbol": "BAC",
+      "qty": 9,
+      "ref_price": 52.71,
+      "live_price": 52.71,
+      "stop": 52.34,
+      "target": 53.24,
+      "tier": "relvol",
+      "rationale": "{\"vol_multiple\": 2.939332393168737, \"range_pos\": 0.8571428571427991, \"cur_vol\": 36301}",
       "result": "submitted"
     }
   ]
