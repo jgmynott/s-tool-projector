@@ -270,30 +270,38 @@ def check_no_committed_secrets():
 def check_nn_artifacts():
     """Make sure the nightly learning pipeline wrote its outputs and that
     they are fresh enough to serve picks. The scorer fallback chain in
-    portfolio_scanner.py is moonshot → ensemble → nn → asymmetric (EWMA);
-    if all four are stale the engine is essentially backtest-only.
+    portfolio_scanner.py is moonshot → ensemble → nn → asymmetric (EWMA).
 
-    Hard-fail thresholds (>168h / 7d for production_scorer) catch the case
-    where overnight_learn hasn't run for a week and the engine is silently
-    deciding picks against last-week's regime. Soft warns at 72h flag a
-    single missed nightly without blocking deploys.
+    Freshness model:
+      - `production_scorer.json` is the *canonical* signal. overnight_learn
+        unconditionally rewrites it every run with the current decision —
+        if this file is stale, the nightly pipeline is genuinely dead.
+        Hard-fail at 168h (7d), soft warn at 72h.
+      - `asymmetric_scores.json` is rewritten unconditionally by
+        enrich_asymmetric.py every night — same gate.
+      - `moonshot/ensemble/nn_scores.json` produce byte-identical JSON
+        when the training data is unchanged, so git skips the commit and
+        their on-disk mtime can lag by weeks even though CI is healthy.
+        Track existence + warn very loosely (>21d) instead of hard-failing.
+        production_scorer freshness is the proxy for these.
 
-    confidence_nn_scores.json was retired 2026-04-27 — overnight_learn still
-    writes it for compatibility, but no production code reads it (verified
-    grep: only preflight + the writer reference it)."""
+    confidence_nn_scores.json retired 2026-04-27 — overnight_learn still
+    writes it for compatibility, but no production code reads it."""
     print("\n[*] NN learning artifacts")
     dc = ROOT / "data_cache"
     # (filename, label, hard_fail_hours, soft_warn_hours)
-    checks = [
+    canonical = [
         ("production_scorer.json", "nightly learning decision", 168, 72),
-        ("moonshot_scores.json",   "primary asymmetric ML scorer", 168, 72),
-        ("ensemble_scores.json",   "stacker fallback", 168, 72),
-        ("nn_scores.json",         "regression fallback", 168, 72),
         ("asymmetric_scores.json", "EWMA last-resort fallback", 168, 72),
+    ]
+    secondary = [
+        ("moonshot_scores.json", "primary asymmetric ML scorer"),
+        ("ensemble_scores.json", "stacker fallback"),
+        ("nn_scores.json",       "regression fallback"),
     ]
     import time as _time
     now = _time.time()
-    for fname, label, fail_h, warn_h in checks:
+    for fname, label, fail_h, warn_h in canonical:
         p = dc / fname
         if not p.exists():
             fail(f"{fname} missing — run overnight_learn.py / enrich_asymmetric.py")
@@ -305,6 +313,18 @@ def check_nn_artifacts():
             warn(f"{fname} is {age_hours:.1f}h old — nightly may have hiccupped")
         else:
             ok(f"{fname} fresh ({age_hours:.1f}h old) — {label}")
+    # Secondary scorers — existence + soft warn only (mtime lies due to
+    # deterministic JSON; production_scorer above is the real signal).
+    for fname, label in secondary:
+        p = dc / fname
+        if not p.exists():
+            fail(f"{fname} missing — run overnight_learn.py")
+            continue
+        age_hours = (now - p.stat().st_mtime) / 3600
+        if age_hours > 504:  # 21d, generous because these only commit on content change
+            warn(f"{fname} is {age_hours:.1f}h old (>504h) — verify production_scorer is fresh; otherwise overnight_learn may be writing but failing to update")
+        else:
+            ok(f"{fname} present ({age_hours:.1f}h on disk) — {label}")
 
 
 def check_users_sanity():
