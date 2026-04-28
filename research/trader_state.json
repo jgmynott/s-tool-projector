@@ -248,6 +248,33 @@
         "signal": "relvol",
         "stop": 986.63,
         "target": 1003.53
+      },
+      "JPM": {
+        "symbol": "JPM",
+        "qty": 1,
+        "entry_price": 311.735,
+        "opened_at": "2026-04-28T19:57:34.937016+00:00",
+        "signal": "relvol",
+        "stop": 309.55,
+        "target": 314.85
+      },
+      "GS": {
+        "symbol": "GS",
+        "qty": 1,
+        "entry_price": 926.78,
+        "opened_at": "2026-04-28T19:57:34.980414+00:00",
+        "signal": "relvol",
+        "stop": 920.29,
+        "target": 936.05
+      },
+      "MS": {
+        "symbol": "MS",
+        "qty": 2,
+        "entry_price": 190.17,
+        "opened_at": "2026-04-28T19:57:35.022505+00:00",
+        "signal": "relvol",
+        "stop": 188.84,
+        "target": 192.07
       }
     },
     "fired_today": [
@@ -300,6 +327,21 @@
         "symbol": "COST",
         "signal": "relvol",
         "ts": "2026-04-28T19:56:05.373382+00:00"
+      },
+      {
+        "symbol": "JPM",
+        "signal": "relvol",
+        "ts": "2026-04-28T19:57:34.937029+00:00"
+      },
+      {
+        "symbol": "GS",
+        "signal": "relvol",
+        "ts": "2026-04-28T19:57:34.980428+00:00"
+      },
+      {
+        "symbol": "MS",
+        "signal": "relvol",
+        "ts": "2026-04-28T19:57:35.022517+00:00"
       }
     ],
     "last_scan": null,

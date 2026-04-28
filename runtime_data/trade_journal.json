@@ -1,6 +1,6 @@
 {
-  "as_of": "2026-04-28T19:56:05.374058+00:00",
-  "n_rows": 75,
+  "as_of": "2026-04-28T19:57:35.023147+00:00",
+  "n_rows": 78,
   "rows": [
     {
       "ts": "2026-04-27T13:47:29.206731Z",
@@ -1029,6 +1029,48 @@
       "target": 1003.53,
       "tier": "relvol",
       "rationale": "{\"vol_multiple\": 3.8539209905660377, \"range_pos\": 1.0, \"cur_vol\": 1245}",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-04-28T19:57:34.937032+00:00",
+      "event": "buy",
+      "sleeve": "scalper",
+      "symbol": "JPM",
+      "qty": 1,
+      "ref_price": 311.735,
+      "live_price": 311.735,
+      "stop": 309.55,
+      "target": 314.85,
+      "tier": "relvol",
+      "rationale": "{\"vol_multiple\": 2.678054676668207, \"range_pos\": 0.6545454545455335, \"cur_vol\": 3183}",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-04-28T19:57:34.980431+00:00",
+      "event": "buy",
+      "sleeve": "scalper",
+      "symbol": "GS",
+      "qty": 1,
+      "ref_price": 926.78,
+      "live_price": 926.78,
+      "stop": 920.29,
+      "target": 936.05,
+      "tier": "relvol",
+      "rationale": "{\"vol_multiple\": 3.992882769885949, \"range_pos\": 0.6666666666666666, \"cur_vol\": 1928}",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-04-28T19:57:35.022520+00:00",
+      "event": "buy",
+      "sleeve": "scalper",
+      "symbol": "MS",
+      "qty": 2,
+      "ref_price": 190.17,
+      "live_price": 190.17,
+      "stop": 188.84,
+      "target": 192.07,
+      "tier": "relvol",
+      "rationale": "{\"vol_multiple\": 3.3462159352084933, \"range_pos\": 0.9310344827584923, \"cur_vol\": 3763}",
       "result": "submitted"
     }
   ]
