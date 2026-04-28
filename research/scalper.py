@@ -128,7 +128,11 @@ def fetch_5min_bars(api: Alpaca, symbols: list[str], start_iso: str) -> dict:
     out: dict[str, list] = {}
     base = "https://data.alpaca.markets/v2/stocks/bars"
     syms_param = ",".join(symbols)
-    url = (f"{base}?symbols={syms_param}&timeframe=5Min&start={start_iso}"
+    # Replace '+00:00' with 'Z' — query params don't url-encode '+' so
+    # Alpaca sees a space in the middle of the timestamp and 400s with
+    # "extra text: T13:30:00 00:00".
+    start_safe = start_iso.replace("+00:00", "Z")
+    url = (f"{base}?symbols={syms_param}&timeframe=5Min&start={start_safe}"
            f"&limit=10000&adjustment=raw&feed=iex")
     req = Request(url, headers=api.headers, method="GET")
     try:
