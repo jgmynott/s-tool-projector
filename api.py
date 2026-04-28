@@ -1102,6 +1102,46 @@ def portfolio(request: Request, user: Optional[dict] = Depends(auth.optional_use
                         lots.pop(0)
                     else:
                         lots[0][0] = lot_qty
+    # Backfill closes from the trade journal for any sell that today's
+    # FIFO-from-today-buys logic couldn't pair (because the buy happened
+    # on a prior day — typical for circuit-breaker liquidations or swing
+    # exits). The journal already has pnl computed via cross-day FIFO,
+    # so we just lift those rows whose ts.date == today and aren't
+    # already represented in closed_today by symbol.
+    try:
+        from datetime import datetime as _dt_close, timezone as _tz_close
+        journal_rows = _fetch_trade_journal_rows() or []
+        today_iso = _dt_close.now(_tz_close.utc).date().isoformat()
+        seen_symbols = {(r["symbol"], r["qty"]) for r in closed_today}
+        for jr in journal_rows:
+            if jr.get("event") != "sell":
+                continue
+            ts = jr.get("ts") or ""
+            if not ts.startswith(today_iso):
+                continue
+            pnl = jr.get("pnl")
+            if pnl is None:
+                continue
+            sym = jr.get("symbol")
+            qty = float(jr.get("qty") or 0)
+            if (sym, qty) in seen_symbols:
+                continue
+            sleeve = jr.get("sleeve") or "unattributed"
+            sleeve_key = sleeve if sleeve in realized_by_sleeve else "unattributed"
+            realized_today_total += float(pnl)
+            realized_by_sleeve[sleeve_key] += float(pnl)
+            closed_today.append({
+                "symbol": sym, "qty": qty,
+                "buy_price": jr.get("buy_price"),
+                "sell_price": jr.get("sell_price"),
+                "pnl": float(pnl),
+                "sleeve": sleeve,
+                "source_tier": jr.get("tier") or tier_by_sym.get(sym),
+                "closed_at": ts,
+            })
+            seen_symbols.add((sym, qty))
+    except Exception as e:
+        print(f"closed_today journal backfill failed: {e}")
     # Most recent close first for display.
     closed_today.sort(key=lambda r: r.get("closed_at") or "", reverse=True)
 
