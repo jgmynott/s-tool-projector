@@ -854,6 +854,21 @@ def cmd_live(api: Alpaca, window: str) -> int:
         # fire when the cron lands a few minutes before market open. The
         # trader simply refuses to trade until the market is actually
         # open; that's correct, not an error.
+        # Exception: a close-window run that fires after 16:00 ET because
+        # of GH cron slippage still needs to pull today's FILL activities
+        # so bracket child fills + EOD closes reach the journal. Without
+        # this the track-record page silently misses every close-window
+        # that landed past EOD.
+        if window == "close":
+            try:
+                state = load_state()
+                journal_rows = load_journal()
+                sell_rows_today = journal_alpaca_fills(api, state.get("entries", {}))
+                if sell_rows_today:
+                    print(f"market closed but journaling {len(sell_rows_today)} late FILL rows")
+                    save_journal(_prune_journal(journal_rows + sell_rows_today))
+            except Exception as e:
+                log.warning("late-close journal pull failed: %s", e)
         print(f"market closed — refusing (clean exit). next_open={clock.get('next_open')}")
         return 0
     acct = api.account()

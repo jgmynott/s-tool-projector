@@ -42,12 +42,22 @@ on:
     - cron: "34 13 * * 1-5"
     # Intraday rotation: every 30 min, off :00/:30. Daytrade sleeve only:
     # bracket orders handle exits in-market; this fires to refill any slots
-    # that bracket-exited since the last tick. 12 firings/day. Same-day
-    # re-entry guard in trader_state.json prevents the rotator from cycling
-    # back into a name that already filled and stopped/took-profit earlier.
-    - cron: "7,37 14-19 * * 1-5"
-    # 19:52 UTC Mon-Fri = 15:52 ET (DST). Close: daytrade EOD exits.
-    - cron: "52 19 * * 1-5"
+    # that bracket-exited since the last tick. Last fire 18:37 UTC (14:37
+    # ET) so we never open a fresh daytrade entry inside the EOD-close
+    # window. Same-day re-entry guard in trader_state.json prevents the
+    # rotator from cycling back into a name that already filled and
+    # stopped/took-profit earlier.
+    - cron: "7,37 14-18 * * 1-5"
+    # Close window — daytrade EOD force-close + journal pull. Two fires:
+    #   19:25 UTC = 15:25 ET (primary, 35 min buffer before market close)
+    #   19:48 UTC = 15:48 ET (backup, in case 19:25 slipped or no-op'd)
+    # Both call journal_alpaca_fills() so today's bracket child fills end
+    # up in the journal even if the breaker fired at open and there are no
+    # daytrade positions left to close. We had a 60-min slippage incident
+    # 2026-04-27 where a 19:55 close fired at 20:55 (post-EOD) and silently
+    # journaled nothing — moving earlier + adding redundancy fixes that.
+    - cron: "25 19 * * 1-5"
+    - cron: "48 19 * * 1-5"
   workflow_dispatch:
     inputs:
       mode:
@@ -111,8 +121,9 @@ jobs:
             # re-rebalancing the swing sleeve mid-day).
             case "$SCHEDULED_CRON" in
               "34 13 * * 1-5")      echo "window=open"   >> "$GITHUB_OUTPUT" ;;
-              "52 19 * * 1-5")      echo "window=close"  >> "$GITHUB_OUTPUT" ;;
-              "7,37 14-19 * * 1-5") echo "window=rotate" >> "$GITHUB_OUTPUT" ;;
+              "25 19 * * 1-5")      echo "window=close"  >> "$GITHUB_OUTPUT" ;;
+              "48 19 * * 1-5")      echo "window=close"  >> "$GITHUB_OUTPUT" ;;
+              "7,37 14-18 * * 1-5") echo "window=rotate" >> "$GITHUB_OUTPUT" ;;
               *)                    echo "window=open"   >> "$GITHUB_OUTPUT" ;;
             esac
             echo "mode=live" >> "$GITHUB_OUTPUT"
