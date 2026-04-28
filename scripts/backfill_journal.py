@@ -179,9 +179,19 @@ def main() -> int:
     print(f"backfill: existing journal has {len(existing)} rows")
     keys = existing_keys(existing)
 
+    if activities:
+        print(f"backfill: sample activity keys={list(activities[0].keys())}")
+        print(f"backfill: sample activity={json.dumps(activities[0])[:500]}")
+        from collections import Counter as _C
+        types = _C(a.get("activity_type") or a.get("type") for a in activities)
+        sides = _C((a.get("side") or "") for a in activities)
+        print(f"backfill: type counts={dict(types)}")
+        print(f"backfill: side counts={dict(sides)}")
+
     new_rows: list[dict] = []
     for a in activities:
-        if a.get("type") not in ("FILL", "PARTIAL_FILL"):
+        atype = a.get("activity_type") or a.get("type")
+        if atype not in ("FILL", "PARTIAL_FILL"):
             continue
         side = (a.get("side") or "").lower()
         if side not in ("buy", "sell"):
