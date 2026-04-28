@@ -1060,26 +1060,39 @@ def portfolio(request: Request, user: Optional[dict] = Depends(auth.optional_use
     day_change_pct = (day_change / last_eq) if last_eq else 0.0
 
     # Make today's last daily point land on today's calendar date in the
-    # user's local timezone. Alpaca's portfolio/history?timeframe=1D returns
+    # viewer's local timezone. Alpaca's portfolio/history?timeframe=1D returns
     # a bar for today at UTC midnight — but UTC midnight 2026-04-28 is
     # 2026-04-27 20:00 EDT, so the frontend's toLocaleDateString renders the
     # last tick as "Apr 27" (yesterday) for any viewer west of UTC. The 1D
     # intraday chart doesn't have this issue (its timestamps are mid-day).
-    # Fix: timestamp today's bar at "now" instead of UTC midnight; equity/PL
-    # are already current. If Alpaca hasn't included today yet, append.
+    # Fix: stamp today's bar at "now" instead of UTC midnight; equity/PL are
+    # already current. If Alpaca hasn't included today yet, append.
+    #
+    # Use timezone-aware datetimes throughout — naive datetime.timestamp()
+    # silently uses LOCAL time, which on a non-UTC Railway container produces
+    # the wrong unix seconds and the date comparison below would never match.
+    import time as _time_chart
+    from datetime import datetime as _dt_chart, timezone as _tz_chart
+    _now_aware = _dt_chart.now(_tz_chart.utc)
+    today_utc_date = _now_aware.date()
+    now_ts = int(_time_chart.time())
     hist_ts = list(hist.get("timestamp") or [])
     hist_eq = list(hist.get("equity") or [])
     hist_pl = list(hist.get("profit_loss") or [])
-    today_midnight_ts = int(now.replace(hour=0, minute=0, second=0, microsecond=0).timestamp())
-    now_ts = int(now.timestamp())
-    if not hist_ts or hist_ts[-1] < today_midnight_ts:
+    if hist_ts:
+        last_utc_date = _dt_chart.fromtimestamp(hist_ts[-1], tz=_tz_chart.utc).date()
+        if last_utc_date == today_utc_date:
+            hist_ts[-1] = now_ts
+            hist_eq[-1] = eq
+            hist_pl[-1] = float(day_change)
+        else:
+            hist_ts.append(now_ts)
+            hist_eq.append(eq)
+            hist_pl.append(float(day_change))
+    else:
         hist_ts.append(now_ts)
         hist_eq.append(eq)
         hist_pl.append(float(day_change))
-    elif hist_ts[-1] == today_midnight_ts:
-        hist_ts[-1] = now_ts
-        hist_eq[-1] = eq
-        hist_pl[-1] = float(day_change)
     hist = {"timestamp": hist_ts, "equity": hist_eq, "profit_loss": hist_pl}
 
     # Live alpha vs SPY: trader return − SPY return *over the same
