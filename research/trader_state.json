@@ -185,6 +185,15 @@
         "signal": "relvol",
         "stop": 58.33,
         "target": 59.33
+      },
+      "ASML": {
+        "symbol": "ASML",
+        "qty": 1,
+        "entry_price": 1384.78,
+        "opened_at": "2026-04-28T18:55:41.759572+00:00",
+        "signal": "relvol",
+        "stop": 1375.09,
+        "target": 1398.63
       }
     },
     "fired_today": [
@@ -197,6 +206,11 @@
         "symbol": "TNA",
         "signal": "relvol",
         "ts": "2026-04-28T18:25:43.626956+00:00"
+      },
+      {
+        "symbol": "ASML",
+        "signal": "relvol",
+        "ts": "2026-04-28T18:55:41.759588+00:00"
       }
     ],
     "last_scan": null,

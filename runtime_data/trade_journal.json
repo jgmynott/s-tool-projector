@@ -1,6 +1,6 @@
 {
-  "as_of": "2026-04-28T18:25:43.627501+00:00",
-  "n_rows": 67,
+  "as_of": "2026-04-28T18:55:41.760068+00:00",
+  "n_rows": 68,
   "rows": [
     {
       "ts": "2026-04-27T13:47:29.206731Z",
@@ -917,6 +917,20 @@
       "target": 59.33,
       "tier": "relvol",
       "rationale": "{\"vol_multiple\": 2.049619595472258, \"range_pos\": 1.0, \"cur_vol\": 1347}",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-04-28T18:55:41.759592+00:00",
+      "event": "buy",
+      "sleeve": "scalper",
+      "symbol": "ASML",
+      "qty": 1,
+      "ref_price": 1384.78,
+      "live_price": 1384.78,
+      "stop": 1375.09,
+      "target": 1398.63,
+      "tier": "relvol",
+      "rationale": "{\"vol_multiple\": 2.792512523068811, \"range_pos\": 1.0, \"cur_vol\": 2648}",
       "result": "submitted"
     }
   ]
