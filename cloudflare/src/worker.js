@@ -74,23 +74,29 @@ function applyCacheControl(response, { html, pathname }) {
 // fires year-round; the off-season fire hits trader.py's market-closed
 // guard or its late-close journal pull and is a clean no-op. Rotate cron
 // covers 14:00–19:30 UTC every 30 min — captures both seasons.
-function windowForCron(cron) {
-  // Open: 13:30 UTC (DST = 09:30 ET) or 14:30 UTC (ST = 09:30 ET)
-  if (cron === "30 13 * * 1-5" || cron === "30 14 * * 1-5") return "open";
-  // Close: 19:55 UTC (DST = 15:55 ET) or 20:55 UTC (ST = 15:55 ET)
-  if (cron === "55 19 * * 1-5" || cron === "55 20 * * 1-5") return "close";
-  // Rotate: every 30 min 14:00–19:30 UTC
-  if (cron === "0,30 14-19 * * 1-5") return "rotate";
+// Each cron maps to (workflow file, optional inputs). Cron expressions
+// here MUST exactly match wrangler.toml — a typo silently falls through
+// to no-op and the scheduler quietly stops.
+function targetForCron(cron) {
+  // Trader open  — 13:30 UTC (DST) or 14:30 UTC (ST)
+  if (cron === "30 13,14 * * 1-5")    return { workflow: "trader.yml",  inputs: { mode: "live", window: "open"  } };
+  // Trader rotate — every 30 min 14:00–19:30 UTC
+  if (cron === "0,30 14-19 * * 1-5")  return { workflow: "trader.yml",  inputs: { mode: "live", window: "rotate" } };
+  // Trader close — 19:55 UTC (DST) or 20:55 UTC (ST)
+  if (cron === "55 19,20 * * 1-5")    return { workflow: "trader.yml",  inputs: { mode: "live", window: "close" } };
+  // Scalper — every 5 min during RTH. No window input; scalper.yml's
+  // dispatch block defaults to mode=live when not provided via input.
+  if (cron === "*/5 14-19 * * 1-5")   return { workflow: "scalper.yml", inputs: { mode: "live" } };
   return null;
 }
 
-async function dispatchTrader(env, window) {
+async function dispatchWorkflow(env, target) {
   const repo = env.GITHUB_REPO;
   const pat = env.GITHUB_PAT;
   if (!repo || !pat) {
     return { ok: false, error: "GITHUB_REPO/GITHUB_PAT secrets not set on Worker" };
   }
-  const url = `https://api.github.com/repos/${repo}/actions/workflows/trader.yml/dispatches`;
+  const url = `https://api.github.com/repos/${repo}/actions/workflows/${target.workflow}/dispatches`;
   const resp = await fetch(url, {
     method: "POST",
     headers: {
@@ -101,7 +107,7 @@ async function dispatchTrader(env, window) {
     },
     body: JSON.stringify({
       ref: "main",
-      inputs: { mode: "live", window },
+      inputs: target.inputs || {},
     }),
   });
   if (resp.status === 204) return { ok: true };
@@ -123,18 +129,18 @@ async function notifyOnFailure(env, message) {
 
 export default {
   async scheduled(event, env, ctx) {
-    const window = windowForCron(event.cron);
-    if (!window) {
+    const target = targetForCron(event.cron);
+    if (!target) {
       console.log(`unmapped cron: ${event.cron}`);
       return;
     }
-    const result = await dispatchTrader(env, window);
+    const result = await dispatchWorkflow(env, target);
     if (!result.ok) {
-      const msg = `dispatch ${window} failed: ${JSON.stringify(result)}`;
+      const msg = `dispatch ${target.workflow} ${JSON.stringify(target.inputs)} failed: ${JSON.stringify(result)}`;
       console.error(msg);
       ctx.waitUntil(notifyOnFailure(env, msg));
     } else {
-      console.log(`dispatched window=${window} via cron=${event.cron}`);
+      console.log(`dispatched ${target.workflow} ${JSON.stringify(target.inputs)} via cron=${event.cron}`);
     }
   },
 

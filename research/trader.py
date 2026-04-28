@@ -88,6 +88,15 @@ SLEEVES = {
         "leverage": 1.0,               # 1x — net-negative EV per backtest
         "equity_share": 1/3,
         "intraday_only": True,
+        # Pyramid scale-out — split each entry into N tranches with
+        # progressively higher take-profit targets but a single shared
+        # stop. We submit N separate bracket orders, each for 1/N of the
+        # position. When price hits target_1, tranche-1 closes and the
+        # remaining tranches stay open. When stop hits, all tranches
+        # close at the same level. Net effect: capture small wins on
+        # weak moves AND let the rest run if it keeps going. Trade
+        # count per name goes from 2 → up to N+1 fills.
+        "pyramid_targets": [0.015, 0.030, 0.050],   # +1.5% / +3% / +5%
     },
 }
 SLEEVE_NAMES = list(SLEEVES.keys())  # ['momentum', 'swing', 'daytrade']
@@ -680,6 +689,51 @@ def submit_buy(api: Alpaca, b: dict, sleeve_name: str,
     ref = live or float(b["ref_price"])
     stop_price = round(ref * (1 + cfg["stop_pct"]), 2)
     take_price = round(ref * (1 + cfg["target_pct"]), 2)
+
+    # Pyramid scale-out: if this sleeve is configured with multiple
+    # take-profit targets, split the position across N bracket orders
+    # with shared stop but progressively higher targets. Each bracket is
+    # a separate Alpaca order so a target hit on tranche 1 doesn't
+    # cancel the open tranches. Any 422 here falls back to the single-
+    # bracket path below — pyramid is best-effort.
+    pyramid = cfg.get("pyramid_targets")
+    if pyramid and len(pyramid) > 1:
+        full_qty = int(b["qty"])
+        n = len(pyramid)
+        tranches: list[int] = [full_qty // n] * n
+        tranches[-1] += full_qty - sum(tranches)  # remainder on last tranche
+        all_ok = True
+        for i, (tr_qty, tr_target_pct) in enumerate(zip(tranches, pyramid)):
+            if tr_qty <= 0:
+                continue
+            tr_take = round(ref * (1 + tr_target_pct), 2)
+            tr_body = {
+                "symbol": b["symbol"], "qty": str(tr_qty),
+                "side": "buy", "type": "market", "time_in_force": "day",
+                "order_class": "bracket",
+                "stop_loss": {"stop_price": str(stop_price)},
+                "take_profit": {"limit_price": str(tr_take)},
+                "client_order_id": f"{cid}-p{i}",
+            }
+            try:
+                api.submit(tr_body)
+                if journal_rows is not None:
+                    row = journal_entry_buy(
+                        b, sleeve_name, live_price=live, stop=stop_price,
+                        target=tr_take, result="submitted")
+                    row["qty"] = tr_qty
+                    row["tranche"] = i
+                    journal_rows.append(row)
+            except RuntimeError as e:
+                msg = str(e)
+                if "422" in msg and any(t in msg for t in ("take_profit", "stop_loss", "base_price")):
+                    log.warning("pyramid tranche %d for %s rejected — will fall back to single bracket", i, b["symbol"])
+                    all_ok = False
+                    break
+                raise
+        if all_ok:
+            return
+        # Fall through to single-bracket path below.
 
     body = {
         "symbol": b["symbol"], "qty": str(b["qty"]),

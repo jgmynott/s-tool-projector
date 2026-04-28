@@ -771,11 +771,20 @@ function renderPortfolio(data) {
   // surfaces only when there are unknown-sleeve positions — historically
   // pre-CID-encoding entries; should be empty for any new account.
   const hasUnattributed = (sleeves.unattributed?.n || 0) > 0;
+  // Show scalper card whenever the sleeve has activity today (positions
+  // open, realized PnL, or unrealized PnL non-zero) — keeps it hidden
+  // when scalper.yml hasn't found any signals yet so the dashboard
+  // doesn't render an empty 5th card.
+  const sc = sleeves.scalper || {};
+  const hasScalper = (sc.n || 0) > 0 || (sc.realized_today || 0) !== 0 || (sc.upnl || 0) !== 0;
+  const extras = (hasScalper ? 1 : 0) + (hasUnattributed ? 1 : 0);
+  const layoutCls = extras === 2 ? ' five' : extras === 1 ? ' four' : '';
   const sleeveBlock = `
-    <div class="pf-sleeves${hasUnattributed ? ' four' : ''}">
+    <div class="pf-sleeves${layoutCls}">
       ${pfSleeveCard('momentum', sleeves.momentum, '3-day momentum')}
       ${pfSleeveCard('swing', sleeves.swing, '5-day swing')}
       ${pfSleeveCard('daytrade', sleeves.daytrade, 'Day trade')}
+      ${hasScalper ? pfSleeveCard('scalper', sleeves.scalper, 'Scalper · 5-min') : ''}
       ${hasUnattributed ? pfSleeveCard('unattributed', sleeves.unattributed, 'Other') : ''}
     </div>`;
   let positionsBlock;

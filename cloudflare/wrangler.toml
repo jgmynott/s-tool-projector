@@ -41,10 +41,17 @@ zone_name = "s-tool.io"
 #   wrangler secret put GITHUB_REPO     (jgmynott/s-tool-projector)
 #   wrangler secret put NTFY_TOPIC      (optional — pushes alerts on dispatch failure)
 [triggers]
+# Cloudflare Workers free tier allows up to 5 distinct cron triggers per
+# Worker. We pack them efficiently:
+#  * "30 13,14 * * 1-5"       → open (one expression covers DST + ST)
+#  * "0,30 14-19 * * 1-5"     → trader.yml rotate (every 30 min)
+#  * "55 19,20 * * 1-5"       → close (DST + ST in one)
+#  * "*/5 14-19 * * 1-5"      → scalper.yml every 5 min (NEW)
+#  * (1 trigger spare for future use)
+# windowForCron() in worker.js maps each expression to a workflow + window.
 crons = [
-  "30 13 * * 1-5",       # open  — 13:30 UTC = 09:30 ET (DST)
-  "30 14 * * 1-5",       # open  — 14:30 UTC = 09:30 ET (ST)
-  "0,30 14-19 * * 1-5",  # rotate every 30 min 14:00–19:30 UTC
-  "55 19 * * 1-5",       # close — 19:55 UTC = 15:55 ET (DST)
-  "55 20 * * 1-5",       # close — 20:55 UTC = 15:55 ET (ST)
+  "30 13,14 * * 1-5",         # trader open  — 09:30 ET (DST + ST)
+  "0,30 14-19 * * 1-5",       # trader rotate every 30 min 14:00–19:30 UTC
+  "55 19,20 * * 1-5",         # trader close — 15:55 ET (DST + ST)
+  "*/5 14-19 * * 1-5",        # scalper every 5 min during RTH
 ]

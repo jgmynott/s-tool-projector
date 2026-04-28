@@ -1,0 +1,99 @@
+name: scalper-sleeve
+# High-frequency intraday scalper. Driven by:
+#   1. Cloudflare Worker scheduled trigger every 5 min during RTH (primary)
+#   2. workflow_dispatch for manual smoke-tests
+#
+# Distinct from trader.yml because:
+#   * Different sleeve (scalper) — separate state, separate journal sleeve tag
+#   * 5-min cadence vs 30-min rotate
+#   * Hard $/position + max-position caps (see research/scalper.py constants)
+#
+# Kill switch: set state.scalper_disabled=true in research/trader_state.json
+# (committed) — scalper.py refuses to fire while that flag is set, so a
+# noisy signal can be muted without rolling code.
+#
+# Required secrets (already configured for trader.yml):
+#   ALPACA_API_KEY, ALPACA_API_SECRET, ALPACA_BASE_URL, DISCORD_WEBHOOK_URL
+
+on:
+  schedule:
+    # Backup schedule in case CF Worker cron breaks. Every 10 min during
+    # RTH; CF Worker fires every 5 min as the primary. Doubled fires are
+    # harmless — scalper.py dedupes by per-day signal-fired set.
+    - cron: "5,15,25,35,45,55 14-19 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "scalper mode"
+        required: true
+        default: "dry"
+        type: choice
+        options: ["dry", "live"]
+
+# Sequential — never let two scalper runs overlap. With the same-day
+# fired_today dedupe in state, queued runs see no fresh signals and exit
+# clean.
+concurrency:
+  group: scalper-sleeve
+  cancel-in-progress: false
+
+jobs:
+  scalp:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # Resolve mode — cron runs default to live; manual dispatch picks.
+      - id: resolve
+        env:
+          GITHUB_EVENT: ${{ github.event_name }}
+          DISPATCH_MODE: ${{ github.event.inputs.mode }}
+        run: |
+          if [ "$GITHUB_EVENT" = "workflow_dispatch" ]; then
+            echo "mode=$DISPATCH_MODE" >> "$GITHUB_OUTPUT"
+          else
+            echo "mode=live" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Print plan (always)
+        env:
+          ALPACA_API_KEY:    ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
+          ALPACA_BASE_URL:   ${{ secrets.ALPACA_BASE_URL }}
+        run: python3 research/scalper.py dry || true
+
+      - name: Execute (live)
+        if: steps.resolve.outputs.mode == 'live'
+        env:
+          ALPACA_API_KEY:      ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_API_SECRET:   ${{ secrets.ALPACA_API_SECRET }}
+          ALPACA_BASE_URL:     ${{ secrets.ALPACA_BASE_URL }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: python3 research/scalper.py live
+
+      - name: Commit state + journal
+        # always() — scalper exits 0 on no-op runs but if it submitted
+        # orders we still want the state.scalper.* updates committed even
+        # if a downstream step would have failed.
+        if: always() && steps.resolve.outputs.mode == 'live'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if [ -f research/trader_state.json ]; then
+            git add -f research/trader_state.json
+          fi
+          if [ -f runtime_data/trade_journal.json ]; then
+            git add -f runtime_data/trade_journal.json
+          fi
+          if git diff --staged --quiet; then
+            echo "no scalper artifacts changed"
+          else
+            git commit -m "chore(scalper): state + journal $(date -u +%Y-%m-%dT%H:%MZ)"
+            git pull --rebase || true
+            git push
+          fi

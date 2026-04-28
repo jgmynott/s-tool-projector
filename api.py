@@ -958,7 +958,7 @@ def portfolio(request: Request, user: Optional[dict] = Depends(auth.optional_use
         # didn't generate (manual orders, prior schemes) — those just
         # leave the position as "unattributed".
         parts = cid.split("-")
-        if len(parts) >= 2 and parts[0] in {"momentum", "swing", "daytrade"}:
+        if len(parts) >= 2 and parts[0] in {"momentum", "swing", "daytrade", "scalper"}:
             sleeve_by_sym[sym] = {
                 "sleeve": parts[0],
                 "opened_at": o.get("filled_at") or o.get("submitted_at"),
@@ -1053,7 +1053,7 @@ def portfolio(request: Request, user: Optional[dict] = Depends(auth.optional_use
     # from the queue and accumulates realized P&L.
     closed_today: list[dict] = []
     realized_today_total = 0.0
-    realized_by_sleeve: dict = {"momentum": 0.0, "swing": 0.0, "daytrade": 0.0, "unattributed": 0.0}
+    realized_by_sleeve: dict = {"momentum": 0.0, "swing": 0.0, "daytrade": 0.0, "scalper": 0.0, "unattributed": 0.0}
     if activities:
         # Activities come back newest-first; oldest-first is the natural
         # FIFO direction.
@@ -1265,6 +1265,7 @@ def portfolio(request: Request, user: Optional[dict] = Depends(auth.optional_use
     sleeve_summary: dict = {"momentum": {"n": 0, "mv": 0.0, "upnl": 0.0, "realized_today": 0.0},
                             "swing": {"n": 0, "mv": 0.0, "upnl": 0.0, "realized_today": 0.0},
                             "daytrade": {"n": 0, "mv": 0.0, "upnl": 0.0, "realized_today": 0.0},
+                            "scalper": {"n": 0, "mv": 0.0, "upnl": 0.0, "realized_today": 0.0},
                             "unattributed": {"n": 0, "mv": 0.0, "upnl": 0.0, "realized_today": 0.0}}
     for p in pos_out:
         s = p["sleeve"] if p["sleeve"] in sleeve_summary else "unattributed"
@@ -1400,7 +1401,7 @@ def portfolio(request: Request, user: Optional[dict] = Depends(auth.optional_use
             # on side=buy + our "<sleeve>-SYM-YYYYMMDD" client_order_id
             # prefix instead — that captures live entry orders that
             # haven't filled yet without picking up their child legs.
-            if o.get("side") == "buy" and (o.get("client_order_id") or "").split("-")[0] in {"momentum", "swing", "daytrade"}
+            if o.get("side") == "buy" and (o.get("client_order_id") or "").split("-")[0] in {"momentum", "swing", "daytrade", "scalper"}
         ],
         "strategy_doc": "momentum=top 5, 3-day hold, 1.5× lev, -5%/+10% brackets. swing=ranks 6-15, 5-day hold, 1.5× lev, -7%/+15%. daytrade=ranks 16-25, intraday, 1× lev, -3%/+5%.",
     }
