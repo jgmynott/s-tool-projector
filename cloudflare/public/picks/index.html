@@ -753,15 +753,70 @@ footer a { color: var(--text-mid); }
 .pf-positions-count { font: 500 12px 'Inter'; color: var(--text-dim); font-variant-numeric: tabular-nums; }
 .pf-tally-w { color: var(--pos); font-weight: 600; }
 .pf-tally-l { color: var(--neg); font-weight: 600; }
+/* ── Capital-allocation donut for open positions ──
+ * Sits between the head and the cards. Sleeve-colored slices, sized by
+ * market value. Center: total deployed + count. Hover/tap a slice for the
+ * tooltip (wirePortfolioTooltips). Legend column on the right shows
+ * sleeve totals so the user can decode "violet = momentum" instantly. */
+.pf-pos-donut-wrap {
+  display: grid; grid-template-columns: 280px 1fr; gap: 28px;
+  align-items: center;
+  padding: 18px 20px 22px;
+  margin-bottom: 16px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: linear-gradient(180deg, rgba(11,16,6,0.45), rgba(2,40,52,0.05));
+}
+.pf-pos-donut.alloc-donut { width: 280px; height: 280px; }
+.pf-pos-donut.alloc-donut .dt-total { font-family: 'Crimson Text', Georgia, serif; }
+.pf-pos-donut.alloc-donut .dt-sub { color: var(--accent-lake); }
+.pf-pos-donut-legend { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.pf-pdl-row {
+  display: grid; grid-template-columns: 14px 1fr auto auto;
+  align-items: center; gap: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(11,16,6,0.35);
+  font-variant-numeric: tabular-nums;
+}
+.pf-pdl-dot { width: 10px; height: 10px; border-radius: 3px; }
+.pf-pdl-name { font: 600 12px 'Inter'; color: var(--text-hi); letter-spacing: 0.04em; }
+.pf-pdl-amt { font: 500 13px 'Inter'; color: var(--text-mid); }
+.pf-pdl-pct { font: 600 13px 'Inter'; color: var(--text-hi); min-width: 48px; text-align: right; }
+
 .pf-positions { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
 .pf-pos {
   padding: 14px 16px; border-radius: var(--radius-sm);
   background: var(--bg-card); border: 1px solid var(--border);
   display: flex; flex-direction: column; gap: 6px;
   transition: border-color .15s, transform .15s;
+  position: relative; overflow: hidden;
 }
+/* Top-edge weight bar — at-a-glance "this card is X% of book". The fill
+ * is sleeve-colored and sized to the position's share of total deployed.
+ * Track is faint so a 1% slice still shows context against a 12% slice. */
+.pf-pos-weight-bar {
+  position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: rgba(155,161,185,0.08);
+  pointer-events: none;
+}
+.pf-pos-weight-fill {
+  height: 100%;
+  border-bottom-right-radius: 2px;
+  transition: width .25s ease;
+}
+.pf-pos-weight {
+  margin-left: auto;
+  font: 600 11px 'Inter'; color: var(--text-mid);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+/* Scalper sleeve tag (was missing — donut + tag now use the same green) */
+.pf-pos-tag.scalper { background: rgba(110,231,183,0.14); color: var(--pos); }
 .pf-pos:hover { border-color: var(--border-strong); transform: translateY(-1px); }
-.pf-pos-row1 { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+/* Row 1: sym + sleeve-tag + tier-pill on the left, weight % on the far right.
+ * pf-pos-weight uses margin-left:auto to claim the right edge regardless of
+ * how many pills are present (e.g. 0 or 1 tier pill depending on source). */
+.pf-pos-row1 { display: flex; align-items: center; gap: 8px; }
 .pf-pos-sym { font: 600 15px 'Inter'; color: var(--text-hi); letter-spacing: -0.005em; }
 .pf-pos-tag { font: 600 9px 'Inter'; padding: 2px 7px; border-radius: 4px; letter-spacing: 0.10em; text-transform: uppercase; }
 .pf-pos-tag.momentum { background: rgba(186,140,255,0.14); color: #ba8cff; }
@@ -883,12 +938,22 @@ footer a { color: var(--text-mid); }
   .pf-sleeves { grid-template-columns: 1fr; gap: 8px; }
   .pf-positions { grid-template-columns: 1fr 1fr; }
   .pf-pending { padding: 8px 12px; gap: 8px 10px; }
+  /* Donut + legend stack on tablet/phone — donut on top, legend below.
+   * Donut narrows to 240px so it doesn't dominate the viewport. */
+  .pf-pos-donut-wrap { grid-template-columns: 1fr; gap: 18px; padding: 16px; justify-items: center; }
+  .pf-pos-donut.alloc-donut { width: 240px; height: 240px; }
+  .pf-pos-donut-legend { width: 100%; }
 }
 @media (max-width: 480px) {
   .pf-panel { padding: 20px 18px 18px; }
   .pf-equity-num { font-size: 38px; }
   .pf-positions { grid-template-columns: 1fr; }
   .pf-head { gap: 8px; }
+  .pf-pos-donut.alloc-donut { width: 220px; height: 220px; }
+  /* Legend rows tighten on small phones — keep amount + pct side-by-side
+   * but trim padding so 4-5 sleeves fit without scrolling. */
+  .pf-pdl-row { padding: 8px 10px; gap: 10px; }
+  .pf-pdl-pct { min-width: 42px; }
   /* Pending strip at narrow widths: stack the label, then wrap pills onto
      their own line so each one stays atomic and readable. */
   .pf-pending { flex-direction: column; align-items: flex-start; }

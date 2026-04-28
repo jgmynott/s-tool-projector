@@ -652,11 +652,26 @@ function pfNextRotationTick() {
   }
   return { mins: Math.max(0, next - minutesNow) };
 }
-function pfPositionCard(p) {
+// Sleeve color palette — mirrored in CSS `.pf-pos-tag.<sleeve>` rules so
+// the donut, the weight bars, and the cards all read as one system.
+const PF_SLEEVE_COLOR = {
+  momentum: '#ba8cff',
+  swing: '#5FAAC5',
+  daytrade: '#e8b86a',
+  scalper: '#6ee7b7',
+  unattributed: '#9aa0a6',
+};
+function pfPositionCard(p, totalMv) {
   const pct = (p.unrealized_plpc || 0) * 100;
   const pctCls = pct > 0 ? 'pos' : (pct < 0 ? 'neg' : '');
   const plCls = (p.unrealized_pl || 0) >= 0 ? 'pos' : 'neg';
   const sleeve = p.sleeve || 'unattributed';
+  // Weight = this position's slice of total book. The thin top-edge bar
+  // (filled to weightPct of full width, sleeve-colored) is the at-a-glance
+  // answer to "how big is this position in the book?". Inline % below the
+  // ticker doubles as a screen-reader-friendly value.
+  const weightPct = totalMv > 0 ? ((p.market_value || 0) / totalMv) * 100 : 0;
+  const sleeveColor = PF_SLEEVE_COLOR[sleeve] || PF_SLEEVE_COLOR.unattributed;
   const sleeveLabel = sleeve === 'momentum' ? 'Mo' :
                       sleeve === 'swing' ? 'Swing' :
                       sleeve === 'daytrade' ? 'Day' : '—';
@@ -695,10 +710,14 @@ function pfPositionCard(p) {
   }
 
   return `<div class="pf-pos">
+    <div class="pf-pos-weight-bar" aria-hidden="true">
+      <div class="pf-pos-weight-fill" style="width:${weightPct.toFixed(2)}%;background:${sleeveColor};"></div>
+    </div>
     <div class="pf-pos-row1">
       <span class="pf-pos-sym">${p.symbol}</span>
       <span class="pf-pos-tag ${sleeve}">${sleeveLabel}</span>
       ${tierPill}
+      <span class="pf-pos-weight" title="Share of total deployed capital">${weightPct.toFixed(1)}%</span>
     </div>
     <div class="pf-pos-row2">
       <span class="pf-pos-mv">${fmtUSD(p.market_value, { digits: 0 })}</span>
@@ -709,6 +728,105 @@ function pfPositionCard(p) {
       <span>${heldLabel}</span>
     </div>
     ${bracketRow}
+  </div>`;
+}
+
+// Capital-allocation donut for open positions. Sleeve-colored, sized by
+// market_value. Center: total deployed + position count. Sits above the
+// position cards so the eye sees "where the money is" before the per-name
+// detail. Hover/tap a slice → tooltip via wirePortfolioTooltips().
+function pfPositionsDonut(positions, totalMv) {
+  if (!positions.length || totalMv <= 0) return '';
+  // Sort largest-first so the dominant slices land at the 12 o'clock
+  // position (after the -90° rotate) — easier to scan than random order.
+  // Within a sleeve, ties are broken by symbol for stable layout across
+  // 30s refreshes (no unnecessary slice reordering as MVs jiggle).
+  const sorted = [...positions].sort((a, b) => {
+    const d = (b.market_value || 0) - (a.market_value || 0);
+    return d !== 0 ? d : (a.symbol || '').localeCompare(b.symbol || '');
+  });
+  const GAP = 0.30;
+  let offset = 0;
+  // Per-sleeve max so opacity scales WITHIN sleeve — biggest momentum
+  // position is the brightest violet; smallest is dimmer. Keeps the
+  // sleeve-color-coding readable while still differentiating siblings.
+  const sleeveMax = {};
+  for (const p of sorted) {
+    const s = p.sleeve || 'unattributed';
+    const mv = p.market_value || 0;
+    if (mv > (sleeveMax[s] || 0)) sleeveMax[s] = mv;
+  }
+  const arcs = sorted.map(p => {
+    const mv = p.market_value || 0;
+    const pct = (mv / totalMv) * 100;
+    if (pct <= 0) return '';
+    const visiblePct = Math.max(0.05, pct - GAP);
+    const dashArr = `${visiblePct.toFixed(3)} ${(100 - visiblePct).toFixed(3)}`;
+    const dashOff = (-offset).toFixed(3);
+    const sleeve = p.sleeve || 'unattributed';
+    const color = PF_SLEEVE_COLOR[sleeve] || PF_SLEEVE_COLOR.unattributed;
+    const sm = sleeveMax[sleeve] || mv;
+    const op = (0.55 + 0.45 * (mv / sm)).toFixed(2);
+    const arc = `<circle cx="21" cy="21" r="15.9155" fill="transparent"
+      stroke="${color}" stroke-width="7"
+      stroke-dasharray="${dashArr}" stroke-dashoffset="${dashOff}"
+      stroke-opacity="${op}"
+      transform="rotate(-90 21 21)"
+      data-pf-sym="${p.symbol}" data-pf-sleeve="${sleeve}"
+      data-pf-amt="${mv.toFixed(2)}"
+      data-pf-pct="${pct.toFixed(2)}"
+      data-pf-pl="${(p.unrealized_pl || 0).toFixed(2)}"
+      data-pf-plpc="${((p.unrealized_plpc || 0) * 100).toFixed(2)}"></circle>`;
+    offset += pct;
+    return arc;
+  }).join('');
+
+  // Center font sizing copied from renderMasterDonut — same trick: scale
+  // down for long $ strings so "$1,234,567" doesn't bleed into the ring.
+  const totalStr = fmtUSD(totalMv, { digits: 0 });
+  const _len = totalStr.replace(/[^\d$.,]/g, '').length;
+  const _vw = (typeof window !== 'undefined' && window.innerWidth) || 1200;
+  const _baseMax = _vw < 540 ? 26 : _vw < 920 ? 32 : 36;
+  const _scale = _len > 11 ? 0.55 : _len > 9 ? 0.70 : _len > 7 ? 0.85 : 1.00;
+  const _font = Math.max(16, Math.round(_baseMax * _scale));
+
+  // Sleeve-totals legend below the donut. Same color dots as cards/tags
+  // so the user can connect "violet slice" to "Mo card" instantly.
+  const bySleeve = {};
+  for (const p of sorted) {
+    const s = p.sleeve || 'unattributed';
+    bySleeve[s] = (bySleeve[s] || 0) + (p.market_value || 0);
+  }
+  const ORDER = ['momentum', 'swing', 'daytrade', 'scalper', 'unattributed'];
+  const LABELS = { momentum: 'Momentum', swing: 'Swing', daytrade: 'Day trade', scalper: 'Scalper', unattributed: 'Other' };
+  const legend = ORDER
+    .filter(s => (bySleeve[s] || 0) > 0)
+    .map(s => {
+      const amt = bySleeve[s];
+      const pct = ((amt / totalMv) * 100).toFixed(1);
+      return `<div class="pf-pdl-row">
+        <span class="pf-pdl-dot" style="background:${PF_SLEEVE_COLOR[s]}"></span>
+        <span class="pf-pdl-name">${LABELS[s] || s}</span>
+        <span class="pf-pdl-amt">${fmtUSD(amt, { digits: 0 })}</span>
+        <span class="pf-pdl-pct">${pct}%</span>
+      </div>`;
+    }).join('');
+
+  return `<div class="pf-pos-donut-wrap">
+    <div class="pf-pos-donut alloc-donut">
+      <svg viewBox="0 0 42 42" aria-label="Open positions by capital allocation">
+        <circle cx="21" cy="21" r="15.9155" fill="transparent" stroke="rgba(155,161,185,0.08)" stroke-width="7"/>
+        ${arcs}
+      </svg>
+      <div class="dt-center">
+        <div class="dt-inner">
+          <div class="dt-total" style="font-size:${_font}px;">${totalStr}</div>
+          <div class="dt-sub">DEPLOYED</div>
+          <div class="dt-caption">${positions.length} position${positions.length !== 1 ? 's' : ''}</div>
+        </div>
+      </div>
+    </div>
+    <div class="pf-pos-donut-legend">${legend}</div>
   </div>`;
 }
 // Returns "Mon 09:30 ET (in 14h 32m)" style copy for the next trader fire.
@@ -809,7 +927,13 @@ function renderPortfolio(data) {
     </div>`;
   } else {
     const wrapCls = data.teaser ? 'pf-positions pf-teaser-fade' : 'pf-positions';
-    positionsBlock = `<div class="${wrapCls}">${positions.map(pfPositionCard).join('')}</div>`;
+    // Donut needs the SAME totalMv that drives the card weights so a card
+    // labelled "12.4%" matches the slice that takes 12.4% of the ring.
+    // Use positions-derived MV (not sleeve totals) since teaser-truncated
+    // payloads exclude some positions and we don't want weights summing >100%.
+    const visibleMv = positions.reduce((s, p) => s + (p.market_value || 0), 0);
+    const donutBlock = pfPositionsDonut(positions, visibleMv);
+    positionsBlock = donutBlock + `<div class="${wrapCls}">${positions.map(p => pfPositionCard(p, visibleMv)).join('')}</div>`;
     if (data.teaser) {
       positionsBlock += `<div class="pf-teaser-cta">Showing ${positions.length} of total — <a href="/pricing">unlock the full book</a> to see every fill, sleeve allocation, and intraday rebalance.</div>`;
     }
@@ -1768,8 +1892,83 @@ async function refreshPortfolioOnly() {
     const node = document.getElementById('pf-panel');
     if (!node) return;
     const html = renderPortfolio(data);
-    if (html) node.outerHTML = html;
+    if (html) {
+      node.outerHTML = html;
+      // outerHTML replaces the slice circles — re-bind tooltips on the
+      // fresh nodes. Without this, the donut is silent on hover after the
+      // first refresh.
+      wirePortfolioTooltips();
+    }
   } catch (_) { /* swallow — next tick will retry */ }
+}
+
+// Hover tooltip for portfolio donut slices. Distinct from wireChartTooltips
+// because the data shape differs: portfolio slices carry sleeve + P&L
+// (no tier), and we want the popup to surface live unrealized P&L next to
+// the dollar amount. Same .chart-tooltip element styling for visual unity.
+function wirePortfolioTooltips() {
+  let tip = document.getElementById('pfTip');
+  if (!tip) {
+    tip = document.createElement('div');
+    tip.id = 'pfTip';
+    tip.className = 'chart-tooltip';
+    tip.innerHTML = `
+      <div class="ct-head">
+        <span class="ct-dot"></span>
+        <span class="ct-sym"></span>
+        <span class="ct-tier ct-sleeve"></span>
+      </div>
+      <div class="ct-rows">
+        <div class="ct-row"><span class="ct-label">Market value</span><span class="ct-value big ct-amt"></span></div>
+        <div class="ct-row"><span class="ct-label">% of book</span><span class="ct-value ct-pct"></span></div>
+        <div class="ct-row"><span class="ct-label">Unrealized P&amp;L</span><span class="ct-value ct-pl"></span></div>
+      </div>`;
+    document.body.appendChild(tip);
+  }
+  const SLEEVE_LABEL = { momentum: 'MOMENTUM', swing: 'SWING', daytrade: 'DAY TRADE', scalper: 'SCALPER', unattributed: 'OTHER' };
+
+  const positionTip = (evt) => {
+    const w = tip.offsetWidth || 220;
+    const h = tip.offsetHeight || 140;
+    const x = Math.min(evt.clientX + 16, window.innerWidth - w - 12);
+    const y = Math.min(evt.clientY + 16, window.innerHeight - h - 12);
+    tip.style.left = x + 'px';
+    tip.style.top = y + 'px';
+  };
+  const show = (circle, evt) => {
+    const sym = circle.getAttribute('data-pf-sym');
+    const sleeve = circle.getAttribute('data-pf-sleeve') || 'unattributed';
+    const amt = parseFloat(circle.getAttribute('data-pf-amt') || '0');
+    const pct = parseFloat(circle.getAttribute('data-pf-pct') || '0');
+    const pl = parseFloat(circle.getAttribute('data-pf-pl') || '0');
+    const plpc = parseFloat(circle.getAttribute('data-pf-plpc') || '0');
+    const color = PF_SLEEVE_COLOR[sleeve] || PF_SLEEVE_COLOR.unattributed;
+    const sign = (n) => (n > 0 ? '+' : (n < 0 ? '−' : ''));
+    const plCls = pl > 0 ? 'pos' : (pl < 0 ? 'neg' : '');
+
+    tip.querySelector('.ct-dot').style.background = color;
+    tip.querySelector('.ct-sym').textContent = sym;
+    tip.querySelector('.ct-sleeve').textContent = SLEEVE_LABEL[sleeve] || sleeve.toUpperCase();
+    tip.querySelector('.ct-amt').textContent = fmtUSD(amt, { digits: 0 });
+    tip.querySelector('.ct-pct').textContent = pct.toFixed(2) + '%';
+    const plEl = tip.querySelector('.ct-pl');
+    plEl.className = 'ct-value ct-pl ' + plCls;
+    plEl.textContent = `${sign(pl)}${fmtUSD(Math.abs(pl), { digits: 0 }).replace(/^[-]/, '')} (${sign(plpc)}${Math.abs(plpc).toFixed(2)}%)`;
+    circle.classList.add('hover');
+    tip.classList.add('visible');
+    positionTip(evt);
+  };
+  const hide = (circle) => { circle?.classList.remove('hover'); tip.classList.remove('visible'); };
+
+  document.querySelectorAll('circle[data-pf-sym]').forEach(c => {
+    c.addEventListener('mouseenter', e => show(c, e));
+    c.addEventListener('mousemove', e => positionTip(e));
+    c.addEventListener('mouseleave', () => hide(c));
+    // Touch — single-tap to peek (Mobile QC: never absolute-position
+    // interactive UI in collapsibles, but the tooltip is body-attached
+    // and z-9999 so it's safe).
+    c.addEventListener('touchstart', e => show(c, e.touches[0]), { passive: true });
+  });
 }
 function startPortfolioRefresh() {
   if (_pfRefreshTimer) return;
@@ -1829,6 +2028,7 @@ async function load() {
   content.innerHTML = renderPage(picksData, trackData, portfolioData);
   wireAllocControls(picksData, trackData);
   wireChartTooltips();
+  wirePortfolioTooltips();
   if (portfolioData && !portfolioData.error) startPortfolioRefresh();
 }
 
