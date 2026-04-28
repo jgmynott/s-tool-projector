@@ -1,5 +1,169 @@
 {
-  "entries": {},
-  "traded_today": {},
+  "entries": {
+    "VRT": {
+      "sleeve": "momentum",
+      "opened_at": "2026-04-28T15:41:43.678948+00:00",
+      "ref_price": 322.43,
+      "qty": 30
+    },
+    "GEV": {
+      "sleeve": "momentum",
+      "opened_at": "2026-04-28T15:41:44.147867+00:00",
+      "ref_price": 1120.23,
+      "qty": 8
+    },
+    "WDC": {
+      "sleeve": "momentum",
+      "opened_at": "2026-04-28T15:41:44.647875+00:00",
+      "ref_price": 400.73,
+      "qty": 24
+    },
+    "AGX": {
+      "sleeve": "momentum",
+      "opened_at": "2026-04-28T15:41:45.110394+00:00",
+      "ref_price": 601.83,
+      "qty": 16
+    },
+    "CIEN": {
+      "sleeve": "momentum",
+      "opened_at": "2026-04-28T15:41:45.563140+00:00",
+      "ref_price": 506.34,
+      "qty": 19
+    },
+    "FIX": {
+      "sleeve": "swing",
+      "opened_at": "2026-04-28T15:41:46.055083+00:00",
+      "ref_price": 1794.04,
+      "qty": 2
+    },
+    "STX": {
+      "sleeve": "swing",
+      "opened_at": "2026-04-28T15:41:47.464362+00:00",
+      "ref_price": 595.86,
+      "qty": 8
+    },
+    "AMRX": {
+      "sleeve": "swing",
+      "opened_at": "2026-04-28T15:41:48.681410+00:00",
+      "ref_price": 13.09,
+      "qty": 374
+    },
+    "AHR": {
+      "sleeve": "swing",
+      "opened_at": "2026-04-28T15:41:49.448406+00:00",
+      "ref_price": 50.58,
+      "qty": 96
+    },
+    "CRS": {
+      "sleeve": "swing",
+      "opened_at": "2026-04-28T15:41:50.432775+00:00",
+      "ref_price": 426.16,
+      "qty": 11
+    },
+    "HWM": {
+      "sleeve": "swing",
+      "opened_at": "2026-04-28T15:41:51.044689+00:00",
+      "ref_price": 241.7,
+      "qty": 20
+    },
+    "DBD": {
+      "sleeve": "swing",
+      "opened_at": "2026-04-28T15:41:51.507993+00:00",
+      "ref_price": 88.64,
+      "qty": 55
+    },
+    "GLW": {
+      "sleeve": "swing",
+      "opened_at": "2026-04-28T15:41:52.670716+00:00",
+      "ref_price": 168.01,
+      "qty": 29
+    },
+    "DY": {
+      "sleeve": "swing",
+      "opened_at": "2026-04-28T15:41:53.162021+00:00",
+      "ref_price": 409.32,
+      "qty": 11
+    },
+    "TSM": {
+      "sleeve": "swing",
+      "opened_at": "2026-04-28T15:41:53.646630+00:00",
+      "ref_price": 404.98,
+      "qty": 12
+    },
+    "JBL": {
+      "sleeve": "daytrade",
+      "opened_at": "2026-04-28T15:41:54.881402+00:00",
+      "ref_price": 340.8,
+      "qty": 9
+    },
+    "IBKR": {
+      "sleeve": "daytrade",
+      "opened_at": "2026-04-28T15:41:55.959790+00:00",
+      "ref_price": 77.59,
+      "qty": 42
+    },
+    "AZZ": {
+      "sleeve": "daytrade",
+      "opened_at": "2026-04-28T15:41:57.087242+00:00",
+      "ref_price": 133.76,
+      "qty": 24
+    },
+    "GE": {
+      "sleeve": "daytrade",
+      "opened_at": "2026-04-28T15:41:57.553906+00:00",
+      "ref_price": 284.56,
+      "qty": 11
+    },
+    "CW": {
+      "sleeve": "daytrade",
+      "opened_at": "2026-04-28T15:41:58.648239+00:00",
+      "ref_price": 719.99,
+      "qty": 4
+    },
+    "CASY": {
+      "sleeve": "daytrade",
+      "opened_at": "2026-04-28T15:41:59.136948+00:00",
+      "ref_price": 804.5,
+      "qty": 4
+    },
+    "BK": {
+      "sleeve": "daytrade",
+      "opened_at": "2026-04-28T15:42:00.041819+00:00",
+      "ref_price": 134.47,
+      "qty": 24
+    },
+    "BLX": {
+      "sleeve": "daytrade",
+      "opened_at": "2026-04-28T15:42:01.125592+00:00",
+      "ref_price": 55.87,
+      "qty": 58
+    },
+    "C": {
+      "sleeve": "daytrade",
+      "opened_at": "2026-04-28T15:42:01.636058+00:00",
+      "ref_price": 129.14,
+      "qty": 25
+    },
+    "WELL": {
+      "sleeve": "daytrade",
+      "opened_at": "2026-04-28T15:42:02.124705+00:00",
+      "ref_price": 210.0,
+      "qty": 15
+    }
+  },
+  "traded_today": {
+    "2026-04-28": [
+      "JBL",
+      "IBKR",
+      "AZZ",
+      "GE",
+      "CW",
+      "CASY",
+      "BK",
+      "BLX",
+      "C",
+      "WELL"
+    ]
+  },
   "breaker_fired_date": "2026-04-28"
 }
