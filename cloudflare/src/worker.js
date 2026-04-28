@@ -78,6 +78,11 @@ function applyCacheControl(response, { html, pathname }) {
 // here MUST exactly match wrangler.toml — a typo silently falls through
 // to no-op and the scheduler quietly stops.
 function targetForCron(cron) {
+  // Trader pre_open — 13:25 UTC (DST) or 14:25 UTC (ST). Sweeps any
+  // daytrade held-over from yesterday so the 09:30 open print can't
+  // gap them down through the breaker. Submits sells while market is
+  // still closed; Alpaca queues them for the open print.
+  if (cron === "25 13,14 * * 1-5")    return { workflow: "trader.yml",  inputs: { mode: "live", window: "pre_open" } };
   // Trader open  — 13:30 UTC (DST) or 14:30 UTC (ST)
   if (cron === "30 13,14 * * 1-5")    return { workflow: "trader.yml",  inputs: { mode: "live", window: "open"  } };
   // Trader rotate — every 30 min 14:00–19:30 UTC

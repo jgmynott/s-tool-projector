@@ -908,11 +908,65 @@ def cmd_live(api: Alpaca, window: str) -> int:
         # fire when the cron lands a few minutes before market open. The
         # trader simply refuses to trade until the market is actually
         # open; that's correct, not an error.
-        # Exception: a close-window run that fires after 16:00 ET because
-        # of GH cron slippage still needs to pull today's FILL activities
-        # so bracket child fills + EOD closes reach the journal. Without
-        # this the track-record page silently misses every close-window
-        # that landed past EOD.
+        # Exceptions:
+        #   * pre_open: fires at 09:25 ET deliberately BEFORE market open;
+        #     submits sells that queue for the open print. Skip the gate
+        #     entirely — the whole window is "do work while market is closed".
+        #   * close: a close-window run that fires after 16:00 ET because
+        #     of GH cron slippage still needs to pull today's FILL activities
+        #     so bracket child fills + EOD closes reach the journal.
+        if window == "pre_open":
+            # Drop through into the main pre_open handler below — it handles
+            # state lookup, position close, and journaling for itself.
+            state = load_state()
+            pos = api.positions()
+            journal_rows = load_journal()
+            new_rows: list[dict] = []
+            held: list[dict] = []
+            for p in pos:
+                sym = p.get("symbol")
+                sleeve = (state.get("entries", {}).get(sym, {}) or {}).get("sleeve")
+                if sleeve == "daytrade":
+                    held.append({
+                        "symbol": sym, "qty": p.get("qty"),
+                        "ref_price": (state.get("entries", {}).get(sym, {}) or {}).get("ref_price"),
+                    })
+            if not held:
+                print("pre_open (market closed): no held-over daytrade positions, nothing to do")
+                return 0
+            print(f"\n>>> PRE-OPEN SWEEP (market closed, queueing for 09:30 print): "
+                  f"closing {len(held)} held-over daytrades: "
+                  f"{', '.join(h['symbol'] for h in held)}")
+            for h in held:
+                sym = h["symbol"]
+                try:
+                    api.close_position(sym)
+                    close_result = "submitted"
+                except Exception as e:
+                    log.error("pre_open close %s failed: %s", sym, e)
+                    close_result = f"failed: {str(e)[:60]}"
+                new_rows.append({
+                    "ts": datetime.now(timezone.utc).isoformat(),
+                    "event": "sell", "sleeve": "daytrade", "symbol": sym,
+                    "qty": h["qty"], "ref_price": h["ref_price"],
+                    "live_price": None, "realized_pl": None,
+                    "reason": "preopen_holdover_sweep", "result": close_result,
+                })
+                state.get("entries", {}).pop(sym, None)
+            save_state(state)
+            if new_rows:
+                save_journal(_prune_journal(journal_rows + new_rows))
+                print(f"\njournal: appended {len(new_rows)} rows")
+                try:
+                    discord_post(
+                        f"🧹 **Pre-open sweep** — closed {len(held)} held-over "
+                        f"daytrade(s) before 09:30 print: "
+                        f"{', '.join(h['symbol'] for h in held)}.",
+                        embed=None,
+                    )
+                except Exception:
+                    pass
+            return 0
         if window == "close":
             try:
                 state = load_state()
@@ -1054,6 +1108,61 @@ def cmd_live(api: Alpaca, window: str) -> int:
         realized_total = sum(float(r.get("pnl") or 0) for r in sell_rows_today)
         discord_alert_close_summary(realized_total, len(sell_rows_today), acct)
         return 0
+    elif window == "pre_open":
+        # Defensive sweep — fires at 09:25 ET. Any daytrade-sleeve
+        # position still open at this point was held overnight against
+        # design (the prior day's 15:55 ET close window EITHER didn't
+        # fire, fired late, or got bracket-blocked). Force-close so the
+        # 09:30 open print doesn't gap-down those positions and trip
+        # the breaker on equity-vs-yesterday-close. This kills the
+        # exact failure mode that nuked 2026-04-28's trading day.
+        held: list[dict] = []
+        for p in pos:
+            sym = p.get("symbol")
+            sleeve = (state.get("entries", {}).get(sym, {}) or {}).get("sleeve")
+            if sleeve == "daytrade":
+                held.append({
+                    "symbol": sym,
+                    "qty": p.get("qty"),
+                    "ref_price": (state.get("entries", {}).get(sym, {}) or {}).get("ref_price"),
+                })
+        if not held:
+            print("pre_open: no held-over daytrade positions, nothing to do")
+            return 0
+        print(f"\n>>> PRE-OPEN SWEEP: closing {len(held)} held-over daytrades: "
+              f"{', '.join(h['symbol'] for h in held)}")
+        for h in held:
+            sym = h["symbol"]
+            try:
+                api.close_position(sym)
+                close_result = "submitted"
+            except Exception as e:
+                log.error("pre_open close %s failed: %s", sym, e)
+                close_result = f"failed: {str(e)[:60]}"
+            new_rows.append({
+                "ts": datetime.now(timezone.utc).isoformat(),
+                "event": "sell", "sleeve": "daytrade", "symbol": sym,
+                "qty": h["qty"], "ref_price": h["ref_price"],
+                "live_price": None, "realized_pl": None,
+                "reason": "preopen_holdover_sweep",
+                "result": close_result,
+            })
+            state.get("entries", {}).pop(sym, None)
+        save_state(state)
+        if new_rows:
+            save_journal(_prune_journal(journal_rows + new_rows))
+            print(f"\njournal: appended {len(new_rows)} rows")
+            try:
+                discord_post(
+                    f"🧹 **Pre-open sweep** — closed {len(held)} held-over "
+                    f"daytrade(s) before 09:30 print: "
+                    f"{', '.join(h['symbol'] for h in held)}. Prevents the "
+                    f"overnight-gap → breaker chain from firing.",
+                    embed=None,
+                )
+            except Exception:
+                pass
+        return 0
     elif window == "rotate":
         picks = load_rotation_pool()
         if not picks: print("no picks"); return 4
@@ -1086,10 +1195,11 @@ def _prune_journal(rows: list[dict], keep_days: int = 365) -> list[dict]:
 def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument("mode", choices=["status", "dry", "live"])
-    p.add_argument("--window", choices=["open", "close", "rotate"], default="open",
+    p.add_argument("--window", choices=["open", "close", "rotate", "pre_open"], default="open",
                    help="open=swing rebalance + daytrade entries; "
                         "close=daytrade EOD exits; "
-                        "rotate=intraday daytrade refill (every 30 min)")
+                        "rotate=intraday daytrade refill (every 30 min); "
+                        "pre_open=09:25 ET sweep of held-over daytrades")
     args = p.parse_args()
     env = {**os.environ, **load_env()}
     if not env.get("ALPACA_API_KEY"):
