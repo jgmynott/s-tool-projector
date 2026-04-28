@@ -82,7 +82,11 @@ def build_message() -> tuple[str, str, str]:
             lines.append(f"24h trades: {wins}W/{losses}L · realized {fmt_money(s.get('realized_pnl_total'))}")
 
     if ds:
-        latest = ds.get("latest_pick_date")
+        # /api/data-status nests the picks freshness under feeds.picks_history
+        # (matches post_deploy_verify.py's contract) — top-level latest_pick_date
+        # was never returned and the previous code silently never alerted.
+        ph = (ds.get("feeds") or {}).get("picks_history") or {}
+        latest = ph.get("latest_pick_date")
         if latest:
             today = datetime.now(timezone.utc).date().isoformat()
             if latest != today:

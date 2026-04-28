@@ -333,6 +333,11 @@ def plan(api: Alpaca, state: dict) -> dict:
         if not sig:
             continue
         qty = max(1, int(PER_POSITION_NOTIONAL // sig["ref_price"]))
+        # Diag fields vary by signal: ORB has range_high/low/avg_open_vol/cur_vol,
+        # relvol has vol_multiple/range_pos/cur_vol. Lift everything that isn't
+        # the canonical entry fields so each signal can carry its own context
+        # into the journal without us hardcoding a per-signal whitelist.
+        diag = {k: v for k, v in sig.items() if k not in ("ref_price", "signal")}
         entries.append({
             "symbol": sym,
             "qty": qty,
@@ -340,7 +345,7 @@ def plan(api: Alpaca, state: dict) -> dict:
             "stop_pct": STOP_PCT,
             "target_pct": TARGET_PCT,
             "signal": sig["signal"],
-            "diag": {k: sig[k] for k in ("range_high", "range_low", "cur_vol")},
+            "diag": diag,
         })
         if len(open_positions) + len(entries) - len(exits) >= MAX_POSITIONS:
             break
