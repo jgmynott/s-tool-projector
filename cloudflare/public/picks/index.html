@@ -746,12 +746,13 @@ footer a { color: var(--text-mid); }
 .pf-chart-cursor { stroke: var(--text-mid); stroke-width: 1; stroke-dasharray: 3 3; pointer-events: none; }
 .pf-chart-dot { pointer-events: none; }
 .pf-chart-hit { cursor: crosshair; }
-/* Legend strip — pill-style items so each comparison reads as a self-
-   contained chip and the eye doesn't blur "S-Tool -0.29%" into the SPY
-   swatch next to it. Margin separates it cleanly from the X-axis labels
-   above and the live activity strip below. */
+/* Legend strip — pill-style items above the SVG (header), so each
+   comparison reads as a self-contained chip. Sits above the chart so it
+   can NEVER visually collide with the live-activity strip below — the
+   chart's overflow:visible behaviour at narrow widths previously bled
+   into the live banner. */
 .pf-chart-legend {
-  display: flex; gap: 10px; margin: 18px 0 4px;
+  display: flex; gap: 10px; margin: 0 0 12px;
   align-items: center; flex-wrap: wrap;
   font: 500 12px 'Inter'; color: var(--text-mid); font-variant-numeric: tabular-nums;
 }
@@ -1575,6 +1576,7 @@ footer a { color: var(--text-mid); }
   .pf-pos-donut-wrap { padding: 24px 14px 24px; gap: 16px; }
 }
 </style>
+<link rel="stylesheet" href="/shared/mobile.css?v=20260429c" />
 <script async
   data-clerk-publishable-key="pk_test_Zmx1ZW50LW1vbGUtNzEuY2xlcmsuYWNjb3VudHMuZGV2JA"
   src="https://fluent-mole-71.clerk.accounts.dev/npm/@clerk/clerk-js@5/dist/clerk.browser.js"
@@ -1675,6 +1677,6 @@ footer a { color: var(--text-mid); }
      1h Cache-Control on /shared/* skips download + parse on every
      repeat visit. defer means it executes after HTML parse but
      before DOMContentLoaded, same effective ordering as inline. -->
-<script defer src="/shared/picks-app.js?v=20260429n"></script>
+<script defer src="/shared/picks-app.js?v=20260429o"></script>
 </body>
 </html>

@@ -410,7 +410,11 @@ function pfChartSvg(pts, ts, isIntraday, spyPts, opts = {}) {
     </div>`;
   }
 
+  // Legend renders ABOVE the SVG so it can never visually collide with the
+  // live-activity strip below the chart. (Mobile bug 2026-04-29: at narrow
+  // widths the legend below the SVG was overlapping with the live banner.)
   return `<div class="pf-chart" id="pfChart">
+    ${legend}
     <svg class="pf-chart-svg" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
       ${yLabels}
       ${xLabels}
@@ -421,7 +425,6 @@ function pfChartSvg(pts, ts, isIntraday, spyPts, opts = {}) {
       <line class="pf-chart-cursor" x1="0" y1="${padT}" x2="0" y2="${(padT + innerH).toFixed(1)}" style="display:none;"/>
       <circle class="pf-chart-dot" cx="0" cy="0" r="4" fill="${strokeRaw}" stroke="var(--bg-surface)" stroke-width="2" style="display:none;"/>
     </svg>
-    ${legend}
     <div class="pf-chart-tooltip" style="display:none;">
       <span class="pf-chart-tt-val"></span>
       <span class="pf-chart-tt-spy" style="display:none;"></span>
