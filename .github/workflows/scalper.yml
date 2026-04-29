@@ -107,3 +107,4 @@ jobs:
               echo "push rejected on attempt $attempt — sleeping then retrying"
               sleep $((attempt * 3))
             done
+          fi

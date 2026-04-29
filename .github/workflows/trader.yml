@@ -206,6 +206,7 @@ jobs:
               echo "push rejected on attempt $attempt — sleeping then retrying"
               sleep $((attempt * 3))
             done
+          fi
 
       # Failure tripwire. A trader.py crash that goes unobserved means
       # entries don't fire, exits don't fire, or sleeve-scoped tagging
