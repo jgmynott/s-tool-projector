@@ -249,6 +249,33 @@
         "signal": "relvol",
         "stop": 508.28,
         "target": 516.98
+      },
+      "GS": {
+        "symbol": "GS",
+        "qty": 1,
+        "entry_price": 902.06,
+        "opened_at": "2026-04-29T18:20:59.471901+00:00",
+        "signal": "relvol",
+        "stop": 895.75,
+        "target": 911.08
+      },
+      "MS": {
+        "symbol": "MS",
+        "qty": 2,
+        "entry_price": 186.03,
+        "opened_at": "2026-04-29T18:20:59.530345+00:00",
+        "signal": "relvol",
+        "stop": 184.73,
+        "target": 187.89
+      },
+      "CAT": {
+        "symbol": "CAT",
+        "qty": 1,
+        "entry_price": 811.41,
+        "opened_at": "2026-04-29T18:20:59.598444+00:00",
+        "signal": "relvol",
+        "stop": 805.73,
+        "target": 819.52
       }
     },
     "fired_today": [
@@ -336,6 +363,21 @@
         "symbol": "MU",
         "signal": "relvol",
         "ts": "2026-04-29T17:55:57.285887+00:00"
+      },
+      {
+        "symbol": "GS",
+        "signal": "relvol",
+        "ts": "2026-04-29T18:20:59.471911+00:00"
+      },
+      {
+        "symbol": "MS",
+        "signal": "relvol",
+        "ts": "2026-04-29T18:20:59.530354+00:00"
+      },
+      {
+        "symbol": "CAT",
+        "signal": "relvol",
+        "ts": "2026-04-29T18:20:59.598452+00:00"
       }
     ],
     "last_scan": null,
