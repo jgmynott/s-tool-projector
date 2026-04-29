@@ -1,6 +1,6 @@
 {
-  "as_of": "2026-04-29T15:31:01.703454+00:00",
-  "n_rows": 152,
+  "as_of": "2026-04-29T15:50:53.853050+00:00",
+  "n_rows": 154,
   "rows": [
     {
       "ts": "2026-04-27T13:47:29.206731Z",
@@ -2041,6 +2041,34 @@
       "sell_price": null,
       "pnl": null,
       "exit_reason": "max_hold"
+    },
+    {
+      "ts": "2026-04-29T15:50:53.809361+00:00",
+      "event": "buy",
+      "sleeve": "scalper",
+      "symbol": "BLK",
+      "qty": 1,
+      "ref_price": 1035.34,
+      "live_price": 1035.34,
+      "stop": 1028.09,
+      "target": 1045.69,
+      "tier": "relvol",
+      "rationale": "{\"vol_multiple\": 2.339572192513369, \"range_pos\": 0.9942857142855895, \"cur_vol\": 625}",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-04-29T15:50:53.852538+00:00",
+      "event": "buy",
+      "sleeve": "scalper",
+      "symbol": "DE",
+      "qty": 1,
+      "ref_price": 561.935,
+      "live_price": 561.935,
+      "stop": 558.0,
+      "target": 567.55,
+      "tier": "relvol",
+      "rationale": "{\"vol_multiple\": 3.27588228397233, \"range_pos\": 1.0, \"cur_vol\": 1397}",
+      "result": "submitted"
     }
   ]
 }

@@ -117,15 +117,6 @@
         "stop": 1374.71,
         "target": 1398.24
       },
-      "TSM": {
-        "symbol": "TSM",
-        "qty": 1,
-        "entry_price": 394.7,
-        "opened_at": "2026-04-29T14:25:53.844352+00:00",
-        "signal": "orb",
-        "stop": 391.94,
-        "target": 398.65
-      },
       "QQQ": {
         "symbol": "QQQ",
         "qty": 1,
@@ -152,6 +143,24 @@
         "signal": "orb",
         "stop": 5.25,
         "target": 5.34
+      },
+      "BLK": {
+        "symbol": "BLK",
+        "qty": 1,
+        "entry_price": 1035.34,
+        "opened_at": "2026-04-29T15:50:53.809345+00:00",
+        "signal": "relvol",
+        "stop": 1028.09,
+        "target": 1045.69
+      },
+      "DE": {
+        "symbol": "DE",
+        "qty": 1,
+        "entry_price": 561.935,
+        "opened_at": "2026-04-29T15:50:53.852524+00:00",
+        "signal": "relvol",
+        "stop": 558.0,
+        "target": 567.55
       }
     },
     "fired_today": [
@@ -199,6 +208,16 @@
         "symbol": "TZA",
         "signal": "orb",
         "ts": "2026-04-29T15:11:04.160433+00:00"
+      },
+      {
+        "symbol": "BLK",
+        "signal": "relvol",
+        "ts": "2026-04-29T15:50:53.809357+00:00"
+      },
+      {
+        "symbol": "DE",
+        "signal": "relvol",
+        "ts": "2026-04-29T15:50:53.852535+00:00"
       }
     ],
     "last_scan": null,
