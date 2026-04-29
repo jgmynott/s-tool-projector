@@ -1,6 +1,6 @@
 {
-  "as_of": "2026-04-29T19:50:59.077323+00:00",
-  "n_rows": 200,
+  "as_of": "2026-04-29T19:56:00.731578+00:00",
+  "n_rows": 203,
   "rows": [
     {
       "ts": "2026-04-27T13:47:29.206731Z",
@@ -2742,6 +2742,48 @@
       "target": 102.2,
       "tier": "relvol",
       "rationale": "{\"vol_multiple\": 2.7660582979612984, \"range_pos\": 0.7058823529411371, \"cur_vol\": 8821}",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-04-29T19:56:00.547871+00:00",
+      "event": "buy",
+      "sleeve": "scalper",
+      "symbol": "AAPL",
+      "qty": 1,
+      "ref_price": 269.955,
+      "live_price": 269.955,
+      "stop": 268.07,
+      "target": 272.65,
+      "tier": "relvol",
+      "rationale": "{\"vol_multiple\": 2.9309500489715967, \"range_pos\": 0.6777777777777244, \"cur_vol\": 22230}",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-04-29T19:56:00.640309+00:00",
+      "event": "buy",
+      "sleeve": "scalper",
+      "symbol": "NVDA",
+      "qty": 2,
+      "ref_price": 209.07,
+      "live_price": 209.07,
+      "stop": 207.61,
+      "target": 211.16,
+      "tier": "relvol",
+      "rationale": "{\"vol_multiple\": 2.370879141735115, \"range_pos\": 0.895348837209267, \"cur_vol\": 120460}",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-04-29T19:56:00.730770+00:00",
+      "event": "buy",
+      "sleeve": "scalper",
+      "symbol": "MRVL",
+      "qty": 3,
+      "ref_price": 156.21,
+      "live_price": 156.21,
+      "stop": 155.12,
+      "target": 157.77,
+      "tier": "relvol",
+      "rationale": "{\"vol_multiple\": 2.3015956440389345, \"range_pos\": 0.9767441860465323, \"cur_vol\": 12512}",
       "result": "submitted"
     }
   ]
