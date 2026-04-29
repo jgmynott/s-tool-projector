@@ -1,6 +1,6 @@
 {
-  "as_of": "2026-04-29T14:15:53.890584+00:00",
-  "n_rows": 125,
+  "as_of": "2026-04-29T14:25:53.846938+00:00",
+  "n_rows": 126,
   "rows": [
     {
       "ts": "2026-04-27T13:47:29.206731Z",
@@ -1739,6 +1739,20 @@
       "target": 61.67,
       "tier": "relvol",
       "rationale": "{\"vol_multiple\": 2.341987466427932, \"range_pos\": 0.9166666666666543, \"cur_vol\": 19620}",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-04-29T14:25:53.844376+00:00",
+      "event": "buy",
+      "sleeve": "scalper",
+      "symbol": "TSM",
+      "qty": 1,
+      "ref_price": 394.7,
+      "live_price": 394.7,
+      "stop": 391.94,
+      "target": 398.65,
+      "tier": "orb",
+      "rationale": "{\"range_high\": 393.61, \"range_low\": 388.37, \"avg_open_vol\": 4828.666666666667, \"cur_vol\": 6947}",
       "result": "submitted"
     }
   ]

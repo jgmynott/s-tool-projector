@@ -174,15 +174,6 @@
         "stop": 308.62,
         "target": 313.91
       },
-      "AMD": {
-        "symbol": "AMD",
-        "qty": 1,
-        "entry_price": 322.275,
-        "opened_at": "2026-04-29T14:15:53.724182+00:00",
-        "signal": "relvol",
-        "stop": 320.02,
-        "target": 325.5
-      },
       "TQQQ": {
         "symbol": "TQQQ",
         "qty": 8,
@@ -191,6 +182,15 @@
         "signal": "relvol",
         "stop": 60.63,
         "target": 61.67
+      },
+      "TSM": {
+        "symbol": "TSM",
+        "qty": 1,
+        "entry_price": 394.7,
+        "opened_at": "2026-04-29T14:25:53.844352+00:00",
+        "signal": "orb",
+        "stop": 391.94,
+        "target": 398.65
       }
     },
     "fired_today": [
@@ -213,6 +213,11 @@
         "symbol": "TQQQ",
         "signal": "relvol",
         "ts": "2026-04-29T14:15:53.889999+00:00"
+      },
+      {
+        "symbol": "TSM",
+        "signal": "orb",
+        "ts": "2026-04-29T14:25:53.844371+00:00"
       }
     ],
     "last_scan": null,
