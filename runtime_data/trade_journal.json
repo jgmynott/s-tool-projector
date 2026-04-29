@@ -1,6 +1,6 @@
 {
-  "as_of": "2026-04-29T15:11:04.161042+00:00",
-  "n_rows": 141,
+  "as_of": "2026-04-29T15:30:37.818493+00:00",
+  "n_rows": 151,
   "rows": [
     {
       "ts": "2026-04-27T13:47:29.206731Z",
@@ -1910,6 +1910,126 @@
       "tier": "orb",
       "rationale": "{\"range_high\": 5.27, \"range_low\": 5.195, \"avg_open_vol\": 119951.16666666667, \"cur_vol\": 226084}",
       "result": "submitted"
+    },
+    {
+      "ts": "2026-04-29T15:30:36.832077+00:00",
+      "event": "sell",
+      "sleeve": "daytrade",
+      "symbol": "APH",
+      "qty": "23",
+      "ref_price": 143.72,
+      "live_price": null,
+      "realized_pl": null,
+      "reason": "preopen_holdover_sweep",
+      "result": "failed: Alpaca DELETE positions/APH \u2192 HTTP 403: {\"available\":\"0\",\"co"
+    },
+    {
+      "ts": "2026-04-29T15:30:36.923878+00:00",
+      "event": "sell",
+      "sleeve": "daytrade",
+      "symbol": "AZZ",
+      "qty": "24",
+      "ref_price": 133.76,
+      "live_price": null,
+      "realized_pl": null,
+      "reason": "preopen_holdover_sweep",
+      "result": "failed: Alpaca DELETE positions/AZZ \u2192 HTTP 403: {\"available\":\"0\",\"co"
+    },
+    {
+      "ts": "2026-04-29T15:30:37.017449+00:00",
+      "event": "sell",
+      "sleeve": "daytrade",
+      "symbol": "BK",
+      "qty": "25",
+      "ref_price": 133.54,
+      "live_price": null,
+      "realized_pl": null,
+      "reason": "preopen_holdover_sweep",
+      "result": "failed: Alpaca DELETE positions/BK \u2192 HTTP 403: {\"available\":\"0\",\"cod"
+    },
+    {
+      "ts": "2026-04-29T15:30:37.111483+00:00",
+      "event": "sell",
+      "sleeve": "daytrade",
+      "symbol": "CASY",
+      "qty": "4",
+      "ref_price": 784.61,
+      "live_price": null,
+      "realized_pl": null,
+      "reason": "preopen_holdover_sweep",
+      "result": "failed: Alpaca DELETE positions/CASY \u2192 HTTP 403: {\"available\":\"0\",\"c"
+    },
+    {
+      "ts": "2026-04-29T15:30:37.389467+00:00",
+      "event": "sell",
+      "sleeve": "daytrade",
+      "symbol": "CW",
+      "qty": "4",
+      "ref_price": 719.99,
+      "live_price": null,
+      "realized_pl": null,
+      "reason": "preopen_holdover_sweep",
+      "result": "failed: Alpaca DELETE positions/CW \u2192 HTTP 403: {\"available\":\"0\",\"cod"
+    },
+    {
+      "ts": "2026-04-29T15:30:37.482172+00:00",
+      "event": "sell",
+      "sleeve": "daytrade",
+      "symbol": "DY",
+      "qty": "8",
+      "ref_price": 409.32,
+      "live_price": null,
+      "realized_pl": null,
+      "reason": "preopen_holdover_sweep",
+      "result": "failed: Alpaca DELETE positions/DY \u2192 HTTP 403: {\"available\":\"0\",\"cod"
+    },
+    {
+      "ts": "2026-04-29T15:30:37.563992+00:00",
+      "event": "sell",
+      "sleeve": "daytrade",
+      "symbol": "EME",
+      "qty": "3",
+      "ref_price": 863.78,
+      "live_price": null,
+      "realized_pl": null,
+      "reason": "preopen_holdover_sweep",
+      "result": "failed: Alpaca DELETE positions/EME \u2192 HTTP 403: {\"available\":\"0\",\"co"
+    },
+    {
+      "ts": "2026-04-29T15:30:37.646540+00:00",
+      "event": "sell",
+      "sleeve": "daytrade",
+      "symbol": "GE",
+      "qty": "11",
+      "ref_price": 289.2,
+      "live_price": null,
+      "realized_pl": null,
+      "reason": "preopen_holdover_sweep",
+      "result": "failed: Alpaca DELETE positions/GE \u2192 HTTP 403: {\"available\":\"0\",\"cod"
+    },
+    {
+      "ts": "2026-04-29T15:30:37.738569+00:00",
+      "event": "sell",
+      "sleeve": "daytrade",
+      "symbol": "WAB",
+      "qty": "12",
+      "ref_price": 263.18,
+      "live_price": null,
+      "realized_pl": null,
+      "reason": "preopen_holdover_sweep",
+      "result": "failed: Alpaca DELETE positions/WAB \u2192 HTTP 403: {\"available\":\"0\",\"co"
+    },
+    {
+      "ts": "2026-04-29T15:30:37.817784+00:00",
+      "event": "sell",
+      "sleeve": "daytrade",
+      "symbol": "WELL",
+      "qty": "15",
+      "ref_price": 214.23,
+      "live_price": null,
+      "realized_pl": null,
+      "reason": "preopen_holdover_sweep",
+      "result": "failed: Alpaca DELETE positions/WELL \u2192 HTTP 403: {\"available\":\"0\",\"c"
     }
   ]
 }
