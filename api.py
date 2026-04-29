@@ -954,34 +954,44 @@ def portfolio(request: Request, user: Optional[dict] = Depends(auth.optional_use
         spy_bars = futs["spy"].result()
         spy_intra_bars = futs["spy_intra"].result()
 
-    # Synthesize FILL-shaped rows from closed SELL orders that filled
-    # today, so the FIFO closed_today logic has a non-empty stream
-    # whenever sells exist — even if Alpaca's activities feed is lagging.
-    # We dedupe later by (symbol, qty, transaction_time) so duplicates
-    # between activities and sell_orders don't double-count P&L.
-    today_synth_sells: list[dict] = []
-    for o in (sell_orders or []):
+    # Synthesize FILL-shaped rows from closed SELL + BUY orders that filled
+    # today. The activities/FILL endpoint paginates (~100 most recent entries)
+    # so on a heavy trading day the morning BUYs roll off and only afternoon
+    # SELLs remain — leaves the FIFO with sells but no lots to pair, so every
+    # cross-day-bought-and-sold-today symbol falls through with buy_price=null.
+    # Caught 2026-04-29: 34 merged_fills, but closed_today rows had pnl=None
+    # because today's morning buys were out of the activities window. Fix:
+    # also synthesize buys from the closed-orders feed (limit=500, today only).
+    def _synth_from_order(o, side):
         if (o.get("status") or "").lower() != "filled":
-            continue
+            return None
         filled_at = o.get("filled_at") or ""
         if not filled_at.startswith(today_iso):
-            continue
+            return None
         try:
             qty = float(o.get("filled_qty") or o.get("qty") or 0)
             price = float(o.get("filled_avg_price") or 0)
         except (TypeError, ValueError):
-            continue
+            return None
         if qty <= 0 or price <= 0:
-            continue
-        today_synth_sells.append({
+            return None
+        return {
             "type": "FILL",
-            "side": "sell",
+            "side": side,
             "symbol": o.get("symbol"),
             "qty": qty,
             "price": price,
             "transaction_time": filled_at,
             "order_id": o.get("id"),
-        })
+        }
+    today_synth_sells: list[dict] = []
+    for o in (sell_orders or []):
+        row = _synth_from_order(o, "sell")
+        if row: today_synth_sells.append(row)
+    today_synth_buys: list[dict] = []
+    for o in (orders or []):
+        row = _synth_from_order(o, "buy")
+        if row: today_synth_buys.append(row)
 
     # Build sym → {sleeve, opened_at} from the most recent FILLED buy per
     # symbol. We walk newest-first so the first hit wins — that's the
@@ -1114,8 +1124,8 @@ def portfolio(request: Request, user: Optional[dict] = Depends(auth.optional_use
     realized_today_total = 0.0
     realized_by_sleeve: dict = {"momentum": 0.0, "swing": 0.0, "daytrade": 0.0, "scalper": 0.0, "unattributed": 0.0}
     # Build the unified fill stream: real Alpaca FILL activities + synthesized
-    # FILLs from closed SELL orders. Dedupe by (symbol, qty, time-truncated)
-    # so a sell that exists in both feeds doesn't double-book P&L.
+    # FILLs from closed BUY/SELL orders. Dedupe by (symbol, side, qty, time-trunc)
+    # so a fill that exists in both feeds doesn't double-book.
     real_fills = [a for a in (activities or []) if a.get("type") in ("FILL", "PARTIAL_FILL")]
     seen_fill_keys = set()
     for a in real_fills:
@@ -1126,15 +1136,18 @@ def portfolio(request: Request, user: Optional[dict] = Depends(auth.optional_use
             q = 0
         side_a = (a.get("side") or "").lower()
         ts_a = (a.get("transaction_time") or "")[:19]   # second-precision
-        if sym and side_a == "sell" and q > 0 and ts_a:
-            seen_fill_keys.add((sym, round(q, 2), ts_a))
+        if sym and side_a in ("buy", "sell") and q > 0 and ts_a:
+            seen_fill_keys.add((sym, side_a, round(q, 2), ts_a))
     merged_fills = list(real_fills)
-    for s in today_synth_sells:
-        key = (s.get("symbol"), round(float(s.get("qty") or 0), 2), (s.get("transaction_time") or "")[:19])
-        if key in seen_fill_keys:
-            continue
-        seen_fill_keys.add(key)
-        merged_fills.append(s)
+    for synth_list in (today_synth_buys, today_synth_sells):
+        for s in synth_list:
+            key = (s.get("symbol"), (s.get("side") or "").lower(),
+                   round(float(s.get("qty") or 0), 2),
+                   (s.get("transaction_time") or "")[:19])
+            if key in seen_fill_keys:
+                continue
+            seen_fill_keys.add(key)
+            merged_fills.append(s)
     if merged_fills:
         # Activities come back newest-first; oldest-first is the natural
         # FIFO direction.
@@ -1497,6 +1510,7 @@ def portfolio(request: Request, user: Optional[dict] = Depends(auth.optional_use
         "activities_n": len(activities or []),
         "sell_orders_n": len(sell_orders or []),
         "today_synth_sells_n": len(today_synth_sells),
+        "today_synth_buys_n": len(today_synth_buys),
         "merged_fills_n": len(merged_fills),
         "today_iso": today_iso,
     }
