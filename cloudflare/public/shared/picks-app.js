@@ -684,12 +684,20 @@ function pfLiveActivityStrip(data) {
   for (const c of closed) {
     if (!c.symbol) continue;
     const qty = parseFloat(c.qty) || 0;
-    const buyPx = parseFloat(c.buy_price) || 0;
+    // buy_price / pnl can be null when the sell's entry was prior-day
+    // and trader_state didn't have a buy_price for it. Treat as
+    // unknown so the row still surfaces with the sell price + time.
+    const buyRaw = c.buy_price;
+    const buyPx = (buyRaw == null || buyRaw === '') ? null : parseFloat(buyRaw);
     const sellPx = parseFloat(c.sell_price) || 0;
-    const pnl = parseFloat(c.pnl) || 0;
-    // pct return = pnl / cost basis
-    const cost = qty * buyPx;
-    const pct = cost > 0 ? (pnl / cost) * 100 : 0;
+    const pnlRaw = c.pnl;
+    const pnl = (pnlRaw == null || pnlRaw === '') ? null : parseFloat(pnlRaw);
+    let pct = null;
+    if (buyPx && sellPx) {
+      pct = ((sellPx / buyPx) - 1) * 100;
+    } else if (pnl != null && buyPx && qty > 0) {
+      pct = (pnl / (qty * buyPx)) * 100;
+    }
     events.push({
       kind: 'sell',
       symbol: c.symbol,
@@ -774,12 +782,18 @@ function pfLiveActivityStrip(data) {
 
     // Color/sign rules. Sells are realized; buys are live unrealized.
     // 0.05% threshold filters noise so freshly opened positions don't
-    // flicker green/red on tick-level micro moves.
-    const plCls = ev.pct > 0.05 ? 'pos' : ev.pct < -0.05 ? 'neg' : 'flat';
-    const pctStr = fmtPct(ev.pct);
-    const usdStr = fmtUsd(ev.pnl);
+    // flicker green/red on tick-level micro moves. When pct/pnl are
+    // null (cross-day sell with no buy_price on file) we render dashes
+    // and a flat tint so the row still surfaces with sell-side info.
+    const hasPct = ev.pct != null && isFinite(ev.pct);
+    const hasPnl = ev.pnl != null && isFinite(ev.pnl);
+    const plCls = !hasPct ? 'flat' : (ev.pct > 0.05 ? 'pos' : ev.pct < -0.05 ? 'neg' : 'flat');
+    const pctStr = hasPct ? fmtPct(ev.pct) : '—';
+    const usdStr = hasPnl ? fmtUsd(ev.pnl) : '—';
     const qtyStr = `${Math.round(ev.qty)}sh`;
-    const moveStr = `${fmtPx(ev.entryPx)}→${fmtPx(ev.exitPx)}`;
+    const moveStr = ev.entryPx
+      ? `${fmtPx(ev.entryPx)}→${fmtPx(ev.exitPx)}`
+      : `@ ${fmtPx(ev.exitPx)}`;
     const liveTag = isSell ? '' : '<span class="pf-tk-livedot" title="live mark"></span>';
 
     return `<div class="pf-tk-row ${ev.kind} ${plCls} ${fresh ? 'fresh' : ''}" data-id="${ev.id}">

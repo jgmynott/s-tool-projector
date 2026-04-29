@@ -890,7 +890,13 @@ def portfolio(request: Request, user: Optional[dict] = Depends(auth.optional_use
         "positions":   ("positions", None),
         "hist":        ("account/portfolio/history?period=1M&timeframe=1D", {}),
         "intraday":    ("account/portfolio/history?period=1D&timeframe=15Min&extended_hours=true", {}),
-        "orders":      ("orders?status=closed&direction=desc&limit=200&side=buy", []),
+        # 500 covers a heavy daytrade + scalper day with multiple entries
+        # per symbol. At limit=200 we were rolling off attribution for any
+        # symbol that fully cycled (bought + sold) today when concurrent
+        # fills pushed the parent buy out of the window — every closed-
+        # today row then read "unattributed" even though we generated the
+        # CID. Bumping the cap is cheap (one Alpaca call, parallel-fetched).
+        "orders":      ("orders?status=closed&direction=desc&limit=500&side=buy", []),
         "open_orders": ("orders?status=open&direction=desc&limit=100", []),
         "activities":  (f"account/activities/FILL?date={today_iso}", []),
     }
@@ -944,23 +950,38 @@ def portfolio(request: Request, user: Optional[dict] = Depends(auth.optional_use
     # current open lot. Bracket parents have order_class="bracket"; the
     # auto-generated stop/target legs are children with parent_order_id
     # set, so we filter on the parent.
+    #
+    # Also build cid_by_order_id so the closed-today FILL loop can resolve
+    # sleeve via the activity's exact order_id rather than relying on
+    # symbol-level "most-recent buy wins" — a symbol that cycled twice
+    # today (e.g. daytrade rotator) would otherwise misattribute the
+    # earlier close to the later buy's sleeve.
     sleeve_by_sym: dict = {}
+    cid_by_order_id: dict = {}
+    SLEEVE_PREFIXES = {"momentum", "swing", "daytrade", "scalper"}
+    def _parse_sleeve_from_cid(cid: str) -> str | None:
+        if not cid:
+            return None
+        parts = cid.split("-")
+        if len(parts) >= 2 and parts[0] in SLEEVE_PREFIXES:
+            return parts[0]
+        return None
     for o in (orders or []):
         sym = o.get("symbol")
         cid = o.get("client_order_id") or ""
+        oid = o.get("id")
+        if oid and cid:
+            cid_by_order_id[oid] = cid
         if not sym or not cid or sym in sleeve_by_sym:
             continue
         if o.get("status") != "filled":
             continue
         if o.get("parent_order_id"):
             continue  # skip bracket legs
-        # Parse "<sleeve>-<sym>-<YYYYMMDD>". Defensive against IDs we
-        # didn't generate (manual orders, prior schemes) — those just
-        # leave the position as "unattributed".
-        parts = cid.split("-")
-        if len(parts) >= 2 and parts[0] in {"momentum", "swing", "daytrade", "scalper"}:
+        sleeve = _parse_sleeve_from_cid(cid)
+        if sleeve:
             sleeve_by_sym[sym] = {
-                "sleeve": parts[0],
+                "sleeve": sleeve,
                 "opened_at": o.get("filled_at") or o.get("submitted_at"),
                 "ref_price": float(o.get("filled_avg_price") or 0) or None,
             }
@@ -1075,10 +1096,24 @@ def portfolio(request: Request, user: Optional[dict] = Depends(auth.optional_use
                 continue
             side = (a.get("side") or "").lower()
             if side == "buy":
-                # Sleeve attribution from the original entry's cid; if
-                # the activity row lacks order_id linkage we fall back
-                # to whatever sleeve_by_sym has (most recent buy wins).
-                sleeve = (sleeve_by_sym.get(sym) or {}).get("sleeve") or "unattributed"
+                # Resolution cascade — most precise first:
+                #   1. Activity's own order_id → that order's CID prefix.
+                #      Guarantees the right sleeve for THIS specific buy
+                #      even when a symbol cycled multiple times today.
+                #   2. sleeve_by_sym (most-recent-buy-wins) — works when
+                #      the order_id lookup misses (e.g. older parent order
+                #      rolled out of the orders window).
+                #   3. legacy_entries from trader_state.json — covers
+                #      pre-CID-encoding fills the trader is still tracking.
+                #   4. "unattributed" — true legacy / manual. The UI labels
+                #      these "Manual / legacy" with a hover explanation
+                #      rather than the opaque "UNATTRIBUTED" badge.
+                sleeve = (
+                    _parse_sleeve_from_cid(cid_by_order_id.get(a.get("order_id"), ""))
+                    or (sleeve_by_sym.get(sym) or {}).get("sleeve")
+                    or (legacy_entries.get(sym) or {}).get("sleeve")
+                    or "unattributed"
+                )
                 buy_lots.setdefault(sym, []).append([qty, price, sleeve])
             elif side == "sell":
                 remaining = qty
@@ -1102,6 +1137,40 @@ def portfolio(request: Request, user: Optional[dict] = Depends(auth.optional_use
                         lots.pop(0)
                     else:
                         lots[0][0] = lot_qty
+                # Cross-day fallback: SELL had no same-day buy lot left
+                # (entry was a prior day — typical for swing exits or any
+                # bracket that fires before today's entry has filled into
+                # activities). Reach into trader_state.entries for the
+                # original buy_price so the close still surfaces in the
+                # live ticker. Without this, intraday bracket exits stay
+                # invisible until trader.py's EOD journal_alpaca_fills()
+                # at 19:25 UTC, which left a 6+ hour blind spot.
+                if remaining > 0:
+                    legacy = legacy_entries.get(sym) or {}
+                    legacy_buy = legacy.get("buy_price")
+                    legacy_sleeve = (
+                        legacy.get("sleeve")
+                        or (sleeve_by_sym.get(sym) or {}).get("sleeve")
+                        or "unattributed"
+                    )
+                    sleeve_key = legacy_sleeve if legacy_sleeve in realized_by_sleeve else "unattributed"
+                    pnl_val = None
+                    if legacy_buy:
+                        try:
+                            pnl_val = (price - float(legacy_buy)) * remaining
+                            realized_today_total += pnl_val
+                            realized_by_sleeve[sleeve_key] += pnl_val
+                        except (TypeError, ValueError):
+                            pnl_val = None
+                    closed_today.append({
+                        "symbol": sym, "qty": remaining,
+                        "buy_price": float(legacy_buy) if legacy_buy else None,
+                        "sell_price": price,
+                        "pnl": pnl_val,
+                        "sleeve": legacy_sleeve,
+                        "source_tier": tier_by_sym.get(sym),
+                        "closed_at": a.get("transaction_time"),
+                    })
     # Backfill closes from the trade journal for any sell that today's
     # FIFO-from-today-buys logic couldn't pair (because the buy happened
     # on a prior day — typical for circuit-breaker liquidations or swing
@@ -1126,7 +1195,20 @@ def portfolio(request: Request, user: Optional[dict] = Depends(auth.optional_use
             qty = float(jr.get("qty") or 0)
             if (sym, qty) in seen_symbols:
                 continue
-            sleeve = jr.get("sleeve") or "unattributed"
+            # Same cascade as the live activity loop. The journal already
+            # carries sleeve for any trade the engine wrote, but a SELL
+            # whose entry pre-dated the sleeve-encoding rollout (early
+            # Apr-26) lands here with sleeve == "unattributed" literal —
+            # try sleeve_by_sym and legacy_entries before accepting it.
+            jr_sleeve = jr.get("sleeve")
+            if jr_sleeve and jr_sleeve != "unattributed":
+                sleeve = jr_sleeve
+            else:
+                sleeve = (
+                    (sleeve_by_sym.get(sym) or {}).get("sleeve")
+                    or (legacy_entries.get(sym) or {}).get("sleeve")
+                    or "unattributed"
+                )
             sleeve_key = sleeve if sleeve in realized_by_sleeve else "unattributed"
             realized_today_total += float(pnl)
             realized_by_sleeve[sleeve_key] += float(pnl)
