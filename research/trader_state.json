@@ -137,6 +137,18 @@
       "opened_at": "2026-04-29T14:01:03.031806+00:00",
       "ref_price": 214.23,
       "qty": 15
+    },
+    "CIEN": {
+      "sleeve": "swing",
+      "opened_at": "2026-04-29T14:31:03.601598+00:00",
+      "ref_price": 473.69,
+      "qty": 10
+    },
+    "JBL": {
+      "sleeve": "swing",
+      "opened_at": "2026-04-29T14:31:04.689254+00:00",
+      "ref_price": 330.83,
+      "qty": 15
     }
   },
   "traded_today": {

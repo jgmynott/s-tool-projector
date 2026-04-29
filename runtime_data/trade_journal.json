@@ -1,6 +1,6 @@
 {
-  "as_of": "2026-04-29T14:25:53.846938+00:00",
-  "n_rows": 126,
+  "as_of": "2026-04-29T14:31:17.837506+00:00",
+  "n_rows": 137,
   "rows": [
     {
       "ts": "2026-04-27T13:47:29.206731Z",
@@ -1754,6 +1754,106 @@
       "tier": "orb",
       "rationale": "{\"range_high\": 393.61, \"range_low\": 388.37, \"avg_open_vol\": 4828.666666666667, \"cur_vol\": 6947}",
       "result": "submitted"
+    },
+    {
+      "ts": "2026-04-29T14:31:03.601578+00:00",
+      "event": "buy",
+      "sleeve": "swing",
+      "symbol": "CIEN",
+      "qty": 10,
+      "ref_price": 473.69,
+      "live_price": 479.03,
+      "stop": 445.5,
+      "target": 550.88,
+      "tier": "aggressive",
+      "rationale": "Free-cash conversion at 15% of revenue is the quiet specialist skill here \u2014 the number earnings-base",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-04-29T14:31:04.689234+00:00",
+      "event": "buy",
+      "sleeve": "swing",
+      "symbol": "JBL",
+      "qty": 15,
+      "ref_price": 330.83,
+      "live_price": 331.63,
+      "stop": 308.42,
+      "target": 381.37,
+      "tier": "moderate",
+      "rationale": "Engine ranks this in the top quintile on a combined expected-return (+17%) and Sharpe (0.42) read \u2014 ",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-04-29T14:31:07.578762+00:00",
+      "event": "buy_failed",
+      "sleeve": "daytrade",
+      "symbol": "DY",
+      "qty": 8,
+      "error": "Alpaca POST orders \u2192 HTTP 422: {\"code\":40010001,\"message\":\"client_order_id must be unique\"}"
+    },
+    {
+      "ts": "2026-04-29T14:31:09.088025+00:00",
+      "event": "buy_failed",
+      "sleeve": "daytrade",
+      "symbol": "EME",
+      "qty": 3,
+      "error": "Alpaca POST orders \u2192 HTTP 422: {\"code\":40010001,\"message\":\"client_order_id must be unique\"}"
+    },
+    {
+      "ts": "2026-04-29T14:31:09.556611+00:00",
+      "event": "buy_failed",
+      "sleeve": "daytrade",
+      "symbol": "AZZ",
+      "qty": 24,
+      "error": "Alpaca POST orders \u2192 HTTP 422: {\"code\":40010001,\"message\":\"client_order_id must be unique\"}"
+    },
+    {
+      "ts": "2026-04-29T14:31:10.055243+00:00",
+      "event": "buy_failed",
+      "sleeve": "daytrade",
+      "symbol": "GE",
+      "qty": 11,
+      "error": "Alpaca POST orders \u2192 HTTP 422: {\"code\":40010001,\"message\":\"client_order_id must be unique\"}"
+    },
+    {
+      "ts": "2026-04-29T14:31:10.535786+00:00",
+      "event": "buy_failed",
+      "sleeve": "daytrade",
+      "symbol": "APH",
+      "qty": 23,
+      "error": "Alpaca POST orders \u2192 HTTP 422: {\"code\":40010001,\"message\":\"client_order_id must be unique\"}"
+    },
+    {
+      "ts": "2026-04-29T14:31:15.583932+00:00",
+      "event": "buy_failed",
+      "sleeve": "daytrade",
+      "symbol": "CW",
+      "qty": 4,
+      "error": "Alpaca POST orders \u2192 HTTP 422: {\"code\":40010001,\"message\":\"client_order_id must be unique\"}"
+    },
+    {
+      "ts": "2026-04-29T14:31:16.086621+00:00",
+      "event": "buy_failed",
+      "sleeve": "daytrade",
+      "symbol": "CASY",
+      "qty": 4,
+      "error": "Alpaca POST orders \u2192 HTTP 422: {\"code\":40010001,\"message\":\"client_order_id must be unique\"}"
+    },
+    {
+      "ts": "2026-04-29T14:31:17.376777+00:00",
+      "event": "buy_failed",
+      "sleeve": "daytrade",
+      "symbol": "BK",
+      "qty": 25,
+      "error": "Alpaca POST orders \u2192 HTTP 422: {\"code\":40010001,\"message\":\"client_order_id must be unique\"}"
+    },
+    {
+      "ts": "2026-04-29T14:31:17.836638+00:00",
+      "event": "buy_failed",
+      "sleeve": "daytrade",
+      "symbol": "WAB",
+      "qty": 12,
+      "error": "Alpaca POST orders \u2192 HTTP 422: {\"code\":40010001,\"message\":\"client_order_id must be unique\"}"
     }
   ]
 }
