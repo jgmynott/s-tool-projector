@@ -154,7 +154,14 @@ function pfEquityChart(data) {
     const rawTs  = data.equity_intraday?.timestamps || [];
     const rawEq  = data.equity_intraday?.equity || [];
     const rawSpy = data.equity_intraday?.spy_close || [];
-    const keepIdx = pfFilterRTH(rawTs);
+    let keepIdx = pfFilterRTH(rawTs);
+    // Pre-open fallback: if RTH filter strips everything (we're checking
+    // before 9:30 ET), use the unfiltered intraday so the chart shows
+    // pre-market drift instead of an empty box. The chart automatically
+    // re-renders post-open as the RTH filter starts matching.
+    if (keepIdx.length < 2 && rawTs.length >= 2) {
+      keepIdx = rawTs.map((_, i) => i);
+    }
     pts = keepIdx.map(i => rawEq[i]);
     ts  = keepIdx.map(i => rawTs[i]);
     isIntraday = true;
@@ -210,8 +217,15 @@ function pfEquityChart(data) {
   }
   const tabs = pfChartTabs(win);
   if (!pts || pts.length < 2) {
+    // More specific empty-state copy. 1D before market-open is the most
+    // common case — say so plainly so the user doesn't think the chart
+    // is broken. Other windows (1W/1M) only fall here on day-1 of a
+    // brand-new account.
+    const msg = (win === '1D')
+      ? "Market opens at 9:30 ET — chart populates from there."
+      : "Not enough history yet — chart fills in as the trader runs.";
     return `<div class="pf-chart-row">${tabs}
-      <div class="pf-chart-empty">No data for this window yet — chart fills in as the trader runs.</div>
+      <div class="pf-chart-empty">${msg}</div>
     </div>`;
   }
   return `<div class="pf-chart-row">${tabs}${pfChartSvg(pts, ts, isIntraday, spyPts, { traderBaseline, spyBaselineRaw, spyLastRaw, win })}</div>`;
@@ -538,6 +552,188 @@ function pfPendingOrdersStrip(orders) {
   </div>`;
 }
 
+// =============================================================
+// Live activity strip — "something to watch" panel.
+// =============================================================
+//
+// Renders above the donut. Two pieces stacked:
+//   1. Status row — pulsing dot, last action summary, countdown to the
+//      next scheduled bot fire, pending-fill count.
+//   2. Vertical ticker — last 15 events (buys + sells), newest at top.
+//      New events (vs last render) animate in via CSS keyframe.
+//
+// Polls happen via the existing 30s refreshPortfolioOnly(). For tighter
+// refresh, drop the interval in startPortfolioRefresh(). Data sources:
+//   buys  ← positions[] where days_held===0 (opened_at gives ts)
+//   sells ← closed_today[] (closed_at gives ts)
+//   pending ← open_orders[] count
+//
+// "Next cron" is computed from the CF Worker schedule in worker.js, kept
+// in sync manually here. If you change cron expressions there, update
+// PF_CRON_FIRES below.
+const PF_CRON_FIRES = [
+  // [hourUTC, minuteUTC, label] — only DST-window fires; we'll detect
+  // ST and shift +60min if needed via the comment below. For now the
+  // user is in DST through early November.
+  [13, 25, 'pre-open sweep'],
+  [13, 30, 'open print'],
+  [14, 0, 'rotate'], [14, 30, 'rotate'],
+  [15, 0, 'rotate'], [15, 30, 'rotate'],
+  [16, 0, 'rotate'], [16, 30, 'rotate'],
+  [17, 0, 'rotate'], [17, 30, 'rotate'],
+  [18, 0, 'rotate'], [18, 30, 'rotate'],
+  [19, 0, 'rotate'], [19, 30, 'rotate'],
+  [19, 55, 'close'],
+  [20, 30, 'EOD report'],
+];
+function pfNextCronFire() {
+  const now = new Date();
+  const hUTC = now.getUTCHours();
+  const mUTC = now.getUTCMinutes();
+  const sUTC = now.getUTCSeconds();
+  // Scalper fires every 5 min during 14:00–19:55 UTC. Compute the next
+  // 5-min boundary if we're in that window.
+  let nextScalper = null;
+  if (hUTC >= 14 && hUTC < 20) {
+    const nextM = Math.ceil((mUTC + (sUTC > 0 ? 0.0001 : 0)) / 5) * 5;
+    if (nextM < 60) nextScalper = [hUTC, nextM, 'scalper scan'];
+    else if (hUTC < 19) nextScalper = [hUTC + 1, 0, 'scalper scan'];
+  }
+  // Find the next scheduled non-scalper fire today.
+  const nowMin = hUTC * 60 + mUTC;
+  let nextFire = null;
+  for (const [h, m, label] of PF_CRON_FIRES) {
+    if (h * 60 + m > nowMin || (h * 60 + m === nowMin && sUTC === 0)) {
+      nextFire = [h, m, label];
+      break;
+    }
+  }
+  // Pick whichever fires sooner.
+  let pick = null;
+  for (const cand of [nextScalper, nextFire].filter(Boolean)) {
+    if (!pick || (cand[0] * 60 + cand[1]) < (pick[0] * 60 + pick[1])) pick = cand;
+  }
+  if (!pick) return { label: 'after hours', countdown: '—' };
+  // Compute countdown to pick time today (UTC).
+  const target = new Date(now);
+  target.setUTCHours(pick[0], pick[1], 0, 0);
+  const ms = target.getTime() - now.getTime();
+  if (ms <= 0) return { label: pick[2], countdown: 'now' };
+  const totalSec = Math.floor(ms / 1000);
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  const countdown = m >= 60
+    ? `${Math.floor(m / 60)}h ${m % 60}m`
+    : m >= 1
+      ? `${m}m ${String(s).padStart(2, '0')}s`
+      : `${s}s`;
+  return { label: pick[2], countdown };
+}
+
+function pfLiveActivityStrip(data) {
+  const closed = data.closed_today || [];
+  const positions = data.positions || [];
+  const openOrders = data.open_orders || [];
+
+  // Build combined event feed (buys + sells, newest first).
+  const events = [];
+  for (const c of closed) {
+    if (!c.symbol) continue;
+    events.push({
+      kind: 'sell',
+      symbol: c.symbol,
+      sleeve: c.sleeve || 'unattributed',
+      time: c.closed_at,
+      pnl: c.pnl || 0,
+      qty: c.qty,
+      price: c.sell_price,
+      id: `sell-${c.symbol}-${c.closed_at || ''}`,
+    });
+  }
+  for (const p of positions) {
+    if (typeof p.days_held !== 'number' || p.days_held !== 0) continue;
+    const ts = p.opened_at || p.entry_time || p.filled_at || null;
+    if (!ts) continue;
+    events.push({
+      kind: 'buy',
+      symbol: p.symbol,
+      sleeve: p.sleeve || 'unattributed',
+      time: ts,
+      qty: parseFloat(p.qty) || 0,
+      price: parseFloat(p.avg_entry_price) || 0,
+      id: `buy-${p.symbol}-${ts}`,
+    });
+  }
+  events.sort((a, b) => {
+    const ta = new Date(a.time || 0).getTime();
+    const tb = new Date(b.time || 0).getTime();
+    return tb - ta;
+  });
+
+  // Track which event IDs we've rendered before, so brand-new ones can
+  // animate in. Using a Set keyed on stable IDs (symbol + timestamp).
+  const seen = window.__pfTickerSeen = window.__pfTickerSeen || new Set();
+  const isFirstRender = seen.size === 0;
+
+  const fmtTime = (iso) => {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    return d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: false });
+  };
+  const SLEEVE_LABEL = { momentum: 'Momentum', swing: 'Swing', daytrade: 'Daytrade', scalper: 'Scalper', unattributed: 'Manual' };
+
+  const rows = events.slice(0, 15).map(ev => {
+    // Only flag as "fresh" on subsequent renders (prevents the entire
+    // initial list from animating in at once on page load).
+    const fresh = !seen.has(ev.id) && !isFirstRender;
+    seen.add(ev.id);
+    const sleeveLbl = SLEEVE_LABEL[ev.sleeve] || ev.sleeve;
+    const time = fmtTime(ev.time);
+    if (ev.kind === 'sell') {
+      const plCls = ev.pnl > 0.5 ? 'pos' : ev.pnl < -0.5 ? 'neg' : 'flat';
+      const sign = ev.pnl >= 0 ? '+' : '−';
+      const plStr = `${sign}$${Math.abs(ev.pnl).toFixed(0)}`;
+      return `<div class="pf-tk-row sell ${fresh ? 'fresh' : ''}" data-id="${ev.id}">
+        <span class="pf-tk-time">${time}</span>
+        <span class="pf-tk-action sell">SELL</span>
+        <span class="pf-tk-sym">${ev.symbol}</span>
+        <span class="pf-tk-sleeve ${ev.sleeve}">${sleeveLbl}</span>
+        <span class="pf-tk-pl ${plCls}">${plStr}</span>
+      </div>`;
+    }
+    return `<div class="pf-tk-row buy ${fresh ? 'fresh' : ''}" data-id="${ev.id}">
+      <span class="pf-tk-time">${time}</span>
+      <span class="pf-tk-action buy">BUY</span>
+      <span class="pf-tk-sym">${ev.symbol}</span>
+      <span class="pf-tk-sleeve ${ev.sleeve}">${sleeveLbl}</span>
+      <span class="pf-tk-meta">${Math.round(ev.qty)}sh @ $${ev.price.toFixed(ev.price < 10 ? 2 : 0)}</span>
+    </div>`;
+  }).join('');
+
+  // Status strip — what just happened, what's next.
+  const lastEv = events[0];
+  const lastStr = lastEv
+    ? `last <b>${lastEv.kind === 'sell' ? 'SELL' : 'BUY'} ${lastEv.symbol}</b> · ${fmtTime(lastEv.time)}`
+    : 'awaiting first trade today';
+  const next = pfNextCronFire();
+  const nextStr = `next <b>${next.label}</b> in ${next.countdown}`;
+  const buys = openOrders.filter(o => (o.side || '').toLowerCase() === 'buy').length;
+  const pendingStr = buys > 0 ? `· ${buys} pending fill${buys === 1 ? '' : 's'}` : '';
+
+  return `<div class="pf-live-strip">
+    <div class="pf-live-status">
+      <span class="pf-live-dot"></span>
+      <span class="pf-live-label">LIVE</span>
+      <span class="pf-live-bit">${lastStr}</span>
+      <span class="pf-live-bit">${nextStr}</span>
+      ${pendingStr ? `<span class="pf-live-bit">${pendingStr}</span>` : ''}
+    </div>
+    <div class="pf-tk-list">
+      ${rows || '<div class="pf-tk-empty">Awaiting first trade today.</div>'}
+    </div>
+  </div>`;
+}
+
 // Closed-trades section — renders the chronological list of trades that
 // closed today (paired buy + sell from Alpaca FILL activities). Sits
 // directly below the live positions block so the eye flows
@@ -578,8 +774,20 @@ function pfClosedTradesPanel(closedToday, isStrategist, totalRealizedToday) {
   const fmtMoney = (v) => v == null ? '—'
     : (v >= 100 ? `$${Number(v).toFixed(0)}` : `$${Number(v).toFixed(2)}`);
 
+  // Display label for the sleeve pill — "unattributed" reads as opaque
+  // jargon to anyone not staring at the codebase, so render it as
+  // "Manual" with a hover explanation. Other sleeves use their natural name.
+  const SLEEVE_DISPLAY = {
+    momentum: 'Momentum', swing: 'Swing', daytrade: 'Day trade',
+    scalper: 'Scalper', unattributed: 'Manual',
+  };
+  const SLEEVE_TITLE = {
+    unattributed: 'Manual or legacy fill — opened outside the engine, or before sleeve-encoded order IDs went live',
+  };
   const items = rows.map(r => {
     const sleeve = r.sleeve || 'unattributed';
+    const sleeveLabel = SLEEVE_DISPLAY[sleeve] || sleeve;
+    const sleeveTitle = SLEEVE_TITLE[sleeve] || `Sleeve: ${sleeveLabel}`;
     const tier = r.source_tier || null;
     const tierLabel = tier ? tier[0].toUpperCase() + tier.slice(1) : '';
     const tierPill = tier
@@ -597,7 +805,7 @@ function pfClosedTradesPanel(closedToday, isStrategist, totalRealizedToday) {
     }
     return `<div class="pf-closed-row">
       <span class="pf-closed-time">${fmtTime(r.closed_at)}</span>
-      <span class="pf-closed-tag ${sleeve}">${sleeve}</span>
+      <span class="pf-closed-tag ${sleeve}" title="${sleeveTitle}">${sleeveLabel}</span>
       ${tierPill}
       <span class="pf-closed-sym">${r.symbol || '—'}</span>
       <span class="pf-closed-flow">
@@ -661,172 +869,406 @@ const PF_SLEEVE_COLOR = {
   scalper: '#6ee7b7',
   unattributed: '#9aa0a6',
 };
-function pfPositionCard(p, totalMv) {
-  const pct = (p.unrealized_plpc || 0) * 100;
-  const pctCls = pct > 0 ? 'pos' : (pct < 0 ? 'neg' : '');
-  const plCls = (p.unrealized_pl || 0) >= 0 ? 'pos' : 'neg';
-  const sleeve = p.sleeve || 'unattributed';
-  // Weight = this position's slice of total book. The thin top-edge bar
-  // (filled to weightPct of full width, sleeve-colored) is the at-a-glance
-  // answer to "how big is this position in the book?". Inline % below the
-  // ticker doubles as a screen-reader-friendly value.
-  const weightPct = totalMv > 0 ? ((p.market_value || 0) / totalMv) * 100 : 0;
-  const sleeveColor = PF_SLEEVE_COLOR[sleeve] || PF_SLEEVE_COLOR.unattributed;
-  const sleeveLabel = sleeve === 'momentum' ? 'Mo' :
-                      sleeve === 'swing' ? 'Swing' :
-                      sleeve === 'daytrade' ? 'Day' : '—';
-  // Source-tier pill ties the live position back to the /picks section
-  // it originated from. When the symbol is missing from today's picks
-  // (e.g. a leftover from prior days that hasn't dropped yet), fall back
-  // to no-tier rather than guessing.
-  const tier = p.source_tier || null;
-  const tierLabel = tier ? tier[0].toUpperCase() + tier.slice(1) : '';
-  const tierPill = tier
-    ? `<span class="pf-pos-tier ${tier}" title="From the ${tierLabel} section of /picks">${tierLabel}</span>`
+// Sleeve thesis copy — surfaced inside each expanded sleeve so a viewer
+// understands what the lane is *for* before they read the position list.
+// Phrased to sit between scan-grade ("Momentum lane") and recipe-grade
+// (no thresholds, no signal names) per the public-methodology rule.
+function pfSleeveThesis(name, summary) {
+  const map = {
+    momentum: {
+      rule: 'Multi-day · bracketed',
+      body: '<b>Trend continuation lane.</b> Top-ranked names that just confirmed a multi-session breakout. Each entry ships with a stop and target on submission so a sudden reversal exits without supervision.',
+    },
+    swing: {
+      rule: '5-day hold · -7% / +15%',
+      body: '<b>Asymmetric swing lane.</b> Top-ranked picks held for one trading week with a tight stop and roughly twice that as upside target. Designed for an expectancy edge even if hit-rate sits below 50%.',
+    },
+    daytrade: {
+      rule: 'Intraday · -3% / +5%',
+      body: '<b>Intraday rotation lane.</b> Opens at the bell, exits before close. The rotator fires every 30 minutes through the cash session and force-closes any survivor at 19:55 UTC so the lane starts each day flat.',
+    },
+    scalper: {
+      rule: '5-min cadence · ≤25 min hold',
+      body: '<b>Intraday signal lane — separate engine from the nightly picks.</b> Scans high-volume names every five minutes during the cash session for short-lived volume + range setups. Each entry is small, time-boxed (auto-exit inside ~25 min), and protected by a tight bracket. Concurrent positions are hard-capped and a kill-switch flag in trader state can disable the lane mid-session if drawdown gets noisy. Currently learning whether the signals print on real fills before sizing up.',
+    },
+    unattributed: {
+      rule: 'Legacy fills',
+      body: '<b>Unattributed legacy positions.</b> Entries opened before the sleeve-encoded order IDs went live, or manual fills outside the engine. Liquidated naturally as their existing brackets resolve — no new entries land here.',
+    },
+  };
+  const cfg = map[name] || { rule: '', body: '' };
+  const realized = summary?.realized_today || 0;
+  const realizedNote = Math.abs(realized) > 0.5
+    ? ` <span style="color:${realized > 0 ? 'var(--pos)' : 'var(--neg)'};">${realized > 0 ? '+' : '−'}${fmtUSD(Math.abs(realized), { digits: 0 }).replace(/^[-+]/, '')} realized today.</span>`
     : '';
-  const heldLabel = p.days_held != null ? `${p.days_held}d held` : '';
-
-  // Bracket strip: stop ◀ entry ●▶ target — visualises where the
-  // current price sits between the two protective levels. Position is
-  // (cur - stop) / (target - stop) clamped to [0,1].
-  let bracketRow = '';
-  if (p.stop_price != null && p.target_price != null && p.current_price) {
-    const stop = p.stop_price, tgt = p.target_price, cur = p.current_price, entry = p.avg_entry_price;
-    const span = tgt - stop;
-    const curPos = span > 0 ? Math.max(0, Math.min(1, (cur - stop) / span)) : 0.5;
-    const entryPos = span > 0 ? Math.max(0, Math.min(1, (entry - stop) / span)) : 0.5;
-    bracketRow = `<div class="pf-pos-bracket">
-      <div class="pf-bracket-bar">
-        <div class="pf-bracket-fill" style="left:${(entryPos*100).toFixed(1)}%;width:${((curPos-entryPos)*100).toFixed(1)}%;${cur>=entry?'background:rgba(110,231,183,0.30)':'background:rgba(252,165,165,0.30);left:'+(curPos*100).toFixed(1)+'%;width:'+((entryPos-curPos)*100).toFixed(1)+'%'}"></div>
-        <div class="pf-bracket-tick entry" style="left:${(entryPos*100).toFixed(1)}%"></div>
-        <div class="pf-bracket-tick cur ${pctCls}" style="left:${(curPos*100).toFixed(1)}%"></div>
-      </div>
-      <div class="pf-bracket-labels">
-        <span class="neg">$${stop.toFixed(stop<10?2:0)}</span>
-        <span>$${entry.toFixed(entry<10?2:0)}</span>
-        <span class="pos">$${tgt.toFixed(tgt<10?2:0)}</span>
-      </div>
-    </div>`;
-  }
-
-  return `<div class="pf-pos">
-    <div class="pf-pos-weight-bar" aria-hidden="true">
-      <div class="pf-pos-weight-fill" style="width:${weightPct.toFixed(2)}%;background:${sleeveColor};"></div>
-    </div>
-    <div class="pf-pos-row1">
-      <span class="pf-pos-sym">${p.symbol}</span>
-      <span class="pf-pos-tag ${sleeve}">${sleeveLabel}</span>
-      ${tierPill}
-      <span class="pf-pos-weight" title="Share of total deployed capital">${weightPct.toFixed(1)}%</span>
-    </div>
-    <div class="pf-pos-row2">
-      <span class="pf-pos-mv">${fmtUSD(p.market_value, { digits: 0 })}</span>
-      <span class="pf-pos-pct ${pctCls}">${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%</span>
-    </div>
-    <div class="pf-pos-row3">
-      <span class="pf-pos-pl ${plCls}">${fmtUSD(p.unrealized_pl, { signed: true, digits: 0 })}</span>
-      <span>${heldLabel}</span>
-    </div>
-    ${bracketRow}
+  return `<div class="pf-pdl-thesis">
+    ${cfg.rule ? `<span class="ts-rule">${cfg.rule}</span>` : ''}
+    ${cfg.body}${realizedNote}
   </div>`;
 }
 
-// Capital-allocation donut for open positions. Sleeve-colored, sized by
-// market_value. Center: total deployed + position count. Sits above the
-// position cards so the eye sees "where the money is" before the per-name
-// detail. Hover/tap a slice → tooltip via wirePortfolioTooltips().
+// Line-style position row — eight columns aligned under the labeled
+// header above. Ticker is plain text (the prior dot-pattern mask was
+// removed when users called out that they couldn't see the symbols).
+function pfPositionRow(p) {
+  const pct = (p.unrealized_plpc || 0) * 100;
+  const pctCls = pct > 0.005 ? 'pos' : (pct < -0.005 ? 'neg' : 'flat');
+  const plRaw = p.unrealized_pl || 0;
+  const plCls = plRaw > 0.5 ? 'pos' : (plRaw < -0.5 ? 'neg' : 'flat');
+  const sleeve = p.sleeve || 'unattributed';
+  // Tier column — where this position came from on /picks. When the
+  // backend can't attribute (older fills, manual entries), the label
+  // becomes "MANUAL" with a hover tooltip explaining what that means
+  // rather than the opaque "UNATTRIBUTED" badge users couldn't decode.
+  const tier = p.source_tier || sleeve;
+  const TIER_ABBR = {
+    conservative: 'CONS', moderate: 'MOD', aggressive: 'AGG', asymmetric: 'ASYM',
+    momentum: 'MOM', swing: 'SWG', daytrade: 'DAY', scalper: 'SCP',
+    unattributed: 'MANUAL',
+  };
+  const tierLabel = TIER_ABBR[tier] || (tier || '').toUpperCase().slice(0, 4) || '—';
+  const tierTitle = p.source_tier
+    ? `${p.source_tier[0].toUpperCase() + p.source_tier.slice(1)} risk tier on /picks`
+    : tier === 'unattributed'
+      ? 'Manual or legacy fill — opened before sleeve-encoded order IDs went live, or executed outside the engine'
+      : `Strategy: ${sleeve}`;
+  const sym = p.symbol || '';
+
+  // Cost basis — prefer the Alpaca-supplied figure, fall back to
+  // qty × avg_entry_price if for some reason it's zero.
+  const qty = parseFloat(p.qty) || 0;
+  const avgEntry = parseFloat(p.avg_entry_price) || 0;
+  const costBasis = parseFloat(p.cost_basis) || (qty * avgEntry) || 0;
+
+  // Acquired date — derive from days_held against today rather than
+  // requiring a backend change. "Apr 21" reads cleanly in the column.
+  let acquiredLabel = '—';
+  let acquiredTitle = '';
+  if (typeof p.days_held === 'number' && p.days_held >= 0) {
+    const d = new Date();
+    d.setUTCHours(0, 0, 0, 0);
+    d.setUTCDate(d.getUTCDate() - p.days_held);
+    acquiredLabel = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    acquiredTitle = `Acquired ${p.days_held === 0 ? 'today' : p.days_held + ' day' + (p.days_held === 1 ? '' : 's') + ' ago'}`;
+  }
+
+  // Trend cell — color-intensity-scaled arrow.
+  //   <2%   → 0.40 alpha (dim)
+  //   2–5%  → 0.65 alpha
+  //   5–10% → 0.85 alpha
+  //   ≥10%  → 1.00 alpha (full)
+  // Combined with sleeve green/red, runners and stops jump out of a
+  // long list at a glance without forcing the eye to read every %.
+  const absPct = Math.abs(pct);
+  let intensity = 0.40;
+  if (absPct >= 10) intensity = 1.00;
+  else if (absPct >= 5) intensity = 0.85;
+  else if (absPct >= 2) intensity = 0.65;
+  const arrowGlyph = pct > 0.005 ? '▲' : (pct < -0.005 ? '▼' : '◆');
+  const arrowColor = pct > 0.005 ? `rgba(110,231,183,${intensity})`
+                   : pct < -0.005 ? `rgba(252,165,165,${intensity})`
+                   : `rgba(155,161,185,${intensity})`;
+  // Tooltip carries the bracket context that USED to live in its own
+  // column, plus total return since acquisition. The arrow's color
+  // already encodes the day move — duplicating it as text added no
+  // information, and the user called that out as useless.
+  const lifetimePct = (avgEntry > 0 && p.current_price)
+    ? ((p.current_price - avgEntry) / avgEntry) * 100 : null;
+  const sinceLine = (lifetimePct != null && typeof p.days_held === 'number')
+    ? `Since acquired (${p.days_held}d): ${lifetimePct >= 0 ? '+' : ''}${lifetimePct.toFixed(2)}%`
+    : '';
+  const priceLine = (p.current_price && avgEntry)
+    ? `Now $${parseFloat(p.current_price).toFixed(p.current_price < 10 ? 2 : 0)} · Entry $${avgEntry.toFixed(avgEntry < 10 ? 2 : 0)}`
+    : '';
+  const bracketLine = (p.stop_price != null && p.target_price != null)
+    ? `Stop $${parseFloat(p.stop_price).toFixed(p.stop_price < 10 ? 2 : 0)} · Target $${parseFloat(p.target_price).toFixed(p.target_price < 10 ? 2 : 0)}`
+    : '';
+  const arrowTitle = [sinceLine, priceLine, bracketLine].filter(Boolean).join('\n')
+    || `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}% today`;
+
+  return `<div class="pf-pdl-line" data-pf-row-sym="${sym}">
+    <span class="pf-rl-sym">${sym}</span>
+    <span class="pf-rl-tier ${tier}" title="${tierTitle}">${tierLabel}</span>
+    <span class="pf-rl-mv">${fmtUSD(p.market_value, { digits: 0 })}</span>
+    <span class="pf-rl-cost">${fmtUSD(costBasis, { digits: 0 })}</span>
+    <span class="pf-rl-pct ${pctCls}">${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%</span>
+    <span class="pf-rl-pl ${plCls}">${fmtUSD(plRaw, { signed: true, digits: 0 })}</span>
+    <span class="pf-rl-acquired" title="${acquiredTitle}">${acquiredLabel}</span>
+    <span class="pf-rl-trend" style="color:${arrowColor};" title="${arrowTitle}">${arrowGlyph}</span>
+  </div>`;
+}
+
+// Capital-allocation donut for open positions. TWO concentric rings —
+// outer = source_tier (conservative/moderate/aggressive/asymmetric),
+// inner = sleeve (momentum/swing/daytrade/scalper). Sleeve color encodes
+// trade type at a glance; the outer band layers on the /picks tier the
+// position came from, so a viewer can read both dimensions without a
+// separate chart. Center: total deployed + position count. Hover/tap a
+// slice (either ring) → tooltip via wirePortfolioTooltips().
 function pfPositionsDonut(positions, totalMv) {
   if (!positions.length || totalMv <= 0) return '';
-  // Sort largest-first so the dominant slices land at the 12 o'clock
-  // position (after the -90° rotate) — easier to scan than random order.
-  // Within a sleeve, ties are broken by symbol for stable layout across
-  // 30s refreshes (no unnecessary slice reordering as MVs jiggle).
+  // Group by sleeve order first, then mv desc within sleeve. The sleeve
+  // grouping is what fixes the "random green slice in the blue section"
+  // bug — without it, a scalper position with high MV could land between
+  // two swing slices and read as a discontinuity. Now the inner ring
+  // shows a clean violet-blue-orange-green sweep.
+  const SLEEVE_ORDER = { momentum: 0, swing: 1, daytrade: 2, scalper: 3, unattributed: 4 };
   const sorted = [...positions].sort((a, b) => {
+    const sa = SLEEVE_ORDER[a.sleeve || 'unattributed'] ?? 5;
+    const sb = SLEEVE_ORDER[b.sleeve || 'unattributed'] ?? 5;
+    if (sa !== sb) return sa - sb;
     const d = (b.market_value || 0) - (a.market_value || 0);
     return d !== 0 ? d : (a.symbol || '').localeCompare(b.symbol || '');
   });
-  const GAP = 0.30;
-  let offset = 0;
-  // Per-sleeve max so opacity scales WITHIN sleeve — biggest momentum
-  // position is the brightest violet; smallest is dimmer. Keeps the
-  // sleeve-color-coding readable while still differentiating siblings.
+  // Tight gaps — wide separators turned 36 positions into a wagon-wheel
+  // and made the rings feel cheap. Keep enough whitespace to read the
+  // slice boundary, no more. Background color shows through the gap.
+  const GAP = 0.10;
+  // Per-sleeve max so opacity TRACES (not screams) sleeve weight —
+  // largest position is full brightness, smallest is 0.78. Subtle
+  // enough to keep the donut reading as one cohesive visual.
   const sleeveMax = {};
   for (const p of sorted) {
     const s = p.sleeve || 'unattributed';
     const mv = p.market_value || 0;
     if (mv > (sleeveMax[s] || 0)) sleeveMax[s] = mv;
   }
-  const arcs = sorted.map(p => {
+  // Tier color resolution. Falls back to the sleeve color when a
+  // position has no source_tier (manual/legacy fills) so the outer ring
+  // stays continuous instead of dropping to a gray gap.
+  const TIER_COLOR = {
+    conservative: 'var(--tier-conservative)',
+    moderate:     'var(--tier-moderate)',
+    aggressive:   'var(--tier-aggressive)',
+    asymmetric:   'var(--tier-asymmetric)',
+    unattributed: PF_SLEEVE_COLOR.unattributed,
+  };
+  let offset = 0;
+  const arcsPnl = [];
+  const arcsOuter = [];
+  const arcsInner = [];
+  // Day P&L aggregate for the centerpiece (book-level performance).
+  let totalPl = 0;
+  for (const p of sorted) {
     const mv = p.market_value || 0;
     const pct = (mv / totalMv) * 100;
-    if (pct <= 0) return '';
+    if (pct <= 0) continue;
     const visiblePct = Math.max(0.05, pct - GAP);
     const dashArr = `${visiblePct.toFixed(3)} ${(100 - visiblePct).toFixed(3)}`;
     const dashOff = (-offset).toFixed(3);
     const sleeve = p.sleeve || 'unattributed';
-    const color = PF_SLEEVE_COLOR[sleeve] || PF_SLEEVE_COLOR.unattributed;
+    const tier = p.source_tier || sleeve;
+    const sleeveCol = PF_SLEEVE_COLOR[sleeve] || PF_SLEEVE_COLOR.unattributed;
+    const tierCol = TIER_COLOR[tier] || TIER_COLOR.unattributed;
     const sm = sleeveMax[sleeve] || mv;
-    const op = (0.55 + 0.45 * (mv / sm)).toFixed(2);
-    const arc = `<circle cx="21" cy="21" r="15.9155" fill="transparent"
-      stroke="${color}" stroke-width="7"
+    // Subtle weight tracing — biggest position 1.0, smallest 0.78. Old
+    // 0.55 floor created a too-busy dim/bright stripe pattern.
+    const op = (0.78 + 0.22 * (mv / sm)).toFixed(2);
+    // Per-position P&L color for the outer corona. Strong floor (0.65)
+    // so even flat positions have a visible green/red whisper; full
+    // saturation kicks in at ~10%+ moves.
+    const plPct = (p.unrealized_plpc || 0) * 100;
+    const plRaw = p.unrealized_pl || 0;
+    totalPl += plRaw;
+    const plColor = plPct > 0.5 ? 'var(--pos)'
+                  : plPct < -0.5 ? 'var(--neg)'
+                  : 'rgba(155,161,185,0.55)';
+    const plOp = Math.min(1, 0.65 + Math.abs(plPct) / 15).toFixed(2);
+    const dataAttrs = `data-pf-sym="${p.symbol}" data-pf-sleeve="${sleeve}" data-pf-tier="${tier}"`
+      + ` data-pf-amt="${mv.toFixed(2)}" data-pf-pct="${pct.toFixed(2)}"`
+      + ` data-pf-pl="${plRaw.toFixed(2)}"`
+      + ` data-pf-plpc="${plPct.toFixed(2)}"`;
+    // Three rings with a clear hierarchy:
+    //   Corona (P&L)   — r=19.5, thin    (a halo of green/red)
+    //   Tier ring      — r=16.5, chunky  (the "outer" data band)
+    //   Strategy ring  — r=11.5, chunky  (the "inner" data band)
+    // 1-unit air-gap between corona/tier and tier/strategy so the rings
+    // don't read as a solid block — they breathe.
+    arcsPnl.push(`<circle cx="21" cy="21" r="19.5" pathLength="100" fill="transparent"
+      stroke="${plColor}" stroke-width="0.9"
+      stroke-dasharray="${dashArr}" stroke-dashoffset="${dashOff}"
+      stroke-opacity="${plOp}"
+      transform="rotate(-90 21 21)" ${dataAttrs}></circle>`);
+    arcsOuter.push(`<circle cx="21" cy="21" r="16.5" pathLength="100" fill="transparent"
+      stroke="${tierCol}" stroke-width="3.4"
       stroke-dasharray="${dashArr}" stroke-dashoffset="${dashOff}"
       stroke-opacity="${op}"
-      transform="rotate(-90 21 21)"
-      data-pf-sym="${p.symbol}" data-pf-sleeve="${sleeve}"
-      data-pf-amt="${mv.toFixed(2)}"
-      data-pf-pct="${pct.toFixed(2)}"
-      data-pf-pl="${(p.unrealized_pl || 0).toFixed(2)}"
-      data-pf-plpc="${((p.unrealized_plpc || 0) * 100).toFixed(2)}"></circle>`;
+      transform="rotate(-90 21 21)" ${dataAttrs}></circle>`);
+    arcsInner.push(`<circle cx="21" cy="21" r="11.5" pathLength="100" fill="transparent"
+      stroke="${sleeveCol}" stroke-width="4.4"
+      stroke-dasharray="${dashArr}" stroke-dashoffset="${dashOff}"
+      stroke-opacity="${op}"
+      transform="rotate(-90 21 21)" ${dataAttrs}></circle>`);
     offset += pct;
-    return arc;
-  }).join('');
+  }
+  const arcs = arcsPnl.join('') + arcsOuter.join('') + arcsInner.join('');
 
-  // Center font sizing copied from renderMasterDonut — same trick: scale
-  // down for long $ strings so "$1,234,567" doesn't bleed into the ring.
+  // Center stack — total deployed (largest), DEPLOYED label, position
+  // count, and a colored day-P&L line so the user reads the donut's
+  // performance without having to scan slices. The P&L line is the
+  // first place the eye lands after the dollar total.
+  // Sizing is calibrated so the entire stack fits inside the donut's
+  // clear inner area (~46% of the donut diameter) at every breakpoint.
+  // If you change ring proportions, re-verify these numbers.
   const totalStr = fmtUSD(totalMv, { digits: 0 });
   const _len = totalStr.replace(/[^\d$.,]/g, '').length;
   const _vw = (typeof window !== 'undefined' && window.innerWidth) || 1200;
-  const _baseMax = _vw < 540 ? 26 : _vw < 920 ? 32 : 36;
-  const _scale = _len > 11 ? 0.55 : _len > 9 ? 0.70 : _len > 7 ? 0.85 : 1.00;
-  const _font = Math.max(16, Math.round(_baseMax * _scale));
+  // Donut is 320px desktop, ~46% clear hole = 147px wide, so the
+  // dollar amount must fit there — _baseMax 26 keeps "$132,944" at
+  // ~22px Crimson Text, comfortably inside the hole.
+  const _baseMax = _vw < 380 ? 16 : _vw < 540 ? 20 : _vw < 920 ? 22 : 26;
+  const _scale = _len > 11 ? 0.55 : _len > 9 ? 0.68 : _len > 7 ? 0.82 : 1.00;
+  const _font = Math.max(13, Math.round(_baseMax * _scale));
+  const totalPlPct = totalMv > 0 ? (totalPl / totalMv) * 100 : 0;
+  const plCenterCls = totalPl > 0.5 ? 'pos' : totalPl < -0.5 ? 'neg' : 'flat';
+  const plSign = totalPl > 0 ? '+' : (totalPl < 0 ? '−' : '');
+  // No parens — saves 2 chars so the line fits the hole at 240–320px.
+  const plCenterStr = `${plSign}${fmtUSD(Math.abs(totalPl), { digits: 0 }).replace(/^[-]/, '')}  ${plSign}${Math.abs(totalPlPct).toFixed(2)}%`;
 
-  // Sleeve-totals legend below the donut. Same color dots as cards/tags
-  // so the user can connect "violet slice" to "Mo card" instantly.
+  // Sleeve-totals legend below the donut. Each row is a <details> group:
+  // summary = the dot/name/count/$/pct line; opening it reveals the
+  // sleeve thesis + a column-labeled list of every position assigned to
+  // that sleeve. This is what makes the cards "nest" inside the donut
+  // sections rather than floating below as a separate grid.
   const bySleeve = {};
+  const positionsBySleeve = {};
+  const sleeveSummaries = window.__pfSleeveSummaries || {};
   for (const p of sorted) {
     const s = p.sleeve || 'unattributed';
     bySleeve[s] = (bySleeve[s] || 0) + (p.market_value || 0);
+    (positionsBySleeve[s] = positionsBySleeve[s] || []).push(p);
   }
   const ORDER = ['momentum', 'swing', 'daytrade', 'scalper', 'unattributed'];
-  const LABELS = { momentum: 'Momentum', swing: 'Swing', daytrade: 'Day trade', scalper: 'Scalper', unattributed: 'Other' };
+  const LABELS = { momentum: 'Momentum', swing: 'Swing', daytrade: 'Day trade', scalper: 'Scalper', unattributed: 'Manual / legacy' };
+  // Persist open/closed state across 30s refresh — without this, every
+  // refresh would auto-collapse expanded sleeves mid-read.
+  const openSet = window.__pfOpenSleeves = window.__pfOpenSleeves || new Set();
+
   const legend = ORDER
-    .filter(s => (bySleeve[s] || 0) > 0)
+    .filter(s => (bySleeve[s] || 0) > 0 || (positionsBySleeve[s] || []).length > 0)
     .map(s => {
-      const amt = bySleeve[s];
-      const pct = ((amt / totalMv) * 100).toFixed(1);
-      return `<div class="pf-pdl-row">
-        <span class="pf-pdl-dot" style="background:${PF_SLEEVE_COLOR[s]}"></span>
-        <span class="pf-pdl-name">${LABELS[s] || s}</span>
-        <span class="pf-pdl-amt">${fmtUSD(amt, { digits: 0 })}</span>
-        <span class="pf-pdl-pct">${pct}%</span>
+      const amt = bySleeve[s] || 0;
+      const pct = totalMv > 0 ? ((amt / totalMv) * 100).toFixed(1) : '0.0';
+      const sleevePositions = positionsBySleeve[s] || [];
+      const n = sleevePositions.length;
+      const isOpen = openSet.has(s);
+      const emptyCls = n === 0 ? ' pf-pdl-empty' : '';
+      // Column headers — only render once per sleeve group, above the rows.
+      const colHeader = `<div class="pf-pdl-cols" aria-hidden="true">
+        <span>Ticker</span>
+        <span>Risk tier</span>
+        <span>Market value</span>
+        <span class="col-cost">Cost basis</span>
+        <span>Day %</span>
+        <span class="col-pl">Unrealized</span>
+        <span class="col-acquired">Acquired</span>
+        <span>Trend</span>
       </div>`;
+      const lines = sleevePositions.map(pfPositionRow).join('');
+      const body = n > 0
+        ? `<div class="pf-pdl-body">
+             ${pfSleeveThesis(s, sleeveSummaries[s])}
+             ${colHeader}
+             ${lines}
+           </div>`
+        : `<div class="pf-pdl-body">
+             ${pfSleeveThesis(s, sleeveSummaries[s])}
+           </div>`;
+      const openAttr = isOpen ? ' open' : '';
+      return `<details class="pf-pdl-group${emptyCls}" data-sleeve="${s}"${openAttr}>
+        <summary class="pf-pdl-summary">
+          <span class="pf-pdl-dot" style="background:${PF_SLEEVE_COLOR[s]}"></span>
+          <span class="pf-pdl-name">${LABELS[s] || s}</span>
+          <span class="pf-pdl-count">${n} pos</span>
+          <span class="pf-pdl-amt">${fmtUSD(amt, { digits: 0 })}</span>
+          <span class="pf-pdl-pct">${pct}%</span>
+          <span class="pf-pdl-chev" aria-hidden="true"></span>
+        </summary>
+        ${body}
+      </details>`;
     }).join('');
 
-  return `<div class="pf-pos-donut-wrap">
+  // Tier mini-key — explains the OUTER ring at a glance. The sleeve
+  // legend below it already explains the inner ring (each row's left dot
+  // is the sleeve color), so this strip only needs to teach tier colors.
+  // Naming: outer = "Risk tier" (who this trade is sized for), inner =
+  // "Strategy" (how this trade executes — covered by the sleeve dots).
+  const tierKey = `<div class="pf-pdl-tier-key" aria-label="Outer ring colors by risk tier">
+    <span class="pf-pdl-tk-label">Outer · Risk tier</span>
+    <span class="pf-pdl-tk-chip" style="background:var(--tier-conservative)"></span>
+    <span class="pf-pdl-tk-name">Conservative</span>
+    <span class="pf-pdl-tk-chip" style="background:var(--tier-moderate)"></span>
+    <span class="pf-pdl-tk-name">Moderate</span>
+    <span class="pf-pdl-tk-chip" style="background:var(--tier-aggressive)"></span>
+    <span class="pf-pdl-tk-name">Aggressive</span>
+    <span class="pf-pdl-tk-chip" style="background:var(--tier-asymmetric)"></span>
+    <span class="pf-pdl-tk-name">Asymmetric</span>
+    <span class="pf-pdl-tk-divider"></span>
+    <span class="pf-pdl-tk-label">Inner · Strategy</span>
+    <span class="pf-pdl-tk-chip" style="background:${PF_SLEEVE_COLOR.momentum}"></span>
+    <span class="pf-pdl-tk-name">Momentum</span>
+    <span class="pf-pdl-tk-chip" style="background:${PF_SLEEVE_COLOR.swing}"></span>
+    <span class="pf-pdl-tk-name">Swing</span>
+    <span class="pf-pdl-tk-chip" style="background:${PF_SLEEVE_COLOR.daytrade}"></span>
+    <span class="pf-pdl-tk-name">Day trade</span>
+    <span class="pf-pdl-tk-chip" style="background:${PF_SLEEVE_COLOR.scalper}"></span>
+    <span class="pf-pdl-tk-name">Scalper</span>
+  </div>`;
+
+  // Aggregate-P&L glow class (panel-level halo color).
+  const panelGlowCls = totalPl > 0.5 ? 'panel-glow-pos' : totalPl < -0.5 ? 'panel-glow-neg' : '';
+  return `<div class="pf-pos-donut-wrap ${panelGlowCls}">
     <div class="pf-pos-donut alloc-donut">
-      <svg viewBox="0 0 42 42" aria-label="Open positions by capital allocation">
-        <circle cx="21" cy="21" r="15.9155" fill="transparent" stroke="rgba(155,161,185,0.08)" stroke-width="7"/>
+      <svg viewBox="0 0 42 42" aria-label="Open positions by capital allocation, risk tier, and P&L">
+        <defs>
+          <!-- Center glow: faint lake bloom inside the donut hole. -->
+          <radialGradient id="pf-donut-center-glow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="rgba(95,170,197,0.07)"/>
+            <stop offset="100%" stop-color="transparent"/>
+          </radialGradient>
+          <!-- Dome lighting: top-left highlight + bottom-right shadow.
+               Blended at low opacity over the rings to fake 3D curvature. -->
+          <radialGradient id="pf-donut-dome" cx="32%" cy="22%" r="62%">
+            <stop offset="0%"   stop-color="rgba(255,255,255,0.22)"/>
+            <stop offset="40%"  stop-color="rgba(255,255,255,0.04)"/>
+            <stop offset="100%" stop-color="rgba(0,0,0,0.28)"/>
+          </radialGradient>
+          <!-- Top rim highlight on the corona only. -->
+          <linearGradient id="pf-rim-top" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="rgba(255,255,255,0.20)"/>
+            <stop offset="55%" stop-color="rgba(255,255,255,0.00)"/>
+          </linearGradient>
+        </defs>
+        <circle cx="21" cy="21" r="9.5" fill="url(#pf-donut-center-glow)"/>
+        <circle cx="21" cy="21" r="19.5" fill="transparent" stroke="rgba(155,161,185,0.04)" stroke-width="0.9"/>
+        <circle cx="21" cy="21" r="16.5" fill="transparent" stroke="rgba(155,161,185,0.05)" stroke-width="3.4"/>
+        <circle cx="21" cy="21" r="11.5" fill="transparent" stroke="rgba(155,161,185,0.07)" stroke-width="4.4"/>
         ${arcs}
+        <!-- 3D dome overlay: drawn on top of the data rings, blended via
+             CSS mix-blend-mode so it lights/shades each colored slice
+             instead of painting over them. The pointer-events:none means
+             it doesn't block hover on the rings beneath. -->
+        <circle class="pf-donut-dome-overlay" cx="21" cy="21" r="20.4"
+                fill="url(#pf-donut-dome)" pointer-events="none"/>
+        <!-- Top rim: subtle white highlight on the upper half of the
+             corona ring only — gives the rings a "polished metal" cap. -->
+        <circle cx="21" cy="21" r="19.5" fill="transparent"
+                stroke="url(#pf-rim-top)" stroke-width="0.9"
+                pointer-events="none" opacity="0.6"/>
       </svg>
       <div class="dt-center">
         <div class="dt-inner">
+          <div class="dt-eyebrow"><span class="dt-live"></span>LIVE · BOOK</div>
           <div class="dt-total" style="font-size:${_font}px;">${totalStr}</div>
-          <div class="dt-sub">DEPLOYED</div>
-          <div class="dt-caption">${positions.length} position${positions.length !== 1 ? 's' : ''}</div>
+          <div class="dt-pl ${plCenterCls}">${plCenterStr}</div>
+          <div class="dt-caption">${positions.length} open</div>
         </div>
       </div>
     </div>
-    <div class="pf-pos-donut-legend">${legend}</div>
+    <div class="pf-pos-donut-legend">
+      ${tierKey}
+      ${legend}
+    </div>
   </div>`;
 }
 // Returns "Mon 09:30 ET (in 14h 32m)" style copy for the next trader fire.
@@ -926,14 +1368,15 @@ function renderPortfolio(data) {
       ${countdown}
     </div>`;
   } else {
-    const wrapCls = data.teaser ? 'pf-positions pf-teaser-fade' : 'pf-positions';
-    // Donut needs the SAME totalMv that drives the card weights so a card
-    // labelled "12.4%" matches the slice that takes 12.4% of the ring.
-    // Use positions-derived MV (not sleeve totals) since teaser-truncated
-    // payloads exclude some positions and we don't want weights summing >100%.
+    // The donut block now embeds positions inside expandable sleeve
+    // groups (no separate cards grid). Use positions-derived MV since
+    // teaser-truncated payloads exclude some positions and we don't want
+    // arc weights summing to >100% of the visible ring.
     const visibleMv = positions.reduce((s, p) => s + (p.market_value || 0), 0);
-    const donutBlock = pfPositionsDonut(positions, visibleMv);
-    positionsBlock = donutBlock + `<div class="${wrapCls}">${positions.map(p => pfPositionCard(p, visibleMv)).join('')}</div>`;
+    // Stash sleeve summaries so the embedded thesis blocks can surface
+    // realized-today figures without re-deriving them per row.
+    window.__pfSleeveSummaries = sleeves;
+    positionsBlock = pfPositionsDonut(positions, visibleMv);
     if (data.teaser) {
       positionsBlock += `<div class="pf-teaser-cta">Showing ${positions.length} of total — <a href="/pricing">unlock the full book</a> to see every fill, sleeve allocation, and intraday rebalance.</div>`;
     }
@@ -974,14 +1417,13 @@ function renderPortfolio(data) {
       </div>
     </div>
     ${equityChart}
+    ${pfLiveActivityStrip(data)}
     ${pfPendingOrdersStrip(data.open_orders)}
     <div class="pf-positions-head">
-      <span class="pf-positions-title">Open positions</span>
+      <span class="pf-positions-title">Open positions · expand a sleeve to see the names</span>
       <span class="pf-positions-count">
         ${(() => {
           if (totalPositions === 0) return '0';
-          // Tally in/out-of-money on the visible positions only — even
-          // for the teaser, since we have full sleeve UPL totals up top.
           const wins = positions.filter(p => (p.unrealized_pl || 0) > 0).length;
           const losses = positions.filter(p => (p.unrealized_pl || 0) < 0).length;
           const flat = positions.length - wins - losses;
@@ -1902,6 +2344,19 @@ async function refreshPortfolioOnly() {
   } catch (_) { /* swallow — next tick will retry */ }
 }
 
+// Track which sleeve groups the user has expanded so the 30s refresh
+// re-opens them after replacing the panel. Delegated handler so we don't
+// need to re-bind on every refresh.
+document.addEventListener('toggle', (e) => {
+  const det = e.target;
+  if (!det || !det.classList || !det.classList.contains('pf-pdl-group')) return;
+  const sleeve = det.dataset.sleeve;
+  if (!sleeve) return;
+  const set = (window.__pfOpenSleeves = window.__pfOpenSleeves || new Set());
+  if (det.open) set.add(sleeve);
+  else set.delete(sleeve);
+}, true);
+
 // Hover tooltip for portfolio donut slices. Distinct from wireChartTooltips
 // because the data shape differs: portfolio slices carry sleeve + P&L
 // (no tier), and we want the popup to surface live unrealized P&L next to
@@ -1916,16 +2371,26 @@ function wirePortfolioTooltips() {
       <div class="ct-head">
         <span class="ct-dot"></span>
         <span class="ct-sym"></span>
-        <span class="ct-tier ct-sleeve"></span>
+        <span class="ct-badges">
+          <span class="ct-tier ct-sleeve-lbl"></span>
+          <span class="ct-tier ct-tier-lbl"></span>
+        </span>
       </div>
+      <div class="ct-pl-hero"><span class="ct-pl-arrow"></span><span class="ct-pl-num"></span></div>
       <div class="ct-rows">
-        <div class="ct-row"><span class="ct-label">Market value</span><span class="ct-value big ct-amt"></span></div>
+        <div class="ct-row"><span class="ct-label">Market value</span><span class="ct-value ct-amt"></span></div>
         <div class="ct-row"><span class="ct-label">% of book</span><span class="ct-value ct-pct"></span></div>
-        <div class="ct-row"><span class="ct-label">Unrealized P&amp;L</span><span class="ct-value ct-pl"></span></div>
       </div>`;
     document.body.appendChild(tip);
   }
-  const SLEEVE_LABEL = { momentum: 'MOMENTUM', swing: 'SWING', daytrade: 'DAY TRADE', scalper: 'SCALPER', unattributed: 'OTHER' };
+  const SLEEVE_LABEL = { momentum: 'MOMENTUM', swing: 'SWING', daytrade: 'DAY TRADE', scalper: 'SCALPER', unattributed: 'MANUAL / LEGACY' };
+  const TIER_LABEL = { conservative: 'CONSERVATIVE', moderate: 'MODERATE', aggressive: 'AGGRESSIVE', asymmetric: 'ASYMMETRIC' };
+  const TIER_VAR = {
+    conservative: 'var(--tier-conservative)',
+    moderate: 'var(--tier-moderate)',
+    aggressive: 'var(--tier-aggressive)',
+    asymmetric: 'var(--tier-asymmetric)',
+  };
 
   const positionTip = (evt) => {
     const w = tip.offsetWidth || 220;
@@ -1938,6 +2403,7 @@ function wirePortfolioTooltips() {
   const show = (circle, evt) => {
     const sym = circle.getAttribute('data-pf-sym');
     const sleeve = circle.getAttribute('data-pf-sleeve') || 'unattributed';
+    const tier = circle.getAttribute('data-pf-tier') || '';
     const amt = parseFloat(circle.getAttribute('data-pf-amt') || '0');
     const pct = parseFloat(circle.getAttribute('data-pf-pct') || '0');
     const pl = parseFloat(circle.getAttribute('data-pf-pl') || '0');
@@ -1948,33 +2414,97 @@ function wirePortfolioTooltips() {
 
     tip.querySelector('.ct-dot').style.background = color;
     tip.querySelector('.ct-sym').textContent = sym;
-    tip.querySelector('.ct-sleeve').textContent = SLEEVE_LABEL[sleeve] || sleeve.toUpperCase();
+    // Two badges, color-coded to match the donut rings: sleeve = inner
+    // (strategy), tier = outer (risk tier). Tier badge hides when no
+    // real /picks tier was attributed (avoids "SWING · SWING").
+    const sleeveTxt = SLEEVE_LABEL[sleeve] || sleeve.toUpperCase();
+    const sleeveLbl = tip.querySelector('.ct-sleeve-lbl');
+    sleeveLbl.textContent = sleeveTxt;
+    sleeveLbl.style.color = color;
+    const tierLbl = tip.querySelector('.ct-tier-lbl');
+    if (TIER_LABEL[tier]) {
+      tierLbl.textContent = TIER_LABEL[tier];
+      tierLbl.style.color = TIER_VAR[tier] || 'var(--text-dim)';
+      tierLbl.style.display = '';
+    } else {
+      tierLbl.style.display = 'none';
+    }
     tip.querySelector('.ct-amt').textContent = fmtUSD(amt, { digits: 0 });
     tip.querySelector('.ct-pct').textContent = pct.toFixed(2) + '%';
-    const plEl = tip.querySelector('.ct-pl');
-    plEl.className = 'ct-value ct-pl ' + plCls;
-    plEl.textContent = `${sign(pl)}${fmtUSD(Math.abs(pl), { digits: 0 }).replace(/^[-]/, '')} (${sign(plpc)}${Math.abs(plpc).toFixed(2)}%)`;
-    circle.classList.add('hover');
+    // P&L hero: green/red arrow + the dollar+percent number, large.
+    // This is the first thing the eye reads in the card — the model's
+    // verdict on this position made unmissable.
+    const heroEl = tip.querySelector('.ct-pl-hero');
+    heroEl.className = 'ct-pl-hero ' + plCls;
+    const arrowGlyph = pl > 0.5 ? '▲' : (pl < -0.5 ? '▼' : '◆');
+    tip.querySelector('.ct-pl-arrow').textContent = arrowGlyph;
+    tip.querySelector('.ct-pl-num').textContent = `${sign(pl)}${fmtUSD(Math.abs(pl), { digits: 0 }).replace(/^[-]/, '')}  ${sign(plpc)}${Math.abs(plpc).toFixed(2)}%`;
+    // Highlight BOTH rings for this symbol (outer + inner share the
+    // same data-pf-sym), so a hover lights up the whole position.
+    document.querySelectorAll(`circle[data-pf-sym="${CSS.escape(sym)}"]`)
+      .forEach(c => c.classList.add('hover'));
     tip.classList.add('visible');
     positionTip(evt);
   };
-  const hide = (circle) => { circle?.classList.remove('hover'); tip.classList.remove('visible'); };
+  const hide = (sym) => {
+    if (sym) {
+      document.querySelectorAll(`circle[data-pf-sym="${CSS.escape(sym)}"]`)
+        .forEach(c => c.classList.remove('hover'));
+    } else {
+      document.querySelectorAll('circle[data-pf-sym].hover')
+        .forEach(c => c.classList.remove('hover'));
+    }
+    tip.classList.remove('visible');
+  };
 
   document.querySelectorAll('circle[data-pf-sym]').forEach(c => {
+    const sym = c.getAttribute('data-pf-sym');
     c.addEventListener('mouseenter', e => show(c, e));
     c.addEventListener('mousemove', e => positionTip(e));
-    c.addEventListener('mouseleave', () => hide(c));
+    c.addEventListener('mouseleave', () => hide(sym));
     // Touch — single-tap to peek (Mobile QC: never absolute-position
     // interactive UI in collapsibles, but the tooltip is body-attached
     // and z-9999 so it's safe).
     c.addEventListener('touchstart', e => show(c, e.touches[0]), { passive: true });
   });
+
+  // Reciprocal: hovering a position row in the table highlights the
+  // matching slices (both rings) and shows the same tooltip. Uses the
+  // first matching circle as the data source — both rings carry
+  // identical data attributes for the same symbol.
+  document.querySelectorAll('.pf-pdl-line').forEach(row => {
+    const sym = row.getAttribute('data-pf-row-sym');
+    if (!sym) return;
+    const refCircle = document.querySelector(`circle[data-pf-sym="${CSS.escape(sym)}"]`);
+    if (!refCircle) return;
+    row.addEventListener('mouseenter', e => show(refCircle, e));
+    row.addEventListener('mousemove', e => positionTip(e));
+    row.addEventListener('mouseleave', () => hide(sym));
+  });
 }
 function startPortfolioRefresh() {
   if (_pfRefreshTimer) return;
+  // 15s polls — was 30s but the live activity ticker reads stale at half
+  // a minute. Trade fills happen at 5min cron intervals (scalper) and
+  // 30min (trader), so 15s catches new events same-minute and the ticker
+  // animation reads fresh. Bandwidth cost is ~2KB per pull.
   _pfRefreshTimer = setInterval(() => {
     if (document.visibilityState === 'visible') refreshPortfolioOnly();
-  }, 30000);
+  }, 15000);
+  // Also tick the next-cron countdown every second, independent of API
+  // polling. The countdown DOM is small enough to swap as a string.
+  if (!window.__pfCountdownTimer) {
+    window.__pfCountdownTimer = setInterval(() => {
+      const el = document.querySelector('.pf-live-status');
+      if (!el) return;
+      const next = pfNextCronFire();
+      const bits = el.querySelectorAll('.pf-live-bit');
+      // Second .pf-live-bit is "next X in MM:SS" — rebuild it in place.
+      if (bits.length >= 2) {
+        bits[1].innerHTML = `next <b>${next.label}</b> in ${next.countdown}`;
+      }
+    }, 1000);
+  }
 }
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') refreshPortfolioOnly();
@@ -2032,17 +2562,21 @@ async function load() {
   if (portfolioData && !portfolioData.error) startPortfolioRefresh();
 }
 
-// Start the shared nav (handles pill + dark Clerk appearance) and hook the
-// picks-specific `load()` call on Clerk auth changes.
+// Hook the picks-specific load() onto Clerk's session lifecycle. nav.js
+// auto-initialises on its own and exposes STNav.ready() as a single
+// promise that resolves once Clerk has loaded. We await that rather than
+// calling Clerk.load() ourselves — calling it twice with different
+// appearance configs has caused dark-modal regressions in the past.
 (function () {
   const wait = () => {
-    if (!window.STNav?.init) return setTimeout(wait, 50);
+    if (!window.STNav?.ready) return setTimeout(wait, 40);
+    // Idempotent — nav.js has already auto-initialised. We're just
+    // setting the explicit redirect so a sign-in from /picks returns here.
     window.STNav.init({ signInRedirect: '/picks' });
-    const loop = () => {
-      if (!window.Clerk?.load) return setTimeout(loop, 80);
-      window.Clerk.load().then(() => { load(); window.Clerk.addListener(load); });
-    };
-    loop();
+    window.STNav.ready().then((clerk) => {
+      load();
+      try { clerk?.addListener?.(load); } catch (_) {}
+    });
   };
   wait();
 })();

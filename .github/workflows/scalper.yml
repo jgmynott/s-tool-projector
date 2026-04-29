@@ -34,7 +34,9 @@ on:
 # fired_today dedupe in state, queued runs see no fresh signals and exit
 # clean.
 concurrency:
-  group: scalper-sleeve
+  # Shared with trader.yml so the two never race on
+  # runtime_data/trade_journal.json. See trader.yml for the incident.
+  group: s-tool-trade-write
   cancel-in-progress: false
 
 jobs:
@@ -94,6 +96,14 @@ jobs:
             echo "no scalper artifacts changed"
           else
             git commit -m "chore(scalper): state + journal $(date -u +%Y-%m-%dT%H:%MZ)"
-            git pull --rebase || true
-            git push
-          fi
+            # See trader.yml for incident — pull+push isn't atomic, retry
+            # on "remote rejected" if another writer beat us to main.
+            for attempt in 1 2 3 4 5; do
+              git pull --rebase --autostash || true
+              if git push; then
+                echo "push ok on attempt $attempt"
+                break
+              fi
+              echo "push rejected on attempt $attempt — sleeping then retrying"
+              sleep $((attempt * 3))
+            done

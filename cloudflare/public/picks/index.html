@@ -457,14 +457,20 @@ footer a { color: var(--text-mid); }
   position: absolute; inset: 0;
   /* Confine center text to a square that comfortably fits inside the
    * donut's inner radius, so captions never bleed behind the arcs.
-   * Inner radius at 260-320px donut is ~100-120px clear. */
+   * The portfolio donut's strategy ring sits at r=11.5 with stroke
+   * 4.4 → inner edge at r=9.3. In a 400px donut that's a ~177px clear
+   * hole, so dt-inner at 44% (~176px) lands exactly inside it. */
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   pointer-events: none; text-align: center;
   padding: 0;
+  overflow: visible;
 }
 .alloc-donut .dt-inner {
   width: 58%; display: flex; flex-direction: column; align-items: center; justify-content: center;
 }
+/* Portfolio donut has a tighter clear-area than the master donut, so
+   the inner box must be narrower than .alloc-donut.master's 58%. */
+.pf-pos-donut.alloc-donut .dt-inner { width: 46%; }
 .alloc-donut .dt-total {
   font: 400 46px/1 'Crimson Text', Georgia, serif;
   letter-spacing: -0.022em; color: var(--text-hi);
@@ -566,8 +572,26 @@ footer a { color: var(--text-mid); }
 .ct-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed rgba(155,161,185,0.22); }
 .ct-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
 .ct-sym { font: 700 16px 'Inter'; color: var(--text-hi); letter-spacing: -0.015em; }
-.ct-tier { font: 600 10px 'Inter'; color: var(--text-dim); letter-spacing: 0.2em; text-transform: uppercase; margin-left: auto; }
+.ct-tier { font: 600 10px 'Inter'; color: var(--text-dim); letter-spacing: 0.2em; text-transform: uppercase; }
+.ct-badges { display: inline-flex; flex-wrap: wrap; gap: 4px 8px; margin-left: auto; align-items: center; justify-content: flex-end; }
+.ct-badges .ct-tier { margin-left: 0; }
+.ct-sleeve-lbl, .ct-tier-lbl { padding: 2px 7px; border-radius: 4px; border: 1px solid currentColor; background: transparent; font-size: 9px; }
 .ct-rows { display: flex; flex-direction: column; gap: 6px; }
+/* P&L hero — the model's verdict on this position. Green/red, big,
+   first thing the eye reads after the symbol. Sits between header and
+   the secondary rows, with its own faint divider above. */
+.ct-pl-hero {
+  display: flex; align-items: baseline; gap: 10px;
+  padding: 6px 0 12px;
+  margin-bottom: 8px;
+  border-bottom: 1px dashed rgba(155,161,185,0.18);
+  font-variant-numeric: tabular-nums;
+}
+.ct-pl-arrow { font-size: 16px; line-height: 1; }
+.ct-pl-num { font: 700 22px 'Crimson Text', Georgia, serif; letter-spacing: -0.012em; line-height: 1; }
+.ct-pl-hero.pos { color: var(--pos); text-shadow: 0 0 18px rgba(110,231,183,0.35); }
+.ct-pl-hero.neg { color: var(--neg); text-shadow: 0 0 18px rgba(252,165,165,0.30); }
+.ct-pl-hero.flat { color: var(--text-dim); }
 .ct-row { display: flex; justify-content: space-between; gap: 18px; font-size: 12.5px; }
 .ct-row .ct-label { color: var(--text-dim); }
 .ct-row .ct-value { color: var(--text-hi); font-weight: 600; }
@@ -579,15 +603,20 @@ footer a { color: var(--text-mid); }
  * (including the invisible dash gaps), so the last-rendered circle in
  * DOM order wins every hover regardless of visible color. That bug made
  * every slice resolve to the asymmetric tier's tooltip. */
-.alloc-donut circle[data-sym], .mini-pie circle[data-sym] {
+.alloc-donut circle[data-sym],
+.alloc-donut circle[data-pf-sym],
+.mini-pie circle[data-sym] {
   cursor: pointer; transition: stroke-width .12s ease;
   pointer-events: visibleStroke;
 }
 .alloc-donut.master circle[data-sym].hover { stroke-width: 8.5; }
 .mini-pie circle[data-sym].hover { stroke-width: 10.5; }
+/* Portfolio donut hover: subtle stroke bump on whichever ring received
+   the hover. Inner stroke is fatter so it gets a smaller bump. */
+.pf-pos-donut circle[data-pf-sym].hover { stroke-width: 5; }
 
-/* Background track also should not swallow events */
-.alloc-donut svg circle:not([data-sym]),
+/* Background tracks (no data-sym OR data-pf-sym) should not swallow events */
+.alloc-donut svg circle:not([data-sym]):not([data-pf-sym]),
 .mini-pie circle:not([data-sym]) { pointer-events: none; }
 
 @media (max-width: 920px) {
@@ -632,7 +661,7 @@ footer a { color: var(--text-mid); }
   margin: 28px 0 36px; padding: 32px 32px 28px;
   border: 1px solid var(--border); border-radius: var(--radius-lg);
   background: linear-gradient(180deg, rgba(10,101,119,0.10), rgba(2,40,52,0.06)), var(--bg-surface);
-  position: relative; overflow: hidden;
+  position: relative; overflow: visible;
 }
 .pf-panel::before {
   content: ''; position: absolute; inset: 0; pointer-events: none;
@@ -758,30 +787,322 @@ footer a { color: var(--text-mid); }
  * market value. Center: total deployed + count. Hover/tap a slice for the
  * tooltip (wirePortfolioTooltips). Legend column on the right shows
  * sleeve totals so the user can decode "violet = momentum" instantly. */
+/* Premium centerpiece — radial halo behind the donut tinted by total
+   day P&L (green when up, red when down), thin top-rim highlight for
+   the "polished glass" feel, and a soft drop-shadow under the rings.
+   overflow stays VISIBLE so the donut's 3D shadow can extend past the
+   panel edge — the rim highlight uses a pseudo-element constrained to
+   the panel bounds, no clipping needed. */
 .pf-pos-donut-wrap {
-  display: grid; grid-template-columns: 280px 1fr; gap: 28px;
+  display: grid;
+  /* Column 1 is donut-sized (320px) plus 24px on each side so the
+     drop-shadow has guaranteed room to render without touching column
+     borders. minmax(0,...) keeps it from forcing overflow at narrow
+     viewports. */
+  grid-template-columns: minmax(0, 368px) minmax(0, 1fr);
+  gap: 36px;
   align-items: center;
-  padding: 18px 20px 22px;
-  margin-bottom: 16px;
-  border: 1px solid var(--border); border-radius: var(--radius-sm);
-  background: linear-gradient(180deg, rgba(11,16,6,0.45), rgba(2,40,52,0.05));
+  justify-items: center;
+  /* Generous padding: the donut's drop-shadow spreads ~24px past the
+     element box, so the wrap padding must exceed that on every side.
+     48px gives a clean halo without the shadow biting the panel border. */
+  padding: 48px 48px 48px;
+  margin-bottom: 24px;
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 18px;
+  background:
+    radial-gradient(620px 360px at 18% 0%, rgba(95,170,197,0.10), transparent 62%),
+    linear-gradient(180deg, rgba(11,16,6,0.65), rgba(2,40,52,0.14));
+  position: relative;
+  box-shadow:
+    0 1px 0 0 rgba(255,255,255,0.04) inset,
+    0 24px 60px -28px rgba(0,0,0,0.55);
 }
-.pf-pos-donut.alloc-donut { width: 280px; height: 280px; }
-.pf-pos-donut.alloc-donut .dt-total { font-family: 'Crimson Text', Georgia, serif; }
+/* Legend keeps its left-aligned text — donut alone gets justify-self:center */
+.pf-pos-donut-legend { justify-self: stretch; }
+/* Top-edge rim highlight — 1px gradient line for premium card feel.
+   border-radius matches the panel so the highlight curves correctly. */
+.pf-pos-donut-wrap::before {
+  content: ''; position: absolute; left: 0; right: 0; top: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.10), transparent);
+  pointer-events: none;
+  border-top-left-radius: 18px; border-top-right-radius: 18px;
+}
+/* Aggregate P&L halo — colors the corner radial behind the donut */
+.pf-pos-donut-wrap.panel-glow-pos {
+  background:
+    radial-gradient(640px 380px at 22% 30%, rgba(110,231,183,0.10), transparent 62%),
+    linear-gradient(180deg, rgba(11,16,6,0.65), rgba(2,40,52,0.14));
+}
+.pf-pos-donut-wrap.panel-glow-neg {
+  background:
+    radial-gradient(640px 380px at 22% 30%, rgba(252,165,165,0.09), transparent 62%),
+    linear-gradient(180deg, rgba(11,16,6,0.65), rgba(2,40,52,0.14));
+}
+/* 3D lift — controlled shadow that fits inside the wrap's 48px padding
+   on every side. Far shadow + tight contact + faint top-rim cheat +
+   ambient lake glow. Total visual extent is ~32px past the element box,
+   well within the padding budget. */
+.pf-pos-donut.alloc-donut {
+  width: 320px; height: 320px;
+  filter:
+    drop-shadow(0 14px 24px rgba(0,0,0,0.50))
+    drop-shadow(0 6px 10px rgba(0,0,0,0.30))
+    drop-shadow(0 1px 2px rgba(0,0,0,0.22))
+    drop-shadow(0 -1px 0 rgba(255,255,255,0.05))
+    drop-shadow(0 0 24px rgba(95,170,197,0.07));
+  transform: translateZ(0);
+  transition: transform .25s cubic-bezier(.2,.7,.2,1), filter .25s ease;
+}
+/* Subtle hover-lift */
+.pf-pos-donut-wrap:hover .pf-pos-donut.alloc-donut {
+  transform: translateY(-2px);
+  filter:
+    drop-shadow(0 18px 28px rgba(0,0,0,0.55))
+    drop-shadow(0 8px 12px rgba(0,0,0,0.32))
+    drop-shadow(0 1px 2px rgba(0,0,0,0.22))
+    drop-shadow(0 -1px 0 rgba(255,255,255,0.06))
+    drop-shadow(0 0 30px rgba(95,170,197,0.10));
+}
+.pf-pos-donut.alloc-donut svg circle { stroke-linecap: butt; }
+/* The dome overlay blends with the colored rings beneath to fake
+   curvature: highlight at top-left, shadow at bottom-right. */
+.pf-pos-donut.alloc-donut svg .pf-donut-dome-overlay {
+  mix-blend-mode: overlay;
+  opacity: 0.85;
+}
+.pf-pos-donut.alloc-donut .dt-eyebrow {
+  font: 600 9px 'Inter'; color: var(--accent-lake);
+  letter-spacing: 0.30em; text-transform: uppercase;
+  display: inline-flex; align-items: center; gap: 7px;
+  margin-bottom: 10px;
+}
+.pf-pos-donut.alloc-donut .dt-live {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--pos);
+  box-shadow: 0 0 8px rgba(110,231,183,0.7);
+  animation: pf-pulse 2s ease-in-out infinite;
+}
+.pf-pos-donut.alloc-donut .dt-total {
+  font-family: 'Crimson Text', Georgia, serif;
+  letter-spacing: -0.024em;
+  line-height: 1;
+  color: var(--text-hi);
+}
 .pf-pos-donut.alloc-donut .dt-sub { color: var(--accent-lake); }
+.pf-pos-donut.alloc-donut .dt-pl {
+  font: 600 16px 'Inter'; font-variant-numeric: tabular-nums;
+  letter-spacing: -0.005em; margin-top: 10px;
+}
+.pf-pos-donut.alloc-donut .dt-pl.pos { color: var(--pos); text-shadow: 0 0 16px rgba(110,231,183,0.30); }
+.pf-pos-donut.alloc-donut .dt-pl.neg { color: var(--neg); text-shadow: 0 0 16px rgba(252,165,165,0.26); }
+.pf-pos-donut.alloc-donut .dt-pl.flat { color: var(--text-dim); }
+.pf-pos-donut.alloc-donut .dt-caption {
+  margin-top: 8px; font: 500 10.5px 'Inter';
+  color: var(--text-dim); letter-spacing: 0.10em; text-transform: uppercase;
+}
 .pf-pos-donut-legend { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
-.pf-pdl-row {
-  display: grid; grid-template-columns: 14px 1fr auto auto;
-  align-items: center; gap: 12px;
-  padding: 10px 12px;
+
+/* Tier mini-key sits at the top of the legend column. Outer ring shows
+   /picks tier on each slice; the chip strip teaches that color mapping
+   without competing with the per-sleeve rows below. */
+.pf-pdl-tier-key {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px;
+  padding: 8px 12px; margin-bottom: 4px;
   border-radius: 8px;
-  background: rgba(11,16,6,0.35);
+  background: rgba(11,16,6,0.25);
+  border: 1px dashed var(--border);
   font-variant-numeric: tabular-nums;
 }
+.pf-pdl-tk-label {
+  font: 600 9px 'Inter'; color: var(--text-dim);
+  letter-spacing: 0.16em; text-transform: uppercase;
+  margin-right: 4px;
+}
+.pf-pdl-tk-chip {
+  width: 9px; height: 9px; border-radius: 2px;
+  display: inline-block; flex-shrink: 0;
+}
+.pf-pdl-tk-name {
+  font: 500 11px 'Inter'; color: var(--text-mid);
+  margin-right: 6px;
+}
+.pf-pdl-tk-name:last-child { margin-right: 0; }
+.pf-pdl-tk-divider {
+  width: 1px; height: 12px; align-self: center;
+  background: var(--border); margin: 0 4px;
+}
+
+/* Each sleeve row is a <details> group: the summary is the legend line you
+   used to see (dot · name · count · $ · %); opening it reveals the
+   nested column-labeled position rows for that sleeve. The summary is
+   visually unchanged from the prior flat row so the feel doesn't shift. */
+.pf-pdl-group {
+  border-radius: 10px;
+  background: rgba(11,16,6,0.35);
+  border: 1px solid transparent;
+  overflow: hidden;
+  transition: background .15s ease, border-color .15s ease;
+}
+.pf-pdl-group[open] {
+  background: rgba(11,16,6,0.55);
+  border-color: var(--border);
+}
+.pf-pdl-group.pf-pdl-empty .pf-pdl-summary { cursor: default; }
+.pf-pdl-summary {
+  display: grid;
+  grid-template-columns: 14px minmax(0,1fr) auto auto auto 14px;
+  align-items: center; gap: 12px;
+  padding: 10px 12px;
+  font-variant-numeric: tabular-nums;
+  list-style: none;
+  cursor: pointer; user-select: none;
+}
+.pf-pdl-summary::-webkit-details-marker { display: none; }
+.pf-pdl-summary:hover { background: rgba(95,170,197,0.05); }
+.pf-pdl-group.pf-pdl-empty .pf-pdl-summary:hover { background: transparent; }
 .pf-pdl-dot { width: 10px; height: 10px; border-radius: 3px; }
 .pf-pdl-name { font: 600 12px 'Inter'; color: var(--text-hi); letter-spacing: 0.04em; }
+.pf-pdl-count { font: 500 11px 'Inter'; color: var(--text-dim); letter-spacing: 0.06em; font-variant-numeric: tabular-nums; }
 .pf-pdl-amt { font: 500 13px 'Inter'; color: var(--text-mid); }
 .pf-pdl-pct { font: 600 13px 'Inter'; color: var(--text-hi); min-width: 48px; text-align: right; }
+.pf-pdl-chev {
+  width: 8px; height: 8px;
+  border-right: 1.5px solid var(--text-dim);
+  border-bottom: 1.5px solid var(--text-dim);
+  transform: rotate(-45deg);
+  transition: transform .18s ease;
+  justify-self: end;
+}
+.pf-pdl-group[open] .pf-pdl-chev { transform: rotate(45deg); border-color: var(--text-mid); }
+.pf-pdl-group.pf-pdl-empty .pf-pdl-chev { display: none; }
+
+/* Body opens below the summary — sleeve-thesis line + column headers +
+   line-style position rows. No abs-positioned controls; pure flow. */
+.pf-pdl-body {
+  padding: 0 12px 10px;
+}
+.pf-pdl-thesis {
+  font: 500 12.5px/1.55 'Inter'; color: var(--text-mid);
+  padding: 12px 2px 12px;
+  border-top: 1px dashed var(--border);
+}
+.pf-pdl-thesis b { color: var(--text-hi); font-weight: 600; }
+.pf-pdl-thesis .ts-rule {
+  display: inline-block; padding: 1px 7px; margin-right: 6px;
+  border-radius: 4px; background: rgba(95,170,197,0.10);
+  color: var(--accent-lake);
+  font: 600 9px 'Inter'; letter-spacing: 0.16em; text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+  vertical-align: 1px;
+}
+
+/* Column headers + position lines share grid template so values line up
+   under their labels.
+   SYM | TIER | MV | COST | DAY% | UPNL | ACQUIRED | TREND */
+.pf-pdl-cols, .pf-pdl-line {
+  display: grid;
+  grid-template-columns:
+    minmax(60px, 0.85fr)   /* sym */
+    62px                   /* tier pill */
+    minmax(64px, 0.85fr)   /* market value */
+    minmax(64px, 0.85fr)   /* cost basis */
+    62px                   /* day % */
+    minmax(64px, 0.85fr)   /* unrealized $ */
+    62px                   /* acquired date */
+    32px;                  /* trend arrow */
+  gap: 10px;
+  align-items: center;
+  padding: 8px 4px;
+  font-variant-numeric: tabular-nums;
+}
+.pf-pdl-cols {
+  font: 600 9px 'Inter'; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--text-dim);
+  padding: 8px 4px 6px;
+  border-bottom: 1px solid var(--border);
+}
+.pf-pdl-line {
+  border-bottom: 1px dashed rgba(155,161,185,0.07);
+  font: 500 12px 'Inter'; color: var(--text-mid);
+  border-radius: 4px;
+  transition: background .12s ease;
+}
+.pf-pdl-line:last-child { border-bottom: none; }
+.pf-pdl-line:hover { background: rgba(95,170,197,0.05); }
+
+.pf-rl-sym {
+  font: 700 13.5px 'Inter';
+  color: var(--text-hi);
+  white-space: nowrap;
+}
+/* Defensive: never let any default browser marker, list-style, or
+   inherited ::before content prefix a row with dots. The ticker column
+   is the row's leading element and must render clean, no leftover
+   marker glyphs from earlier mask designs or from <details> defaults. */
+.pf-pdl-line { list-style: none; }
+.pf-pdl-line::before, .pf-pdl-line::marker,
+.pf-rl-sym::before, .pf-rl-sym::marker { content: none; display: none; }
+
+.pf-rl-tier {
+  font: 600 9px 'Inter'; padding: 2px 6px; border-radius: 4px;
+  letter-spacing: 0.10em; text-transform: uppercase;
+  border: 1px solid currentColor; background: transparent;
+  text-align: center; white-space: nowrap;
+  justify-self: start;
+}
+.pf-rl-tier.conservative { color: var(--tier-conservative); }
+.pf-rl-tier.moderate     { color: var(--tier-moderate); }
+.pf-rl-tier.aggressive   { color: var(--tier-aggressive); }
+.pf-rl-tier.asymmetric   { color: var(--tier-asymmetric); }
+.pf-rl-tier.scalper      { color: var(--pos); }
+.pf-rl-tier.daytrade     { color: var(--tier-moderate); }
+.pf-rl-tier.unattributed { color: var(--text-dim); }
+
+.pf-rl-mv   { color: var(--text-hi); font-weight: 600; font-size: 12.5px; }
+.pf-rl-cost { color: var(--text-mid); font-weight: 500; font-size: 12px; }
+.pf-rl-pct  { font-weight: 600; font-size: 12.5px; text-align: right; }
+.pf-rl-pct.pos { color: var(--pos); }
+.pf-rl-pct.neg { color: var(--neg); }
+.pf-rl-pct.flat { color: var(--text-dim); }
+.pf-rl-pl { font-weight: 500; }
+.pf-rl-pl.pos { color: var(--pos); }
+.pf-rl-pl.neg { color: var(--neg); }
+.pf-rl-acquired { font: 500 11px 'Inter'; color: var(--text-dim); text-align: right; cursor: help; }
+
+/* Trend arrow — color set inline (rgba intensity scaled to |day %|);
+   glyph snaps tight to the column. Slight scale on hover gives the
+   user a visual confirm that this thing is interactive (it's a tooltip
+   target, not a click target). */
+.pf-rl-trend {
+  font-size: 13px; line-height: 1; text-align: center;
+  cursor: help; transition: transform .12s ease;
+}
+.pf-rl-trend:hover { transform: scale(1.18); }
+
+/* Mobile collapses progressively: at <860px drop cost basis + acquired
+   date (still visible in tooltip on the row); at <540px also drop
+   unrealized $. The trend arrow stays at every breakpoint — its job
+   IS to compress the day move into a single colored glyph. */
+@media (max-width: 860px) {
+  .pf-pdl-cols, .pf-pdl-line {
+    grid-template-columns:
+      minmax(54px, 0.95fr) 56px minmax(60px, 0.9fr) 58px minmax(60px, 0.9fr) 28px;
+    gap: 8px;
+  }
+  .pf-pdl-cols .col-cost, .pf-pdl-line .pf-rl-cost,
+  .pf-pdl-cols .col-acquired, .pf-pdl-line .pf-rl-acquired { display: none; }
+}
+@media (max-width: 540px) {
+  .pf-pdl-cols, .pf-pdl-line {
+    grid-template-columns: minmax(52px, 1fr) 48px minmax(58px, 0.95fr) 56px 26px;
+    gap: 6px;
+    padding: 8px 2px;
+  }
+  .pf-pdl-cols .col-pl, .pf-pdl-line .pf-rl-pl { display: none; }
+  .pf-pdl-summary { grid-template-columns: 12px minmax(0,1fr) auto auto 12px; gap: 9px; padding: 9px 10px; }
+  .pf-pdl-summary .pf-pdl-amt { display: none; }
+}
 
 .pf-positions { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
 .pf-pos {
@@ -889,6 +1210,112 @@ footer a { color: var(--text-mid); }
 .pf-closed-cta { margin-top: 10px; padding: 10px 14px; text-align: center; font: 500 12px 'Inter'; color: var(--text-mid); border-top: 1px dashed var(--border); }
 .pf-closed-cta a { color: var(--accent-lake); text-decoration: underline; text-underline-offset: 3px; }
 
+/* ── Live activity strip ─────────────────────────────────────────
+   Status header + vertical ticker of buys/sells. The status row is
+   always visible; the ticker holds 15 events max with newest at top.
+   New events animate in via slideInDown keyframe. Designed to be the
+   "watchable" element on /picks while the trader is active. */
+.pf-live-strip {
+  margin: 14px 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, rgba(11,16,6,0.55), rgba(2,40,52,0.10));
+  overflow: hidden;
+}
+.pf-live-status {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  font: 500 12px 'Inter'; color: var(--text-mid);
+  font-variant-numeric: tabular-nums;
+}
+.pf-live-status .pf-live-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--pos);
+  box-shadow: 0 0 10px rgba(110,231,183,0.7);
+  animation: pf-pulse 2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+.pf-live-status .pf-live-label {
+  font: 700 10px 'Inter'; color: var(--accent-lake);
+  letter-spacing: 0.22em; text-transform: uppercase;
+}
+.pf-live-status .pf-live-bit { color: var(--text-mid); }
+.pf-live-status .pf-live-bit b { color: var(--text-hi); font-weight: 600; }
+.pf-tk-list {
+  display: flex; flex-direction: column;
+  max-height: 320px; overflow-y: auto;
+  padding: 4px 0;
+}
+.pf-tk-row {
+  display: grid;
+  grid-template-columns: 56px 50px minmax(60px, 0.9fr) auto auto;
+  align-items: center; gap: 12px;
+  padding: 9px 16px;
+  font: 500 12.5px 'Inter';
+  color: var(--text-mid);
+  font-variant-numeric: tabular-nums;
+  border-bottom: 1px dashed rgba(155,161,185,0.06);
+  transition: background .12s ease;
+}
+.pf-tk-row:last-child { border-bottom: none; }
+.pf-tk-row:hover { background: rgba(95,170,197,0.04); }
+.pf-tk-row.fresh { animation: pf-tk-slide-in 0.5s cubic-bezier(.2,.7,.2,1) both; background: rgba(95,170,197,0.08); }
+@keyframes pf-tk-slide-in {
+  0% { opacity: 0; transform: translateY(-12px); background: rgba(95,170,197,0.18); }
+  100% { opacity: 1; transform: translateY(0); background: rgba(95,170,197,0.08); }
+}
+.pf-tk-row.fresh { animation-fill-mode: both; }
+/* fade fresh background after 4s so older "fresh" rows don't keep tint */
+.pf-tk-row.fresh { animation: pf-tk-slide-in 0.5s cubic-bezier(.2,.7,.2,1), pf-tk-settle 4s 0.5s forwards; }
+@keyframes pf-tk-settle {
+  to { background: transparent; }
+}
+.pf-tk-time { color: var(--text-dim); font-size: 11px; }
+.pf-tk-action {
+  font: 700 9.5px 'Inter';
+  letter-spacing: 0.14em;
+  padding: 2px 7px;
+  border-radius: 4px;
+  text-align: center;
+  border: 1px solid currentColor;
+  background: transparent;
+  justify-self: start;
+}
+.pf-tk-action.buy { color: var(--accent-lake); }
+.pf-tk-action.sell { color: var(--text-hi); }
+.pf-tk-sym { font: 700 13px 'Inter'; color: var(--text-hi); letter-spacing: -0.005em; }
+.pf-tk-sleeve {
+  font: 600 9px 'Inter'; letter-spacing: 0.10em; text-transform: uppercase;
+  padding: 2px 7px; border-radius: 4px;
+}
+.pf-tk-sleeve.momentum    { background: rgba(186,140,255,0.14); color: #ba8cff; }
+.pf-tk-sleeve.swing       { background: rgba(95,170,197,0.14);  color: var(--accent-lake); }
+.pf-tk-sleeve.daytrade    { background: rgba(232,184,106,0.14); color: #e8b86a; }
+.pf-tk-sleeve.scalper     { background: rgba(110,231,183,0.14); color: var(--pos); }
+.pf-tk-sleeve.unattributed{ background: rgba(155,161,185,0.10); color: var(--text-dim); }
+.pf-tk-meta { color: var(--text-dim); font-size: 11.5px; }
+.pf-tk-pl { font: 700 13px 'Inter'; font-variant-numeric: tabular-nums; }
+.pf-tk-pl.pos { color: var(--pos); }
+.pf-tk-pl.neg { color: var(--neg); }
+.pf-tk-pl.flat { color: var(--text-dim); }
+.pf-tk-empty {
+  padding: 28px 16px;
+  text-align: center;
+  font: 500 12.5px 'Inter';
+  color: var(--text-dim);
+}
+@media (max-width: 540px) {
+  .pf-tk-row {
+    grid-template-columns: 48px 44px minmax(48px, 1fr) auto;
+    gap: 8px; padding: 8px 12px; font-size: 11.5px;
+  }
+  .pf-tk-sleeve { display: none; }
+  .pf-live-status { padding: 9px 12px; gap: 10px; font-size: 11px; }
+  .pf-live-status .pf-live-bit { white-space: nowrap; }
+}
+
 /* Pending-order strip — surfaces in-flight bracket buys submitted by the
    trader but not yet filled at Alpaca. Lake-blue tint to match the live
    eyebrow but with a subtle spinning "↻" so the live-action quality reads
@@ -939,20 +1366,44 @@ footer a { color: var(--text-mid); }
   .pf-positions { grid-template-columns: 1fr 1fr; }
   .pf-pending { padding: 8px 12px; gap: 8px 10px; }
   /* Donut + legend stack on tablet/phone — donut on top, legend below.
-   * Donut narrows to 240px so it doesn't dominate the viewport. */
-  .pf-pos-donut-wrap { grid-template-columns: 1fr; gap: 18px; padding: 16px; justify-items: center; }
-  .pf-pos-donut.alloc-donut { width: 240px; height: 240px; }
-  .pf-pos-donut-legend { width: 100%; }
+   * Padding stays generous (40px each side) so the drop-shadow has
+   * guaranteed clearance — clipping the shadow makes the donut read
+   * as "cut off" even when the rings themselves are intact. */
+  .pf-pos-donut-wrap {
+    grid-template-columns: 1fr;
+    gap: 28px;
+    padding: 40px 32px 40px;
+    justify-items: center;
+  }
+  .pf-pos-donut.alloc-donut { width: 300px; height: 300px; }
+  .pf-pos-donut-legend { width: 100%; justify-self: stretch; }
+  /* Tier-key wraps to multiple rows at narrow widths */
+  .pf-pdl-tier-key { padding: 10px 12px; gap: 6px 8px; }
+  .pf-pdl-tk-divider { display: none; }
 }
 @media (max-width: 480px) {
   .pf-panel { padding: 20px 18px 18px; }
   .pf-equity-num { font-size: 38px; }
   .pf-positions { grid-template-columns: 1fr; }
   .pf-head { gap: 8px; }
-  .pf-pos-donut.alloc-donut { width: 220px; height: 220px; }
+  .pf-pos-donut-wrap { padding: 36px 24px 36px; gap: 24px; }
+  .pf-pos-donut.alloc-donut { width: 260px; height: 260px; }
+  /* Tighten the 3D shadow at smaller sizes — full-strength looks
+     overweight on 280px and below. */
+  .pf-pos-donut.alloc-donut {
+    filter:
+      drop-shadow(0 16px 28px rgba(0,0,0,0.50))
+      drop-shadow(0 6px 12px rgba(0,0,0,0.30))
+      drop-shadow(0 1px 2px rgba(0,0,0,0.22))
+      drop-shadow(0 0 28px rgba(95,170,197,0.06));
+  }
+  /* Center text scales down so it fits the 280px donut hole (~129px clear) */
+  .pf-pos-donut.alloc-donut .dt-pl { font-size: 13px; margin-top: 7px; }
+  .pf-pos-donut.alloc-donut .dt-eyebrow { font-size: 8px; margin-bottom: 6px; letter-spacing: 0.20em; }
+  .pf-pos-donut.alloc-donut .dt-caption { font-size: 9px; margin-top: 5px; letter-spacing: 0.06em; }
   /* Legend rows tighten on small phones — keep amount + pct side-by-side
    * but trim padding so 4-5 sleeves fit without scrolling. */
-  .pf-pdl-row { padding: 8px 10px; gap: 10px; }
+  .pf-pdl-summary { padding: 8px 10px; gap: 10px; }
   .pf-pdl-pct { min-width: 42px; }
   /* Pending strip at narrow widths: stack the label, then wrap pills onto
      their own line so each one stays atomic and readable. */
@@ -993,9 +1444,30 @@ footer a { color: var(--text-mid); }
   .pf-panel { padding: 18px 14px 16px; }
   .pf-equity-num { font-size: 32px; }
   /* Donut shrinks one more step so the legend below has room for full
-   * sleeve labels without truncating. */
-  .pf-pos-donut.alloc-donut { width: 200px; height: 200px; }
+   * sleeve labels without truncating. Padding stays at 28px so the
+   * drop-shadow (now scaled smaller via 480px breakpoint) still has
+   * room to render without touching the panel border. */
+  .pf-pos-donut-wrap { padding: 28px 18px 28px; gap: 20px; }
+  .pf-pos-donut.alloc-donut { width: 220px; height: 220px; }
   .alloc-donut.master { width: 220px; height: 220px; }
+  /* Center stack at 240px is tight (~110px clear hole) — tighten
+     typography proportionally and trim eyebrow letter-spacing. */
+  .pf-pos-donut.alloc-donut .dt-pl { font-size: 11px; margin-top: 5px; letter-spacing: 0; }
+  .pf-pos-donut.alloc-donut .dt-eyebrow { font-size: 7px; margin-bottom: 4px; letter-spacing: 0.16em; }
+  .pf-pos-donut.alloc-donut .dt-caption { font-size: 8.5px; margin-top: 3px; letter-spacing: 0.04em; }
+  /* dt-inner expands slightly at very small sizes so the 11px P&L
+     line has room — donut hole is proportionally similar but caption
+     was clipping. */
+  .pf-pos-donut.alloc-donut .dt-inner { width: 50%; }
+  /* Tier-key wrap behavior — items can wrap to 3-4 lines at this width */
+  .pf-pdl-tier-key { padding: 8px 10px; gap: 4px 6px; }
+  .pf-pdl-tk-label { font-size: 8px; letter-spacing: 0.10em; }
+  .pf-pdl-tk-name { font-size: 10px; }
+}
+/* ── 320px tier (legacy / iPhone SE 1st-gen). Defensive only. ── */
+@media (max-width: 320px) {
+  .pf-pos-donut.alloc-donut { width: 200px; height: 200px; }
+  .pf-pos-donut-wrap { padding: 24px 14px 24px; gap: 16px; }
 }
 </style>
 <script async
@@ -1037,7 +1509,7 @@ footer a { color: var(--text-mid); }
       <a href="/faq">FAQ</a>
     </div>
     <div class="nav-end" id="navEnd">
-      <button class="signin-btn" onclick="window.Clerk?.openSignIn?.({afterSignInUrl:'/picks'})">Sign in</button>
+      <div class="nav-pill-skel" aria-hidden="true"></div>
     </div>
   </div>
 </nav>
@@ -1098,6 +1570,6 @@ footer a { color: var(--text-mid); }
      1h Cache-Control on /shared/* skips download + parse on every
      repeat visit. defer means it executes after HTML parse but
      before DOMContentLoaded, same effective ordering as inline. -->
-<script defer src="/shared/picks-app.js"></script>
+<script defer src="/shared/picks-app.js?v=20260429e"></script>
 </body>
 </html>

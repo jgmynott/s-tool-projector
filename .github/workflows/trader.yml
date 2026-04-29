@@ -81,10 +81,14 @@ on:
         type: choice
         options: ["open", "close", "rotate", "pre_open"]
 
-# Never run two trader instances concurrently — duplicate orders would
-# breach the per-position cap.
+# Serialize ALL workflows that write to runtime_data/trade_journal.json
+# (this one + scalper.yml). They share a concurrency group so only one
+# can run at a time — prevents the rebase-conflict failure that fires
+# when scalper (every 5min) commits trade_journal mid-trader-run, then
+# the trader's own commit hits a JSON merge conflict and exits 128.
+# Caught 2026-04-29 at 14:25 UTC pre_open ↔ scalper collision.
 concurrency:
-  group: paper-portfolio-trader
+  group: s-tool-trade-write
   cancel-in-progress: false
 
 jobs:
@@ -188,9 +192,20 @@ jobs:
             echo "no trader artifacts changed"
           else
             git commit -m "chore(trader): sleeve attribution + journal after ${{ steps.resolve.outputs.window }} window $(date -u +%Y-%m-%dT%H:%MZ)"
-            git pull --rebase || true
-            git push
-          fi
+            # Retry pull+push: concurrency serializes workflows but each
+            # job's checkout snapshots main at job start. Another writer
+            # (scalper, scheduled rotate, or this same workflow) can push
+            # between our pull --rebase and push, causing "remote rejected
+            # ... cannot lock ref" — a 1s race we hit 2026-04-29.
+            for attempt in 1 2 3 4 5; do
+              git pull --rebase --autostash || true
+              if git push; then
+                echo "push ok on attempt $attempt"
+                break
+              fi
+              echo "push rejected on attempt $attempt — sleeping then retrying"
+              sleep $((attempt * 3))
+            done
 
       # Failure tripwire. A trader.py crash that goes unobserved means
       # entries don't fire, exits don't fire, or sleeve-scoped tagging
