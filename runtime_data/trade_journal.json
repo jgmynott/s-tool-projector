@@ -1,6 +1,6 @@
 {
-  "as_of": "2026-04-29T14:01:03.032508+00:00",
-  "n_rows": 121,
+  "as_of": "2026-04-29T14:10:56.844792+00:00",
+  "n_rows": 123,
   "rows": [
     {
       "ts": "2026-04-27T13:47:29.206731Z",
@@ -1684,6 +1684,34 @@
       "rationale": "",
       "result": "submitted",
       "tranche": 2
+    },
+    {
+      "ts": "2026-04-29T14:10:56.611582+00:00",
+      "event": "buy",
+      "sleeve": "scalper",
+      "symbol": "ASML",
+      "qty": 1,
+      "ref_price": 1384.4,
+      "live_price": 1384.4,
+      "stop": 1374.71,
+      "target": 1398.24,
+      "tier": "relvol",
+      "rationale": "{\"vol_multiple\": 2.0475382003395586, \"range_pos\": 0.6092715231788598, \"cur_vol\": 1206}",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-04-29T14:10:56.844213+00:00",
+      "event": "buy",
+      "sleeve": "scalper",
+      "symbol": "JPM",
+      "qty": 1,
+      "ref_price": 310.8,
+      "live_price": 310.8,
+      "stop": 308.62,
+      "target": 313.91,
+      "tier": "relvol",
+      "rationale": "{\"vol_multiple\": 2.321319486866219, \"range_pos\": 0.979865771812099, \"cur_vol\": 7600}",
+      "result": "submitted"
     }
   ]
 }

@@ -155,8 +155,38 @@
   },
   "breaker_fired_date": "2026-04-28",
   "scalper": {
-    "positions": {},
-    "fired_today": [],
+    "positions": {
+      "ASML": {
+        "symbol": "ASML",
+        "qty": 1,
+        "entry_price": 1384.4,
+        "opened_at": "2026-04-29T14:10:56.611562+00:00",
+        "signal": "relvol",
+        "stop": 1374.71,
+        "target": 1398.24
+      },
+      "JPM": {
+        "symbol": "JPM",
+        "qty": 1,
+        "entry_price": 310.8,
+        "opened_at": "2026-04-29T14:10:56.844191+00:00",
+        "signal": "relvol",
+        "stop": 308.62,
+        "target": 313.91
+      }
+    },
+    "fired_today": [
+      {
+        "symbol": "ASML",
+        "signal": "relvol",
+        "ts": "2026-04-29T14:10:56.611579+00:00"
+      },
+      {
+        "symbol": "JPM",
+        "signal": "relvol",
+        "ts": "2026-04-29T14:10:56.844210+00:00"
+      }
+    ],
     "last_scan": null,
     "last_scan_date": "2026-04-29"
   }
