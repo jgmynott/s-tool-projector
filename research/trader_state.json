@@ -249,6 +249,15 @@
         "signal": "relvol",
         "stop": 56.76,
         "target": 57.73
+      },
+      "MU": {
+        "symbol": "MU",
+        "qty": 1,
+        "entry_price": 511.86,
+        "opened_at": "2026-04-29T17:55:57.285872+00:00",
+        "signal": "relvol",
+        "stop": 508.28,
+        "target": 516.98
       }
     },
     "fired_today": [
@@ -331,6 +340,11 @@
         "symbol": "TNA",
         "signal": "relvol",
         "ts": "2026-04-29T17:50:59.065804+00:00"
+      },
+      {
+        "symbol": "MU",
+        "signal": "relvol",
+        "ts": "2026-04-29T17:55:57.285887+00:00"
       }
     ],
     "last_scan": null,
