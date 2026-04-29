@@ -1490,9 +1490,20 @@ def portfolio(request: Request, user: Optional[dict] = Depends(auth.optional_use
     except Exception:
         spy_intraday_aligned = []
 
+    # Temporary diagnostic counters for the closed_today empty-feed
+    # incident 2026-04-29. Safe to expose: just fan-out counts, no PII.
+    # Remove once we've confirmed the feeds are populating.
+    _diag = {
+        "activities_n": len(activities or []),
+        "sell_orders_n": len(sell_orders or []),
+        "today_synth_sells_n": len(today_synth_sells),
+        "merged_fills_n": len(merged_fills),
+        "today_iso": today_iso,
+    }
     payload = {
         "is_strategist": is_strategist,
         "as_of": now.isoformat() + "Z",
+        "_diag_closed_today": _diag,
         "account": {
             "equity": eq, "cash": float(acct["cash"]),
             "buying_power": float(acct["buying_power"]),
