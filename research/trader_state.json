@@ -312,6 +312,15 @@
         "signal": "relvol",
         "stop": 269.7,
         "target": 274.32
+      },
+      "DIS": {
+        "symbol": "DIS",
+        "qty": 4,
+        "entry_price": 101.19,
+        "opened_at": "2026-04-29T19:50:59.076531+00:00",
+        "signal": "relvol",
+        "stop": 100.48,
+        "target": 102.2
       }
     },
     "fired_today": [
@@ -444,6 +453,11 @@
         "symbol": "IWM",
         "signal": "relvol",
         "ts": "2026-04-29T19:46:00.289955+00:00"
+      },
+      {
+        "symbol": "DIS",
+        "signal": "relvol",
+        "ts": "2026-04-29T19:50:59.076551+00:00"
       }
     ],
     "last_scan": null,
