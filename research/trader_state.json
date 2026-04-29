@@ -294,6 +294,24 @@
         "signal": "relvol",
         "stop": 116.53,
         "target": 118.52
+      },
+      "NFLX": {
+        "symbol": "NFLX",
+        "qty": 5,
+        "entry_price": 92.245,
+        "opened_at": "2026-04-29T19:46:00.195006+00:00",
+        "signal": "relvol",
+        "stop": 91.6,
+        "target": 93.17
+      },
+      "IWM": {
+        "symbol": "IWM",
+        "qty": 1,
+        "entry_price": 271.605,
+        "opened_at": "2026-04-29T19:46:00.289943+00:00",
+        "signal": "relvol",
+        "stop": 269.7,
+        "target": 274.32
       }
     },
     "fired_today": [
@@ -416,6 +434,16 @@
         "symbol": "SOXL",
         "signal": "relvol",
         "ts": "2026-04-29T19:40:52.917723+00:00"
+      },
+      {
+        "symbol": "NFLX",
+        "signal": "relvol",
+        "ts": "2026-04-29T19:46:00.195019+00:00"
+      },
+      {
+        "symbol": "IWM",
+        "signal": "relvol",
+        "ts": "2026-04-29T19:46:00.289955+00:00"
       }
     ],
     "last_scan": null,
