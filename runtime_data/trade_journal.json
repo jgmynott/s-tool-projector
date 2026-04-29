@@ -1,6 +1,6 @@
 {
-  "as_of": "2026-04-29T14:10:56.844792+00:00",
-  "n_rows": 123,
+  "as_of": "2026-04-29T14:15:53.890584+00:00",
+  "n_rows": 125,
   "rows": [
     {
       "ts": "2026-04-27T13:47:29.206731Z",
@@ -1711,6 +1711,34 @@
       "target": 313.91,
       "tier": "relvol",
       "rationale": "{\"vol_multiple\": 2.321319486866219, \"range_pos\": 0.979865771812099, \"cur_vol\": 7600}",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-04-29T14:15:53.724203+00:00",
+      "event": "buy",
+      "sleeve": "scalper",
+      "symbol": "AMD",
+      "qty": 1,
+      "ref_price": 322.275,
+      "live_price": 322.275,
+      "stop": 320.02,
+      "target": 325.5,
+      "tier": "relvol",
+      "rationale": "{\"vol_multiple\": 3.031204992798848, \"range_pos\": 0.8785046728971798, \"cur_vol\": 22099}",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-04-29T14:15:53.890002+00:00",
+      "event": "buy",
+      "sleeve": "scalper",
+      "symbol": "TQQQ",
+      "qty": 8,
+      "ref_price": 61.055,
+      "live_price": 61.055,
+      "stop": 60.63,
+      "target": 61.67,
+      "tier": "relvol",
+      "rationale": "{\"vol_multiple\": 2.341987466427932, \"range_pos\": 0.9166666666666543, \"cur_vol\": 19620}",
       "result": "submitted"
     }
   ]

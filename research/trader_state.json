@@ -173,6 +173,24 @@
         "signal": "relvol",
         "stop": 308.62,
         "target": 313.91
+      },
+      "AMD": {
+        "symbol": "AMD",
+        "qty": 1,
+        "entry_price": 322.275,
+        "opened_at": "2026-04-29T14:15:53.724182+00:00",
+        "signal": "relvol",
+        "stop": 320.02,
+        "target": 325.5
+      },
+      "TQQQ": {
+        "symbol": "TQQQ",
+        "qty": 8,
+        "entry_price": 61.055,
+        "opened_at": "2026-04-29T14:15:53.889981+00:00",
+        "signal": "relvol",
+        "stop": 60.63,
+        "target": 61.67
       }
     },
     "fired_today": [
@@ -185,6 +203,16 @@
         "symbol": "JPM",
         "signal": "relvol",
         "ts": "2026-04-29T14:10:56.844210+00:00"
+      },
+      {
+        "symbol": "AMD",
+        "signal": "relvol",
+        "ts": "2026-04-29T14:15:53.724200+00:00"
+      },
+      {
+        "symbol": "TQQQ",
+        "signal": "relvol",
+        "ts": "2026-04-29T14:15:53.889999+00:00"
       }
     ],
     "last_scan": null,
