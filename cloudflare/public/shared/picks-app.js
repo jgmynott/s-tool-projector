@@ -389,11 +389,13 @@ function pfChartSvg(pts, ts, isIntraday, spyPts, opts = {}) {
     legend = `<div class="pf-chart-legend">
       <span class="pf-chart-legend-item">
         <span class="pf-chart-legend-swatch trader" style="background:${strokeRaw};"></span>
-        S-Tool <span class="${traderCls}">${traderDelta >= 0 ? '+' : ''}${traderDelta.toFixed(2)}%</span>
+        <span class="pf-chart-legend-name"><strong>S-Tool</strong></span>
+        <span class="${traderCls}">${traderDelta >= 0 ? '+' : ''}${traderDelta.toFixed(2)}%</span>
       </span>
       <span class="pf-chart-legend-item">
         <span class="pf-chart-legend-swatch spy"></span>
-        S&amp;P 500 ${spyDelta != null ? `<span class="${spyCls}">${spyDelta >= 0 ? '+' : ''}${spyDelta.toFixed(2)}%</span>` : ''}
+        <span class="pf-chart-legend-name"><strong>S&amp;P 500</strong></span>
+        ${spyDelta != null ? `<span class="${spyCls}">${spyDelta >= 0 ? '+' : ''}${spyDelta.toFixed(2)}%</span>` : ''}
       </span>
       ${winLabel ? `<span class="pf-chart-legend-window">vs ${winLabel === 'today' ? 'prior close' : `${winLabel} ago`}</span>` : ''}
     </div>`;

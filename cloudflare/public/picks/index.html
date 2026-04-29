@@ -731,6 +731,7 @@ footer a { color: var(--text-mid); }
   vector-effect: non-scaling-stroke; }
 .pf-chart-y-label { fill: var(--text-dim); font: 500 11px 'Inter'; text-anchor: end;
   font-variant-numeric: tabular-nums; }
+/* Push X-axis labels well below the line so they don't kiss the chart fill. */
 .pf-chart-x-label { fill: var(--text-dim); font: 500 11px 'Inter'; text-anchor: middle;
   font-variant-numeric: tabular-nums; }
 .pf-chart-area { stroke: none; opacity: 0.14; }
@@ -742,9 +743,24 @@ footer a { color: var(--text-mid); }
 .pf-chart-cursor { stroke: var(--text-mid); stroke-width: 1; stroke-dasharray: 3 3; pointer-events: none; }
 .pf-chart-dot { pointer-events: none; }
 .pf-chart-hit { cursor: crosshair; }
-.pf-chart-legend { display: flex; gap: 36px; margin-top: 10px; align-items: center; flex-wrap: wrap;
-  font: 500 11.5px 'Inter'; color: var(--text-mid); font-variant-numeric: tabular-nums; letter-spacing: 0.005em; }
-.pf-chart-legend-item { display: inline-flex; align-items: center; gap: 9px; padding-right: 4px; }
+/* Legend strip — pill-style items so each comparison reads as a self-
+   contained chip and the eye doesn't blur "S-Tool -0.29%" into the SPY
+   swatch next to it. Margin separates it cleanly from the X-axis labels
+   above and the live activity strip below. */
+.pf-chart-legend {
+  display: flex; gap: 10px; margin: 18px 0 4px;
+  align-items: center; flex-wrap: wrap;
+  font: 500 12px 'Inter'; color: var(--text-mid); font-variant-numeric: tabular-nums;
+}
+.pf-chart-legend-item {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgba(11,16,26,0.32);
+}
+.pf-chart-legend-item .pf-chart-legend-name { color: var(--text-mid); font-weight: 500; }
+.pf-chart-legend-item .pf-chart-legend-name strong { color: var(--text-hi); font-weight: 600; }
 .pf-chart-legend-item .pos { color: var(--pos); font-weight: 600; }
 .pf-chart-legend-item .neg { color: var(--neg); font-weight: 600; }
 .pf-chart-legend-swatch { display: inline-block; width: 14px; height: 2px; border-radius: 1px; }
@@ -1216,7 +1232,7 @@ footer a { color: var(--text-mid); }
    New events animate in via slideInDown keyframe. Designed to be the
    "watchable" element on /picks while the trader is active. */
 .pf-live-strip {
-  margin: 14px 0 12px;
+  margin: 22px 0 14px;
   border: 1px solid var(--border);
   border-radius: 12px;
   background:
@@ -1613,6 +1629,6 @@ footer a { color: var(--text-mid); }
      1h Cache-Control on /shared/* skips download + parse on every
      repeat visit. defer means it executes after HTML parse but
      before DOMContentLoaded, same effective ordering as inline. -->
-<script defer src="/shared/picks-app.js?v=20260429i"></script>
+<script defer src="/shared/picks-app.js?v=20260429j"></script>
 </body>
 </html>
