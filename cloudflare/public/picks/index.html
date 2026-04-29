@@ -723,10 +723,13 @@ footer a { color: var(--text-mid); }
    regardless of how aggressively the box stretches the data points.
    viewBox is widened to 1200×400 (3:1) so the rendered shape needs
    minimal x-stretching at typical desktop widths. */
-.pf-chart { position: relative; width: 100%; height: 380px; margin: 4px 0 0; }
-.pf-chart-svg { display: block; width: 100%; height: 100%; overflow: visible; }
-@media (max-width: 1080px) { .pf-chart { height: 320px; } }
-@media (max-width: 720px)  { .pf-chart { height: 240px; } }
+/* Container is intrinsic-height so the legend below the SVG flows
+   naturally instead of overflowing onto the live strip. The SVG itself
+   carries the height that used to be on .pf-chart. */
+.pf-chart { position: relative; width: 100%; margin: 4px 0 0; }
+.pf-chart-svg { display: block; width: 100%; height: 380px; overflow: visible; }
+@media (max-width: 1080px) { .pf-chart-svg { height: 320px; } }
+@media (max-width: 720px)  { .pf-chart-svg { height: 240px; } }
 .pf-chart-grid { stroke: var(--border); stroke-width: 1; stroke-dasharray: 2 4; opacity: 0.6;
   vector-effect: non-scaling-stroke; }
 .pf-chart-y-label { fill: var(--text-dim); font: 500 11px 'Inter'; text-anchor: end;
@@ -1629,6 +1632,6 @@ footer a { color: var(--text-mid); }
      1h Cache-Control on /shared/* skips download + parse on every
      repeat visit. defer means it executes after HTML parse but
      before DOMContentLoaded, same effective ordering as inline. -->
-<script defer src="/shared/picks-app.js?v=20260429j"></script>
+<script defer src="/shared/picks-app.js?v=20260429k"></script>
 </body>
 </html>
