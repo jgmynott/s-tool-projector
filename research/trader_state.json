@@ -89,6 +89,66 @@
       "opened_at": "2026-04-29T14:31:04.689254+00:00",
       "ref_price": 330.83,
       "qty": 15
+    },
+    "DAL": {
+      "sleeve": "daytrade",
+      "opened_at": "2026-04-29T15:59:11.691226+00:00",
+      "ref_price": 67.22,
+      "qty": 49
+    },
+    "ARM": {
+      "sleeve": "daytrade",
+      "opened_at": "2026-04-29T15:59:13.141918+00:00",
+      "ref_price": 198.65,
+      "qty": 16
+    },
+    "ATO": {
+      "sleeve": "daytrade",
+      "opened_at": "2026-04-29T15:59:13.393901+00:00",
+      "ref_price": 187.13,
+      "qty": 17
+    },
+    "BKNG": {
+      "sleeve": "daytrade",
+      "opened_at": "2026-04-29T15:59:13.628287+00:00",
+      "ref_price": 173.38,
+      "qty": 19
+    },
+    "LII": {
+      "sleeve": "daytrade",
+      "opened_at": "2026-04-29T15:59:15.611041+00:00",
+      "ref_price": 495.52,
+      "qty": 6
+    },
+    "CSTM": {
+      "sleeve": "daytrade",
+      "opened_at": "2026-04-29T15:59:17.759451+00:00",
+      "ref_price": 29.66,
+      "qty": 111
+    },
+    "MCO": {
+      "sleeve": "daytrade",
+      "opened_at": "2026-04-29T15:59:18.906178+00:00",
+      "ref_price": 457.99,
+      "qty": 7
+    },
+    "CSX": {
+      "sleeve": "daytrade",
+      "opened_at": "2026-04-29T15:59:20.406717+00:00",
+      "ref_price": 45.23,
+      "qty": 73
+    },
+    "DGX": {
+      "sleeve": "daytrade",
+      "opened_at": "2026-04-29T15:59:21.221585+00:00",
+      "ref_price": 195.05,
+      "qty": 16
+    },
+    "DD": {
+      "sleeve": "daytrade",
+      "opened_at": "2026-04-29T15:59:21.498547+00:00",
+      "ref_price": 45.33,
+      "qty": 72
     }
   },
   "traded_today": {
@@ -102,7 +162,17 @@
       "CW",
       "CASY",
       "BK",
-      "WELL"
+      "WELL",
+      "DAL",
+      "ARM",
+      "ATO",
+      "BKNG",
+      "LII",
+      "CSTM",
+      "MCO",
+      "CSX",
+      "DGX",
+      "DD"
     ]
   },
   "breaker_fired_date": "2026-04-28",
