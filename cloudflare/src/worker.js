@@ -47,9 +47,17 @@ function applySecurityHeaders(response, { html }) {
 function applyCacheControl(response, { html, pathname }) {
   const headers = new Headers(response.headers);
   if (pathname.startsWith("/shared/") || pathname.startsWith("/img/")) {
+    // Long browser cache for assets; we bust them via ?v= query params on
+    // the script src in HTML, so a deploy that changes JS/CSS surfaces
+    // immediately as a brand-new URL.
     headers.set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400");
   } else if (html) {
-    headers.set("Cache-Control", "public, max-age=300, stale-while-revalidate=86400");
+    // Short TTL on HTML so a deploy reaches users within ~30s on next
+    // navigation. SWR=120 trades a tiny staleness window for one
+    // additional snappy visit. Previously max-age=300 + SWR=86400 left
+    // users on stale HTML for up to a full day after a deploy and
+    // forced manual hard-refresh on every iteration cycle.
+    headers.set("Cache-Control", "public, max-age=30, stale-while-revalidate=120");
   }
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }
@@ -78,6 +86,15 @@ function applyCacheControl(response, { html, pathname }) {
 // here MUST exactly match wrangler.toml — a typo silently falls through
 // to no-op and the scheduler quietly stops.
 function targetForCron(cron) {
+  // Morning digest — 08:00 ET, fires both DST (12 UTC) and ST (13 UTC)
+  // so it lands at the same local time year-round. Off-season fire is
+  // a duplicate push during the changeover week; acceptable.
+  if (cron === "0 12 * * 1-5")        return { workflow: "morning-digest.yml", inputs: {} };
+  if (cron === "0 13 * * 1-5")        return { workflow: "morning-digest.yml", inputs: {} };
+  // EOD trades report — 16:30 ET (post-close, give Alpaca 30 min to
+  // settle the close print). DST: 20:30 UTC; ST: 21:30 UTC.
+  if (cron === "30 20 * * 1-5")       return { workflow: "eod-report.yml", inputs: {} };
+  if (cron === "30 21 * * 1-5")       return { workflow: "eod-report.yml", inputs: {} };
   // Trader pre_open — 13:25 UTC (DST) or 14:25 UTC (ST). Sweeps any
   // daytrade held-over from yesterday so the 09:30 open print can't
   // gap them down through the breaker. Submits sells while market is
@@ -325,6 +342,7 @@ export default {
     } else {
       console.log(`dispatched ${target.workflow} ${JSON.stringify(target.inputs)} via cron=${event.cron}`);
     }
+
   },
 
   async fetch(request, env) {
