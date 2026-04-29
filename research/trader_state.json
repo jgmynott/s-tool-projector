@@ -240,6 +240,15 @@
         "signal": "relvol",
         "stop": 318.85,
         "target": 324.31
+      },
+      "TNA": {
+        "symbol": "TNA",
+        "qty": 8,
+        "entry_price": 57.16,
+        "opened_at": "2026-04-29T17:50:59.065788+00:00",
+        "signal": "relvol",
+        "stop": 56.76,
+        "target": 57.73
       }
     },
     "fired_today": [
@@ -317,6 +326,11 @@
         "symbol": "SQQQ",
         "signal": "relvol",
         "ts": "2026-04-29T16:35:54.629602+00:00"
+      },
+      {
+        "symbol": "TNA",
+        "signal": "relvol",
+        "ts": "2026-04-29T17:50:59.065804+00:00"
       }
     ],
     "last_scan": null,

@@ -1,6 +1,6 @@
 {
-  "as_of": "2026-04-29T16:35:54.630263+00:00",
-  "n_rows": 188,
+  "as_of": "2026-04-29T17:50:59.066495+00:00",
+  "n_rows": 189,
   "rows": [
     {
       "ts": "2026-04-27T13:47:29.206731Z",
@@ -2574,6 +2574,20 @@
       "target": 54.64,
       "tier": "relvol",
       "rationale": "{\"vol_multiple\": 2.8462285055029577, \"range_pos\": 0.7857142857142984, \"cur_vol\": 25904}",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-04-29T17:50:59.065807+00:00",
+      "event": "buy",
+      "sleeve": "scalper",
+      "symbol": "TNA",
+      "qty": 8,
+      "ref_price": 57.16,
+      "live_price": 57.16,
+      "stop": 56.76,
+      "target": 57.73,
+      "tier": "relvol",
+      "rationale": "{\"vol_multiple\": 2.80667942990853, \"range_pos\": 0.8095238095237806, \"cur_vol\": 1783}",
       "result": "submitted"
     }
   ]
