@@ -126,24 +126,6 @@
         "stop": 656.32,
         "target": 667.56
       },
-      "AVGO": {
-        "symbol": "AVGO",
-        "qty": 1,
-        "entry_price": 401.79,
-        "opened_at": "2026-04-29T14:45:58.501336+00:00",
-        "signal": "relvol",
-        "stop": 398.98,
-        "target": 405.81
-      },
-      "TZA": {
-        "symbol": "TZA",
-        "qty": 94,
-        "entry_price": 5.29,
-        "opened_at": "2026-04-29T15:11:04.160417+00:00",
-        "signal": "orb",
-        "stop": 5.25,
-        "target": 5.34
-      },
       "BLK": {
         "symbol": "BLK",
         "qty": 1,
