@@ -231,6 +231,15 @@
         "signal": "relvol",
         "stop": 191.02,
         "target": 194.29
+      },
+      "HD": {
+        "symbol": "HD",
+        "qty": 1,
+        "entry_price": 321.1,
+        "opened_at": "2026-04-29T16:25:52.726926+00:00",
+        "signal": "relvol",
+        "stop": 318.85,
+        "target": 324.31
       }
     },
     "fired_today": [
@@ -298,6 +307,11 @@
         "symbol": "CVX",
         "signal": "relvol",
         "ts": "2026-04-29T16:20:54.274393+00:00"
+      },
+      {
+        "symbol": "HD",
+        "signal": "relvol",
+        "ts": "2026-04-29T16:25:52.726943+00:00"
       }
     ],
     "last_scan": null,

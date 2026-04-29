@@ -1,6 +1,6 @@
 {
-  "as_of": "2026-04-29T16:20:54.274960+00:00",
-  "n_rows": 186,
+  "as_of": "2026-04-29T16:25:52.727614+00:00",
+  "n_rows": 187,
   "rows": [
     {
       "ts": "2026-04-27T13:47:29.206731Z",
@@ -2546,6 +2546,20 @@
       "target": 194.29,
       "tier": "relvol",
       "rationale": "{\"vol_multiple\": 3.426237348802765, \"range_pos\": 0.9787234042553384, \"cur_vol\": 8225}",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-04-29T16:25:52.726947+00:00",
+      "event": "buy",
+      "sleeve": "scalper",
+      "symbol": "HD",
+      "qty": 1,
+      "ref_price": 321.1,
+      "live_price": 321.1,
+      "stop": 318.85,
+      "target": 324.31,
+      "tier": "relvol",
+      "rationale": "{\"vol_multiple\": 4.209019811674262, \"range_pos\": 0.9230769230769903, \"cur_vol\": 12436}",
       "result": "submitted"
     }
   ]
