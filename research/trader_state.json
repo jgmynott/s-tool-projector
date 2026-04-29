@@ -232,15 +232,6 @@
         "stop": 318.85,
         "target": 324.31
       },
-      "MU": {
-        "symbol": "MU",
-        "qty": 1,
-        "entry_price": 511.86,
-        "opened_at": "2026-04-29T17:55:57.285872+00:00",
-        "signal": "relvol",
-        "stop": 508.28,
-        "target": 516.98
-      },
       "GS": {
         "symbol": "GS",
         "qty": 1,
