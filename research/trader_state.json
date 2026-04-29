@@ -203,6 +203,15 @@
         "signal": "orb",
         "stop": 656.32,
         "target": 667.56
+      },
+      "AVGO": {
+        "symbol": "AVGO",
+        "qty": 1,
+        "entry_price": 401.79,
+        "opened_at": "2026-04-29T14:45:58.501336+00:00",
+        "signal": "relvol",
+        "stop": 398.98,
+        "target": 405.81
       }
     },
     "fired_today": [
@@ -235,6 +244,11 @@
         "symbol": "QQQ",
         "signal": "orb",
         "ts": "2026-04-29T14:40:53.363065+00:00"
+      },
+      {
+        "symbol": "AVGO",
+        "signal": "relvol",
+        "ts": "2026-04-29T14:45:58.501353+00:00"
       }
     ],
     "last_scan": null,
