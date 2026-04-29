@@ -775,9 +775,13 @@ footer a { color: var(--text-mid); }
   font-variant-numeric: tabular-nums; z-index: 10;
   white-space: nowrap; transform: translate(-50%, -100%); margin-top: -8px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
-.pf-chart-tt-val { display: block; color: var(--text-hi); font-weight: 600; font-size: 12px; }
-.pf-chart-tt-spy { display: block; color: #9BA1B9; font-weight: 500; font-size: 11px; margin-top: 1px; }
-.pf-chart-tt-date { display: block; color: var(--text-dim); margin-top: 2px; font-size: 10px; }
+.pf-chart-tt-val { display: block; color: var(--text-hi); font-weight: 600; font-size: 12px; font-variant-numeric: tabular-nums; }
+.pf-chart-tt-spy { display: block; color: #9BA1B9; font-weight: 500; font-size: 11px; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.pf-chart-tt-name { color: var(--text-dim); font-weight: 500; margin-right: 4px; }
+.pf-chart-tt-pct { font-weight: 700; font-variant-numeric: tabular-nums; }
+.pf-chart-tt-pct.pos { color: var(--pos); }
+.pf-chart-tt-pct.neg { color: var(--neg); }
+.pf-chart-tt-date { display: block; color: var(--text-dim); margin-top: 4px; font-size: 10px; }
 .pf-chart-empty { padding: 60px 20px; text-align: center; color: var(--text-dim);
   font: 500 12px 'Inter'; border: 1px dashed var(--border); border-radius: 6px; }
 
@@ -1632,6 +1636,6 @@ footer a { color: var(--text-mid); }
      1h Cache-Control on /shared/* skips download + parse on every
      repeat visit. defer means it executes after HTML parse but
      before DOMContentLoaded, same effective ordering as inline. -->
-<script defer src="/shared/picks-app.js?v=20260429k"></script>
+<script defer src="/shared/picks-app.js?v=20260429l"></script>
 </body>
 </html>

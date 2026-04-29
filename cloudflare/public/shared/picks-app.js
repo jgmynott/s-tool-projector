@@ -353,14 +353,23 @@ function pfChartSvg(pts, ts, isIntraday, spyPts, opts = {}) {
   }
 
   // Hover hit-rects — invisible, one per data point, capture mouseenter/leave.
-  // Encode SPY value (if any) on each rect so the tooltip can show both.
+  // Encode SPY % return at this point (vs chart-window start) so the tooltip
+  // can render SPY as a benchmark percentage rather than a meaningless
+  // normalized dollar amount. SPY is rescaled to start at the trader baseline
+  // so its raw $ would be misleading as a level — its % return is the right
+  // primitive. Also encode the trader's own % so the tooltip can show both
+  // sides as apples-to-apples.
+  const traderBase = pts[0] || 1;
   const halfStep = pts.length > 1 ? innerW / (pts.length - 1) / 2 : innerW / 2;
   let hitRects = '';
   for (let i = 0; i < pts.length; i++) {
     const cx = x(i);
     const cy = y(pts[i]);
-    const spyV = (spyPts && spyPts[i] != null) ? spyPts[i].toFixed(2) : '';
-    hitRects += `<rect x="${(cx - halfStep).toFixed(1)}" y="${padT}" width="${(halfStep * 2).toFixed(1)}" height="${innerH}" fill="transparent" class="pf-chart-hit" data-cx="${cx.toFixed(1)}" data-cy="${cy.toFixed(1)}" data-val="${pts[i].toFixed(2)}" data-spy="${spyV}" data-date="${pfFmtTooltipDate(ts[i], isIntraday)}"/>`;
+    const traderPct = ((pts[i] / traderBase) - 1) * 100;
+    const spyPct = (spyPts && spyPts[i] != null)
+      ? ((spyPts[i] / traderBase) - 1) * 100
+      : null;
+    hitRects += `<rect x="${(cx - halfStep).toFixed(1)}" y="${padT}" width="${(halfStep * 2).toFixed(1)}" height="${innerH}" fill="transparent" class="pf-chart-hit" data-cx="${cx.toFixed(1)}" data-cy="${cy.toFixed(1)}" data-val="${pts[i].toFixed(2)}" data-trader-pct="${traderPct.toFixed(2)}" data-spy-pct="${spyPct == null ? '' : spyPct.toFixed(2)}" data-date="${pfFmtTooltipDate(ts[i], isIntraday)}"/>`;
   }
 
   // Legend — only when SPY is on. Positioned in the chart row (below)
@@ -489,10 +498,19 @@ document.addEventListener('mouseover', (e) => {
     const vbW = vb?.width || 1200, vbH = vb?.height || 400;
     const px = (cx / vbW) * bbox.width + (bbox.left - chartBox.left);
     const py = (cy / vbH) * bbox.height + (bbox.top - chartBox.top);
-    tip.querySelector('.pf-chart-tt-val').textContent = `S-Tool $${parseFloat(rect.dataset.val).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+    // S-Tool: dollar amount (the real account equity) with its own %
+    // alongside, so the comparison to SPY's % is apples-to-apples.
+    // SPY: % return only — the line is rescaled to the trader baseline,
+    // so its level is meaningless; only the slope matters.
+    const fmtSignedPct = (v) => (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(2) + '%';
+    const traderUsd = parseFloat(rect.dataset.val).toLocaleString(undefined, { maximumFractionDigits: 2 });
+    const traderPct = parseFloat(rect.dataset.traderPct);
+    const traderPctStr = isFinite(traderPct) ? ` <span class="pf-chart-tt-pct ${traderPct >= 0 ? 'pos' : 'neg'}">${fmtSignedPct(traderPct)}</span>` : '';
+    tip.querySelector('.pf-chart-tt-val').innerHTML = `<span class="pf-chart-tt-name">S-Tool</span> $${traderUsd}${traderPctStr}`;
     const spyEl = tip.querySelector('.pf-chart-tt-spy');
-    if (rect.dataset.spy) {
-      spyEl.textContent = `SPY $${parseFloat(rect.dataset.spy).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+    if (spyEl && rect.dataset.spyPct) {
+      const spyPct = parseFloat(rect.dataset.spyPct);
+      spyEl.innerHTML = `<span class="pf-chart-tt-name">SPY</span> <span class="pf-chart-tt-pct ${spyPct >= 0 ? 'pos' : 'neg'}">${fmtSignedPct(spyPct)}</span>`;
       spyEl.style.display = '';
     } else if (spyEl) {
       spyEl.style.display = 'none';
