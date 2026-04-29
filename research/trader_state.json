@@ -223,15 +223,6 @@
         "stop": 152.84,
         "target": 155.45
       },
-      "CVX": {
-        "symbol": "CVX",
-        "qty": 2,
-        "entry_price": 192.37,
-        "opened_at": "2026-04-29T16:20:54.274380+00:00",
-        "signal": "relvol",
-        "stop": 191.02,
-        "target": 194.29
-      },
       "HD": {
         "symbol": "HD",
         "qty": 1,
