@@ -29,7 +29,8 @@
 <link rel="prefetch" href="/pricing/" />
 <link rel="prefetch" href="/faq/" />
 <!-- s-tool perf hints -->
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" /><!-- s-tool perf skel -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/shared/nav.css" /><!-- user-pill + dropdown styles; without this nav.js renders the dropdown unstyled -->
 <meta name="view-transition" content="same-origin" />
 <link rel="stylesheet" href="/shared/skeleton.css" />
 <!-- s-tool perf skel -->
@@ -175,9 +176,8 @@ footer a { color: var(--text-mid); }
 
 <nav>
     <div class="container nav-row">
-        <a href="/" class="logo">
-            <span class="logo-mark"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#EDECE6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 18 9 12 13 16 21 4"></polyline></svg></span>
-            <span>s-tool</span>
+        <a href="/" class="logo" aria-label="s-tool home">
+            <img src="/img/logo-stool.png?v=20260429a" srcset="/img/logo-stool.png?v=20260429a 1x, /img/logo-stool@2x.png?v=20260429a 2x" alt="s-tool" class="logo-img" style="height:32px;width:auto;display:block;"/>
         </a>
         <div class="nav-center">
             <a href="/app">App</a>
@@ -189,7 +189,7 @@ footer a { color: var(--text-mid); }
             <a href="/faq">FAQ</a>
         </div>
         <div class="nav-end" id="navEnd">
-            <button class="signin-btn" onclick="lazySignIn('/how')">Sign in</button>
+            <div class="nav-pill-skel" aria-hidden="true"></div>
         </div>
     </div>
 </nav>
