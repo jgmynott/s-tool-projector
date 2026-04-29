@@ -1,6 +1,6 @@
 {
-  "as_of": "2026-04-29T14:50:53.734322+00:00",
-  "n_rows": 140,
+  "as_of": "2026-04-29T15:11:04.161042+00:00",
+  "n_rows": 141,
   "rows": [
     {
       "ts": "2026-04-27T13:47:29.206731Z",
@@ -1895,6 +1895,20 @@
       "target": 14.75,
       "tier": "relvol",
       "rationale": "{\"vol_multiple\": 3.899982046141417, \"range_pos\": 1.0, \"cur_vol\": 173778}",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-04-29T15:11:04.160437+00:00",
+      "event": "buy",
+      "sleeve": "scalper",
+      "symbol": "TZA",
+      "qty": 94,
+      "ref_price": 5.29,
+      "live_price": 5.29,
+      "stop": 5.25,
+      "target": 5.34,
+      "tier": "orb",
+      "rationale": "{\"range_high\": 5.27, \"range_low\": 5.195, \"avg_open_vol\": 119951.16666666667, \"cur_vol\": 226084}",
       "result": "submitted"
     }
   ]
