@@ -1,6 +1,6 @@
 {
-  "as_of": "2026-04-29T15:30:37.818493+00:00",
-  "n_rows": 151,
+  "as_of": "2026-04-29T15:31:01.703454+00:00",
+  "n_rows": 152,
   "rows": [
     {
       "ts": "2026-04-27T13:47:29.206731Z",
@@ -2030,6 +2030,17 @@
       "realized_pl": null,
       "reason": "preopen_holdover_sweep",
       "result": "failed: Alpaca DELETE positions/WELL \u2192 HTTP 403: {\"available\":\"0\",\"c"
+    },
+    {
+      "ts": "2026-04-29T15:31:01.528722+00:00",
+      "event": "sell",
+      "sleeve": "scalper",
+      "symbol": "JPM",
+      "qty": 1,
+      "buy_price": 310.8,
+      "sell_price": null,
+      "pnl": null,
+      "exit_reason": "max_hold"
     }
   ]
 }

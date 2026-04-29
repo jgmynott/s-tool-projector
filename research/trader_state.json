@@ -117,15 +117,6 @@
         "stop": 1374.71,
         "target": 1398.24
       },
-      "JPM": {
-        "symbol": "JPM",
-        "qty": 1,
-        "entry_price": 310.8,
-        "opened_at": "2026-04-29T14:10:56.844191+00:00",
-        "signal": "relvol",
-        "stop": 308.62,
-        "target": 313.91
-      },
       "TSM": {
         "symbol": "TSM",
         "qty": 1,
