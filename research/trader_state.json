@@ -213,6 +213,15 @@
         "signal": "relvol",
         "stop": 558.0,
         "target": 567.55
+      },
+      "XOM": {
+        "symbol": "XOM",
+        "qty": 3,
+        "entry_price": 153.915,
+        "opened_at": "2026-04-29T16:15:56.028200+00:00",
+        "signal": "relvol",
+        "stop": 152.84,
+        "target": 155.45
       }
     },
     "fired_today": [
@@ -270,6 +279,11 @@
         "symbol": "DE",
         "signal": "relvol",
         "ts": "2026-04-29T15:50:53.852535+00:00"
+      },
+      {
+        "symbol": "XOM",
+        "signal": "relvol",
+        "ts": "2026-04-29T16:15:56.028209+00:00"
       }
     ],
     "last_scan": null,

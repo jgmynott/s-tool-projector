@@ -1,6 +1,6 @@
 {
-  "as_of": "2026-04-29T15:59:21.499159+00:00",
-  "n_rows": 184,
+  "as_of": "2026-04-29T16:15:56.028694+00:00",
+  "n_rows": 185,
   "rows": [
     {
       "ts": "2026-04-27T13:47:29.206731Z",
@@ -2519,6 +2519,20 @@
       "rationale": "",
       "result": "submitted",
       "tranche": 2
+    },
+    {
+      "ts": "2026-04-29T16:15:56.028212+00:00",
+      "event": "buy",
+      "sleeve": "scalper",
+      "symbol": "XOM",
+      "qty": 3,
+      "ref_price": 153.915,
+      "live_price": 153.915,
+      "stop": 152.84,
+      "target": 155.45,
+      "tier": "relvol",
+      "rationale": "{\"vol_multiple\": 2.040704319859321, \"range_pos\": 0.795454545454472, \"cur_vol\": 16961}",
+      "result": "submitted"
     }
   ]
 }
