@@ -186,15 +186,6 @@
         "stop": 308.62,
         "target": 313.91
       },
-      "TQQQ": {
-        "symbol": "TQQQ",
-        "qty": 8,
-        "entry_price": 61.055,
-        "opened_at": "2026-04-29T14:15:53.889981+00:00",
-        "signal": "relvol",
-        "stop": 60.63,
-        "target": 61.67
-      },
       "TSM": {
         "symbol": "TSM",
         "qty": 1,
@@ -203,6 +194,15 @@
         "signal": "orb",
         "stop": 391.94,
         "target": 398.65
+      },
+      "QQQ": {
+        "symbol": "QQQ",
+        "qty": 1,
+        "entry_price": 660.95,
+        "opened_at": "2026-04-29T14:40:53.363049+00:00",
+        "signal": "orb",
+        "stop": 656.32,
+        "target": 667.56
       }
     },
     "fired_today": [
@@ -230,6 +230,11 @@
         "symbol": "TSM",
         "signal": "orb",
         "ts": "2026-04-29T14:25:53.844371+00:00"
+      },
+      {
+        "symbol": "QQQ",
+        "signal": "orb",
+        "ts": "2026-04-29T14:40:53.363065+00:00"
       }
     ],
     "last_scan": null,
