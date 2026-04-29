@@ -903,16 +903,21 @@ function pfClosedTradesPanel(closedToday, isStrategist, totalRealizedToday) {
       const pct = ((r.sell_price - r.buy_price) / r.buy_price) * 100;
       pctStr = `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%`;
     }
+    // Even-spaced grid row. Tier slot reserved even when empty so all
+    // rows align (some sleeves don't have tier mappings — scalper, manual).
+    const tierSlot = tier
+      ? `<span class="pf-pos-tier ${tier}" title="From the ${tierLabel} section of /picks">${tierLabel}</span>`
+      : `<span class="pf-closed-tier-empty" aria-hidden="true"></span>`;
     return `<div class="pf-closed-row">
       <span class="pf-closed-time">${fmtTime(r.closed_at)}</span>
       <span class="pf-closed-tag ${sleeve}" title="${sleeveTitle}">${sleeveLabel}</span>
-      ${tierPill}
+      ${tierSlot}
       <span class="pf-closed-sym">${r.symbol || '—'}</span>
-      <span class="pf-closed-flow">
-        ${Math.round(r.qty || 0)} qty · ${fmtMoney(r.buy_price)}<span class="arrow">→</span>${fmtMoney(r.sell_price)}
-      </span>
+      <span class="pf-closed-qty">${Math.round(r.qty || 0)} sh</span>
+      <span class="pf-closed-entry">${fmtMoney(r.buy_price)}</span>
+      <span class="pf-closed-exit">${fmtMoney(r.sell_price)}</span>
+      <span class="pf-closed-pct ${pnlCls}">${pctStr || '—'}</span>
       <span class="pf-closed-pnl ${pnlCls}">${pnlStr}</span>
-      <span class="pf-closed-pct">${pctStr}</span>
     </div>`;
   }).join('');
 

@@ -1208,25 +1208,64 @@ footer a { color: var(--text-mid); }
 .pf-closed-summary { font: 500 12px 'Inter'; color: var(--text-dim); font-variant-numeric: tabular-nums; }
 .pf-closed-summary .pos { color: var(--pos); }
 .pf-closed-summary .neg { color: var(--neg); }
-.pf-closed-list { display: flex; flex-direction: column; gap: 4px; }
-.pf-closed-row { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: baseline;
-  padding: 10px 14px; border: 1px solid var(--border); border-radius: 6px;
-  background: rgba(255,255,255,0.02); font: 500 12px 'Inter';
-  font-variant-numeric: tabular-nums; }
+.pf-closed-list { display: flex; flex-direction: column; gap: 3px; }
+/* Even-spaced grid: time | sleeve | tier | sym | qty | entry | exit | pct | pnl
+   Tier column reserved even when empty so all rows visually align.
+   Numeric columns right-aligned; tabular-nums keeps digits in vertical lock. */
+.pf-closed-row {
+  display: grid;
+  grid-template-columns: 56px 88px 96px 60px 56px 1fr 1fr 70px 84px;
+  gap: 12px;
+  align-items: center;
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: rgba(255,255,255,0.02);
+  font: 500 12px 'Inter';
+  font-variant-numeric: tabular-nums;
+}
 .pf-closed-row:hover { border-color: var(--border-strong); background: rgba(255,255,255,0.035); }
-.pf-closed-time { color: var(--text-dim); min-width: 64px; font-size: 11px; }
-.pf-closed-sym { font: 600 14px 'Inter'; color: var(--text-hi); min-width: 54px; }
-.pf-closed-tag { font: 600 9px 'Inter'; padding: 2px 7px; border-radius: 3px; letter-spacing: 0.10em; text-transform: uppercase; }
-.pf-closed-tag.momentum { background: rgba(186,140,255,0.14); color: #ba8cff; }
-.pf-closed-tag.swing { background: rgba(95,170,197,0.14); color: var(--accent-lake); }
-.pf-closed-tag.daytrade { background: rgba(232,184,106,0.14); color: #e8b86a; }
+.pf-closed-time { color: var(--text-dim); font-size: 11px; }
+.pf-closed-sym  { font: 600 13.5px 'Inter'; color: var(--text-hi); }
+.pf-closed-tag {
+  font: 600 9px 'Inter'; letter-spacing: 0.10em; text-transform: uppercase;
+  padding: 3px 8px; border-radius: 4px; text-align: center;
+  justify-self: start;
+}
+.pf-closed-tag.momentum     { background: rgba(186,140,255,0.14); color: #ba8cff; }
+.pf-closed-tag.swing        { background: rgba(95,170,197,0.14);  color: var(--accent-lake); }
+.pf-closed-tag.daytrade     { background: rgba(232,184,106,0.14); color: #e8b86a; }
+.pf-closed-tag.scalper      { background: rgba(110,231,183,0.14); color: var(--pos); }
 .pf-closed-tag.unattributed { background: rgba(155,161,185,0.10); color: var(--text-dim); }
-.pf-closed-flow { color: var(--text-mid); flex: 1 1 220px; }
-.pf-closed-flow .arrow { color: var(--text-dim); margin: 0 4px; }
-.pf-closed-pnl { font: 600 13px 'Inter'; min-width: 90px; text-align: right; }
+.pf-closed-tier-empty { /* placeholder so grid stays aligned */ }
+.pf-closed-qty   { color: var(--text-dim); font-size: 11px; text-align: right; }
+.pf-closed-entry { color: var(--text-mid); text-align: right; font-variant-numeric: tabular-nums; }
+.pf-closed-exit  { color: var(--text-hi);  text-align: right; font-variant-numeric: tabular-nums; }
+.pf-closed-pct   { font-size: 11.5px; text-align: right; color: var(--text-dim); }
+.pf-closed-pct.pos { color: var(--pos); }
+.pf-closed-pct.neg { color: var(--neg); }
+.pf-closed-pnl   { font: 700 12.5px 'Inter'; text-align: right; color: var(--text-mid); }
 .pf-closed-pnl.pos { color: var(--pos); }
 .pf-closed-pnl.neg { color: var(--neg); }
-.pf-closed-pct { font: 500 11px 'Inter'; color: var(--text-dim); min-width: 56px; text-align: right; }
+@media (max-width: 720px) {
+  /* Drop tier + qty columns; collapse layout but keep entry/exit/pnl visible */
+  .pf-closed-row {
+    grid-template-columns: 50px 78px 56px 1fr 1fr 76px;
+    grid-template-areas: "time sleeve sym entry exit pnl";
+    gap: 8px;
+    padding: 8px 10px;
+  }
+  .pf-closed-time { grid-area: time; }
+  .pf-closed-tag  { grid-area: sleeve; }
+  .pf-closed-sym  { grid-area: sym; }
+  .pf-closed-entry{ grid-area: entry; }
+  .pf-closed-exit { grid-area: exit; }
+  .pf-closed-pnl  { grid-area: pnl; }
+  .pf-closed-row .pf-closed-tier-empty,
+  .pf-closed-row .pf-pos-tier,
+  .pf-closed-row .pf-closed-qty,
+  .pf-closed-row .pf-closed-pct { display: none; }
+}
 .pf-closed-empty { padding: 22px; text-align: center; font: 500 13px 'Inter';
   color: var(--text-mid); border: 1px dashed var(--border); border-radius: 6px; }
 .pf-closed-empty .small { font-size: 11px; color: var(--text-dim); display: block; margin-top: 4px; }
@@ -1636,6 +1675,6 @@ footer a { color: var(--text-mid); }
      1h Cache-Control on /shared/* skips download + parse on every
      repeat visit. defer means it executes after HTML parse but
      before DOMContentLoaded, same effective ordering as inline. -->
-<script defer src="/shared/picks-app.js?v=20260429m"></script>
+<script defer src="/shared/picks-app.js?v=20260429n"></script>
 </body>
 </html>
