@@ -276,6 +276,24 @@
         "signal": "relvol",
         "stop": 52.54,
         "target": 53.44
+      },
+      "MSFT": {
+        "symbol": "MSFT",
+        "qty": 1,
+        "entry_price": 424.23,
+        "opened_at": "2026-04-29T19:40:52.860297+00:00",
+        "signal": "relvol",
+        "stop": 421.26,
+        "target": 428.47
+      },
+      "SOXL": {
+        "symbol": "SOXL",
+        "qty": 4,
+        "entry_price": 117.35,
+        "opened_at": "2026-04-29T19:40:52.917705+00:00",
+        "signal": "relvol",
+        "stop": 116.53,
+        "target": 118.52
       }
     },
     "fired_today": [
@@ -388,6 +406,16 @@
         "symbol": "BAC",
         "signal": "relvol",
         "ts": "2026-04-29T19:35:59.140588+00:00"
+      },
+      {
+        "symbol": "MSFT",
+        "signal": "relvol",
+        "ts": "2026-04-29T19:40:52.860315+00:00"
+      },
+      {
+        "symbol": "SOXL",
+        "signal": "relvol",
+        "ts": "2026-04-29T19:40:52.917723+00:00"
       }
     ],
     "last_scan": null,

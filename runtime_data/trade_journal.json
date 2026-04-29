@@ -1,6 +1,6 @@
 {
-  "as_of": "2026-04-29T19:35:59.141315+00:00",
-  "n_rows": 195,
+  "as_of": "2026-04-29T19:40:52.918482+00:00",
+  "n_rows": 197,
   "rows": [
     {
       "ts": "2026-04-27T13:47:29.206731Z",
@@ -2672,6 +2672,34 @@
       "target": 53.44,
       "tier": "relvol",
       "rationale": "{\"vol_multiple\": 2.4942639280071446, \"range_pos\": 0.75, \"cur_vol\": 48412}",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-04-29T19:40:52.860318+00:00",
+      "event": "buy",
+      "sleeve": "scalper",
+      "symbol": "MSFT",
+      "qty": 1,
+      "ref_price": 424.23,
+      "live_price": 424.23,
+      "stop": 421.26,
+      "target": 428.47,
+      "tier": "relvol",
+      "rationale": "{\"vol_multiple\": 2.1936170337957503, \"range_pos\": 0.7397260273973477, \"cur_vol\": 16693}",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-04-29T19:40:52.917727+00:00",
+      "event": "buy",
+      "sleeve": "scalper",
+      "symbol": "SOXL",
+      "qty": 4,
+      "ref_price": 117.35,
+      "live_price": 117.35,
+      "stop": 116.53,
+      "target": 118.52,
+      "tier": "relvol",
+      "rationale": "{\"vol_multiple\": 2.9718428022057757, \"range_pos\": 0.7777777777777752, \"cur_vol\": 19562}",
       "result": "submitted"
     }
   ]
