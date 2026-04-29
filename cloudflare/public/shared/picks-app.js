@@ -423,7 +423,9 @@ function pfFmtTickLabel(t, isIntraday) {
   if (t == null) return '';
   const d = (typeof t === 'number') ? new Date(t * 1000) : new Date(t);
   if (isIntraday) {
-    return d.toLocaleTimeString(undefined, { hour: 'numeric', hour12: true });
+    // Minutes-precision so two ticks inside the same hour (e.g., 9:45
+    // and 10:15) don't both render as "10 AM" and look duplicated.
+    return d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true });
   }
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }

@@ -742,9 +742,9 @@ footer a { color: var(--text-mid); }
 .pf-chart-cursor { stroke: var(--text-mid); stroke-width: 1; stroke-dasharray: 3 3; pointer-events: none; }
 .pf-chart-dot { pointer-events: none; }
 .pf-chart-hit { cursor: crosshair; }
-.pf-chart-legend { display: flex; gap: 22px; margin-top: 8px;
-  font: 500 11px 'Inter'; color: var(--text-mid); font-variant-numeric: tabular-nums; }
-.pf-chart-legend-item { display: inline-flex; align-items: center; gap: 7px; }
+.pf-chart-legend { display: flex; gap: 36px; margin-top: 10px; align-items: center; flex-wrap: wrap;
+  font: 500 11.5px 'Inter'; color: var(--text-mid); font-variant-numeric: tabular-nums; letter-spacing: 0.005em; }
+.pf-chart-legend-item { display: inline-flex; align-items: center; gap: 9px; padding-right: 4px; }
 .pf-chart-legend-item .pos { color: var(--pos); font-weight: 600; }
 .pf-chart-legend-item .neg { color: var(--neg); font-weight: 600; }
 .pf-chart-legend-swatch { display: inline-block; width: 14px; height: 2px; border-radius: 1px; }
@@ -1613,6 +1613,6 @@ footer a { color: var(--text-mid); }
      1h Cache-Control on /shared/* skips download + parse on every
      repeat visit. defer means it executes after HTML parse but
      before DOMContentLoaded, same effective ordering as inline. -->
-<script defer src="/shared/picks-app.js?v=20260429g"></script>
+<script defer src="/shared/picks-app.js?v=20260429h"></script>
 </body>
 </html>
