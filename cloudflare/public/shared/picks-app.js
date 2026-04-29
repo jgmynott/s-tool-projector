@@ -321,11 +321,33 @@ function pfChartSvg(pts, ts, isIntraday, spyPts, opts = {}) {
       <text x="${(padL - 8).toFixed(1)}" y="${(yPos + 3).toFixed(1)}" class="pf-chart-y-label">$${Math.round(v).toLocaleString('en-US')}</text>`;
   }
 
-  // X-axis: up to 6 ticks evenly across the data span
-  const xTickN = Math.min(6, pts.length);
+  // X-axis ticks. For 1W, label every trading day (skip weekends — they
+  // appear as flat segments because Alpaca forward-fills closed-market
+  // bars). For 1M, evenly space ~6 ticks. For 1D, evenly space ~6 ticks.
+  // The previous "evenly space 6 ticks across N points" rule on 1W silently
+  // skipped Tuesday: 7 points × 6 ticks → indices [0,1,2,3,4,6].
+  const xTickIndices = [];
+  if (opts.win === '1W') {
+    for (let i = 0; i < ts.length; i++) {
+      const t = ts[i];
+      if (t == null) continue;
+      const d = (typeof t === 'number') ? new Date(t * 1000) : new Date(t);
+      const dow = d.getUTCDay();   // 0 = Sun, 6 = Sat
+      if (dow >= 1 && dow <= 5) xTickIndices.push(i);
+    }
+    // Always include the last point even if it falls on a weekend (rare,
+    // would only happen if Alpaca returns a Sat/Sun timestamp for today).
+    if (xTickIndices.length && xTickIndices[xTickIndices.length - 1] !== pts.length - 1) {
+      xTickIndices.push(pts.length - 1);
+    }
+  } else {
+    const tickN = Math.min(6, pts.length);
+    for (let i = 0; i < tickN; i++) {
+      xTickIndices.push(Math.floor((pts.length - 1) * i / (tickN - 1)));
+    }
+  }
   let xLabels = '';
-  for (let i = 0; i < xTickN; i++) {
-    const idx = Math.floor((pts.length - 1) * i / (xTickN - 1));
+  for (const idx of xTickIndices) {
     const xPos = x(idx);
     xLabels += `<text x="${xPos.toFixed(1)}" y="${(h - 10).toFixed(1)}" class="pf-chart-x-label">${pfFmtTickLabel(ts[idx], isIntraday)}</text>`;
   }
@@ -639,14 +661,23 @@ function pfLiveActivityStrip(data) {
   const events = [];
   for (const c of closed) {
     if (!c.symbol) continue;
+    const qty = parseFloat(c.qty) || 0;
+    const buyPx = parseFloat(c.buy_price) || 0;
+    const sellPx = parseFloat(c.sell_price) || 0;
+    const pnl = parseFloat(c.pnl) || 0;
+    // pct return = pnl / cost basis
+    const cost = qty * buyPx;
+    const pct = cost > 0 ? (pnl / cost) * 100 : 0;
     events.push({
       kind: 'sell',
       symbol: c.symbol,
       sleeve: c.sleeve || 'unattributed',
       time: c.closed_at,
-      pnl: c.pnl || 0,
-      qty: c.qty,
-      price: c.sell_price,
+      pnl,
+      pct,
+      qty,
+      entryPx: buyPx,
+      exitPx: sellPx,
       id: `sell-${c.symbol}-${c.closed_at || ''}`,
     });
   }
@@ -654,13 +685,22 @@ function pfLiveActivityStrip(data) {
     if (typeof p.days_held !== 'number' || p.days_held !== 0) continue;
     const ts = p.opened_at || p.entry_time || p.filled_at || null;
     if (!ts) continue;
+    const qty = parseFloat(p.qty) || 0;
+    const entryPx = parseFloat(p.avg_entry_price) || 0;
+    const curPx = parseFloat(p.current_price) || entryPx;
+    const upl = parseFloat(p.unrealized_pl) || 0;
+    // unrealized_plpc is already a fraction (e.g. 0.0473 = 4.73%)
+    const uplPct = (parseFloat(p.unrealized_plpc) || 0) * 100;
     events.push({
       kind: 'buy',
       symbol: p.symbol,
       sleeve: p.sleeve || 'unattributed',
       time: ts,
-      qty: parseFloat(p.qty) || 0,
-      price: parseFloat(p.avg_entry_price) || 0,
+      pnl: upl,
+      pct: uplPct,
+      qty,
+      entryPx,
+      exitPx: curPx,
       id: `buy-${p.symbol}-${ts}`,
     });
   }
@@ -682,6 +722,24 @@ function pfLiveActivityStrip(data) {
   };
   const SLEEVE_LABEL = { momentum: 'Momentum', swing: 'Swing', daytrade: 'Daytrade', scalper: 'Scalper', unattributed: 'Manual' };
 
+  // Format a price as $X.XX or $X (no decimals if ≥$100, two if <$100).
+  // Penny stocks (<$10) get two decimals so the move is visible.
+  const fmtPx = (v) => {
+    if (!isFinite(v)) return '—';
+    if (v >= 100) return '$' + v.toFixed(0);
+    return '$' + v.toFixed(2);
+  };
+  const fmtUsd = (v) => {
+    const a = Math.abs(v);
+    const sign = v >= 0 ? '+' : '−';
+    if (a >= 1000) return `${sign}$${(a / 1000).toFixed(1)}k`;
+    return `${sign}$${a.toFixed(0)}`;
+  };
+  const fmtPct = (v) => {
+    const sign = v >= 0 ? '+' : '−';
+    return `${sign}${Math.abs(v).toFixed(2)}%`;
+  };
+
   const rows = events.slice(0, 15).map(ev => {
     // Only flag as "fresh" on subsequent renders (prevents the entire
     // initial list from animating in at once on page load).
@@ -689,24 +747,30 @@ function pfLiveActivityStrip(data) {
     seen.add(ev.id);
     const sleeveLbl = SLEEVE_LABEL[ev.sleeve] || ev.sleeve;
     const time = fmtTime(ev.time);
-    if (ev.kind === 'sell') {
-      const plCls = ev.pnl > 0.5 ? 'pos' : ev.pnl < -0.5 ? 'neg' : 'flat';
-      const sign = ev.pnl >= 0 ? '+' : '−';
-      const plStr = `${sign}$${Math.abs(ev.pnl).toFixed(0)}`;
-      return `<div class="pf-tk-row sell ${fresh ? 'fresh' : ''}" data-id="${ev.id}">
-        <span class="pf-tk-time">${time}</span>
-        <span class="pf-tk-action sell">SELL</span>
-        <span class="pf-tk-sym">${ev.symbol}</span>
-        <span class="pf-tk-sleeve ${ev.sleeve}">${sleeveLbl}</span>
-        <span class="pf-tk-pl ${plCls}">${plStr}</span>
-      </div>`;
-    }
-    return `<div class="pf-tk-row buy ${fresh ? 'fresh' : ''}" data-id="${ev.id}">
+    const isSell = ev.kind === 'sell';
+    const sideLbl = isSell ? 'SELL' : 'BUY';
+
+    // Color/sign rules. Sells are realized; buys are live unrealized.
+    // 0.05% threshold filters noise so freshly opened positions don't
+    // flicker green/red on tick-level micro moves.
+    const plCls = ev.pct > 0.05 ? 'pos' : ev.pct < -0.05 ? 'neg' : 'flat';
+    const pctStr = fmtPct(ev.pct);
+    const usdStr = fmtUsd(ev.pnl);
+    const qtyStr = `${Math.round(ev.qty)}sh`;
+    const moveStr = `${fmtPx(ev.entryPx)}→${fmtPx(ev.exitPx)}`;
+    const liveTag = isSell ? '' : '<span class="pf-tk-livedot" title="live mark"></span>';
+
+    return `<div class="pf-tk-row ${ev.kind} ${plCls} ${fresh ? 'fresh' : ''}" data-id="${ev.id}">
       <span class="pf-tk-time">${time}</span>
-      <span class="pf-tk-action buy">BUY</span>
+      <span class="pf-tk-action ${ev.kind}">${sideLbl}</span>
       <span class="pf-tk-sym">${ev.symbol}</span>
       <span class="pf-tk-sleeve ${ev.sleeve}">${sleeveLbl}</span>
-      <span class="pf-tk-meta">${Math.round(ev.qty)}sh @ $${ev.price.toFixed(ev.price < 10 ? 2 : 0)}</span>
+      <span class="pf-tk-trade">
+        <span class="pf-tk-qty">${qtyStr}</span>
+        <span class="pf-tk-move">${moveStr}${liveTag}</span>
+      </span>
+      <span class="pf-tk-pct ${plCls}">${pctStr}</span>
+      <span class="pf-tk-pl ${plCls}">${usdStr}</span>
     </div>`;
   }).join('');
 
