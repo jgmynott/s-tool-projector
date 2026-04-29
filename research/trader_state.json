@@ -258,6 +258,15 @@
         "signal": "relvol",
         "stop": 805.73,
         "target": 819.52
+      },
+      "COST": {
+        "symbol": "COST",
+        "qty": 1,
+        "entry_price": 994.75,
+        "opened_at": "2026-04-29T19:21:12.070762+00:00",
+        "signal": "relvol",
+        "stop": 987.79,
+        "target": 1004.7
       }
     },
     "fired_today": [
@@ -360,6 +369,11 @@
         "symbol": "CAT",
         "signal": "relvol",
         "ts": "2026-04-29T18:20:59.598452+00:00"
+      },
+      {
+        "symbol": "COST",
+        "signal": "relvol",
+        "ts": "2026-04-29T19:21:12.070780+00:00"
       }
     ],
     "last_scan": null,
