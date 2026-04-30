@@ -116,17 +116,7 @@
   },
   "breaker_fired_date": "2026-04-28",
   "scalper": {
-    "positions": {
-      "GE": {
-        "symbol": "GE",
-        "qty": 1,
-        "entry_price": 291.11,
-        "opened_at": "2026-04-30T17:10:31.563309+00:00",
-        "signal": "relvol",
-        "stop": 289.07,
-        "target": 294.02
-      }
-    },
+    "positions": {},
     "fired_today": [
       {
         "symbol": "AAPL",
