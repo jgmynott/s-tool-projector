@@ -1,6 +1,6 @@
 {
-  "as_of": "2026-04-29T19:56:00.731578+00:00",
-  "n_rows": 203,
+  "as_of": "2026-04-30T13:25:37.207008+00:00",
+  "n_rows": 213,
   "rows": [
     {
       "ts": "2026-04-27T13:47:29.206731Z",
@@ -2784,6 +2784,126 @@
       "target": 157.77,
       "tier": "relvol",
       "rationale": "{\"vol_multiple\": 2.3015956440389345, \"range_pos\": 0.9767441860465323, \"cur_vol\": 12512}",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-04-30T13:25:36.419708+00:00",
+      "event": "sell",
+      "sleeve": "daytrade",
+      "symbol": "ARM",
+      "qty": "11",
+      "ref_price": 198.65,
+      "live_price": null,
+      "realized_pl": null,
+      "reason": "preopen_holdover_sweep",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-04-30T13:25:36.478358+00:00",
+      "event": "sell",
+      "sleeve": "daytrade",
+      "symbol": "ATO",
+      "qty": "17",
+      "ref_price": 187.13,
+      "live_price": null,
+      "realized_pl": null,
+      "reason": "preopen_holdover_sweep",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-04-30T13:25:36.538476+00:00",
+      "event": "sell",
+      "sleeve": "daytrade",
+      "symbol": "BKNG",
+      "qty": "19",
+      "ref_price": 173.38,
+      "live_price": null,
+      "realized_pl": null,
+      "reason": "preopen_holdover_sweep",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-04-30T13:25:36.885304+00:00",
+      "event": "sell",
+      "sleeve": "daytrade",
+      "symbol": "CSTM",
+      "qty": "111",
+      "ref_price": 29.66,
+      "live_price": null,
+      "realized_pl": null,
+      "reason": "preopen_holdover_sweep",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-04-30T13:25:36.948028+00:00",
+      "event": "sell",
+      "sleeve": "daytrade",
+      "symbol": "CSX",
+      "qty": "73",
+      "ref_price": 45.23,
+      "live_price": null,
+      "realized_pl": null,
+      "reason": "preopen_holdover_sweep",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-04-30T13:25:36.999074+00:00",
+      "event": "sell",
+      "sleeve": "daytrade",
+      "symbol": "DAL",
+      "qty": "49",
+      "ref_price": 67.22,
+      "live_price": null,
+      "realized_pl": null,
+      "reason": "preopen_holdover_sweep",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-04-30T13:25:37.049125+00:00",
+      "event": "sell",
+      "sleeve": "daytrade",
+      "symbol": "DD",
+      "qty": "72",
+      "ref_price": 45.33,
+      "live_price": null,
+      "realized_pl": null,
+      "reason": "preopen_holdover_sweep",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-04-30T13:25:37.100579+00:00",
+      "event": "sell",
+      "sleeve": "daytrade",
+      "symbol": "DGX",
+      "qty": "16",
+      "ref_price": 195.05,
+      "live_price": null,
+      "realized_pl": null,
+      "reason": "preopen_holdover_sweep",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-04-30T13:25:37.151463+00:00",
+      "event": "sell",
+      "sleeve": "daytrade",
+      "symbol": "LII",
+      "qty": "6",
+      "ref_price": 495.52,
+      "live_price": null,
+      "realized_pl": null,
+      "reason": "preopen_holdover_sweep",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-04-30T13:25:37.206270+00:00",
+      "event": "sell",
+      "sleeve": "daytrade",
+      "symbol": "MCO",
+      "qty": "7",
+      "ref_price": 457.99,
+      "live_price": null,
+      "realized_pl": null,
+      "reason": "preopen_holdover_sweep",
       "result": "submitted"
     }
   ]
