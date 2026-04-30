@@ -125,6 +125,15 @@
         "signal": "relvol",
         "stop": 589.33,
         "target": 599.41
+      },
+      "SQQQ": {
+        "symbol": "SQQQ",
+        "qty": 9,
+        "entry_price": 52.73,
+        "opened_at": "2026-04-30T16:45:35.019080+00:00",
+        "signal": "relvol",
+        "stop": 52.36,
+        "target": 53.26
       }
     },
     "fired_today": [
@@ -212,6 +221,11 @@
         "symbol": "DE",
         "signal": "relvol",
         "ts": "2026-04-30T16:25:31.171593+00:00"
+      },
+      {
+        "symbol": "SQQQ",
+        "signal": "relvol",
+        "ts": "2026-04-30T16:45:35.019096+00:00"
       }
     ],
     "last_scan": null,
