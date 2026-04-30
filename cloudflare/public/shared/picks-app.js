@@ -755,9 +755,13 @@ function pfLiveActivityStrip(data) {
     return `${sign}${Math.abs(v).toFixed(2)}%`;
   };
 
+  // Broker-style fill log. Every row uses the SAME columns regardless of
+  // whether it's a BUY or a SELL — Time · Side · Symbol · Sleeve · Qty ·
+  // Price · P&L. BUYs report the fill price and leave P&L blank (a buy
+  // hasn't realized anything). SELLs report the fill price and the
+  // realized P&L vs the matched buy. Live unrealized drift on open
+  // positions belongs in the positions panel below, not in the fill log.
   const rows = events.slice(0, 15).map(ev => {
-    // Only flag as "fresh" on subsequent renders (prevents the entire
-    // initial list from animating in at once on page load).
     const fresh = !seen.has(ev.id) && !isFirstRender;
     seen.add(ev.id);
     const sleeveLbl = SLEEVE_LABEL[ev.sleeve] || ev.sleeve;
@@ -765,31 +769,25 @@ function pfLiveActivityStrip(data) {
     const isSell = ev.kind === 'sell';
     const sideLbl = isSell ? 'SELL' : 'BUY';
 
-    // Color/sign rules. Sells are realized; buys are live unrealized.
-    // 0.05% threshold filters noise so freshly opened positions don't
-    // flicker green/red on tick-level micro moves. When pct/pnl are
-    // null (cross-day sell with no buy_price on file) we render dashes
-    // and a flat tint so the row still surfaces with sell-side info.
-    const hasPct = ev.pct != null && isFinite(ev.pct);
-    const hasPnl = ev.pnl != null && isFinite(ev.pnl);
+    // Fill price: BUY shows entry, SELL shows exit. Same column, one number.
+    const fillPx = isSell ? ev.exitPx : ev.entryPx;
+    const priceStr = isFinite(fillPx) && fillPx > 0 ? fmtPx(fillPx) : '—';
+
+    // P&L: only populated on SELL rows where we have a matched buy.
+    const hasPct = isSell && ev.pct != null && isFinite(ev.pct);
+    const hasPnl = isSell && ev.pnl != null && isFinite(ev.pnl);
     const plCls = !hasPct ? 'flat' : (ev.pct > 0.05 ? 'pos' : ev.pct < -0.05 ? 'neg' : 'flat');
     const pctStr = hasPct ? fmtPct(ev.pct) : '—';
     const usdStr = hasPnl ? fmtUsd(ev.pnl) : '—';
-    const qtyStr = `${Math.round(ev.qty)}sh`;
-    const moveStr = ev.entryPx
-      ? `${fmtPx(ev.entryPx)}→${fmtPx(ev.exitPx)}`
-      : `@ ${fmtPx(ev.exitPx)}`;
-    const liveTag = isSell ? '' : '<span class="pf-tk-livedot" title="live mark"></span>';
+    const qtyStr = `${Math.round(ev.qty)}`;
 
     return `<div class="pf-tk-row ${ev.kind} ${plCls} ${fresh ? 'fresh' : ''}" data-id="${ev.id}">
       <span class="pf-tk-time">${time}</span>
       <span class="pf-tk-action ${ev.kind}">${sideLbl}</span>
       <span class="pf-tk-sym">${ev.symbol}</span>
       <span class="pf-tk-sleeve ${ev.sleeve}">${sleeveLbl}</span>
-      <span class="pf-tk-trade">
-        <span class="pf-tk-qty">${qtyStr}</span>
-        <span class="pf-tk-move">${moveStr}${liveTag}</span>
-      </span>
+      <span class="pf-tk-qty">${qtyStr}</span>
+      <span class="pf-tk-price">${priceStr}</span>
       <span class="pf-tk-pct ${plCls}">${pctStr}</span>
       <span class="pf-tk-pl ${plCls}">${usdStr}</span>
     </div>`;
@@ -813,6 +811,16 @@ function pfLiveActivityStrip(data) {
       <span class="pf-live-bit">${nextStr}</span>
       ${pendingStr ? `<span class="pf-live-bit">${pendingStr}</span>` : ''}
     </div>
+    ${rows ? `<div class="pf-tk-head">
+      <span class="pf-tk-time">Time</span>
+      <span class="pf-tk-action">Side</span>
+      <span class="pf-tk-sym">Symbol</span>
+      <span class="pf-tk-sleeve">Sleeve</span>
+      <span class="pf-tk-qty">Qty</span>
+      <span class="pf-tk-price">Price</span>
+      <span class="pf-tk-pct">Return</span>
+      <span class="pf-tk-pl">P&amp;L</span>
+    </div>` : ''}
     <div class="pf-tk-list">
       ${rows || '<div class="pf-tk-empty">Awaiting first trade today.</div>'}
     </div>
