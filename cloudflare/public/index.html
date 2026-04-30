@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>s-tool — score the signal, skip the noise.</title>
-<meta name="description" content="A daily multi-factor scan across the Russell 3000. Momentum, fundamentals, and risk weighted into one composite score. Top picks doubled at 8.7× the random-pick baseline after liquidity and cost filters." />
+<title>s-tool — picks that double at nearly 9× the baseline, tradeable</title>
+<meta name="description" content="Backtested across 22,218 ticker-windows, filtered for tradeable liquidity and transaction costs. Top 20 picks doubled at 8.7× the random-picking baseline. Every pick logged publicly." />
 <link rel="canonical" href="https://s-tool.io/" />
 <meta property="og:title" content="s-tool" />
-<meta property="og:description" content="A precision instrument for market signals. Score the signal, skip the noise." />
+<meta property="og:description" content="" />
 <meta property="og:image" content="https://s-tool.io/img/og-abstract-v2.jpg" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
@@ -16,986 +16,420 @@
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="s-tool" />
 <meta name="twitter:image" content="https://s-tool.io/img/og-abstract-v2.jpg" />
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%23faf7f0' stroke='%230d4a2c' stroke-width='4'/%3E%3Ccircle cx='50' cy='50' r='30' fill='%234a8b5e'/%3E%3Ctext x='50' y='66' text-anchor='middle' font-family='Georgia' font-style='italic' font-size='44' font-weight='700' fill='%230d4a2c'%3ES%3C/text%3E%3C/svg%3E" />
-
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230A6577'/%3E%3Cpath d='M16 44 L24 32 L34 38 L48 18' stroke='%23D2DDEA' stroke-width='4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<!-- s-tool perf hints -->
 <link rel="preconnect" href="https://fluent-mole-71.clerk.accounts.dev" crossorigin />
 <link rel="preconnect" href="https://api-production-9fce.up.railway.app" crossorigin />
 <link rel="dns-prefetch" href="https://fluent-mole-71.clerk.accounts.dev" />
 <link rel="dns-prefetch" href="https://api-production-9fce.up.railway.app" />
+<link rel="prefetch" href="/" />
 <link rel="prefetch" href="/picks/" />
-<link rel="prefetch" href="/app/" />
 <link rel="prefetch" href="/track-record/" />
 <link rel="prefetch" href="/how/" />
 <link rel="prefetch" href="/pricing/" />
 <link rel="prefetch" href="/faq/" />
-
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Geist:wght@300..700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/shared/tokens.css?v=20260429i" />
-<link rel="stylesheet" href="/shared/nav.css?v=20260429i" />
-<link rel="stylesheet" href="/shared/mobile.css?v=20260429i" />
+<!-- s-tool perf hints -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/shared/nav.css" /><!-- s-tool perf skel -->
+<meta name="view-transition" content="same-origin" />
+<link rel="stylesheet" href="/shared/skeleton.css" />
+<!-- s-tool perf skel -->
 
 <style>
-/* ── Landing page (desktop shell only) ─────────────────────── */
-.hero {
-  position: relative;
-  padding: 80px 32px 96px;
-  overflow: hidden;
+:root {
+  --bg-deepest: #0B1006; --bg-base: #111512; --bg-surface: #1A1F1B;
+  --bg-card: #1F2722; --bg-card-hi: #232D28;
+  --accent-deep: #022834; --accent-alpine: #0A6577; --accent-lake: #5FAAC5;
+  --text-hi: #EDECE6; --text-mid: #9BA1B9; --text-dim: #6B7382;
+  --border: rgba(155,161,185,0.14);
+  --border-strong: rgba(95,170,197,0.30);
+  --pos: #6ee7b7; --caution: #f5d58f;
+  --radius-lg: 22px; --radius-md: 16px; --radius-sm: 10px;
 }
-.hero-grid {
-  max-width: var(--container-wide);
-  margin: 0 auto;
-  display: grid;
-  grid-template-columns: 1.4fr 1fr;
-  gap: 80px;
-  align-items: center;
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+html, body { overflow-x: hidden; }
+body {
+  font-family: 'Inter', sans-serif;
+  background: radial-gradient(1200px 600px at 20% -10%, rgba(10,101,119,0.20), transparent 60%),
+              radial-gradient(900px 500px at 85% -8%, rgba(2,40,52,0.28), transparent 70%),
+              var(--bg-deepest);
+  color: var(--text-hi); line-height: 1.55;
+  -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
 }
-.hero-eyebrow {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.18em;
-  color: var(--pine);
-  margin-bottom: 28px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.hero-eyebrow::before {
-  content: '';
-  width: 24px;
-  height: 1px;
-  background: var(--pine);
-}
-.hero-title {
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: clamp(56px, 7vw, 112px);
-  line-height: 0.92;
-  letter-spacing: -0.04em;
-  color: var(--forest);
-  font-variation-settings: "opsz" 144;
-}
-.hero-title em { font-style: italic; font-weight: 300; color: var(--pine); }
-.hero-lede {
-  font-family: var(--font-display);
-  font-weight: 300;
-  font-size: 22px;
-  line-height: 1.45;
-  color: var(--gray-700);
-  margin-top: 32px;
-  max-width: 540px;
-  font-variation-settings: "opsz" 72;
-}
-.hero-cta-row {
-  margin-top: 44px;
-  display: flex;
-  gap: 16px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-.hero-meta {
-  margin-top: 56px;
-  display: flex;
-  gap: 48px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  color: var(--gray-500);
-}
-.hero-meta strong {
-  display: block;
-  color: var(--charcoal);
-  font-size: 28px;
-  font-weight: 500;
-  margin-bottom: 4px;
-  text-transform: none;
-  letter-spacing: -0.01em;
-  font-family: var(--font-display);
-  font-variation-settings: "opsz" 144;
-}
+a { color: inherit; text-decoration: none; }
+.container { max-width: 1180px; margin: 0 auto; padding: 0 32px; }
+@media (max-width: 540px) { .container { padding: 0 20px; } }
 
-/* Hero instrument SVG (rotating compass) */
-.hero-instrument {
-  position: relative;
-  aspect-ratio: 1;
-  max-width: 480px;
-  margin-left: auto;
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 14px 24px; border-radius: 999px;
+  font: 500 15px/1 'Inter'; cursor: pointer;
+  transition: all .2s; border: 1px solid transparent;
+  background: var(--accent-lake); color: var(--bg-deepest);
+  box-shadow: 0 8px 24px -8px rgba(95,170,197,0.55);
 }
-.instrument-svg {
-  width: 100%;
-  height: 100%;
-  animation: rotate-slow 80s linear infinite;
-}
-@keyframes rotate-slow {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-.instrument-overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-}
-.instrument-readout {
-  background: var(--warm-white);
-  border: 1px solid var(--forest);
-  padding: 14px 20px;
-  font-family: var(--font-mono);
-  text-align: center;
-  box-shadow: 0 10px 28px rgba(13, 74, 44, 0.10);
-}
-.instrument-readout .ticker {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  color: var(--gray-500);
-  margin-bottom: 4px;
-}
-.instrument-readout .score {
-  font-family: var(--font-display);
-  font-size: 36px;
-  font-weight: 600;
-  color: var(--forest);
-  line-height: 1;
-}
-.instrument-readout .label {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  color: var(--pine);
-  margin-top: 6px;
-}
+.btn:hover { background: #82c1d6; transform: translateY(-1px); }
+.btn.ghost { background: transparent; color: var(--text-hi); border-color: var(--border-strong); box-shadow: none; }
+.btn.ghost:hover { background: rgba(95,170,197,0.08); border-color: var(--accent-lake); }
 
-/* Ticker strip */
-.ticker-strip {
-  border-top: 1px solid var(--gray-300);
-  border-bottom: 1px solid var(--gray-300);
-  padding: 16px 0;
-  background: var(--cream);
-  overflow: hidden;
-  white-space: nowrap;
-}
-.ticker-track {
-  display: inline-flex;
-  gap: 56px;
-  animation: ticker-scroll 70s linear infinite;
-  font-family: var(--font-mono);
-  font-size: 13px;
-  letter-spacing: 0.04em;
-}
-@keyframes ticker-scroll {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
-}
-.ticker-item { display: inline-flex; align-items: center; gap: 12px; }
-.ticker-item .sym { font-weight: 600; color: var(--charcoal); }
-.ticker-item .pct { color: var(--pine); }
-.ticker-item .pct.down { color: var(--signal-red); }
-.ticker-item .score-pill {
-  background: var(--mint-soft);
-  color: var(--forest);
-  padding: 2px 8px;
-  font-size: 11px;
-  font-weight: 500;
-}
+/* Nav — matches the rest of the site */
+nav { position: sticky; top: 0; z-index: 50; backdrop-filter: blur(14px); background: rgba(11,16,6,0.82); border-bottom: 1px solid var(--border); }
+.nav-row { display: flex; align-items: center; justify-content: space-between; padding: 18px 0; gap: 24px; }
+.logo { display: flex; align-items: center; gap: 10px; font: 700 18px 'Inter'; letter-spacing: -0.04em; color: var(--text-hi); }
+.logo-mark { width: 28px; height: 28px; border-radius: 7px; background: linear-gradient(135deg, var(--accent-deep), var(--accent-alpine), var(--accent-lake)); display: flex; align-items: center; justify-content: center; }
+.logo-mark svg { stroke: var(--text-hi); }
+.nav-center { display: flex; gap: 28px; font: 500 14px 'Inter'; color: var(--text-mid); }
+.nav-center a:hover { color: var(--text-hi); }
+.nav-center a.active { color: var(--text-hi); border-bottom: 1px solid var(--accent-lake); padding-bottom: 2px; }
+.nav-end { display: flex; align-items: center; gap: 14px; min-width: 120px; justify-content: flex-end; }
+.signin-btn { font: 500 14px 'Inter'; color: var(--text-hi); border: 1px solid var(--border-strong); padding: 9px 18px; border-radius: 999px; cursor: pointer; background: transparent; }
+.signin-btn:hover { background: rgba(95,170,197,0.08); }
+@media (max-width: 860px) { .nav-center { gap: 16px; } .nav-center a { font-size: 13px; } }
+@media (max-width: 680px) { .nav-center a:nth-child(5), .nav-center a:nth-child(6) { display: none; } }
 
-/* Method grid */
-.method-section { padding: 96px 32px; max-width: var(--container-wide); margin: 0 auto; }
-.method-grid {
-  margin-top: 64px;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1px;
-  background: var(--gray-300);
-  border: 1px solid var(--gray-300);
-}
-.method-card {
-  background: var(--warm-white);
-  padding: 48px 36px;
-  position: relative;
-  min-height: 320px;
-}
-.method-card .step-num {
-  font-family: var(--font-display);
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--pine);
-  margin-bottom: 28px;
-  display: inline-block;
-  border-bottom: 1px solid var(--pine);
-  padding-bottom: 4px;
-}
-.method-card h3 {
-  font-family: var(--font-display);
-  font-weight: 500;
-  font-size: 26px;
-  line-height: 1.1;
-  letter-spacing: -0.02em;
-  color: var(--charcoal);
-  margin-bottom: 14px;
-}
-.method-card p {
-  font-size: 15px;
-  line-height: 1.55;
-  color: var(--gray-700);
-}
-.method-card .icon {
-  position: absolute;
-  bottom: 28px;
-  right: 28px;
-  width: 56px;
-  height: 56px;
-  opacity: 0.85;
-}
+.eyebrow { font: 600 11px 'Inter'; color: var(--accent-lake); letter-spacing: 0.24em; text-transform: uppercase; display: inline-block; }
 
-/* Features strip (forest) */
-.features-strip {
-  background: var(--forest);
-  color: var(--cream);
-  padding: 96px 32px;
+/* ── Hero — proof first ────────────────────────────────────────── */
+.hero { padding: 88px 0 48px; }
+.hero-eyebrow { margin-bottom: 22px; }
+.hero-headline {
+  font-family: 'Crimson Text', Georgia, serif;
+  /* Lower min from 32→26 so 6.2vw kicks in below 420px viewports — at
+   * 320px screen width the previous floor wrapped to 3-4 lines and pushed
+   * the CTA below the fold. 26px floor still reads strong. */
+  font-size: clamp(26px, 6.6vw, 76px);
+  font-weight: 400; line-height: 1.06; letter-spacing: -0.022em;
+  max-width: 20ch;
+  overflow-wrap: break-word;
 }
-.features-inner { max-width: var(--container-wide); margin: 0 auto; }
-.features-strip .section-eyebrow { color: var(--mint); }
-.features-strip .section-eyebrow .num { border-color: var(--mint); }
-.features-strip .section-title { color: var(--cream); }
-.features-strip .section-title em { color: var(--mint); }
+.hero-headline em { font-style: italic; color: var(--accent-lake); }
+.hero-sub {
+  margin-top: 24px; color: var(--text-mid);
+  font-size: clamp(15px, 1.3vw, 18px); line-height: 1.6; max-width: 60ch;
+}
+.hero-ctas { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 36px; }
 
-.feature-list {
-  margin-top: 72px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0;
-}
-.feature-item {
-  padding: 36px 0;
-  border-top: 1px solid rgba(245, 241, 232, 0.18);
-  display: grid;
-  grid-template-columns: 56px 1fr;
-  gap: 22px;
-  align-items: start;
-}
-.feature-item:nth-child(odd) { padding-right: 44px; border-right: 1px solid rgba(245, 241, 232, 0.18); }
-.feature-item:nth-child(even) { padding-left: 44px; }
-.feature-item:nth-last-child(-n+2) { border-bottom: 1px solid rgba(245, 241, 232, 0.18); }
-.feature-num { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.12em; color: var(--mint); }
-.feature-item h4 {
-  font-family: var(--font-display);
-  font-weight: 500;
-  font-size: 21px;
-  margin-bottom: 8px;
-  color: var(--cream);
-}
-.feature-item p { font-size: 14px; line-height: 1.55; color: rgba(245, 241, 232, 0.75); }
+/* ── Comparison block — 1 in 20 vs 11 in 20 ──────────────────── */
+.compare { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin: 52px 0 0; }
+@media (max-width: 620px) { .compare { grid-template-columns: 1fr; } }
 
-/* Compare block — proof first */
-.compare-section { padding: 80px 32px 0; max-width: var(--container-wide); margin: 0 auto; }
-.compare-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1px;
-  background: var(--gray-300);
-  border: 1px solid var(--gray-300);
-}
 .compare-card {
-  background: var(--warm-white);
-  padding: 36px 32px;
+  padding: 28px 26px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: linear-gradient(180deg, var(--bg-surface), rgba(2,40,52,0.10));
   text-align: center;
 }
-.compare-card.featured {
-  background: var(--cream);
-  position: relative;
-}
+.compare-card.model { border-color: var(--border-strong); }
 .compare-card .cc-label {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--gray-500);
-  margin-bottom: 18px;
+  font: 600 10px 'Inter'; letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--text-mid); margin-bottom: 14px;
 }
-.compare-card.featured .cc-label { color: var(--pine); }
+.compare-card.model .cc-label { color: var(--accent-lake); }
 .compare-card .cc-big {
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: clamp(48px, 7vw, 80px);
-  line-height: 1;
-  letter-spacing: -0.03em;
-  color: var(--charcoal);
+  font: 400 clamp(48px, 8vw, 72px)/1 'Crimson Text', Georgia, serif;
+  letter-spacing: -0.02em; color: var(--text-hi);
   font-variant-numeric: tabular-nums;
-  font-variation-settings: "opsz" 144;
 }
-.compare-card.featured .cc-big { color: var(--forest); }
+.compare-card.model .cc-big { color: var(--pos); }
 .compare-card .cc-mid {
-  margin-top: 14px;
-  font-family: var(--font-display);
-  font-style: italic;
-  font-weight: 300;
-  font-size: 17px;
-  color: var(--gray-700);
+  margin-top: 12px; font: 500 15px 'Inter'; color: var(--text-mid);
+  font-style: italic; max-width: 28ch; margin-left: auto; margin-right: auto;
 }
 .compare-card .cc-sub {
-  margin-top: 10px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  color: var(--gray-500);
+  margin-top: 10px; font: 500 12px 'Inter'; color: var(--text-dim);
 }
 
-/* Honest checks */
-.checks-section { padding: 96px 32px; max-width: var(--container-wide); margin: 0 auto; }
-.checks-grid {
-  margin-top: 56px;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1px;
-  background: var(--gray-300);
-  border: 1px solid var(--gray-300);
+/* ── Honest-checks strip ──────────────────────────────────────── */
+section.checks { padding: 80px 0 40px; }
+.check-head { margin-bottom: 36px; max-width: 760px; }
+.check-title {
+  font-family: 'Crimson Text', serif; font-weight: 400;
+  font-size: clamp(24px, 3.8vw, 44px); line-height: 1.1; letter-spacing: -0.015em; overflow-wrap: break-word;
 }
+.check-title em { font-style: italic; color: var(--accent-lake); }
+.check-sub { margin-top: 14px; color: var(--text-mid); font-size: 16px; max-width: 64ch; line-height: 1.6; }
+.check-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 12px; }
+@media (max-width: 820px) { .check-grid { grid-template-columns: 1fr; } }
+
 .check-card {
-  background: white;
-  padding: 36px 30px;
+  padding: 30px 28px 26px;
+  border: 1px solid var(--border); border-radius: var(--radius-md);
+  background: var(--bg-card);
 }
-.check-card .ck-label {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.18em;
-  color: var(--pine);
-  text-transform: uppercase;
-  margin-bottom: 18px;
-}
+.check-card .ck-label { font: 600 10px 'Inter'; color: var(--accent-lake); letter-spacing: 0.22em; text-transform: uppercase; margin-bottom: 16px; }
 .check-card .ck-big {
-  font-family: var(--font-display);
-  font-size: 44px;
-  font-weight: 500;
-  color: var(--forest);
-  letter-spacing: -0.025em;
-  line-height: 1;
+  font: 400 38px/1 'Crimson Text', Georgia, serif; color: var(--pos);
+  letter-spacing: -0.02em; font-variant-numeric: tabular-nums;
+  display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 14px;
 }
-.check-card .ck-big .vs {
-  font-family: var(--font-mono);
-  font-size: 13px;
-  color: var(--gray-500);
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  margin: 0 8px;
-}
-.check-card .ck-big .ck-secondary { color: var(--gray-500); }
-.check-card .ck-big .mult { font-size: 0.6em; opacity: 0.8; }
-.check-card .ck-body {
-  margin-top: 16px;
-  font-size: 14px;
-  line-height: 1.55;
-  color: var(--gray-700);
-}
-.check-card .ck-body em { font-style: italic; color: var(--forest); }
+.check-card .ck-big .vs { font: 500 14px 'Inter', sans-serif; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.12em; align-self: center; opacity: 0.8; }
+.check-card .ck-big .ck-secondary { color: var(--text-mid); opacity: 0.75; }
+.check-card .ck-big .mult { font-size: 0.72em; margin-left: 0.06em; vertical-align: 0.06em; opacity: 0.75; font-weight: 400; }
+.check-card .ck-body { margin-top: 14px; color: var(--text-mid); font-size: 14px; line-height: 1.55; }
 
-/* Responsive desktop fallbacks (covers 769–1024px) */
-@media (max-width: 1024px) {
-  .hero-grid { grid-template-columns: 1fr; gap: 48px; }
-  .hero-instrument { max-width: 380px; margin: 0 auto; }
-  .method-grid, .checks-grid { grid-template-columns: 1fr; }
-  .feature-list { grid-template-columns: 1fr; }
-  .feature-item, .feature-item:nth-child(odd), .feature-item:nth-child(even) {
-    padding-left: 0; padding-right: 0; border-right: none;
-  }
-  .compare-grid { grid-template-columns: 1fr; }
+.checks-cta { margin-top: 36px; }
+.checks-cta a { color: var(--accent-lake); font: 500 15px 'Inter'; display: inline-flex; align-items: center; gap: 6px; transition: gap .15s; }
+.checks-cta a:hover { gap: 10px; color: var(--text-hi); }
+
+/* ── Product 3-card overview ─────────────────────────────────── */
+section.overview { padding: 80px 0 72px; }
+.section-head { margin-bottom: 40px; max-width: 720px; }
+.section-head .eyebrow { margin-bottom: 18px; }
+.section-title {
+  font-family: 'Crimson Text', serif; font-weight: 400;
+  font-size: clamp(24px, 3.8vw, 44px); line-height: 1.1; letter-spacing: -0.015em; overflow-wrap: break-word;
 }
+.section-title em { font-style: italic; color: var(--accent-lake); }
+
+.product-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+@media (max-width: 900px) { .product-grid { grid-template-columns: 1fr; } }
+.product-card {
+  padding: 32px 28px; border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  display: flex; flex-direction: column; gap: 14px; min-height: 260px;
+  transition: border-color .2s, transform .2s;
+}
+.product-card:hover { border-color: var(--border-strong); transform: translateY(-2px); }
+.product-card h3 {
+  font-family: 'Crimson Text', serif; font-size: 24px; font-weight: 400;
+  letter-spacing: -0.01em; color: var(--text-hi);
+}
+.product-card p { color: var(--text-mid); font-size: 14.5px; line-height: 1.6; flex: 1; }
+.product-card .pill {
+  align-self: flex-start;
+  display: inline-block; padding: 4px 10px; border-radius: 999px;
+  font: 600 10px 'Inter'; letter-spacing: 0.14em; text-transform: uppercase;
+}
+.product-card .pill.free { background: rgba(155,161,185,0.10); color: var(--text-mid); }
+.product-card .pill.pro  { background: rgba(95,170,197,0.14); color: var(--accent-lake); }
+.product-card .pill.strategist { background: linear-gradient(90deg, rgba(2,40,52,0.6), rgba(95,170,197,0.20)); color: #d2ddea; }
+.product-card .cta { display: inline-flex; align-items: center; gap: 6px; color: var(--accent-lake); font: 500 14px 'Inter'; transition: gap .15s; margin-top: 4px; }
+.product-card .cta:hover { gap: 10px; color: var(--text-hi); }
+
+/* ── Pricing strip ──────────────────────────────────────────── */
+.secondary {
+  margin: 56px auto 0; padding: 28px;
+  border-radius: var(--radius-md); border: 1px solid var(--border);
+  background: rgba(10,101,119,0.06);
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;
+  max-width: 880px;
+}
+.secondary a {
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 12px 16px; border-radius: var(--radius-sm);
+  transition: background .15s;
+}
+.secondary a:hover { background: rgba(95,170,197,0.08); }
+.secondary a .top { font: 600 11px 'Inter'; color: var(--accent-lake); letter-spacing: 0.18em; text-transform: uppercase; }
+.secondary a .bot { font: 500 14px 'Inter'; color: var(--text-hi); }
+@media (max-width: 620px) { .secondary { grid-template-columns: 1fr; padding: 20px; } }
+
+/* ── Trust + footer ─────────────────────────────────────────── */
+.trust { padding: 48px 0; border-top: 1px solid var(--border); text-align: center; color: var(--text-dim); font-size: 13px; }
+.trust .sources { margin-top: 14px; display: flex; justify-content: center; flex-wrap: wrap; gap: 22px; color: var(--text-mid); }
+@media (max-width: 540px) { .trust .sources { gap: 14px; font-size: 12px; } }
+
+footer { border-top: 1px solid var(--border); padding: 40px 0; color: var(--text-dim); font-size: 13px; margin-top: 32px; }
+footer .container { display: flex; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
+footer a { color: var(--text-mid); }
+footer a:hover { color: var(--text-hi); }
+.footer-links { display: flex; gap: 22px; flex-wrap: wrap; }
+@media (max-width: 540px) { .footer-links { gap: 14px; } }
 </style>
-
+<link rel="stylesheet" href="/shared/mobile.css?v=20260429e" />
 <script async
   data-clerk-publishable-key="pk_test_Zmx1ZW50LW1vbGUtNzEuY2xlcmsuYWNjb3VudHMuZGV2JA"
   src="https://fluent-mole-71.clerk.accounts.dev/npm/@clerk/clerk-js@5/dist/clerk.browser.js"
   crossorigin="anonymous"
 ></script>
-<script defer src="/shared/nav.js?v=20260429i"></script>
+<script defer src="/shared/nav.js"></script>
+<!-- s-tool speculation rules -->
 <script type="speculationrules">
-{ "prerender": [{ "where": { "href_matches": "/*" }, "eagerness": "moderate" }] }
+{
+  "prerender": [{
+    "where": { "href_matches": "/*" },
+    "eagerness": "moderate"
+  }]
+}
 </script>
+<!-- s-tool speculation rules -->
+<!-- s-tool sw register -->
 <script>
   if ('serviceWorker' in navigator) {
     addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
   }
 </script>
+<!-- s-tool sw register -->
 </head>
 <body>
 
-<!-- ============================================================
-     DESKTOP SHELL — visible >=769px
-     ============================================================ -->
-<div class="desktop-shell">
-
-<nav class="dnav">
-  <div class="dnav-row">
-    <a class="stool-logo" href="/" aria-label="s-tool home">
-      <svg class="mark" viewBox="0 0 100 100" aria-hidden="true">
-        <circle cx="50" cy="50" r="48" fill="none" stroke="#0d4a2c" stroke-width="2"/>
-        <circle cx="50" cy="50" r="36" fill="#4a8b5e"/>
-        <circle cx="50" cy="50" r="24" fill="#a3d4b3"/>
-        <line x1="50" y1="2" x2="50" y2="98" stroke="#0d4a2c" stroke-width="1.5"/>
-        <line x1="2" y1="50" x2="98" y2="50" stroke="#0d4a2c" stroke-width="1.5"/>
-        <line x1="16" y1="16" x2="84" y2="84" stroke="#0d4a2c" stroke-width="1"/>
-        <line x1="84" y1="16" x2="16" y2="84" stroke="#0d4a2c" stroke-width="1"/>
-        <text x="50" y="62" text-anchor="middle" font-family="Fraunces, Georgia, serif" font-style="italic" font-size="36" font-weight="700" fill="#0d4a2c">S</text>
-      </svg>
-      <span class="word">tool</span>
-    </a>
-    <ul class="dnav-links">
-      <li><a href="/app">App</a></li>
-      <li><a href="/picks">Picks</a></li>
-      <li><a href="/track-record">Track record</a></li>
-      <li><a href="/backtest">Backtest</a></li>
-      <li><a href="/how">How</a></li>
-      <li><a href="/pricing">Pricing</a></li>
-      <li><a href="/faq">FAQ</a></li>
-    </ul>
-    <div class="dnav-end" id="navEnd">
+<nav>
+  <div class="container nav-row">
+    <a href="/" class="logo" aria-label="s-tool home"><img src="/img/logo-stool.png?v=20260429f" srcset="/img/logo-stool.png?v=20260429f 1x, /img/logo-stool@2x.png?v=20260429f 2x, /img/logo-stool@3x.png?v=20260429f 3x" alt="s-tool" class="logo-img" style="height:36px;width:auto;display:block;"/></a>
+    <div class="nav-center">
+      <a href="/app">App</a>
+      <a href="/picks">Picks</a>
+      <a href="/track-record">Track record</a>
+      <a href="/backtest">Backtest</a>
+      <a href="/how">How</a>
+      <a href="/pricing">Pricing</a>
+      <a href="/faq">FAQ</a>
+    </div>
+    <div class="nav-end" id="navEnd">
       <div class="nav-pill-skel" aria-hidden="true"></div>
     </div>
   </div>
 </nav>
 
 <header class="hero">
-  <div class="hero-grid">
-    <div>
-      <div class="hero-eyebrow">Equity scoring engine · Daily scan · Russell 3000</div>
-      <h1 class="hero-title">Score the<br>signal. <em>Skip<br>the noise.</em></h1>
-      <p class="hero-lede">A quantitative scoring instrument for U.S. equities. Every weekday after market close, s-tool scores the Russell 3000 across momentum, fundamentals, and risk — then publishes a ranked watchlist by morning.</p>
-      <div class="hero-cta-row">
-        <a class="btn btn-primary btn-lg" href="/picks">Open today's picks
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M2 7h10m0 0L8 3m4 4L8 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-        </a>
-        <a class="btn btn-ghost btn-lg" href="/how">Read the methodology</a>
-        <a class="btn btn-ghost btn-lg" href="/studio/">Interactive prototype <span aria-hidden="true">↗</span></a>
-      </div>
-      <div class="hero-meta">
-        <div><strong>22,218</strong>ticker-windows backtested</div>
-        <div><strong>8.7×</strong>lift vs. baseline</div>
-        <div><strong>Daily</strong>after market close</div>
-      </div>
+  <div class="container">
+    <span class="eyebrow hero-eyebrow">Proof, not promises &middot; after liquidity + costs</span>
+    <h1 class="hero-headline">Our picks double at <em>nearly 9×</em> the rate of random stock picking.</h1>
+    <p class="hero-sub">Backtested across 22,218 ticker-windows on the Russell 3000. Filtered for tradeable liquidity (&dollar;500k+ average daily turnover) and round-trip transaction costs (1.5%) — the honest bar, not the flattering one. Every pick is logged publicly for live verification.</p>
+    <div class="hero-ctas">
+      <a href="/picks" class="btn">See today's picks &rarr;</a>
+      <a href="/track-record" class="btn ghost">See the validation</a>
     </div>
 
-    <div class="hero-instrument" aria-hidden="true">
-      <svg class="instrument-svg" viewBox="0 0 400 400">
-        <circle cx="200" cy="200" r="195" fill="none" stroke="#0d4a2c" stroke-width="2"/>
-        <circle cx="200" cy="200" r="160" fill="#4a8b5e" opacity="0.15"/>
-        <circle cx="200" cy="200" r="160" fill="none" stroke="#0d4a2c" stroke-width="0.5"/>
-        <circle cx="200" cy="200" r="120" fill="#a3d4b3" opacity="0.3"/>
-        <circle cx="200" cy="200" r="120" fill="none" stroke="#0d4a2c" stroke-width="0.5"/>
-        <circle cx="200" cy="200" r="80" fill="#d6ebdc" opacity="0.5"/>
-        <circle cx="200" cy="200" r="80" fill="none" stroke="#0d4a2c" stroke-width="0.5"/>
-        <g stroke="#0d4a2c" stroke-width="1">
-          <line x1="200" y1="5" x2="200" y2="20"/>
-          <line x1="200" y1="380" x2="200" y2="395"/>
-          <line x1="5" y1="200" x2="20" y2="200"/>
-          <line x1="380" y1="200" x2="395" y2="200"/>
-        </g>
-        <line x1="200" y1="40" x2="200" y2="360" stroke="#0d4a2c" stroke-width="0.5" stroke-dasharray="2 4"/>
-        <line x1="40" y1="200" x2="360" y2="200" stroke="#0d4a2c" stroke-width="0.5" stroke-dasharray="2 4"/>
-        <circle cx="280" cy="130" r="6" fill="#1f6e3f"/>
-        <circle cx="280" cy="130" r="14" fill="none" stroke="#1f6e3f" stroke-width="0.5"/>
-        <circle cx="140" cy="180" r="5" fill="#1f6e3f"/>
-        <circle cx="140" cy="180" r="11" fill="none" stroke="#1f6e3f" stroke-width="0.5"/>
-        <circle cx="240" cy="270" r="4" fill="#c97a2c"/>
-        <circle cx="120" cy="280" r="3" fill="#b8453a"/>
-        <circle cx="200" cy="200" r="4" fill="#0d4a2c"/>
-      </svg>
-      <div class="instrument-overlay">
-        <div class="instrument-readout">
-          <div class="ticker">Top score · today</div>
-          <div class="score">87.4</div>
-          <div class="label">Strong signal</div>
-        </div>
+    <div class="compare">
+      <div class="compare-card">
+        <div class="cc-label">Random stock from the Russell 3000</div>
+        <div class="cc-big">1 in 20</div>
+        <div class="cc-mid">chance of doubling over the next year</div>
+        <div class="cc-sub">4.26% base rate after liquidity filter</div>
+      </div>
+      <div class="compare-card model">
+        <div class="cc-label">Top 20 picks from our model</div>
+        <div class="cc-big">7 in 20</div>
+        <div class="cc-mid">doubled in the following year</div>
+        <div class="cc-sub">37.0% hit rate after liquidity + 1.5% round-trip costs</div>
       </div>
     </div>
   </div>
 </header>
 
-<!-- TICKER STRIP -->
-<div class="ticker-strip" aria-hidden="true">
-  <div class="ticker-track">
-    <span class="ticker-item"><span class="sym">NVDA</span><span class="pct">+2.31%</span><span class="score-pill">87.4</span></span>
-    <span class="ticker-item"><span class="sym">META</span><span class="pct">+1.84%</span><span class="score-pill">81.2</span></span>
-    <span class="ticker-item"><span class="sym">MSFT</span><span class="pct">+0.92%</span><span class="score-pill">76.5</span></span>
-    <span class="ticker-item"><span class="sym">GOOGL</span><span class="pct">+1.42%</span><span class="score-pill">73.8</span></span>
-    <span class="ticker-item"><span class="sym">AAPL</span><span class="pct down">-0.41%</span><span class="score-pill">62.8</span></span>
-    <span class="ticker-item"><span class="sym">AMZN</span><span class="pct">+0.78%</span><span class="score-pill">71.2</span></span>
-    <span class="ticker-item"><span class="sym">AVGO</span><span class="pct">+3.12%</span><span class="score-pill">79.6</span></span>
-    <span class="ticker-item"><span class="sym">TSLA</span><span class="pct down">-2.18%</span><span class="score-pill">31.4</span></span>
-    <span class="ticker-item"><span class="sym">PLTR</span><span class="pct">+4.62%</span><span class="score-pill">68.9</span></span>
-    <span class="ticker-item"><span class="sym">AMD</span><span class="pct">+1.04%</span><span class="score-pill">72.1</span></span>
-    <span class="ticker-item"><span class="sym">NVDA</span><span class="pct">+2.31%</span><span class="score-pill">87.4</span></span>
-    <span class="ticker-item"><span class="sym">META</span><span class="pct">+1.84%</span><span class="score-pill">81.2</span></span>
-    <span class="ticker-item"><span class="sym">MSFT</span><span class="pct">+0.92%</span><span class="score-pill">76.5</span></span>
-    <span class="ticker-item"><span class="sym">GOOGL</span><span class="pct">+1.42%</span><span class="score-pill">73.8</span></span>
-    <span class="ticker-item"><span class="sym">AAPL</span><span class="pct down">-0.41%</span><span class="score-pill">62.8</span></span>
-    <span class="ticker-item"><span class="sym">AMZN</span><span class="pct">+0.78%</span><span class="score-pill">71.2</span></span>
-    <span class="ticker-item"><span class="sym">AVGO</span><span class="pct">+3.12%</span><span class="score-pill">79.6</span></span>
-    <span class="ticker-item"><span class="sym">TSLA</span><span class="pct down">-2.18%</span><span class="score-pill">31.4</span></span>
-    <span class="ticker-item"><span class="sym">PLTR</span><span class="pct">+4.62%</span><span class="score-pill">68.9</span></span>
-    <span class="ticker-item"><span class="sym">AMD</span><span class="pct">+1.04%</span><span class="score-pill">72.1</span></span>
-  </div>
-</div>
-
-<!-- COMPARE BLOCK -->
-<section class="compare-section">
-  <div class="section-eyebrow"><span class="num">01</span> The lift</div>
-  <h2 class="section-title">A backtest is only honest <em>after</em> the filters.</h2>
-  <p class="lede" style="margin-top: 24px; max-width: 720px;">22,218 ticker-windows on the Russell 3000. Filtered for tradeable liquidity ($500k+ average daily turnover) and round-trip transaction costs (1.5%). The honest bar, not the flattering one.</p>
-
-  <div class="compare-grid" style="margin-top: 56px;">
-    <div class="compare-card">
-      <div class="cc-label">Random pick from the universe</div>
-      <div class="cc-big">1 in 20</div>
-      <div class="cc-mid">chance of doubling over the next year</div>
-      <div class="cc-sub">4.26% base rate after liquidity filter</div>
+<section class="checks">
+  <div class="container">
+    <div class="check-head">
+      <span class="eyebrow">And these are the honest checks</span>
+      <h2 class="check-title">No cherry-picking. No small-cap <em>sleight of hand</em>.</h2>
+      <p class="check-sub">The temptations of bad statistics — over-fitting to a flattering window, concentrating in names too small to actually buy, showing in-sample numbers — all fail the same three tests below.</p>
     </div>
-    <div class="compare-card featured">
-      <div class="cc-label">Top 20 picks from s-tool</div>
-      <div class="cc-big">7 in 20</div>
-      <div class="cc-mid">doubled in the following year</div>
-      <div class="cc-sub">37.0% hit rate after liquidity + 1.5% costs</div>
+
+    <div class="check-grid">
+      <div class="check-card">
+        <div class="ck-label">Works across every company size</div>
+        <div class="ck-big"><span>8.45<span class="mult">×</span> lift</span></div>
+        <div class="ck-body">Median lift versus baseline measured <em>within</em> each market-cap quintile. Holds from the smallest to the largest 20% of the Russell 3000 — not a small-cap premium in disguise.</div>
+      </div>
+
+      <div class="check-card">
+        <div class="ck-label">Tested on unseen 2024 data</div>
+        <div class="ck-big"><span>62% doubled</span></div>
+        <div class="ck-body">Out-of-sample (OOS) 2024 hit rate <em>after</em> the same liquidity and cost filters. The model was trained only on prior windows — 2024 was a clean holdout, and the signal strengthens rather than weakens on unseen data (12.8× lift).</div>
+      </div>
+
+      <div class="check-card">
+        <div class="ck-label">Beats simple rules by 4×</div>
+        <div class="ck-big">
+          <span>8.7<span class="mult">×</span></span>
+          <span class="vs">vs</span>
+          <span class="ck-secondary">2.0<span class="mult">×</span></span>
+        </div>
+        <div class="ck-body">Our model's honest lift compared to the best hand-crafted heuristic we tried. The difference is the machine-learned layer, not the raw projections.</div>
+      </div>
+    </div>
+
+    <div class="checks-cta">
+      <a href="/track-record">See the full live scoreboard and backtest &rarr;</a>
     </div>
   </div>
 </section>
 
-<!-- HONEST CHECKS -->
-<section class="checks-section">
-  <div class="section-eyebrow"><span class="num">02</span> The honest checks</div>
-  <h2 class="section-title">No cherry-picking. No <em>small-cap sleight</em>.</h2>
-  <p class="lede" style="margin-top: 24px; max-width: 720px;">The temptations of bad statistics — over-fitting to a flattering window, concentrating in names too small to actually buy, showing in-sample numbers — all fail the same three tests below.</p>
-
-  <div class="checks-grid">
-    <div class="check-card">
-      <div class="ck-label">Across every market cap</div>
-      <div class="ck-big">8.45<span class="mult">×</span> lift</div>
-      <div class="ck-body">Median lift versus baseline measured <em>within</em> each market-cap quintile. Holds from the smallest 20% to the largest. Not a small-cap premium in disguise.</div>
+<section class="overview">
+  <div class="container">
+    <div class="section-head">
+      <span class="eyebrow">The product</span>
+      <h2 class="section-title">Three surfaces. <em>One</em> engine under all of them.</h2>
     </div>
-    <div class="check-card">
-      <div class="ck-label">Out-of-sample 2024</div>
-      <div class="ck-big">62% doubled</div>
-      <div class="ck-body">2024 was a clean holdout — the model was trained only on prior windows. Hit rate strengthens rather than weakens on unseen data (12.8× lift).</div>
-    </div>
-    <div class="check-card">
-      <div class="ck-label">Beats simple rules</div>
-      <div class="ck-big">8.7<span class="mult">×</span><span class="vs">vs</span><span class="ck-secondary">2.0<span class="mult">×</span></span></div>
-      <div class="ck-body">The model's honest lift compared to the best hand-crafted heuristic we tried. The difference is the machine-learned layer, not raw projections.</div>
-    </div>
-  </div>
-</section>
-
-<!-- METHOD -->
-<section class="method-section">
-  <div class="section-eyebrow"><span class="num">03</span> The method</div>
-  <h2 class="section-title">Three signals.<br>One <em>composite</em> score.</h2>
-
-  <div class="method-grid">
-    <div class="method-card">
-      <span class="step-num">01 / Momentum</span>
-      <h3>Where price is going</h3>
-      <p>Trend strength, volatility-adjusted returns, and relative performance against the sector cohort. Time horizons from 21 to 252 trading days.</p>
-      <svg class="icon" viewBox="0 0 64 64" fill="none" aria-hidden="true">
-        <path d="M8 48 L20 36 L28 42 L40 22 L56 16" stroke="#0d4a2c" stroke-width="2" stroke-linecap="round"/>
-        <circle cx="20" cy="36" r="2" fill="#1f6e3f"/>
-        <circle cx="40" cy="22" r="2" fill="#1f6e3f"/>
-        <circle cx="56" cy="16" r="2" fill="#1f6e3f"/>
-      </svg>
-    </div>
-    <div class="method-card">
-      <span class="step-num">02 / Fundamentals</span>
-      <h3>What the business is worth</h3>
-      <p>Earnings quality, free cash flow, balance-sheet health, and valuation relative to historical and sector medians. Refreshed nightly.</p>
-      <svg class="icon" viewBox="0 0 64 64" fill="none" aria-hidden="true">
-        <rect x="10" y="32" width="8" height="20" fill="#a3d4b3" stroke="#0d4a2c" stroke-width="1.5"/>
-        <rect x="22" y="20" width="8" height="32" fill="#4a8b5e" stroke="#0d4a2c" stroke-width="1.5"/>
-        <rect x="34" y="26" width="8" height="26" fill="#1f6e3f" stroke="#0d4a2c" stroke-width="1.5"/>
-        <rect x="46" y="14" width="8" height="38" fill="#0d4a2c" stroke="#0d4a2c" stroke-width="1.5"/>
-      </svg>
-    </div>
-    <div class="method-card">
-      <span class="step-num">03 / Risk</span>
-      <h3>What can go wrong</h3>
-      <p>Drawdown depth, beta to the index, realized volatility, and earnings proximity. Heavy penalties for tickers entering high-uncertainty windows.</p>
-      <svg class="icon" viewBox="0 0 64 64" fill="none" aria-hidden="true">
-        <circle cx="32" cy="32" r="28" stroke="#0d4a2c" stroke-width="1.5"/>
-        <circle cx="32" cy="32" r="20" stroke="#0d4a2c" stroke-width="1" stroke-dasharray="2 3"/>
-        <circle cx="32" cy="32" r="12" stroke="#0d4a2c" stroke-width="1" stroke-dasharray="2 3"/>
-        <line x1="32" y1="32" x2="48" y2="20" stroke="#1f6e3f" stroke-width="2" stroke-linecap="round"/>
-        <circle cx="32" cy="32" r="2" fill="#0d4a2c"/>
-      </svg>
-    </div>
-  </div>
-</section>
-
-<!-- FEATURES STRIP (FOREST) -->
-<section class="features-strip">
-  <div class="features-inner">
-    <div class="section-eyebrow"><span class="num">04</span> Inside the engine</div>
-    <h2 class="section-title">Quantitative,<br>not <em>quantum-magical</em>.</h2>
-
-    <div class="feature-list">
-      <div class="feature-item">
-        <span class="feature-num">01</span>
-        <div>
-          <h4>Daily ranked scans</h4>
-          <p>Every weekday after market close. Top picks surface as a ranked watchlist with thesis prose attached.</p>
-        </div>
+    <div class="product-grid">
+      <div class="product-card">
+        <span class="pill free">Free</span>
+        <h3>Projector</h3>
+        <p>Type a ticker, get a one-year projection with honest 10&ndash;90 percentile bands, the model's measured error on that symbol, and the signal stack that went in. Three runs per day.</p>
+        <a href="/app" class="cta">Open the app &rarr;</a>
       </div>
-      <div class="feature-item">
-        <span class="feature-num">02</span>
-        <div>
-          <h4>Per-ticker breakdowns</h4>
-          <p>See exactly which factors moved the score. No mystery. No "trust the model."</p>
-        </div>
+      <div class="product-card">
+        <span class="pill pro">Pro</span>
+        <h3>Full universe</h3>
+        <p>Ten projections per day across every Russell 3000 ticker, synced watchlist, a daily digest of the engine's view on each name you follow, and export for your own research.</p>
+        <a href="/pricing" class="cta">See Pro pricing &rarr;</a>
       </div>
-      <div class="feature-item">
-        <span class="feature-num">03</span>
-        <div>
-          <h4>Sector neutralization</h4>
-          <p>Scores compare a ticker to its sector peers, not the broad market. A 70 in REITs is not a 70 in semiconductors.</p>
-        </div>
-      </div>
-      <div class="feature-item">
-        <span class="feature-num">04</span>
-        <div>
-          <h4>Public track record</h4>
-          <p>Every published pick logged versus the live market. Open ledger. Mistakes included, not erased.</p>
-        </div>
-      </div>
-      <div class="feature-item">
-        <span class="feature-num">05</span>
-        <div>
-          <h4>Position sizing model</h4>
-          <p>Score, conviction, and volatility translate into a portfolio weight, capped per-name and per-sector.</p>
-        </div>
-      </div>
-      <div class="feature-item">
-        <span class="feature-num">06</span>
-        <div>
-          <h4>Plain-English summaries</h4>
-          <p>Each top-ranked ticker comes with a paragraph explaining why it scored high — readable on a phone screen between meetings.</p>
-        </div>
+      <div class="product-card">
+        <span class="pill strategist">Strategist</span>
+        <h3>Portfolio intelligence</h3>
+        <p>The ranked picks themselves. SEC-filed fundamentals attached to every name. Confidence scoring. A public ledger of every pick we've ever published, against real market prices.</p>
+        <a href="/picks" class="cta">See today's picks &rarr;</a>
       </div>
     </div>
-  </div>
-</section>
 
-<!-- FOOTER -->
-<footer class="dfooter">
-  <div class="dfooter-inner">
-    <div>
-      <a class="stool-logo inverse" href="/" aria-label="s-tool home">
-        <svg class="mark" viewBox="0 0 100 100" aria-hidden="true">
-          <circle cx="50" cy="50" r="48" fill="none" stroke="#a3d4b3" stroke-width="2"/>
-          <circle cx="50" cy="50" r="36" fill="#1f6e3f"/>
-          <circle cx="50" cy="50" r="24" fill="#4a8b5e"/>
-          <line x1="50" y1="2" x2="50" y2="98" stroke="#a3d4b3" stroke-width="1.5"/>
-          <line x1="2" y1="50" x2="98" y2="50" stroke="#a3d4b3" stroke-width="1.5"/>
-          <text x="50" y="62" text-anchor="middle" font-family="Fraunces, serif" font-style="italic" font-size="36" font-weight="700" fill="#a3d4b3">S</text>
-        </svg>
-        <span class="word">tool</span>
+    <div class="secondary">
+      <a href="/how">
+        <span class="top">Methodology</span>
+        <span class="bot">How the projection engine works &mdash; and what we have retired &rarr;</span>
       </a>
-      <p class="dfooter-tagline">A precision instrument for market signals. Built for honest scoring, not hype.</p>
-    </div>
-    <div class="dfooter-col">
-      <h5>Product</h5>
-      <ul>
-        <li><a href="/app">Projector</a></li>
-        <li><a href="/picks">Picks</a></li>
-        <li><a href="/track-record">Track record</a></li>
-        <li><a href="/backtest">Backtest</a></li>
-      </ul>
-    </div>
-    <div class="dfooter-col">
-      <h5>Resources</h5>
-      <ul>
-        <li><a href="/how">Methodology</a></li>
-        <li><a href="/faq">FAQ</a></li>
-        <li><a href="/pricing">Pricing</a></li>
-      </ul>
-    </div>
-    <div class="dfooter-col">
-      <h5>Legal</h5>
-      <ul>
-        <li><a href="/faq#disclosure">Disclosures</a></li>
-        <li><a href="/faq#privacy">Privacy</a></li>
-      </ul>
+      <a href="/pricing">
+        <span class="top">Pricing</span>
+        <span class="bot">Free &middot; Pro $8/mo &middot; Strategist $29/mo &rarr;</span>
+      </a>
     </div>
   </div>
-  <div class="dfooter-bottom">
-    <span>&copy; 2026 s-tool.io · Not investment advice</span>
-    <span>Daily scan after market close</span>
+</section>
+
+<div class="trust">
+  <div class="container">
+    <div>Data sources &middot; refreshed nightly</div>
+    <div class="sources">
+      <span>Regulatory filings</span>
+      <span>Analyst consensus</span>
+      <span>Price history</span>
+      <span>Macro reference</span>
+      <span>Index constituents</span>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="container">
+    <div>&copy; 2026 s-tool.io &middot; Not investment advice &middot; Past performance is not indicative of future results</div>
+    <div class="footer-links">
+      <a href="/app">App</a>
+      <a href="/picks">Picks</a>
+      <a href="/track-record">Track record</a>
+      <a href="/backtest">Backtest</a>
+      <a href="/how">How</a>
+      <a href="/pricing">Pricing</a>
+      <a href="/faq">FAQ</a>
+    </div>
   </div>
 </footer>
-
-</div><!-- /.desktop-shell -->
-
-
-<!-- ============================================================
-     MOBILE SHELL — visible <=768px
-     ============================================================ -->
-<div class="mobile-shell">
-
-<nav class="m-nav">
-  <a class="stool-logo" href="/" aria-label="s-tool home">
-    <svg class="mark" viewBox="0 0 100 100" aria-hidden="true">
-      <circle cx="50" cy="50" r="48" fill="none" stroke="#0d4a2c" stroke-width="2"/>
-      <circle cx="50" cy="50" r="36" fill="#4a8b5e"/>
-      <circle cx="50" cy="50" r="24" fill="#a3d4b3"/>
-      <line x1="50" y1="2" x2="50" y2="98" stroke="#0d4a2c" stroke-width="1" opacity="0.4"/>
-      <line x1="2" y1="50" x2="98" y2="50" stroke="#0d4a2c" stroke-width="1" opacity="0.4"/>
-      <text x="50" y="62" text-anchor="middle" font-family="Fraunces, serif" font-size="32" font-style="italic" font-weight="500" fill="#0d4a2c">S</text>
-    </svg>
-    <span class="word">tool</span>
-  </a>
-  <button class="m-hamburger" id="mHamburger" aria-label="Open menu" aria-expanded="false">
-    <span></span><span></span><span></span>
-  </button>
-</nav>
-
-<div class="m-drawer" id="mDrawer">
-  <ul>
-    <li><a href="/app">App <span class="arrow">→</span></a></li>
-    <li><a href="/picks">Picks <span class="arrow">→</span></a></li>
-    <li><a href="/track-record">Track record <span class="arrow">→</span></a></li>
-    <li><a href="/backtest">Backtest <span class="arrow">→</span></a></li>
-    <li><a href="/how">How <span class="arrow">→</span></a></li>
-    <li><a href="/pricing">Pricing <span class="arrow">→</span></a></li>
-    <li><a href="/faq">FAQ <span class="arrow">→</span></a></li>
-  </ul>
-  <div class="drawer-section" id="mDrawerAccount">
-    <div class="drawer-section-label">Account</div>
-    <a href="#" class="drawer-cta" onclick="event.preventDefault(); window.STNav?.openSignIn?.();">Sign in</a>
-  </div>
-</div>
-
-<div class="m-hero">
-  <div class="eyebrow">A precision instrument · daily scan</div>
-  <h1>Score the <em>signal.</em><br>Skip the noise.</h1>
-  <p class="lede">A daily multi-factor scan across the Russell 3000. Momentum, fundamentals, and risk weighted into one composite score. Calm, quantitative, candid.</p>
-
-  <div class="m-hero-compass">
-    <svg viewBox="0 0 400 400" aria-hidden="true">
-      <defs>
-        <radialGradient id="mhgrad" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stop-color="#a3d4b3" stop-opacity="0.4"/>
-          <stop offset="100%" stop-color="#a3d4b3" stop-opacity="0"/>
-        </radialGradient>
-      </defs>
-      <circle cx="200" cy="200" r="180" fill="url(#mhgrad)"/>
-      <circle cx="200" cy="200" r="180" fill="none" stroke="#0d4a2c" stroke-width="1" opacity="0.3"/>
-      <circle cx="200" cy="200" r="135" fill="none" stroke="#0d4a2c" stroke-width="1" opacity="0.3"/>
-      <circle cx="200" cy="200" r="90"  fill="none" stroke="#0d4a2c" stroke-width="1" opacity="0.3"/>
-      <circle cx="200" cy="200" r="45"  fill="none" stroke="#0d4a2c" stroke-width="1" opacity="0.4"/>
-      <line x1="200" y1="20" x2="200" y2="380" stroke="#0d4a2c" stroke-width="0.5" opacity="0.3"/>
-      <line x1="20" y1="200" x2="380" y2="200" stroke="#0d4a2c" stroke-width="0.5" opacity="0.3"/>
-      <g class="m-compass-sweep">
-        <path d="M 200 200 L 200 20 A 180 180 0 0 1 290 50 Z" fill="#a3d4b3" opacity="0.25"/>
-      </g>
-      <circle cx="295" cy="135" r="5" fill="#0d4a2c"/>
-      <text x="305" y="138" font-family="JetBrains Mono, monospace" font-size="11" fill="#0d4a2c" font-weight="600">NVDA</text>
-      <text x="305" y="151" font-family="JetBrains Mono, monospace" font-size="9" fill="#1f6e3f">87.4</text>
-      <circle cx="135" cy="105" r="4" fill="#1f6e3f"/>
-      <text x="80" y="100" font-family="JetBrains Mono, monospace" font-size="10" fill="#1f6e3f" font-weight="600">META</text>
-      <circle cx="265" cy="280" r="4" fill="#4a8b5e"/>
-      <text x="275" y="284" font-family="JetBrains Mono, monospace" font-size="10" fill="#1f6e3f" font-weight="600">AMZN</text>
-      <circle cx="105" cy="245" r="3" fill="#c97a2c"/>
-      <text x="50" y="248" font-family="JetBrains Mono, monospace" font-size="10" fill="#c97a2c" font-weight="600">TSLA</text>
-      <text x="200" y="208" text-anchor="middle" font-family="Fraunces, serif" font-style="italic" font-weight="500" font-size="22" fill="#0d4a2c">S</text>
-    </svg>
-    <div class="compass-meta">Daily scan · live</div>
-    <div class="compass-stat">87.4 top<br>strong buy</div>
-  </div>
-
-  <div class="m-hero-cta">
-    <a href="/picks" class="m-btn">See today's picks <span class="arrow">→</span></a>
-    <a href="/how" class="m-btn secondary">How it works</a>
-  </div>
-</div>
-
-<div class="m-ticker-strip">
-  <div class="m-ticker-track">
-    <span class="tick"><span class="sym">NVDA</span> <span class="score">87.4</span> <span class="signal-up">▲</span></span>
-    <span class="tick"><span class="sym">META</span> <span class="score">81.2</span> <span class="signal-up">▲</span></span>
-    <span class="tick"><span class="sym">AVGO</span> <span class="score">79.6</span> <span class="signal-up">▲</span></span>
-    <span class="tick"><span class="sym">MSFT</span> <span class="score">76.5</span> <span class="signal-up">▲</span></span>
-    <span class="tick"><span class="sym">GOOGL</span> <span class="score">73.8</span> <span class="signal-up">▲</span></span>
-    <span class="tick"><span class="sym">AMD</span> <span class="score">72.1</span> <span class="signal-up">▲</span></span>
-    <span class="tick"><span class="sym">AMZN</span> <span class="score">71.2</span> <span class="signal-up">▲</span></span>
-    <span class="tick"><span class="sym">PLTR</span> <span class="score">68.9</span> <span class="signal-up">▲</span></span>
-    <span class="tick"><span class="sym">AAPL</span> <span class="score">62.8</span></span>
-    <span class="tick"><span class="sym">TSLA</span> <span class="score">31.4</span> <span class="signal-dn">▼</span></span>
-    <span class="tick"><span class="sym">NVDA</span> <span class="score">87.4</span> <span class="signal-up">▲</span></span>
-    <span class="tick"><span class="sym">META</span> <span class="score">81.2</span> <span class="signal-up">▲</span></span>
-    <span class="tick"><span class="sym">AVGO</span> <span class="score">79.6</span> <span class="signal-up">▲</span></span>
-    <span class="tick"><span class="sym">MSFT</span> <span class="score">76.5</span> <span class="signal-up">▲</span></span>
-  </div>
-</div>
-
-<!-- COMPARE BLOCK -->
-<div class="m-section">
-  <div class="eyebrow">The lift</div>
-  <h2>The bar isn't <em>flattering</em>. It's honest.</h2>
-  <p class="intro">22,218 ticker-windows on the Russell 3000, after liquidity and 1.5% round-trip costs.</p>
-
-  <div class="m-stat-grid" style="padding: 0;">
-    <div class="m-stat-card">
-      <div class="label">Random pick</div>
-      <div class="value" style="color: var(--gray-700);">1 in 20</div>
-      <div class="delta flat">4.26% base rate</div>
-    </div>
-    <div class="m-stat-card" style="background: var(--cream);">
-      <div class="label" style="color: var(--pine);">s-tool top 20</div>
-      <div class="value">7 in 20</div>
-      <div class="delta">37.0% hit rate</div>
-    </div>
-  </div>
-</div>
-
-<!-- METHOD -->
-<div class="m-section">
-  <div class="eyebrow">The method</div>
-  <h2>Three factors, <em>one score.</em></h2>
-  <p class="intro">Every ticker passes through the same disciplined pipeline. No black box. The methodology is documented.</p>
-
-  <div class="m-method-card">
-    <div class="num">01 · MOMENTUM</div>
-    <h3>What the tape is saying.</h3>
-    <p>Trend strength, volatility-adjusted returns, and relative performance against the sector cohort.</p>
-    <div class="meta">21–252 day horizons</div>
-  </div>
-  <div class="m-method-card">
-    <div class="num">02 · FUNDAMENTALS</div>
-    <h3>What the books are saying.</h3>
-    <p>Earnings quality, free cash flow, balance-sheet health, and valuation versus sector medians. Quarterly refreshed.</p>
-    <div class="meta">SEC filings · sector-neutralized</div>
-  </div>
-  <div class="m-method-card">
-    <div class="num">03 · RISK</div>
-    <h3>What could go wrong.</h3>
-    <p>Drawdown depth, beta, realized volatility, and earnings proximity. Penalizes fragility.</p>
-    <div class="meta">Heavy weight on tail risk</div>
-  </div>
-</div>
-
-<!-- FEATURES (DARK) -->
-<div class="m-section on-forest">
-  <div class="eyebrow">Inside the engine</div>
-  <h2>Quantitative, <em>not magic.</em></h2>
-  <div class="feature-list" style="margin-top: 24px;">
-    <div class="m-feature">
-      <div class="num">01</div>
-      <div class="body">
-        <h4>Daily ranked scans</h4>
-        <p>Every weekday after market close. Top picks surface as a ranked watchlist.</p>
-      </div>
-    </div>
-    <div class="m-feature">
-      <div class="num">02</div>
-      <div class="body">
-        <h4>Per-ticker breakdowns</h4>
-        <p>See exactly which factors moved the score. No mystery.</p>
-      </div>
-    </div>
-    <div class="m-feature">
-      <div class="num">03</div>
-      <div class="body">
-        <h4>Sector neutralization</h4>
-        <p>A 70 in REITs is not a 70 in semiconductors. Compared to peers, not the broad market.</p>
-      </div>
-    </div>
-    <div class="m-feature">
-      <div class="num">04</div>
-      <div class="body">
-        <h4>Public track record</h4>
-        <p>Every published pick versus live prices. Mistakes included, not erased.</p>
-      </div>
-    </div>
-    <div class="m-feature">
-      <div class="num">05</div>
-      <div class="body">
-        <h4>Position sizing</h4>
-        <p>Score, conviction, and volatility translate into a portfolio weight, capped sensibly.</p>
-      </div>
-    </div>
-    <div class="m-feature">
-      <div class="num">06</div>
-      <div class="body">
-        <h4>Plain-English thesis</h4>
-        <p>One paragraph per top pick — readable on a phone screen between meetings.</p>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- CTA -->
-<div class="m-section on-cream" style="text-align: center;">
-  <h2 style="text-align: left;">Start with today's <em>scan.</em></h2>
-  <p class="intro" style="text-align: left;">No card required. The methodology is open. The data is honest.</p>
-  <a href="/picks" class="m-btn" style="margin-bottom: 12px;">See today's picks <span class="arrow">→</span></a>
-  <a href="/how" class="m-btn secondary">Read the methodology</a>
-</div>
-
-<!-- FOOTER -->
-<footer class="m-footer">
-  <div class="footer-logo">
-    <svg viewBox="0 0 100 100" aria-hidden="true">
-      <circle cx="50" cy="50" r="48" fill="none" stroke="#a3d4b3" stroke-width="2"/>
-      <circle cx="50" cy="50" r="36" fill="#1f6e3f"/>
-      <circle cx="50" cy="50" r="24" fill="#4a8b5e"/>
-      <text x="50" y="62" text-anchor="middle" font-family="Fraunces, serif" font-size="32" font-style="italic" font-weight="500" fill="#a3d4b3">S</text>
-    </svg>
-    <span class="word">tool</span>
-  </div>
-
-  <div class="col-title">Product</div>
-  <ul>
-    <li><a href="/picks">Today's picks</a></li>
-    <li><a href="/app">Projector</a></li>
-    <li><a href="/track-record">Track record</a></li>
-    <li><a href="/backtest">Backtest</a></li>
-  </ul>
-  <div class="col-title">Resources</div>
-  <ul>
-    <li><a href="/how">Methodology</a></li>
-    <li><a href="/pricing">Pricing</a></li>
-    <li><a href="/faq">FAQ</a></li>
-  </ul>
-  <div class="legal">
-    <p>s-tool.io · Score the signal</p>
-    <p style="margin-top: 8px;">Not investment advice. Past performance does not predict future results.</p>
-  </div>
-</footer>
-
-</div><!-- /.mobile-shell -->
-
 
 <script>
-// Mobile drawer toggle
-(function(){
-  var ham = document.getElementById('mHamburger');
-  var drawer = document.getElementById('mDrawer');
-  if (!ham || !drawer) return;
-  ham.addEventListener('click', function(){
-    var open = drawer.classList.toggle('open');
-    ham.classList.toggle('open', open);
-    ham.setAttribute('aria-expanded', open ? 'true' : 'false');
-  });
-})();
-
-// Clerk billing-success handler (preserved from prior build)
 async function authHeaders() {
   try { const t = await window.Clerk?.session?.getToken?.(); return t ? { Authorization: `Bearer ${t}` } : {}; } catch { return {}; }
 }
+async function refreshNavPill() { return window.STNav?.refreshPill?.(); }
 (function waitForNav() {
   if (!window.STNav?.init) { setTimeout(waitForNav, 50); return; }
   window.STNav.init({ signInRedirect: '/' });
   if (new URLSearchParams(location.search).get('billing') === 'success') {
     (async () => {
+      const expected = (new URLSearchParams(location.search).get('tier') || '').toLowerCase();
       const fetchTier = async () => {
         try {
           const r = await fetch('/api/me', { headers: await authHeaders() });
@@ -1005,39 +439,20 @@ async function authHeaders() {
       let tier = '';
       for (let i = 0; i < 5; i++) {
         tier = await fetchTier();
-        if (tier === 'pro') break;
+        if (tier === 'strategist' || tier === 'pro') break;
         await new Promise(res => setTimeout(res, 800));
       }
-      alert(tier === 'pro' ? 'Welcome to Pro!' : 'Subscription confirmed.');
+      if (expected && tier && tier !== expected) {
+        try {
+          await fetch('/api/billing/resync', { method: 'POST', headers: await authHeaders() });
+          tier = await fetchTier();
+        } catch (_) {}
+      }
+      if (tier === 'strategist') return alert('Welcome to Strategist!');
+      if (tier === 'pro')        return alert('Welcome to Pro!');
+      alert('Subscription confirmed.');
     })();
   }
-})();
-
-// Update mobile drawer account section based on Clerk state
-(async function(){
-  function paint(account, email){
-    var box = document.getElementById('mDrawerAccount');
-    if (!box) return;
-    if (account) {
-      box.innerHTML = '<div class="drawer-section-label">' + (email || 'Signed in') + '</div>'
-        + '<a href="/app" class="drawer-cta">Open app</a>';
-    } else {
-      box.innerHTML = '<div class="drawer-section-label">Account</div>'
-        + '<a href="#" class="drawer-cta" onclick="event.preventDefault(); window.STNav?.openSignIn?.();">Sign in</a>';
-    }
-  }
-  function tick(){
-    if (!window.Clerk) { setTimeout(tick, 80); return; }
-    try {
-      window.Clerk.addListener && window.Clerk.addListener(function(){
-        var u = window.Clerk.user;
-        paint(!!u, u && (u.primaryEmailAddress?.emailAddress || ''));
-      });
-      var u = window.Clerk.user;
-      paint(!!u, u && (u.primaryEmailAddress?.emailAddress || ''));
-    } catch (_) {}
-  }
-  tick();
 })();
 </script>
 </body>

@@ -4,332 +4,278 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>How it works — s-tool</title>
-<meta name="description" content="The Monte Carlo + mean-reversion projection engine behind s-tool.io. How we build honest projection bands, what we tested, why most signals got killed." />
+<meta name="description" content="A deep look at the Monte Carlo + mean-reversion projection engine behind s-tool.io. How we build honest projection bands, what we tested, and why most signals got killed." />
 <link rel="canonical" href="https://s-tool.io/how" />
 <meta property="og:title" content="How s-tool works — projection methodology" />
-<meta property="og:description" content="Monte Carlo + mean-reversion: how we build honest projection bands for the Russell 3000." />
+<meta property="og:description" content="Monte Carlo + mean-reversion: how we build honest projection bands for 2,609 US stocks." />
 <meta property="og:image" content="https://s-tool.io/img/og-abstract-v2.jpg" />
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%23faf7f0' stroke='%230d4a2c' stroke-width='4'/%3E%3Ccircle cx='50' cy='50' r='30' fill='%234a8b5e'/%3E%3Ctext x='50' y='66' text-anchor='middle' font-family='Georgia' font-style='italic' font-size='44' font-weight='700' fill='%230d4a2c'%3ES%3C/text%3E%3C/svg%3E" />
-
+<meta property="og:url" content="https://s-tool.io/how" />
+<meta property="og:type" content="article" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="How s-tool works" />
+<meta name="twitter:description" content="Monte Carlo + mean-reversion: honest projection bands for 2,609 US stocks." />
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230A6577'/%3E%3Cpath d='M16 44 L24 32 L34 38 L48 18' stroke='%23D2DDEA' stroke-width='4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<!-- s-tool perf hints -->
+<link rel="preconnect" href="https://fluent-mole-71.clerk.accounts.dev" crossorigin />
+<link rel="preconnect" href="https://api-production-9fce.up.railway.app" crossorigin />
+<link rel="dns-prefetch" href="https://fluent-mole-71.clerk.accounts.dev" />
+<link rel="dns-prefetch" href="https://api-production-9fce.up.railway.app" />
+<link rel="prefetch" href="/" />
 <link rel="prefetch" href="/picks/" />
 <link rel="prefetch" href="/track-record/" />
-
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Geist:wght@300..700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/shared/tokens.css?v=20260429i" />
-<link rel="stylesheet" href="/shared/nav.css?v=20260429i" />
-<link rel="stylesheet" href="/shared/mobile.css?v=20260429i" />
+<link rel="prefetch" href="/how/" />
+<link rel="prefetch" href="/pricing/" />
+<link rel="prefetch" href="/faq/" />
+<!-- s-tool perf hints -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/shared/nav.css" /><!-- user-pill + dropdown styles; without this nav.js renders the dropdown unstyled -->
+<meta name="view-transition" content="same-origin" />
+<link rel="stylesheet" href="/shared/skeleton.css" />
+<!-- s-tool perf skel -->
 
 <style>
-.article-hero {
-  padding: 64px 32px 32px;
-  max-width: 860px;
-  margin: 0 auto;
+:root {
+    --bg-deepest: #0B1006; --bg-base: #111512; --bg-surface: #1F232D;
+    --bg-card: #28303B; --accent-deep: #022834; --accent-alpine: #0A6577;
+    --accent-lake: #5FAAC5; --text-hi: #EDECE6; --text-mid: #9BA1B9;
+    --text-dim: #6B7382; --border: rgba(155,161,185,0.16);
+    --border-strong: rgba(95,170,197,0.35);
+    --radius-lg: 24px; --radius-md: 16px; --radius-sm: 10px;
 }
-.article-hero h1 {
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: clamp(40px, 5vw, 72px);
-  line-height: 1;
-  letter-spacing: -0.03em;
-  color: var(--forest);
-  font-variation-settings: "opsz" 144;
-  margin-top: 16px;
-  max-width: 18ch;
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg-deepest); color: var(--text-hi);
+    line-height: 1.65; -webkit-font-smoothing: antialiased;
 }
-.article-hero h1 em { font-style: italic; font-weight: 300; color: var(--pine); }
-.article-hero .lede { margin-top: 24px; max-width: 60ch; }
+a { color: var(--accent-lake); text-decoration: none; }
+a:hover { text-decoration: underline; }
 
-.article {
-  max-width: 760px;
-  margin: 0 auto;
-  padding: 16px 32px 96px;
+/* Nav — must match the canonical structure used on every other public
+   page so the chrome doesn't shift between routes. Three-column flex
+   layout: logo (left) | nav-center (middle) | nav-end (right). The
+   nav-end column reserves min-width: 120px so the center column lands
+   in the same horizontal position regardless of whether sign-in is
+   rendered or not. */
+nav { position: sticky; top: 0; z-index: 50; backdrop-filter: blur(14px); background: rgba(11,16,6,0.82); border-bottom: 1px solid var(--border); }
+.container { max-width: 1240px; margin: 0 auto; padding: 0 32px; }
+.nav-row { display: flex; align-items: center; justify-content: space-between; padding: 18px 0; gap: 24px; }
+.logo { display: flex; align-items: center; gap: 10px; font: 700 18px 'Inter'; letter-spacing: -0.04em; color: var(--text-hi); text-decoration: none; }
+.logo-mark { width: 28px; height: 28px; border-radius: 7px; background: linear-gradient(135deg, var(--accent-deep), var(--accent-alpine), var(--accent-lake)); display: flex; align-items: center; justify-content: center; }
+.logo-mark svg { stroke: var(--text-hi); }
+.nav-center { display: flex; gap: 28px; font: 500 14px 'Inter'; color: var(--text-mid); }
+.nav-center a { color: var(--text-mid); text-decoration: none; }
+.nav-center a:hover { color: var(--text-hi); }
+.nav-center a.active { color: var(--text-hi); border-bottom: 1px solid var(--accent-lake); padding-bottom: 2px; }
+.nav-end { display: flex; align-items: center; gap: 14px; min-width: 120px; justify-content: flex-end; }
+.signin-btn { font: 500 14px 'Inter'; color: var(--text-hi); border: 1px solid var(--border-strong); padding: 9px 18px; border-radius: 999px; cursor: pointer; background: transparent; }
+.signin-btn:hover { background: rgba(95,170,197,0.08); }
+
+/* Article layout */
+.article { max-width: 760px; margin: 0 auto; padding: 80px 32px 120px; }
+.article h1 {
+    font-family: 'Crimson Text', Georgia, serif; font-weight: 400;
+    font-size: clamp(36px, 5vw, 56px); line-height: 1.08; letter-spacing: -0.02em;
+    margin-bottom: 24px;
 }
+.article h1 em { font-style: italic; color: var(--accent-lake); }
+.article .lead { font-size: 19px; color: var(--text-mid); line-height: 1.6; margin-bottom: 56px; max-width: 60ch; }
 .article h2 {
-  font-family: var(--font-display);
-  font-weight: 500;
-  font-size: 30px;
-  letter-spacing: -0.018em;
-  color: var(--forest);
-  margin: 56px 0 18px;
-  padding-top: 36px;
-  border-top: 1px solid var(--gray-300);
+    font-family: 'Crimson Text', Georgia, serif; font-weight: 600;
+    font-size: 28px; margin: 56px 0 20px; padding-top: 40px;
+    border-top: 1px solid var(--border);
 }
-.article h2:first-child { padding-top: 0; border-top: none; margin-top: 24px; }
-.article h3 {
-  font-family: var(--font-display);
-  font-weight: 500;
-  font-size: 20px;
-  color: var(--charcoal);
-  margin: 28px 0 12px;
-}
-.article p {
-  color: var(--gray-700);
-  font-size: 17px;
-  line-height: 1.7;
-  margin-bottom: 18px;
-}
-.article p strong { color: var(--charcoal); font-weight: 600; }
-.article a {
-  color: var(--pine);
-  border-bottom: 1px solid var(--mint);
-}
-.article a:hover { color: var(--forest); border-color: var(--forest); }
-.article ul, .article ol {
-  color: var(--gray-700);
-  font-size: 16px;
-  margin: 0 0 20px 24px;
-  line-height: 1.65;
-}
+.article h3 { font: 600 18px 'Inter'; margin: 32px 0 12px; }
+.article p { color: var(--text-mid); font-size: 16px; margin-bottom: 18px; }
+.article p strong { color: var(--text-hi); font-weight: 600; }
+.article ul, .article ol { color: var(--text-mid); font-size: 15px; margin: 0 0 20px 24px; }
 .article li { margin-bottom: 8px; }
-.article li strong { color: var(--charcoal); font-weight: 600; }
-
+.article code {
+    font-family: 'SF Mono', 'Fira Code', monospace; font-size: 13.5px;
+    background: var(--bg-surface); padding: 2px 7px; border-radius: 5px;
+    color: var(--accent-lake);
+    /* Long inline code (e.g. clamp(32px, 6.2vw, 76px)) must wrap on
+     * mobile rather than overflow the article column. word-break:
+     * break-word stays gentler than break-all for prose-mixed code. */
+    word-break: break-word; overflow-wrap: anywhere;
+}
+.formula-box {
+    background: var(--bg-surface); border: 1px solid var(--border);
+    border-radius: var(--radius-md); padding: 28px 32px; margin: 24px 0;
+    font-family: 'Crimson Text', serif; font-size: 20px;
+    text-align: center; color: var(--text-hi); letter-spacing: 0.02em;
+}
+.formula-box .label { font: 500 11px 'Inter'; color: var(--text-dim); letter-spacing: 0.16em; text-transform: uppercase; display: block; margin-bottom: 12px; }
+.signal-table { width: 100%; border-collapse: collapse; margin: 24px 0; font-size: 14px; }
+.signal-table th { text-align: left; font: 600 12px 'Inter'; color: var(--text-dim); letter-spacing: 0.1em; text-transform: uppercase; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+.signal-table td { padding: 10px 12px; border-bottom: 1px dashed var(--border); color: var(--text-mid); }
+.signal-table .dead { color: var(--text-dim); }
 .callout {
-  background: var(--mint-soft);
-  border-left: 3px solid var(--pine);
-  padding: 20px 24px;
-  margin: 32px 0;
-  font-family: var(--font-display);
-  font-style: italic;
-  font-weight: 300;
-  font-size: 17px;
-  color: var(--gray-700);
-  line-height: 1.55;
-  font-variation-settings: "opsz" 72;
+    background: rgba(10,101,119,0.1); border-left: 3px solid var(--accent-alpine);
+    padding: 20px 24px; border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    margin: 28px 0; font-size: 15px; color: var(--text-mid);
 }
-.callout strong { color: var(--forest); font-weight: 500; font-style: normal; font-family: var(--font-body); }
-.article-foot {
-  margin-top: 56px;
-  padding-top: 28px;
-  border-top: 1px solid var(--gray-300);
-  font-family: var(--font-mono);
-  font-size: 12px;
-  letter-spacing: 0.06em;
-  color: var(--gray-500);
-}
-.article-foot a { color: var(--pine); border-bottom: 1px solid var(--mint); }
-</style>
+.callout strong { color: var(--accent-lake); }
 
+/* Footer */
+footer { border-top: 1px solid var(--border); padding: 40px 32px; text-align: center; color: var(--text-dim); font-size: 13px; }
+footer a { color: var(--text-mid); }
+
+/* Mobile responsiveness — tighten padding, allow nav-links to wrap, scale
+ * headings down. At <480 the secondary FAQ/Pricing links collapse since
+ * they'd wrap otherwise. */
+@media (max-width: 720px) {
+    .container { padding: 0 20px; }
+    .nav-row { padding: 14px 0; gap: 12px; flex-wrap: wrap; }
+    .nav-center { gap: 16px; font-size: 13px; }
+    .article { padding: 48px 20px 72px; }
+    .article h2 { font-size: 24px; padding-top: 28px; margin: 40px 0 16px; }
+    .article h3 { font-size: 16px; margin: 24px 0 10px; }
+    .article p, .article .lead { font-size: 16px; }
+    .article .lead { margin-bottom: 40px; }
+    .formula-box { padding: 20px 18px; font-size: 17px; }
+    .signal-table { font-size: 13px; }
+    .signal-table th, .signal-table td { padding: 8px 8px; }
+    .callout { padding: 16px 18px; }
+}
+@media (max-width: 480px) {
+    .nav-center { gap: 12px; font-size: 12px; }
+    .nav-center a:nth-child(4), .nav-center a:nth-child(5) { display: none; }
+    .article h1 { font-size: 30px; }
+}
+</style>
+<link rel="stylesheet" href="/shared/mobile.css?v=20260429e" />
+<!-- Clerk SDK (~320KB) is lazy-loaded on first sign-in click. Pure
+     marketing page, most visitors never click Sign in. Saves the SDK
+     download + parse off the first-paint critical path. clerk-lazy.js
+     auto-loads Clerk if the __client_uat cookie indicates an existing
+     session, so signed-in users still get their user pill via nav.js. -->
 <script defer src="/shared/clerk-lazy.js"></script>
-<script defer src="/shared/nav.js?v=20260429i"></script>
+<script defer src="/shared/nav.js"></script>
+<!-- s-tool speculation rules -->
+<script type="speculationrules">
+{
+  "prerender": [{
+    "where": { "href_matches": "/*" },
+    "eagerness": "moderate"
+  }]
+}
+</script>
+<!-- s-tool speculation rules -->
+<!-- s-tool sw register -->
 <script>
   if ('serviceWorker' in navigator) {
     addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
   }
 </script>
+<!-- s-tool sw register -->
 </head>
 <body>
 
-<!-- DESKTOP SHELL -->
-<div class="desktop-shell">
-<nav class="dnav">
-  <div class="dnav-row">
-    <a class="stool-logo" href="/" aria-label="s-tool home">
-      <svg class="mark" viewBox="0 0 100 100" aria-hidden="true">
-        <circle cx="50" cy="50" r="48" fill="none" stroke="#0d4a2c" stroke-width="2"/>
-        <circle cx="50" cy="50" r="36" fill="#4a8b5e"/>
-        <circle cx="50" cy="50" r="24" fill="#a3d4b3"/>
-        <line x1="50" y1="2" x2="50" y2="98" stroke="#0d4a2c" stroke-width="1.5"/>
-        <line x1="2" y1="50" x2="98" y2="50" stroke="#0d4a2c" stroke-width="1.5"/>
-        <text x="50" y="62" text-anchor="middle" font-family="Fraunces, Georgia, serif" font-style="italic" font-size="36" font-weight="700" fill="#0d4a2c">S</text>
-      </svg>
-      <span class="word">tool</span>
-    </a>
-    <ul class="dnav-links">
-      <li><a href="/app">App</a></li>
-      <li><a href="/picks">Picks</a></li>
-      <li><a href="/track-record">Track record</a></li>
-      <li><a href="/backtest">Backtest</a></li>
-      <li><a href="/how" class="active">How</a></li>
-      <li><a href="/pricing">Pricing</a></li>
-      <li><a href="/faq">FAQ</a></li>
-    </ul>
-    <div class="dnav-end" id="navEnd">
-      <div class="nav-pill-skel" aria-hidden="true"></div>
+<nav>
+    <div class="container nav-row">
+        <a href="/" class="logo" aria-label="s-tool home"><img src="/img/logo-stool.png?v=20260429f" srcset="/img/logo-stool.png?v=20260429f 1x, /img/logo-stool@2x.png?v=20260429f 2x, /img/logo-stool@3x.png?v=20260429f 3x" alt="s-tool" class="logo-img" style="height:36px;width:auto;display:block;"/></a>
+        <div class="nav-center">
+            <a href="/app">App</a>
+            <a href="/picks">Picks</a>
+            <a href="/track-record">Track record</a>
+            <a href="/backtest">Backtest</a>
+            <a href="/how" class="active">How</a>
+            <a href="/pricing">Pricing</a>
+            <a href="/faq">FAQ</a>
+        </div>
+        <div class="nav-end" id="navEnd">
+            <div class="nav-pill-skel" aria-hidden="true"></div>
+        </div>
     </div>
-  </div>
 </nav>
-
-<header class="article-hero">
-  <div class="eyebrow">Methodology</div>
-  <h1>How s-tool builds <em>honest</em> projection bands.</h1>
-  <p class="lede">Projections anyone can trust — because the engine shows its own error bar, and we're ruthless about what gets in and what gets killed.</p>
-</header>
 
 <article class="article">
-  <h2>1. The projection engine</h2>
-  <p>Every ticker runs through a <strong>proprietary stochastic projection model</strong> that learns the stock's own return and volatility behavior from several years of daily closes. The engine simulates a large number of forward paths through the stock's volatility regime, anchored by a fundamental-reversion pull so projections don't drift unrealistically far from their long-run gravity.</p>
-  <p>For the asymmetric-upside sleeve we layer a <strong>volatility-regime-adaptive</strong> variant of the same engine on top — one that weights recent market conditions more heavily, widening the forecast tail when something is actually cooking under the hood.</p>
-  <p>At the end, the engine reports the standard percentile bands: <strong>P10 / P90</strong> (outer 80%), <strong>P25 / P75</strong> (interior 50%), and <strong>P50</strong> as the center of gravity, not a price target.</p>
 
-  <h2>2. Honesty via out-of-sample error</h2>
-  <p>Every projection on s-tool ships with the model's <strong>historical error on that specific ticker</strong> — computed by walking the engine forward through hundreds of historical dates and comparing its P50 call to what actually happened. The math is standard walk-forward cross-validation; the discipline is in showing the result, not hiding it.</p>
-  <p>A 15% error band on a 40%-vol stock is honest. A 2% error band would be a lie. We don't give you the 2% number.</p>
-  <div class="callout"><strong>The engine shows its error bar on every projection.</strong> When bands are wide, the stock is genuinely hard to predict — and you'll see it immediately. No hidden confidence.</div>
+<h1>How s-tool builds <em>honest</em> projection bands</h1>
+<p class="lead">Projections anyone can trust &mdash; because the engine shows its own error bar, and we're ruthless about what gets in and what gets killed.</p>
 
-  <h2>3. The signal graveyard</h2>
-  <p>Before any tilt, factor, or sentiment overlay ships to production, it has to pass a strict gate: <strong>measurable improvement across thousands of symbols and years of rolling backtests</strong>. Not one-period wins, not cherry-picked charts.</p>
-  <p>We've tested roughly <strong>two dozen candidate signals</strong> — crowd sentiment, text-derived attention metrics, macroeconomic regime signals, credit spreads, options skew, insider-transaction flows, and more. Almost all of them were either arbitraged away in 2023 (as LLM-generated content polluted text corpora) or never had measurable edge to begin with.</p>
-  <p>The public signal graveyard is long. The engine's active signal list is short on purpose.</p>
+<h2>1. The projection engine</h2>
 
-  <h2>4. The engine self-tunes overnight</h2>
-  <p>Every night, after projections refresh, a <strong>self-training scoring loop</strong> re-evaluates active scoring methods against the most recent out-of-sample windows. Whichever method has been producing the best realized-return hit rate in the current market regime gets promoted to production. If regime shifts and the winning method stops working, a different one takes over — automatically, transparently.</p>
-  <div class="callout"><strong>Hypothesis:</strong> Text-based and macro-regime signals are over-discovered. Real edge increasingly lives in <em>regulatory-disclosure</em> data, in <em>volatility-regime</em> detection, and in <em>cross-sectional</em> behavior — where incentive structures or structural frictions keep arbitrageurs from closing the gap quickly.</div>
+<p>Every ticker runs through a <strong>proprietary stochastic projection model</strong> that learns the stock's own return and volatility behavior from several years of daily closes. The engine simulates a large number of forward paths through the stock's volatility regime, anchored by a fundamental-reversion pull so projections don't drift unrealistically far from their long-run gravity.</p>
 
-  <h2>5. The bar for production</h2>
-  <p>A signal makes it into the engine only when it clears three thresholds:</p>
-  <ol>
-    <li><strong>Economic rationale</strong> — why should this work? If we can't write it in one paragraph, it's pattern-matching.</li>
-    <li><strong>Out-of-sample robustness</strong> — does it hold across multiple regimes (2018 bull, 2020 dislocation, 2022 bear, 2023–24 recovery) and thousands of symbols?</li>
-    <li><strong>Measurable lift over the baseline engine</strong> — not a p-value trick; a material improvement in out-of-sample error or in realized-return hit rates.</li>
-  </ol>
-  <p>Signals that don't clear all three get published in the graveyard, not in the engine.</p>
+<p>For the asymmetric-upside sleeve we layer a <strong>volatility-regime-adaptive</strong> variant of the same engine on top &mdash; one that weights recent market conditions more heavily, widening the forecast tail when something is actually cooking under the hood. That's the model that surfaced names like NVDA, SMCI, and AEHR well before the AI-semi runs in our 2022-2024 backtests.</p>
 
-  <h2>6. The portfolio layer</h2>
-  <p>We run the engine nightly across the broad US universe and publish four ranked tiers: <strong>Conservative · Moderate · Aggressive · Asymmetric</strong>. The first three bucket by projected volatility with a positive-return filter and fundamentals-quality overlay. The Asymmetric sleeve ranks by upside-tail probability under the volatility-adaptive model.</p>
-  <p>Every pick is appended to an immutable ledger on pick date. Realized returns get computed against the entry price every night. That ledger is what lets you audit whether the engine earns its keep.</p>
+<p>At the end, the engine reports the standard percentile bands:</p>
 
-  <h2>7. Data foundation</h2>
-  <p>We don't invent data. The engine is fed from established sources:</p>
-  <ul>
-    <li><strong>Price history</strong> — standard daily OHLCV across the US equity universe, refreshed nightly.</li>
-    <li><strong>Regulatory filings</strong> — point-in-time fundamentals derived from XBRL filings.</li>
-    <li><strong>Institutional positioning</strong> — consolidated short-interest and capital-commitment signals.</li>
-    <li><strong>Macroeconomic reference</strong> — for volatility-regime context and tail-risk calibration.</li>
-  </ul>
-  <p>Signal engineering — the transformation from raw data into something predictive — is the proprietary piece. The data itself is table stakes.</p>
+<ul>
+    <li><strong>P10 / P90</strong> &mdash; the outer range. 80% of simulated outcomes fall here.</li>
+    <li><strong>P25 / P75</strong> &mdash; the interior range. 50% of outcomes.</li>
+    <li><strong>P50</strong> &mdash; median outcome, not a price target. It's the engine's center of gravity, nothing more.</li>
+</ul>
 
-  <div class="article-foot">
-    <a href="/app">← Try the projector</a> &nbsp;·&nbsp;
-    <a href="/picks">Today's picks</a> &nbsp;·&nbsp;
-    <a href="/track-record">Track record</a>
-  </div>
+<h2>2. Honesty via out-of-sample error</h2>
+
+<p>Every projection on s-tool ships with the model's <strong>historical error on that specific ticker</strong> &mdash; computed by walking the engine forward through hundreds of historical dates and comparing its P50 call to what actually happened. The math is standard walk-forward cross-validation; the discipline is in showing the result, not hiding it.</p>
+
+<p>A 15% error band on a 40%-vol stock is honest. A 2% error band would be a lie. We don't give you the 2% number.</p>
+
+<div class="callout">
+    <strong>The engine shows its error bar on every projection.</strong> When bands are wide, the stock is genuinely hard to predict &mdash; and you'll see it immediately. No hidden confidence.
+</div>
+
+<h2>3. The signal graveyard</h2>
+
+<p>Before any tilt, factor, or sentiment overlay ships to production, it has to pass a strict gate: <strong>measurable improvement across thousands of symbols and years of rolling backtests</strong>. Not one-period wins, not cherry-picked charts.</p>
+
+<p>We've tested roughly <strong>two dozen candidate signals</strong> &mdash; crowd sentiment, text-derived attention metrics, macroeconomic regime signals, credit spreads, options skew, insider-transaction flows, and more. Almost all of them were either arbitraged away in 2023 (as LLM-generated content polluted the text corpora) or never had measurable edge to begin with.</p>
+
+<p>The public signal graveyard is long. The engine's active signal list is short on purpose.</p>
+
+<h2>The engine self-tunes overnight</h2>
+<p>Every night, after the projections refresh, a <strong>self-training scoring loop</strong> re-evaluates our active scoring methods against the most recent out-of-sample windows. Whichever method has been producing the best realized-return hit rate in the current market regime gets promoted to production. If regime shifts and the winning method stops working, a different one takes over &mdash; automatically, transparently.</p>
+<p>This isn't magic; it's a disciplined overnight loop running the same walk-forward evaluation we'd run by hand, just continuously. The decision log (which scorer is active, what its recent performance has been) is kept under the methodology fold so you can always see what's driving today's Asymmetric tier.</p>
+
+<div class="callout">
+    <strong>Our hypothesis:</strong> Text-based and macro-regime signals are over-discovered. Real edge increasingly lives in <em>regulatory-disclosure</em> data (filings, short interest, insider flows), in <em>volatility-regime</em> detection, and in <em>cross-sectional</em> behavior &mdash; where incentive structures or structural frictions keep arbitrageurs from closing the gap quickly. That's where our active research lives.
+</div>
+
+<h2>4. The bar for production</h2>
+
+<p>A signal makes it into the engine only when it clears three thresholds:</p>
+
+<ol>
+    <li><strong>Economic rationale</strong> &mdash; why should this work? If we can't write it in one paragraph, it's pattern-matching.</li>
+    <li><strong>Out-of-sample robustness</strong> &mdash; does it hold across multiple regimes (2018 bull, 2020 dislocation, 2022 bear, 2023-24 recovery) and thousands of symbols? One curve fit isn't alpha.</li>
+    <li><strong>Measurable lift over the baseline engine</strong> &mdash; not a p-value trick; a material improvement in out-of-sample error or in realized-return hit rates.</li>
+</ol>
+
+<p>Signals that don't clear all three get published in the graveyard, not in the engine.</p>
+
+<h2>5. The portfolio layer</h2>
+
+<p>For Strategist, we run the engine nightly across the broad US universe and publish four ranked tiers: <strong>Conservative · Moderate · Aggressive · Asymmetric</strong>. The first three bucket by projected volatility with a positive-return filter and fundamentals-quality overlay. The Asymmetric sleeve &mdash; our asymmetric-upside research track &mdash; ranks by upside-tail probability under the volatility-adaptive model, explicitly targeting the 100%+ moves that are structurally rare and systematically underpriced.</p>
+
+<p>Every pick that hits a tier is appended to an immutable ledger on pick date. Realized returns get computed against the entry price every night. That ledger is what lets you audit whether the engine earns its $29 &mdash; and lets us see, in the open, when a scoring method stops working.</p>
+
+<h2>6. Data foundation</h2>
+
+<p>We don't invent data. The engine is fed from established sources:</p>
+
+<ul>
+    <li><strong>Price history</strong> &mdash; standard daily OHLCV across the US equity universe, cached and refreshed nightly.</li>
+    <li><strong>Regulatory filings</strong> &mdash; point-in-time fundamentals derived directly from 10-K and 10-Q XBRL filings.</li>
+    <li><strong>Institutional positioning</strong> &mdash; consolidated short-interest and related capital-commitment signals.</li>
+    <li><strong>Macroeconomic reference</strong> &mdash; for volatility-regime context and for calibrating tail risk.</li>
+</ul>
+
+<p>Signal engineering &mdash; the transformation from raw data into something predictive &mdash; is the proprietary piece. The data itself is table stakes.</p>
+
+<p style="margin-top:56px;"><a href="/app">&larr; Try the projector</a> &nbsp;&middot;&nbsp; <a href="/pricing">See pricing</a> &nbsp;&middot;&nbsp; <a href="/picks">Today's picks</a></p>
+
 </article>
 
-<footer class="dfooter">
-  <div class="dfooter-inner">
-    <div>
-      <a class="stool-logo inverse" href="/" aria-label="s-tool home">
-        <svg class="mark" viewBox="0 0 100 100" aria-hidden="true">
-          <circle cx="50" cy="50" r="48" fill="none" stroke="#a3d4b3" stroke-width="2"/>
-          <circle cx="50" cy="50" r="36" fill="#1f6e3f"/>
-          <circle cx="50" cy="50" r="24" fill="#4a8b5e"/>
-          <text x="50" y="62" text-anchor="middle" font-family="Fraunces, serif" font-style="italic" font-size="36" font-weight="700" fill="#a3d4b3">S</text>
-        </svg>
-        <span class="word">tool</span>
-      </a>
-      <p class="dfooter-tagline">A precision instrument for market signals.</p>
-    </div>
-    <div class="dfooter-col"><h5>Product</h5><ul><li><a href="/app">Projector</a></li><li><a href="/picks">Picks</a></li><li><a href="/track-record">Track record</a></li><li><a href="/backtest">Backtest</a></li></ul></div>
-    <div class="dfooter-col"><h5>Resources</h5><ul><li><a href="/how" class="active">Methodology</a></li><li><a href="/faq">FAQ</a></li><li><a href="/pricing">Pricing</a></li></ul></div>
-    <div class="dfooter-col"><h5>Legal</h5><ul><li><a href="/faq#disclosure">Disclosures</a></li></ul></div>
-  </div>
-  <div class="dfooter-bottom">
-    <span>&copy; 2026 s-tool.io · Not investment advice</span>
-    <span>Daily scan after market close</span>
-  </div>
+<footer>
+    <p>&copy; 2026 s-tool.io &nbsp;&middot;&nbsp; <a href="/">Home</a> &nbsp;&middot;&nbsp; <a href="/app">App</a> &nbsp;&middot;&nbsp; Not investment advice.</p>
 </footer>
-</div>
 
-
-<!-- MOBILE SHELL -->
-<div class="mobile-shell">
-<nav class="m-nav">
-  <a class="stool-logo" href="/" aria-label="s-tool home">
-    <svg class="mark" viewBox="0 0 100 100" aria-hidden="true">
-      <circle cx="50" cy="50" r="48" fill="none" stroke="#0d4a2c" stroke-width="2"/>
-      <circle cx="50" cy="50" r="36" fill="#4a8b5e"/>
-      <circle cx="50" cy="50" r="24" fill="#a3d4b3"/>
-      <text x="50" y="62" text-anchor="middle" font-family="Fraunces, serif" font-size="32" font-style="italic" font-weight="500" fill="#0d4a2c">S</text>
-    </svg>
-    <span class="word">tool</span>
-  </a>
-  <button class="m-hamburger" id="mHamburger" aria-label="Open menu" aria-expanded="false"><span></span><span></span><span></span></button>
-</nav>
-<div class="m-drawer" id="mDrawer">
-  <ul>
-    <li><a href="/app">App <span class="arrow">→</span></a></li>
-    <li><a href="/picks">Picks <span class="arrow">→</span></a></li>
-    <li><a href="/track-record">Track record <span class="arrow">→</span></a></li>
-    <li><a href="/backtest">Backtest <span class="arrow">→</span></a></li>
-    <li><a href="/how" class="active">How <span class="arrow">→</span></a></li>
-    <li><a href="/pricing">Pricing <span class="arrow">→</span></a></li>
-    <li><a href="/faq">FAQ <span class="arrow">→</span></a></li>
-  </ul>
-  <div class="drawer-section">
-    <div class="drawer-section-label">Account</div>
-    <a href="#" class="drawer-cta" onclick="event.preventDefault(); window.STNav?.openSignIn?.();">Sign in</a>
-  </div>
-</div>
-
-<div class="m-page-header">
-  <div class="eyebrow">Methodology</div>
-  <h1>How s-tool builds <em>honest</em> bands.</h1>
-</div>
-
-<main class="m-prose" style="padding: 8px 22px 32px;">
-  <p style="font-family: var(--font-display); font-style: italic; font-weight: 300; font-size: 18px; color: var(--gray-700); margin-bottom: 24px;">Projections anyone can trust — because the engine shows its own error bar, and we're ruthless about what gets killed.</p>
-
-  <h3>1. The projection engine</h3>
-  <p>A proprietary stochastic projection model learns each stock's return and volatility behavior, simulates forward paths, and anchors them with a fundamental-reversion pull so projections don't drift.</p>
-
-  <h3>2. Out-of-sample error</h3>
-  <p>Every projection ships with the model's <strong>historical error on that ticker</strong> — walk-forward cross-validation. A 15% band on a 40%-vol stock is honest. A 2% band would be a lie.</p>
-
-  <h3>3. The signal graveyard</h3>
-  <p>About two dozen candidate signals tested. Most failed. Only signals that pass economic rationale, OOS robustness, and measurable lift make production.</p>
-
-  <h3>4. Self-tuning overnight</h3>
-  <p>A scoring loop re-evaluates active methods nightly against recent OOS windows. Best performer in the current regime gets promoted to production.</p>
-
-  <h3>5. Portfolio layer</h3>
-  <p>Four ranked tiers: <strong>Conservative · Moderate · Aggressive · Asymmetric</strong>. Every pick is appended to an immutable ledger; realized returns are computed nightly.</p>
-
-  <h3>6. Data foundation</h3>
-  <ul>
-    <li><strong>Price history</strong> — daily OHLCV.</li>
-    <li><strong>Regulatory filings</strong> — point-in-time XBRL fundamentals.</li>
-    <li><strong>Institutional positioning</strong> — short interest, flows.</li>
-    <li><strong>Macroeconomic reference</strong> — regime + tail.</li>
-  </ul>
-
-  <p style="margin-top: 28px; font-family: var(--font-mono); font-size: 12px; color: var(--gray-500); letter-spacing: 0.06em;"><a href="/app" style="color: var(--pine); border-bottom: 1px solid var(--mint);">Try the projector</a> · <a href="/picks" style="color: var(--pine); border-bottom: 1px solid var(--mint);">Today's picks</a> · <a href="/track-record" style="color: var(--pine); border-bottom: 1px solid var(--mint);">Track record</a></p>
-</main>
-
-<footer class="m-footer">
-  <div class="footer-logo">
-    <svg viewBox="0 0 100 100" aria-hidden="true">
-      <circle cx="50" cy="50" r="48" fill="none" stroke="#a3d4b3" stroke-width="2"/>
-      <circle cx="50" cy="50" r="36" fill="#1f6e3f"/>
-      <circle cx="50" cy="50" r="24" fill="#4a8b5e"/>
-      <text x="50" y="62" text-anchor="middle" font-family="Fraunces, serif" font-size="32" font-style="italic" font-weight="500" fill="#a3d4b3">S</text>
-    </svg>
-    <span class="word">tool</span>
-  </div>
-  <div class="col-title">Product</div>
-  <ul><li><a href="/picks">Picks</a></li><li><a href="/app">Projector</a></li><li><a href="/track-record">Track record</a></li></ul>
-  <div class="col-title">Resources</div>
-  <ul><li><a href="/how" class="active">Methodology</a></li><li><a href="/faq">FAQ</a></li></ul>
-  <div class="legal"><p>s-tool.io · Score the signal</p><p style="margin-top: 8px;">Not investment advice.</p></div>
-</footer>
-</div>
-
-<script>
-(function(){
-  var ham = document.getElementById('mHamburger');
-  var drawer = document.getElementById('mDrawer');
-  if (!ham || !drawer) return;
-  ham.addEventListener('click', function(){
-    var open = drawer.classList.toggle('open');
-    ham.classList.toggle('open', open);
-    ham.setAttribute('aria-expanded', open ? 'true' : 'false');
-  });
-})();
-(function wait() {
-  if (!window.STNav?.init) { setTimeout(wait, 50); return; }
-  window.STNav.init({ signInRedirect: '/how' });
-})();
-</script>
 </body>
 </html>

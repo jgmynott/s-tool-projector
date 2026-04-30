@@ -1,133 +1,87 @@
-/* s-tool nav — user-pill + dropdown component (v2 brand).
- * Loaded on every page. Pairs with /shared/nav.js which renders into
- * #navEnd. Keep these selectors in sync with the JS innerHTML strings.
+/* s-tool shared nav + dropdown CSS. Included on every page with a user
+ * pill. Keep the selectors here in sync with /shared/nav.js rendering.
+ * Mobile: dropdown anchors to the viewport corner (fixed) so it never
+ * hides behind the sticky nav.
  */
 
-/* ── Skeleton placeholder (shown while Clerk loads) ───────── */
-.nav-pill-skel {
-  display: inline-block;
-  width: 110px; height: 36px;
-  background: linear-gradient(90deg,
-    rgba(13, 74, 44, 0.06) 0%,
-    rgba(13, 74, 44, 0.12) 50%,
-    rgba(13, 74, 44, 0.06) 100%);
-  background-size: 220% 100%;
-  border: 1px solid var(--gray-300);
-  animation: nav-pill-skel-shimmer 1.6s linear infinite;
-}
-@keyframes nav-pill-skel-shimmer {
-  0%   { background-position: 100% 0; }
-  100% { background-position: -100% 0; }
-}
-
-/* ── Sign-in button ───────────────────────────────────────── */
-.signin-btn {
-  font-family: var(--font-body);
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--forest);
-  background: transparent;
-  border: 1px solid var(--forest);
-  padding: 9px 18px;
-  cursor: pointer;
-  transition: background 0.18s, color 0.18s;
-}
-.signin-btn:hover { background: var(--forest); color: var(--cream); }
-
-/* ── User pill (signed-in) ────────────────────────────────── */
 .user-pill-wrap { position: relative; flex-shrink: 0; }
 .user-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  padding: 5px 14px 5px 5px;
-  background: var(--cream);
-  border: 1px solid var(--gray-300);
-  color: var(--charcoal);
-  font-family: var(--font-body);
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 7px 14px 7px 7px; border-radius: 999px;
+  background: rgba(95,170,197,0.08);
+  border: 1px solid rgba(95,170,197,0.30);
+  color: #EDECE6; font: 500 13px 'Inter', sans-serif; cursor: pointer;
 }
-.user-pill:hover { border-color: var(--forest); background: white; }
-.user-pill .pill-avatar {
-  width: 28px; height: 28px;
-  background: var(--forest);
-  color: var(--mint);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-display);
-  font-style: italic;
-  font-weight: 600;
-  font-size: 13px;
-  flex-shrink: 0;
-}
-.user-pill .pill-email {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  letter-spacing: 0.04em;
-  color: var(--charcoal);
-  max-width: 16ch;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.user-pill:hover { background: rgba(95,170,197,0.14); }
+.user-pill .tier-badge {
+  font: 600 10px 'Inter', sans-serif; letter-spacing: 0.14em;
+  text-transform: uppercase; color: #5FAAC5;
 }
 .user-pill .pill-caret {
-  width: 12px; height: 12px;
-  color: var(--gray-500);
-  transition: transform 0.18s;
+  width: 12px; height: 12px; opacity: 0.7; transition: transform .2s;
 }
 .user-pill-wrap.open .pill-caret { transform: rotate(180deg); }
 
-/* ── Dropdown menu ────────────────────────────────────────── */
 .user-menu {
-  display: none;
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  min-width: 240px;
-  max-width: 320px;
+  display: none; position: absolute;
+  top: calc(100% + 10px); right: 0;
+  min-width: 240px; max-width: 320px;
   padding: 6px;
-  background: white;
-  border: 1px solid var(--gray-300);
-  box-shadow: 0 16px 40px -8px rgba(13, 74, 44, 0.18);
-  z-index: 200;
+  background: #14201B;  /* solid, not translucent — crisp on any bg */
+  border: 1px solid rgba(95,170,197,0.30);
+  border-radius: 14px;
+  box-shadow: 0 20px 56px -8px rgba(0,0,0,0.55);
+  z-index: 200;  /* well above any sticky nav (which sits at 50-60) */
 }
 .user-pill-wrap.open .user-menu { display: block; }
 .user-menu .menu-email {
-  padding: 10px 12px 9px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--gray-500);
-  border-bottom: 1px solid var(--gray-200);
-  margin-bottom: 4px;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  padding: 12px 14px 10px; font: 500 12px 'Inter', sans-serif;
+  color: #9BA1B9; border-bottom: 1px solid rgba(155,161,185,0.14);
+  margin-bottom: 6px; overflow: hidden; text-overflow: ellipsis;
   white-space: nowrap;
 }
 .user-menu .menu-item {
-  display: block; width: 100%;
-  text-align: left;
-  padding: 10px 12px;
-  font-family: var(--font-body);
-  font-size: 14px;
-  color: var(--charcoal);
-  background: none;
-  border: none;
-  cursor: pointer;
-  transition: background 0.12s;
+  display: block; width: 100%; text-align: left;
+  padding: 11px 14px; border-radius: 8px;
+  font: 500 14px 'Inter', sans-serif; color: #EDECE6;
+  background: none; border: none; cursor: pointer;
 }
-.user-menu .menu-item:hover { background: var(--mint-soft); color: var(--forest); }
-.user-menu .menu-item.danger { color: var(--signal-red); }
-.user-menu .menu-item.danger:hover { background: #f3e0dd; color: var(--signal-red); }
+.user-menu .menu-item:hover { background: rgba(95,170,197,0.12); }
+.user-menu .menu-item.danger { color: #fca5a5; }
+.user-menu .menu-item.danger:hover { background: rgba(252,165,165,0.10); }
 
-/* ── Mobile: never show desktop pill ──────────────────────── */
-@media (max-width: 768px) {
-  .desktop-shell .user-pill-wrap,
-  .desktop-shell .signin-btn,
-  .desktop-shell .nav-pill-skel { display: none; }
+/* Mobile — pin the menu to the viewport edges so it never overlaps the
+ * sticky nav and never spills off-screen. Also collapse the pill to just
+ * an avatar + tier badge so it doesn't crash into the nav links. The
+ * full email lives inside the dropdown. */
+/* Tablet + large phone: shrink nav-center a bit to give the pill room. */
+@media (max-width: 760px) {
+  nav .nav-center { gap: 16px; font-size: 13px; min-width: 0; overflow: hidden; flex: 0 1 auto; }
+  nav .nav-row { gap: 14px; }
+}
+
+/* Small phone: compact pill + hide overflow-prone nav links. */
+@media (max-width: 640px) {
+  .user-menu {
+    position: fixed;
+    top: 68px; left: 12px; right: 12px;
+    min-width: 0; max-width: none;
+  }
+  .user-menu .menu-item { padding: 14px 16px; font-size: 15px; }
+  .user-pill { gap: 6px; padding: 6px 10px 6px 6px; }
+  .user-pill .pill-email { display: none; }
+  .user-pill .pill-caret { display: none; }
+  .user-pill .tier-badge {
+    font-size: 9px; letter-spacing: 0.08em;
+    padding: 2px 7px; border-radius: 6px;
+    background: rgba(95,170,197,0.14);
+  }
+}
+
+/* Very small phone (iPhone SE / older): drop nav-center entirely —
+ * everything still reachable from the dropdown's Home/App/Picks/How/
+ * Pricing/FAQ items. */
+@media (max-width: 460px) {
+  nav .nav-center { display: none; }
+  nav .nav-row { justify-content: space-between; }
 }

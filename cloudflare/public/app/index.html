@@ -30,104 +30,10 @@
 <link rel="prefetch" href="/pricing/" />
 <link rel="prefetch" href="/faq/" />
 <!-- s-tool perf hints -->
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Geist:wght@300..700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet"><!-- s-tool perf skel -->
 <meta name="view-transition" content="same-origin" />
-<link rel="stylesheet" href="/shared/tokens.css?v=20260429i" />
-<link rel="stylesheet" href="/shared/nav.css?v=20260429i" />
-<link rel="stylesheet" href="/shared/mobile.css?v=20260429i" />
 <link rel="stylesheet" href="/shared/skeleton.css" />
-
-<!-- v2 brand override: re-skin the projector body with the forest/cream
-     palette without rewriting the 800-line projector CSS. -->
-<style>
-:root {
-  /* Map old projector vars → v2 brand. */
-  --bg-deepest: var(--warm-white);
-  --bg-base: var(--warm-white);
-  --bg-surface: white;
-  --bg-card: white;
-  --bg-card-hi: var(--cream);
-  --accent-deep: var(--forest);
-  --accent-alpine: var(--pine);
-  --accent-lake: var(--pine);
-  --text-hi: var(--charcoal);
-  --text-mid: var(--gray-700);
-  --text-dim: var(--gray-500);
-  --border: var(--gray-300);
-  --border-strong: var(--forest);
-  --pos: var(--pine);
-  --neg: var(--signal-red);
-  --caution: var(--signal-amber);
-}
-body {
-  font-family: var(--font-body) !important;
-  background: var(--warm-white) !important;
-  color: var(--charcoal) !important;
-}
-body::before { content: none !important; }
-.app-projector h1, .header h1, .container h1 {
-  font-family: var(--font-display) !important;
-  color: var(--forest) !important;
-  letter-spacing: -0.025em !important;
-}
-.subtitle { font-family: var(--font-mono) !important; color: var(--pine) !important; letter-spacing: 0.14em !important; text-transform: uppercase !important; }
-.hero, .hero-headline { color: var(--charcoal) !important; }
-.hero-headline { font-family: var(--font-display) !important; }
-.hero-headline .accent { color: var(--pine) !important; }
-.card, .stat-box, .mom-box, .panel {
-  background: white !important;
-  border: 1px solid var(--gray-300) !important;
-  border-radius: 0 !important;
-}
-.btn-run, .btn-save, .auth-btn {
-  background: var(--forest) !important;
-  color: var(--cream) !important;
-  border-radius: 0 !important;
-  font-family: var(--font-body) !important;
-}
-.btn-run:hover, .btn-save:hover { background: var(--charcoal) !important; }
-input, select { font-family: var(--font-body) !important; border-radius: 0 !important; border: 1px solid var(--gray-300) !important; background: white !important; color: var(--charcoal) !important; }
-.stat-box .label { color: var(--gray-500) !important; font-family: var(--font-mono) !important; text-transform: uppercase !important; letter-spacing: 0.14em !important; }
-.stat-box .value { font-family: var(--font-display) !important; color: var(--forest) !important; }
-.stat-box .value.green { color: var(--pine) !important; }
-.stat-box .value.blue { color: var(--forest) !important; }
-.stat-box .value.yellow { color: var(--signal-amber) !important; }
-.stat-box .value.cyan { color: var(--sage) !important; }
-.hero-pill {
-  background: var(--mint-soft) !important;
-  color: var(--forest) !important;
-  border-radius: 0 !important;
-  font-family: var(--font-mono) !important;
-  text-transform: uppercase !important;
-  letter-spacing: 0.06em !important;
-}
-.back-link { color: var(--pine) !important; font-family: var(--font-mono) !important; letter-spacing: 0.06em !important; }
-.info { background: var(--mint-soft) !important; color: var(--forest) !important; }
-
-/* Hide the old evergreen nav (replaced by .desktop-shell .dnav) */
-nav.evergreen { display: none !important; }
-
-/* Mobile: hide the projector body content (it's complex desktop-only).
- * Mobile gets a simplified shell with a clear CTA. */
-@media (max-width: 768px) {
-  .container { display: none !important; }
-}
-
-/* App-page mobile shell content */
-.m-projector-cta {
-  padding: 32px 22px;
-  text-align: left;
-}
-.m-projector-cta .lede {
-  font-family: var(--font-display);
-  font-style: italic;
-  font-weight: 300;
-  font-size: 18px;
-  line-height: 1.5;
-  color: var(--gray-700);
-  margin: 16px 0 24px;
-}
-</style>
+<!-- s-tool perf skel -->
 
 <style>
 :root {
@@ -1023,7 +929,7 @@ nav.evergreen { position: sticky; top: 0; z-index: 100; backdrop-filter: blur(14
 .evergreen .ev-logo, .evergreen .ev-end { flex-shrink: 0; }
 .evergreen .ev-center { min-width: 0; overflow: hidden; white-space: nowrap; }
 </style>
-<link rel="stylesheet" href="/shared/mobile.css?v=20260429h" />
+<link rel="stylesheet" href="/shared/mobile.css?v=20260429e" />
 <!-- s-tool speculation rules -->
 <script type="speculationrules">
 {
@@ -1043,137 +949,23 @@ nav.evergreen { position: sticky; top: 0; z-index: 100; backdrop-filter: blur(14
 <!-- s-tool sw register -->
 </head>
 <body>
-
-<!-- DESKTOP SHELL chrome (top) -->
-<div class="desktop-shell">
-<nav class="dnav">
-  <div class="dnav-row">
-    <a class="stool-logo" href="/" aria-label="s-tool home">
-      <svg class="mark" viewBox="0 0 100 100" aria-hidden="true">
-        <circle cx="50" cy="50" r="48" fill="none" stroke="#0d4a2c" stroke-width="2"/>
-        <circle cx="50" cy="50" r="36" fill="#4a8b5e"/>
-        <circle cx="50" cy="50" r="24" fill="#a3d4b3"/>
-        <line x1="50" y1="2" x2="50" y2="98" stroke="#0d4a2c" stroke-width="1.5"/>
-        <line x1="2" y1="50" x2="98" y2="50" stroke="#0d4a2c" stroke-width="1.5"/>
-        <text x="50" y="62" text-anchor="middle" font-family="Fraunces, Georgia, serif" font-style="italic" font-size="36" font-weight="700" fill="#0d4a2c">S</text>
-      </svg>
-      <span class="word">tool</span>
-    </a>
-    <ul class="dnav-links">
-      <li><a href="/app" class="active">App</a></li>
-      <li><a href="/picks">Picks</a></li>
-      <li><a href="/track-record">Track record</a></li>
-      <li><a href="/backtest">Backtest</a></li>
-      <li><a href="/how">How</a></li>
-      <li><a href="/pricing">Pricing</a></li>
-      <li><a href="/faq">FAQ</a></li>
-    </ul>
-    <div class="dnav-end" id="navEnd">
-      <div class="nav-pill-skel" aria-hidden="true"></div>
+<nav class="evergreen">
+  <div class="ev-row">
+    <a href="/" class="ev-logo" aria-label="s-tool home"><img src="/img/logo-stool.png?v=20260429f" srcset="/img/logo-stool.png?v=20260429f 1x, /img/logo-stool@2x.png?v=20260429f 2x, /img/logo-stool@3x.png?v=20260429f 3x" alt="s-tool" class="logo-img" style="height:36px;width:auto;display:block;"/></a>
+    <div class="ev-center">
+      <a href="/app" class="active">App</a>
+      <a href="/picks">Picks</a>
+      <a href="/track-record">Track record</a>
+      <a href="/backtest">Backtest</a>
+      <a href="/how">How</a>
+      <a href="/pricing">Pricing</a>
+      <a href="/faq">FAQ</a>
+    </div>
+    <div class="ev-end" id="evNavEnd">
+      <button class="ev-signin-btn" onclick="window.Clerk?.openSignIn?.({afterSignInUrl:'/app'})">Sign in</button>
     </div>
   </div>
 </nav>
-</div>
-
-<!-- MOBILE SHELL -->
-<div class="mobile-shell">
-<nav class="m-nav">
-  <a class="stool-logo" href="/" aria-label="s-tool home">
-    <svg class="mark" viewBox="0 0 100 100" aria-hidden="true">
-      <circle cx="50" cy="50" r="48" fill="none" stroke="#0d4a2c" stroke-width="2"/>
-      <circle cx="50" cy="50" r="36" fill="#4a8b5e"/>
-      <circle cx="50" cy="50" r="24" fill="#a3d4b3"/>
-      <text x="50" y="62" text-anchor="middle" font-family="Fraunces, serif" font-size="32" font-style="italic" font-weight="500" fill="#0d4a2c">S</text>
-    </svg>
-    <span class="word">tool</span>
-  </a>
-  <button class="m-hamburger" id="mHamburger" aria-label="Open menu" aria-expanded="false"><span></span><span></span><span></span></button>
-</nav>
-<div class="m-drawer" id="mDrawer">
-  <ul>
-    <li><a href="/app" class="active">App <span class="arrow">→</span></a></li>
-    <li><a href="/picks">Picks <span class="arrow">→</span></a></li>
-    <li><a href="/track-record">Track record <span class="arrow">→</span></a></li>
-    <li><a href="/backtest">Backtest <span class="arrow">→</span></a></li>
-    <li><a href="/how">How <span class="arrow">→</span></a></li>
-    <li><a href="/pricing">Pricing <span class="arrow">→</span></a></li>
-    <li><a href="/faq">FAQ <span class="arrow">→</span></a></li>
-  </ul>
-  <div class="drawer-section">
-    <div class="drawer-section-label">Account</div>
-    <a href="#" class="drawer-cta" onclick="event.preventDefault(); window.STNav?.openSignIn?.();">Sign in</a>
-  </div>
-</div>
-
-<div class="m-page-header">
-  <div class="eyebrow">Projector</div>
-  <h1>Adaptive projection <em>engine.</em></h1>
-</div>
-
-<div class="m-projector-cta">
-  <p class="lede">The full projector experience — chart bands, MAPE error, factor breakdowns — works best on a desktop or tablet screen. On a phone, the picks feed gives you the model's high-conviction names every weekday.</p>
-  <a href="/picks" class="m-btn">See today's picks <span class="arrow">→</span></a>
-  <a href="/track-record" class="m-btn secondary" style="margin-top: 10px;">Track record</a>
-</div>
-
-<footer class="m-footer">
-  <div class="footer-logo">
-    <svg viewBox="0 0 100 100" aria-hidden="true">
-      <circle cx="50" cy="50" r="48" fill="none" stroke="#a3d4b3" stroke-width="2"/>
-      <circle cx="50" cy="50" r="36" fill="#1f6e3f"/>
-      <circle cx="50" cy="50" r="24" fill="#4a8b5e"/>
-      <text x="50" y="62" text-anchor="middle" font-family="Fraunces, serif" font-size="32" font-style="italic" font-weight="500" fill="#a3d4b3">S</text>
-    </svg>
-    <span class="word">tool</span>
-  </div>
-  <div class="col-title">Product</div>
-  <ul><li><a href="/picks">Picks</a></li><li><a href="/track-record">Track record</a></li></ul>
-  <div class="col-title">Resources</div>
-  <ul><li><a href="/how">Methodology</a></li><li><a href="/faq">FAQ</a></li></ul>
-  <div class="legal"><p>Not investment advice.</p></div>
-</footer>
-
-<div class="m-tab-bar">
-  <a class="m-tab" href="/picks">
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>
-    <span class="label">Picks</span>
-  </a>
-  <a class="m-tab active" href="/app" aria-current="page">
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 21V5a2 2 0 012-2h10a2 2 0 012 2v16l-7-4-7 4z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
-    <span class="label">App</span>
-  </a>
-  <a class="m-tab" href="/track-record">
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 7h7v7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    <span class="label">Record</span>
-  </a>
-  <a class="m-tab" href="/backtest">
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-    <span class="label">Backtest</span>
-  </a>
-  <a class="m-tab" href="/how">
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.6"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-    <span class="label">How</span>
-  </a>
-</div>
-
-<script>
-(function(){
-  var ham = document.getElementById('mHamburger');
-  var drawer = document.getElementById('mDrawer');
-  if (!ham || !drawer) return;
-  ham.addEventListener('click', function(){
-    var open = drawer.classList.toggle('open');
-    ham.classList.toggle('open', open);
-    ham.setAttribute('aria-expanded', open ? 'true' : 'false');
-  });
-})();
-</script>
-</div><!-- /.mobile-shell -->
-
-<!-- Desktop shell wraps the existing projector body content from here on. -->
-<div class="desktop-shell">
-
-<script defer src="/shared/nav.js?v=20260429i"></script>
 <script>
 (function () {
   async function headers() {
@@ -1209,9 +1001,11 @@ nav.evergreen { position: sticky; top: 0; z-index: 100; backdrop-filter: blur(14
           const { portal_url } = await r.json(); location.href = portal_url;
         } catch (e) { alert('Could not open billing'); }
       };
-      // Paywall removed 2026-04-29 — no tier badge, no upgrade row.
-      const subRow = '';
-      end.innerHTML = `<div class="ev-user-pill-wrap"><button class="ev-user-pill" onclick="toggleEvMenu(event)" aria-label="Account menu for ${fullEmail || shortEmail}"><span style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#022834,#5FAAC5);display:inline-block;flex-shrink:0;"></span><span class="ev-pill-email">${shortEmail}</span><svg class="ev-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></button><div class="ev-user-menu"><div class="ev-menu-email">${fullEmail || 'Signed in'}</div><button class="ev-menu-item" onclick="openDarkProfile(); closeEvMenu();">Manage account</button>${subRow}<button class="ev-menu-item" onclick="location.href='/'; closeEvMenu();">Home</button><button class="ev-menu-item" onclick="location.href='/picks'; closeEvMenu();">Picks</button><button class="ev-menu-item" onclick="location.href='/how'; closeEvMenu();">How it works</button><button class="ev-menu-item" onclick="location.href='/faq'; closeEvMenu();">FAQ</button><button class="ev-menu-item danger" onclick="evSignOut(); closeEvMenu();">Sign out</button></div></div>`;
+      const hasSub = tier === 'pro' || tier === 'strategist';
+      const subRow = hasSub
+        ? `<button class="ev-menu-item" onclick="openBillingPortal(); closeEvMenu();">Manage subscription</button>`
+        : `<button class="ev-menu-item" onclick="location.href='/pricing'; closeEvMenu();">Upgrade</button>`;
+      end.innerHTML = `<div class="ev-user-pill-wrap"><button class="ev-user-pill" onclick="toggleEvMenu(event)" aria-label="Account menu for ${fullEmail || shortEmail}"><span style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#022834,#5FAAC5);display:inline-block;flex-shrink:0;"></span><span class="ev-pill-email">${shortEmail}</span><span class="ev-tier-badge">${badge}</span><svg class="ev-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></button><div class="ev-user-menu"><div class="ev-menu-email">${fullEmail || 'Signed in'}</div><button class="ev-menu-item" onclick="openDarkProfile(); closeEvMenu();">Manage account</button>${subRow}<button class="ev-menu-item" onclick="location.href='/'; closeEvMenu();">Home</button><button class="ev-menu-item" onclick="location.href='/picks'; closeEvMenu();">Picks</button><button class="ev-menu-item" onclick="location.href='/how'; closeEvMenu();">How it works</button><button class="ev-menu-item" onclick="location.href='/pricing'; closeEvMenu();">Pricing</button><button class="ev-menu-item" onclick="location.href='/faq'; closeEvMenu();">FAQ</button><button class="ev-menu-item danger" onclick="evSignOut(); closeEvMenu();">Sign out</button></div></div>`;
     } catch (_) {}
   }
   function wait() {
@@ -1237,7 +1031,7 @@ nav.evergreen { position: sticky; top: 0; z-index: 100; backdrop-filter: blur(14
             <div id="quotaBadge" class="quota-badge" style="display:none;"></div>
             <div id="authControls" class="auth-row">
                 <button id="btnSignIn" class="auth-btn" onclick="openClerkSignIn()" style="display:none;">Sign in</button>
-                <!-- Get Pro button removed 2026-04-29; everything is free now. -->
+                <button id="btnGetPro" class="auth-btn primary" onclick="startCheckout()" style="display:none;">Get Pro</button>
                 <div id="userSlot"></div>
             </div>
         </div>
@@ -2524,10 +2318,13 @@ function updateQuotaFromHeaders(h) {
 }
 
 function handlePaywall(err) {
-    // Paywall removed 2026-04-29 \u2014 backend should no longer hit this
-    // path. If a stale deploy returns 402, surface a generic message.
-    status('Daily limit reached. Try again in an hour or sign in to remove the cap.');
-    if (!window.Clerk?.user) openClerkSignIn();
+    if (err.tier === 'anonymous' || !window.Clerk?.user) {
+        status('Daily limit reached. Sign in for 3 free projections/day, or upgrade to Pro for unlimited.');
+        openClerkSignIn();
+    } else {
+        status('You\u2019ve used your 3 free projections today. Upgrade to Pro for unlimited.');
+        $('btnGetPro').style.display = 'inline-block';
+    }
 }
 
 async function openClerkSignIn() {
@@ -2566,7 +2363,10 @@ async function refreshUserPill() {
         const res = await fetch('/api/project?symbol=__probe__&horizon=252', { headers: await authHeaders() });
         updateQuotaFromHeaders(res.headers);
     } catch {}
-    // btnGetPro removed 2026-04-29 — paywall is gone, no upgrade button.
+    try {
+        const me = await (await fetch('/api/me', { headers: await authHeaders() })).json();
+        $('btnGetPro').style.display = (signedIn && me.tier !== 'pro') ? 'inline-block' : 'none';
+    } catch {}
 }
 
 // Clerk SDK loads async; wait for it, then wire listeners.
@@ -2624,6 +2424,5 @@ async function refreshUserPill() {
 })();
 
 </script>
-</div><!-- /.desktop-shell (app body) -->
 </body>
 </html>
