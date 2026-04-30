@@ -1,6 +1,6 @@
 {
-  "as_of": "2026-04-30T14:05:33.470261+00:00",
-  "n_rows": 250,
+  "as_of": "2026-04-30T14:10:37.807651+00:00",
+  "n_rows": 254,
   "rows": [
     {
       "ts": "2026-04-27T13:47:29.206731Z",
@@ -3359,6 +3359,62 @@
       "target": 274.35,
       "tier": "orb",
       "rationale": "{\"range_high\": 270.815, \"range_low\": 268.16, \"avg_open_vol\": 29757.5, \"cur_vol\": 47423}",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-04-30T14:10:37.671884+00:00",
+      "event": "buy",
+      "sleeve": "scalper",
+      "symbol": "C",
+      "qty": 3,
+      "ref_price": 128.155,
+      "live_price": 128.155,
+      "stop": 127.26,
+      "target": 129.44,
+      "tier": "relvol",
+      "rationale": "{\"vol_multiple\": 2.1381401617250675, \"range_pos\": 0.9920634920634992, \"cur_vol\": 6346}",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-04-30T14:10:37.716944+00:00",
+      "event": "buy",
+      "sleeve": "scalper",
+      "symbol": "BLK",
+      "qty": 1,
+      "ref_price": 1050.385,
+      "live_price": 1050.385,
+      "stop": 1043.03,
+      "target": 1060.89,
+      "tier": "orb",
+      "rationale": "{\"range_high\": 1048, \"range_low\": 1034.97, \"avg_open_vol\": 345.8333333333333, \"cur_vol\": 733}",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-04-30T14:10:37.762487+00:00",
+      "event": "buy",
+      "sleeve": "scalper",
+      "symbol": "COST",
+      "qty": 1,
+      "ref_price": 1014.12,
+      "live_price": 1014.12,
+      "stop": 1007.02,
+      "target": 1024.26,
+      "tier": "orb",
+      "rationale": "{\"range_high\": 1012.55, \"range_low\": 999.2, \"avg_open_vol\": 366.5, \"cur_vol\": 1339}",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-04-30T14:10:37.807100+00:00",
+      "event": "buy",
+      "sleeve": "scalper",
+      "symbol": "HD",
+      "qty": 1,
+      "ref_price": 326.47,
+      "live_price": 326.47,
+      "stop": 324.18,
+      "target": 329.73,
+      "tier": "relvol",
+      "rationale": "{\"vol_multiple\": 2.1357615894039736, \"range_pos\": 1.0, \"cur_vol\": 1935}",
       "result": "submitted"
     }
   ]

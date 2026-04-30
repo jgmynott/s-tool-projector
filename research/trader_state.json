@@ -134,6 +134,42 @@
         "signal": "orb",
         "stop": 269.73,
         "target": 274.35
+      },
+      "C": {
+        "symbol": "C",
+        "qty": 3,
+        "entry_price": 128.155,
+        "opened_at": "2026-04-30T14:10:37.671870+00:00",
+        "signal": "relvol",
+        "stop": 127.26,
+        "target": 129.44
+      },
+      "BLK": {
+        "symbol": "BLK",
+        "qty": 1,
+        "entry_price": 1050.385,
+        "opened_at": "2026-04-30T14:10:37.716931+00:00",
+        "signal": "orb",
+        "stop": 1043.03,
+        "target": 1060.89
+      },
+      "COST": {
+        "symbol": "COST",
+        "qty": 1,
+        "entry_price": 1014.12,
+        "opened_at": "2026-04-30T14:10:37.762472+00:00",
+        "signal": "orb",
+        "stop": 1007.02,
+        "target": 1024.26
+      },
+      "HD": {
+        "symbol": "HD",
+        "qty": 1,
+        "entry_price": 326.47,
+        "opened_at": "2026-04-30T14:10:37.807083+00:00",
+        "signal": "relvol",
+        "stop": 324.18,
+        "target": 329.73
       }
     },
     "fired_today": [
@@ -141,6 +177,26 @@
         "symbol": "AAPL",
         "signal": "orb",
         "ts": "2026-04-30T14:05:33.469871+00:00"
+      },
+      {
+        "symbol": "C",
+        "signal": "relvol",
+        "ts": "2026-04-30T14:10:37.671881+00:00"
+      },
+      {
+        "symbol": "BLK",
+        "signal": "orb",
+        "ts": "2026-04-30T14:10:37.716941+00:00"
+      },
+      {
+        "symbol": "COST",
+        "signal": "orb",
+        "ts": "2026-04-30T14:10:37.762484+00:00"
+      },
+      {
+        "symbol": "HD",
+        "signal": "relvol",
+        "ts": "2026-04-30T14:10:37.807097+00:00"
       }
     ],
     "last_scan": null,
