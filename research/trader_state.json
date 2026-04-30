@@ -116,7 +116,17 @@
   },
   "breaker_fired_date": "2026-04-28",
   "scalper": {
-    "positions": {},
+    "positions": {
+      "DE": {
+        "symbol": "DE",
+        "qty": 1,
+        "entry_price": 593.48,
+        "opened_at": "2026-04-30T16:25:31.171575+00:00",
+        "signal": "relvol",
+        "stop": 589.33,
+        "target": 599.41
+      }
+    },
     "fired_today": [
       {
         "symbol": "AAPL",
@@ -197,6 +207,11 @@
         "symbol": "SOXL",
         "signal": "relvol",
         "ts": "2026-04-30T15:35:38.728691+00:00"
+      },
+      {
+        "symbol": "DE",
+        "signal": "relvol",
+        "ts": "2026-04-30T16:25:31.171593+00:00"
       }
     ],
     "last_scan": null,
