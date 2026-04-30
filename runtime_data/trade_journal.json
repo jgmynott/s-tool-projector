@@ -1,6 +1,6 @@
 {
-  "as_of": "2026-04-30T15:27:39.078197+00:00",
-  "n_rows": 321,
+  "as_of": "2026-04-30T15:30:34.247746+00:00",
+  "n_rows": 326,
   "rows": [
     {
       "ts": "2026-04-27T13:47:29.206731Z",
@@ -4264,6 +4264,67 @@
       "symbol": "PH",
       "qty": 3,
       "error": "Alpaca POST orders \u2192 HTTP 422: {\"code\":40010001,\"message\":\"client_order_id must be unique\"}"
+    },
+    {
+      "ts": "2026-04-30T15:30:32.264227+00:00",
+      "event": "buy_failed",
+      "sleeve": "daytrade",
+      "symbol": "GE",
+      "qty": 11,
+      "error": "Alpaca POST orders \u2192 HTTP 422: {\"code\":40010001,\"message\":\"client_order_id must be unique\"}"
+    },
+    {
+      "ts": "2026-04-30T15:30:33.163234+00:00",
+      "event": "buy_failed",
+      "sleeve": "daytrade",
+      "symbol": "CAT",
+      "qty": 4,
+      "error": "Alpaca POST orders \u2192 HTTP 422: {\"code\":40010001,\"message\":\"client_order_id must be unique\"}"
+    },
+    {
+      "ts": "2026-04-30T15:30:33.881511+00:00",
+      "event": "buy",
+      "sleeve": "daytrade",
+      "symbol": "CTRA",
+      "qty": 31,
+      "ref_price": 35.68,
+      "live_price": 35.755,
+      "stop": 34.68,
+      "target": 36.29,
+      "tier": "conservative",
+      "rationale": "",
+      "result": "submitted",
+      "tranche": 0
+    },
+    {
+      "ts": "2026-04-30T15:30:34.072201+00:00",
+      "event": "buy",
+      "sleeve": "daytrade",
+      "symbol": "CTRA",
+      "qty": 31,
+      "ref_price": 35.68,
+      "live_price": 35.755,
+      "stop": 34.68,
+      "target": 36.83,
+      "tier": "conservative",
+      "rationale": "",
+      "result": "submitted",
+      "tranche": 1
+    },
+    {
+      "ts": "2026-04-30T15:30:34.247169+00:00",
+      "event": "buy",
+      "sleeve": "daytrade",
+      "symbol": "CTRA",
+      "qty": 32,
+      "ref_price": 35.68,
+      "live_price": 35.755,
+      "stop": 34.68,
+      "target": 37.54,
+      "tier": "conservative",
+      "rationale": "",
+      "result": "submitted",
+      "tranche": 2
     }
   ]
 }
