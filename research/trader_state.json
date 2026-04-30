@@ -158,15 +158,6 @@
   "breaker_fired_date": "2026-04-28",
   "scalper": {
     "positions": {
-      "BA": {
-        "symbol": "BA",
-        "qty": 2.0,
-        "ref_price": 227.26,
-        "opened_at": "2026-04-30T14:25:49.497552Z",
-        "stop_pct": -0.007,
-        "target_pct": 0.01,
-        "signal": "adopted"
-      },
       "XOM": {
         "symbol": "XOM",
         "qty": 3,
@@ -202,6 +193,15 @@
         "signal": "relvol",
         "stop": 272.75,
         "target": 277.42
+      },
+      "ASML": {
+        "symbol": "ASML",
+        "qty": 1,
+        "entry_price": 1419.47,
+        "opened_at": "2026-04-30T14:55:36.354551+00:00",
+        "signal": "relvol",
+        "stop": 1409.53,
+        "target": 1433.66
       }
     },
     "fired_today": [
@@ -259,6 +259,11 @@
         "symbol": "IWM",
         "signal": "relvol",
         "ts": "2026-04-30T14:45:36.961496+00:00"
+      },
+      {
+        "symbol": "ASML",
+        "signal": "relvol",
+        "ts": "2026-04-30T14:55:36.354568+00:00"
       }
     ],
     "last_scan": null,
