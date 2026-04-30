@@ -170,6 +170,24 @@
         "signal": "relvol",
         "stop": 324.18,
         "target": 329.73
+      },
+      "GS": {
+        "symbol": "GS",
+        "qty": 1,
+        "entry_price": 916.33,
+        "opened_at": "2026-04-30T14:20:55.269400+00:00",
+        "signal": "orb",
+        "stop": 909.92,
+        "target": 925.49
+      },
+      "MS": {
+        "symbol": "MS",
+        "qty": 2,
+        "entry_price": 188.11,
+        "opened_at": "2026-04-30T14:20:55.330258+00:00",
+        "signal": "orb",
+        "stop": 186.79,
+        "target": 189.99
       }
     },
     "fired_today": [
@@ -197,6 +215,16 @@
         "symbol": "HD",
         "signal": "relvol",
         "ts": "2026-04-30T14:10:37.807097+00:00"
+      },
+      {
+        "symbol": "GS",
+        "signal": "orb",
+        "ts": "2026-04-30T14:20:55.269408+00:00"
+      },
+      {
+        "symbol": "MS",
+        "signal": "orb",
+        "ts": "2026-04-30T14:20:55.330265+00:00"
       }
     ],
     "last_scan": null,

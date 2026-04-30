@@ -1,6 +1,6 @@
 {
-  "as_of": "2026-04-30T14:10:37.807651+00:00",
-  "n_rows": 254,
+  "as_of": "2026-04-30T14:20:55.330746+00:00",
+  "n_rows": 256,
   "rows": [
     {
       "ts": "2026-04-27T13:47:29.206731Z",
@@ -3415,6 +3415,34 @@
       "target": 329.73,
       "tier": "relvol",
       "rationale": "{\"vol_multiple\": 2.1357615894039736, \"range_pos\": 1.0, \"cur_vol\": 1935}",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-04-30T14:20:55.269411+00:00",
+      "event": "buy",
+      "sleeve": "scalper",
+      "symbol": "GS",
+      "qty": 1,
+      "ref_price": 916.33,
+      "live_price": 916.33,
+      "stop": 909.92,
+      "target": 925.49,
+      "tier": "orb",
+      "rationale": "{\"range_high\": 914.25, \"range_low\": 905.25, \"avg_open_vol\": 275.6666666666667, \"cur_vol\": 693}",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-04-30T14:20:55.330268+00:00",
+      "event": "buy",
+      "sleeve": "scalper",
+      "symbol": "MS",
+      "qty": 2,
+      "ref_price": 188.11,
+      "live_price": 188.11,
+      "stop": 186.79,
+      "target": 189.99,
+      "tier": "orb",
+      "rationale": "{\"range_high\": 187.68, \"range_low\": 184.9, \"avg_open_vol\": 3734.3333333333335, \"cur_vol\": 4991}",
       "result": "submitted"
     }
   ]
