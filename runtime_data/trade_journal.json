@@ -1,6 +1,6 @@
 {
-  "as_of": "2026-04-30T13:30:52.207093+00:00",
-  "n_rows": 226,
+  "as_of": "2026-04-30T14:00:37.408144+00:00",
+  "n_rows": 247,
   "rows": [
     {
       "ts": "2026-04-27T13:47:29.206731Z",
@@ -3093,6 +3093,237 @@
       "rationale": "Projection-only thesis: +11% to P50, Sharpe 0.40, 28% volatility \u2014 the model kept it; the narrative ",
       "result": "submitted",
       "tranche": 2
+    },
+    {
+      "ts": "2026-04-30T14:00:34.681846+00:00",
+      "event": "sell",
+      "sleeve": "scalper",
+      "symbol": "MRVL",
+      "qty": 3.0,
+      "buy_price": null,
+      "sell_price": null,
+      "pnl": null,
+      "exit_reason": "max_hold"
+    },
+    {
+      "ts": "2026-04-30T14:00:34.767463+00:00",
+      "event": "sell",
+      "sleeve": "scalper",
+      "symbol": "NVDA",
+      "qty": 2.0,
+      "buy_price": null,
+      "sell_price": null,
+      "pnl": null,
+      "exit_reason": "max_hold"
+    },
+    {
+      "ts": "2026-04-30T14:00:34.861392+00:00",
+      "event": "sell",
+      "sleeve": "scalper",
+      "symbol": "AAPL",
+      "qty": 1.0,
+      "buy_price": null,
+      "sell_price": null,
+      "pnl": null,
+      "exit_reason": "max_hold"
+    },
+    {
+      "ts": "2026-04-30T14:00:35.145987+00:00",
+      "event": "sell",
+      "sleeve": "scalper",
+      "symbol": "DIS",
+      "qty": 4.0,
+      "buy_price": null,
+      "sell_price": null,
+      "pnl": null,
+      "exit_reason": "max_hold"
+    },
+    {
+      "ts": "2026-04-30T14:00:35.543115+00:00",
+      "event": "sell",
+      "sleeve": "scalper",
+      "symbol": "IWM",
+      "qty": 1.0,
+      "buy_price": null,
+      "sell_price": null,
+      "pnl": null,
+      "exit_reason": "max_hold"
+    },
+    {
+      "ts": "2026-04-30T14:00:35.637753+00:00",
+      "event": "sell",
+      "sleeve": "scalper",
+      "symbol": "NFLX",
+      "qty": 5.0,
+      "buy_price": null,
+      "sell_price": null,
+      "pnl": null,
+      "exit_reason": "max_hold"
+    },
+    {
+      "ts": "2026-04-30T14:00:35.722452+00:00",
+      "event": "sell",
+      "sleeve": "scalper",
+      "symbol": "MSFT",
+      "qty": 1.0,
+      "buy_price": null,
+      "sell_price": null,
+      "pnl": null,
+      "exit_reason": "max_hold"
+    },
+    {
+      "ts": "2026-04-30T14:00:35.811927+00:00",
+      "event": "sell",
+      "sleeve": "scalper",
+      "symbol": "BAC",
+      "qty": 9.0,
+      "buy_price": null,
+      "sell_price": null,
+      "pnl": null,
+      "exit_reason": "max_hold"
+    },
+    {
+      "ts": "2026-04-30T14:00:35.901853+00:00",
+      "event": "sell",
+      "sleeve": "scalper",
+      "symbol": "COST",
+      "qty": 1.0,
+      "buy_price": null,
+      "sell_price": null,
+      "pnl": null,
+      "exit_reason": "max_hold"
+    },
+    {
+      "ts": "2026-04-30T14:00:35.982664+00:00",
+      "event": "sell",
+      "sleeve": "scalper",
+      "symbol": "CAT",
+      "qty": 1.0,
+      "buy_price": null,
+      "sell_price": null,
+      "pnl": null,
+      "exit_reason": "max_hold"
+    },
+    {
+      "ts": "2026-04-30T14:00:36.065615+00:00",
+      "event": "sell",
+      "sleeve": "scalper",
+      "symbol": "MS",
+      "qty": 2.0,
+      "buy_price": null,
+      "sell_price": null,
+      "pnl": null,
+      "exit_reason": "max_hold"
+    },
+    {
+      "ts": "2026-04-30T14:00:36.147031+00:00",
+      "event": "sell",
+      "sleeve": "scalper",
+      "symbol": "GS",
+      "qty": 1.0,
+      "buy_price": null,
+      "sell_price": null,
+      "pnl": null,
+      "exit_reason": "max_hold"
+    },
+    {
+      "ts": "2026-04-30T14:00:36.272511+00:00",
+      "event": "sell",
+      "sleeve": "scalper",
+      "symbol": "HD",
+      "qty": 1.0,
+      "buy_price": null,
+      "sell_price": null,
+      "pnl": null,
+      "exit_reason": "max_hold"
+    },
+    {
+      "ts": "2026-04-30T14:00:36.355783+00:00",
+      "event": "sell",
+      "sleeve": "scalper",
+      "symbol": "XOM",
+      "qty": 3.0,
+      "buy_price": null,
+      "sell_price": null,
+      "pnl": null,
+      "exit_reason": "max_hold"
+    },
+    {
+      "ts": "2026-04-30T14:00:36.437163+00:00",
+      "event": "sell",
+      "sleeve": "scalper",
+      "symbol": "DE",
+      "qty": 1.0,
+      "buy_price": null,
+      "sell_price": null,
+      "pnl": null,
+      "exit_reason": "max_hold"
+    },
+    {
+      "ts": "2026-04-30T14:00:36.526435+00:00",
+      "event": "sell",
+      "sleeve": "scalper",
+      "symbol": "BLK",
+      "qty": 1.0,
+      "buy_price": null,
+      "sell_price": null,
+      "pnl": null,
+      "exit_reason": "max_hold"
+    },
+    {
+      "ts": "2026-04-30T14:00:36.613809+00:00",
+      "event": "sell",
+      "sleeve": "scalper",
+      "symbol": "QQQ",
+      "qty": 1.0,
+      "buy_price": null,
+      "sell_price": null,
+      "pnl": null,
+      "exit_reason": "max_hold"
+    },
+    {
+      "ts": "2026-04-30T14:00:37.133834+00:00",
+      "event": "sell",
+      "sleeve": "scalper",
+      "symbol": "TSM",
+      "qty": 1.0,
+      "buy_price": null,
+      "sell_price": null,
+      "pnl": null,
+      "exit_reason": "max_hold"
+    },
+    {
+      "ts": "2026-04-30T14:00:37.234476+00:00",
+      "event": "sell",
+      "sleeve": "scalper",
+      "symbol": "ASML",
+      "qty": 1.0,
+      "buy_price": null,
+      "sell_price": null,
+      "pnl": null,
+      "exit_reason": "max_hold"
+    },
+    {
+      "ts": "2026-04-30T14:00:37.315538+00:00",
+      "event": "sell",
+      "sleeve": "scalper",
+      "symbol": "BA",
+      "qty": 2.0,
+      "buy_price": null,
+      "sell_price": null,
+      "pnl": null,
+      "exit_reason": "max_hold"
+    },
+    {
+      "ts": "2026-04-30T14:00:37.407537+00:00",
+      "event": "sell",
+      "sleeve": "scalper",
+      "symbol": "GE",
+      "qty": 1.0,
+      "buy_price": null,
+      "sell_price": null,
+      "pnl": null,
+      "exit_reason": "max_hold"
     }
   ]
 }
