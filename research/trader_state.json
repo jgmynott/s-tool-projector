@@ -158,15 +158,6 @@
   "breaker_fired_date": "2026-04-28",
   "scalper": {
     "positions": {
-      "ASML": {
-        "symbol": "ASML",
-        "qty": 1,
-        "entry_price": 1419.47,
-        "opened_at": "2026-04-30T14:55:36.354551+00:00",
-        "signal": "relvol",
-        "stop": 1409.53,
-        "target": 1433.66
-      },
       "TSM": {
         "symbol": "TSM",
         "qty": 1.0,

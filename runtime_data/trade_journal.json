@@ -1,6 +1,6 @@
 {
-  "as_of": "2026-04-30T15:15:38.342835+00:00",
-  "n_rows": 307,
+  "as_of": "2026-04-30T15:20:38.385730+00:00",
+  "n_rows": 308,
   "rows": [
     {
       "ts": "2026-04-27T13:47:29.206731Z",
@@ -4117,6 +4117,17 @@
       "tier": "relvol",
       "rationale": "{\"vol_multiple\": 2.4392010411361964, \"range_pos\": 0.6813880126183067, \"cur_vol\": 21554}",
       "result": "submitted"
+    },
+    {
+      "ts": "2026-04-30T15:20:38.385111+00:00",
+      "event": "sell",
+      "sleeve": "scalper",
+      "symbol": "ASML",
+      "qty": 1,
+      "buy_price": 1419.47,
+      "sell_price": null,
+      "pnl": null,
+      "exit_reason": "max_hold"
     }
   ]
 }
