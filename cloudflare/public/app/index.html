@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=1024">
 <title>S-Tool Projector</title>
 <meta name="description" content="Stock projection engine with walk-forward validated signals across the Russell 3000. Real MAPE bands, no hidden tilts." />
 <link rel="canonical" href="https://s-tool.io/app/" />
@@ -18,18 +18,9 @@
 <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.46.0/dist/apexcharts.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<!-- s-tool perf hints -->
-<link rel="preconnect" href="https://fluent-mole-71.clerk.accounts.dev" crossorigin />
 <link rel="preconnect" href="https://api-production-9fce.up.railway.app" crossorigin />
-<link rel="dns-prefetch" href="https://fluent-mole-71.clerk.accounts.dev" />
 <link rel="dns-prefetch" href="https://api-production-9fce.up.railway.app" />
-<link rel="prefetch" href="/" />
 <link rel="prefetch" href="/picks/" />
-<link rel="prefetch" href="/track-record/" />
-<link rel="prefetch" href="/how/" />
-<link rel="prefetch" href="/pricing/" />
-<link rel="prefetch" href="/faq/" />
-<!-- s-tool perf hints -->
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet"><!-- s-tool perf skel -->
 <meta name="view-transition" content="same-origin" />
 <link rel="stylesheet" href="/shared/skeleton.css" />
@@ -859,181 +850,41 @@ body {
     .hero-headline { font-size: 18px; }
 }
 
-/* ── Auth + billing UI ────────────────────────────────────────── */
-.auth-row { display:flex; align-items:center; gap:12px; }
-.auth-btn {
-    background: var(--bg-card); color: var(--text-primary);
-    border: 1px solid var(--border); border-radius: 10px;
-    padding: 8px 14px; font: 500 13px 'Inter', sans-serif;
-    cursor: pointer; transition: all .15s;
-}
-.auth-btn:hover { border-color: var(--border-hover); background: var(--bg-card-alt); }
-.auth-btn.primary {
-    background: linear-gradient(135deg, var(--accent), #2dd4bf);
-    color: #0a1410; border-color: transparent; font-weight: 600;
-}
-.quota-badge {
-    font: 500 12px 'Inter', sans-serif; color: var(--text-secondary);
-    background: var(--bg-card); border: 1px solid var(--border);
-    padding: 6px 10px; border-radius: 8px; white-space: nowrap;
-}
-.quota-badge.pro { color: #fde68a; border-color: rgba(253,230,138,0.35); }
-.quota-badge.exceeded { color: var(--red); border-color: rgba(248,113,113,0.4); }
-#userSlot > div { display: inline-block; }   /* Clerk UserButton root */
+/* Site nav — matches /picks */
+nav.site { position: sticky; top: 0; z-index: 100; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); background: rgba(11,16,6,0.82); border-bottom: 1px solid rgba(155,161,185,0.14); }
+.site .nav-row { max-width: 1320px; margin: 0 auto; padding: 18px 32px; display: flex; align-items: center; gap: 28px; }
+.site .nav-logo { display: flex; align-items: center; color: #EDECE6; text-decoration: none; }
+.site .nav-center { display: flex; gap: 28px; font: 500 14px 'Inter', sans-serif; color: #9BA1B9; }
+.site .nav-center a { color: #9BA1B9; text-decoration: none; padding: 2px 0; }
+.site .nav-center a:hover { color: #EDECE6; }
+.site .nav-center a.active { color: #EDECE6; border-bottom: 1px solid #5FAAC5; padding-bottom: 2px; }
 </style>
-<!-- Clerk auth (test instance — swap pk_test_ for pk_live_ on launch). -->
-<script async
-  data-clerk-publishable-key="pk_test_Zmx1ZW50LW1vbGUtNzEuY2xlcmsuYWNjb3VudHMuZGV2JA"
-  src="https://fluent-mole-71.clerk.accounts.dev/npm/@clerk/clerk-js@5/dist/clerk.browser.js"
-  crossorigin="anonymous"
-></script>
-<style>
-/* Evergreen nav — matches /, /picks, /how, /pricing, /faq */
-nav.evergreen { position: sticky; top: 0; z-index: 100; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); background: rgba(11,16,6,0.82); border-bottom: 1px solid rgba(155,161,185,0.14); }
-.evergreen .ev-row { max-width: 1180px; margin: 0 auto; padding: 18px 32px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
-.evergreen .ev-logo { display: flex; align-items: center; gap: 10px; font: 700 18px 'Inter', sans-serif; letter-spacing: -0.04em; color: #EDECE6; text-decoration: none; }
-.evergreen .ev-logo-mark { width: 28px; height: 28px; border-radius: 7px; background: linear-gradient(135deg, #022834, #0A6577, #5FAAC5); display: flex; align-items: center; justify-content: center; }
-.evergreen .ev-logo-mark svg { stroke: #EDECE6; }
-.evergreen .ev-center { display: flex; gap: 28px; font: 500 14px 'Inter', sans-serif; color: #9BA1B9; }
-.evergreen .ev-center a { color: #9BA1B9; text-decoration: none; padding: 2px 0; }
-.evergreen .ev-center a:hover { color: #EDECE6; }
-.evergreen .ev-center a.active { color: #EDECE6; border-bottom: 1px solid #5FAAC5; padding-bottom: 2px; }
-.evergreen .ev-end { display: flex; align-items: center; gap: 14px; min-width: 120px; justify-content: flex-end; }
-.evergreen .ev-user-pill-wrap { position: relative; }
-.evergreen .ev-user-pill { display: inline-flex; align-items: center; gap: 10px; padding: 7px 14px 7px 7px; border-radius: 999px; background: rgba(95,170,197,0.08); border: 1px solid rgba(95,170,197,0.30); color: #EDECE6; font: 500 13px 'Inter', sans-serif; cursor: pointer; }
-.evergreen .ev-user-pill:hover { background: rgba(95,170,197,0.14); }
-.evergreen .ev-user-pill .ev-tier-badge { font: 600 10px 'Inter', sans-serif; letter-spacing: 0.14em; text-transform: uppercase; color: #5FAAC5; }
-.evergreen .ev-user-pill .ev-caret { width: 12px; height: 12px; opacity: 0.7; transition: transform .2s; }
-.evergreen .ev-user-pill-wrap.open .ev-caret { transform: rotate(180deg); }
-.evergreen .ev-user-menu { display: none; position: absolute; top: calc(100% + 10px); right: 0; min-width: 240px; max-width: 320px; padding: 6px; background: #14201B; border: 1px solid rgba(95,170,197,0.30); border-radius: 14px; box-shadow: 0 20px 56px -8px rgba(0,0,0,0.55); z-index: 200; }
-@media (max-width: 620px) {
-  .evergreen .ev-user-menu { position: fixed; top: 72px; left: 12px; right: 12px; min-width: 0; max-width: none; }
-}
-.evergreen .ev-user-pill-wrap.open .ev-user-menu { display: block; }
-.evergreen .ev-user-menu .ev-menu-email { padding: 10px 14px; font: 500 12px 'Inter', sans-serif; color: #6B7382; border-bottom: 1px solid rgba(155,161,185,0.14); margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; }
-.evergreen .ev-user-menu .ev-menu-item { display: block; width: 100%; text-align: left; padding: 10px 14px; border-radius: 8px; font: 500 14px 'Inter', sans-serif; color: #EDECE6; background: none; border: none; cursor: pointer; }
-.evergreen .ev-user-menu .ev-menu-item:hover { background: rgba(95,170,197,0.10); }
-.evergreen .ev-user-menu .ev-menu-item.danger { color: #fca5a5; }
-.evergreen .ev-user-menu .ev-menu-item.danger:hover { background: rgba(252,165,165,0.08); }
-.evergreen .ev-signin-btn { font: 500 14px 'Inter', sans-serif; color: #EDECE6; border: 1px solid rgba(95,170,197,0.30); padding: 9px 18px; border-radius: 999px; cursor: pointer; background: transparent; }
-.evergreen .ev-signin-btn:hover { background: rgba(95,170,197,0.08); }
-@media (max-width: 800px) { .evergreen .ev-center { gap: 18px; } .evergreen .ev-center a { font-size: 13px; } }
-@media (max-width: 640px) {
-  .evergreen .ev-center a:nth-child(4), .evergreen .ev-center a:nth-child(5) { display: none; }
-  .evergreen .ev-user-pill { gap: 6px; padding: 6px 10px 6px 6px; }
-  .evergreen .ev-user-pill .ev-pill-email { display: none; }
-  .evergreen .ev-user-pill .ev-caret { display: none; }
-  .evergreen .ev-user-pill .ev-tier-badge { font-size: 9px; letter-spacing: 0.10em; padding: 2px 6px; border-radius: 6px; background: rgba(95,170,197,0.14); }
-  .evergreen .ev-row { padding: 14px 16px; gap: 12px; }
-}
-.evergreen .ev-logo, .evergreen .ev-end { flex-shrink: 0; }
-.evergreen .ev-center { min-width: 0; overflow: hidden; white-space: nowrap; }
-</style>
-<link rel="stylesheet" href="/shared/mobile.css?v=20260429e" />
-<!-- s-tool speculation rules -->
-<script type="speculationrules">
-{
-  "prerender": [{
-    "where": { "href_matches": "/*" },
-    "eagerness": "moderate"
-  }]
-}
-</script>
-<!-- s-tool speculation rules -->
-<!-- s-tool sw register -->
 <script>
   if ('serviceWorker' in navigator) {
     addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
   }
 </script>
-<!-- s-tool sw register -->
 </head>
 <body>
-<nav class="evergreen">
-  <div class="ev-row">
-    <a href="/" class="ev-logo" aria-label="s-tool home"><img src="/img/logo-stool.svg?v=20260430a" alt="s-tool" class="logo-img" style="height:36px;width:auto;display:block;"/></a>
-    <div class="ev-center">
-      <a href="/app" class="active">App</a>
+<nav class="site">
+  <div class="nav-row">
+    <a href="/app" class="nav-logo" aria-label="s-tool home"><img src="/img/logo-stool.svg?v=20260430a" alt="s-tool" style="height:36px;width:auto;display:block;"/></a>
+    <div class="nav-center">
+      <a href="/app" class="active">Projector</a>
       <a href="/picks">Picks</a>
-      <a href="/track-record">Track record</a>
-      <a href="/backtest">Backtest</a>
-      <a href="/how">How</a>
-      <a href="/pricing">Pricing</a>
-      <a href="/faq">FAQ</a>
-    </div>
-    <div class="ev-end" id="evNavEnd">
-      <button class="ev-signin-btn" onclick="window.Clerk?.openSignIn?.({afterSignInUrl:'/app'})">Sign in</button>
     </div>
   </div>
 </nav>
-<script>
-(function () {
-  async function headers() {
-    try { const t = await window.Clerk?.session?.getToken?.(); return t ? { Authorization: `Bearer ${t}` } : {}; } catch { return {}; }
-  }
-  function toggleEvMenu(evt) { evt?.stopPropagation?.(); document.querySelector('.ev-user-pill-wrap')?.classList.toggle('open'); }
-  function closeEvMenu() { document.querySelector('.ev-user-pill-wrap')?.classList.remove('open'); }
-  document.addEventListener('click', (e) => { if (!e.target.closest?.('.ev-user-pill-wrap')) closeEvMenu(); });
-  async function evSignOut() { try { await window.Clerk?.signOut?.(); } catch (_) {} location.href = '/'; }
-  window.toggleEvMenu = toggleEvMenu; window.closeEvMenu = closeEvMenu; window.evSignOut = evSignOut;
-
-  async function paintPill() {
-    const end = document.getElementById('evNavEnd');
-    if (!end) return;
-    if (!window.Clerk?.session) {
-      end.innerHTML = `<button class="ev-signin-btn" onclick="window.Clerk?.openSignIn?.({afterSignInUrl:'/app'})">Sign in</button>`;
-      return;
-    }
-    try {
-      const r = await fetch('/api/me', { headers: await headers() });
-      if (!r.ok) return;
-      const d = await r.json();
-      const tier = (d.tier || 'free').toLowerCase();
-      const badge = tier === 'strategist' ? 'Strategist' : tier === 'pro' ? 'Pro' : 'Free';
-      const fullEmail = d.email || '';
-      const shortEmail = fullEmail.split('@')[0] || 'account';
-      const CLERK_DARK = {appearance:{variables:{colorPrimary:'#5FAAC5',colorBackground:'#111512',colorText:'#EDECE6',colorTextSecondary:'#9BA1B9',colorInputBackground:'#1F232D',colorInputText:'#EDECE6',borderRadius:'10px',fontFamily:"Inter, sans-serif"}}};
-      window.openDarkProfile = () => window.Clerk?.openUserProfile?.(CLERK_DARK);
-      window.openBillingPortal = async () => {
-        try {
-          const r = await fetch('/api/billing/portal', { method: 'POST', headers: await headers() });
-          if (!r.ok) return alert('Billing portal unavailable');
-          const { portal_url } = await r.json(); location.href = portal_url;
-        } catch (e) { alert('Could not open billing'); }
-      };
-      const hasSub = tier === 'pro' || tier === 'strategist';
-      const subRow = hasSub
-        ? `<button class="ev-menu-item" onclick="openBillingPortal(); closeEvMenu();">Manage subscription</button>`
-        : `<button class="ev-menu-item" onclick="location.href='/pricing'; closeEvMenu();">Upgrade</button>`;
-      end.innerHTML = `<div class="ev-user-pill-wrap"><button class="ev-user-pill" onclick="toggleEvMenu(event)" aria-label="Account menu for ${fullEmail || shortEmail}"><span style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#022834,#5FAAC5);display:inline-block;flex-shrink:0;"></span><span class="ev-pill-email">${shortEmail}</span><span class="ev-tier-badge">${badge}</span><svg class="ev-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></button><div class="ev-user-menu"><div class="ev-menu-email">${fullEmail || 'Signed in'}</div><button class="ev-menu-item" onclick="openDarkProfile(); closeEvMenu();">Manage account</button>${subRow}<button class="ev-menu-item" onclick="location.href='/'; closeEvMenu();">Home</button><button class="ev-menu-item" onclick="location.href='/picks'; closeEvMenu();">Picks</button><button class="ev-menu-item" onclick="location.href='/how'; closeEvMenu();">How it works</button><button class="ev-menu-item" onclick="location.href='/pricing'; closeEvMenu();">Pricing</button><button class="ev-menu-item" onclick="location.href='/faq'; closeEvMenu();">FAQ</button><button class="ev-menu-item danger" onclick="evSignOut(); closeEvMenu();">Sign out</button></div></div>`;
-    } catch (_) {}
-  }
-  function wait() {
-    if (!window.Clerk?.load) { setTimeout(wait, 100); return; }
-    window.Clerk.load().then(() => { paintPill(); window.Clerk.addListener(paintPill); });
-  }
-  wait();
-})();
-</script>
 <div class="container">
     <!-- Header -->
     <div class="header">
         <div>
-            <a href="/" class="back-link">&larr; s-tool.io</a>
             <h1>S-TOOL PROJECTOR</h1>
             <div class="subtitle">Adaptive Projection Engine</div>
         </div>
-        <div class="meta auth-row">
-            <div>
-                <div id="metaDate"></div>
-                <div id="metaVix"></div>
-            </div>
-            <div id="quotaBadge" class="quota-badge" style="display:none;"></div>
-            <div id="authControls" class="auth-row">
-                <button id="btnSignIn" class="auth-btn" onclick="openClerkSignIn()" style="display:none;">Sign in</button>
-                <button id="btnGetPro" class="auth-btn primary" onclick="startCheckout()" style="display:none;">Get Pro</button>
-                <div id="userSlot"></div>
-            </div>
+        <div class="meta">
+            <div id="metaDate"></div>
+            <div id="metaVix"></div>
         </div>
     </div>
 
@@ -1401,16 +1252,9 @@ async function runProjection() {
 
     try {
         let data = null;
-        const headers = await authHeaders();
         for (const base of API_BACKENDS) {
             try {
-                const res = await fetch(`${base}/api/project?symbol=${symbol}&horizon=${horizon}`, { headers, signal: AbortSignal.timeout(30000) });
-                updateQuotaFromHeaders(res.headers);
-                if (res.status === 402) {
-                    const err = await res.json().catch(() => ({}));
-                    handlePaywall(err);
-                    return;
-                }
+                const res = await fetch(`${base}/api/project?symbol=${symbol}&horizon=${horizon}`, { signal: AbortSignal.timeout(30000) });
                 if (!res.ok) {
                     const err = await res.json().catch(() => ({ detail: res.statusText }));
                     throw new Error(err.detail || `HTTP ${res.status}`);
@@ -1427,9 +1271,7 @@ async function runProjection() {
             await new Promise(r => setTimeout(r, 2000));
             for (const base of API_BACKENDS) {
                 try {
-                    const res = await fetch(`${base}/api/project?symbol=${symbol}&horizon=${horizon}`, { headers, signal: AbortSignal.timeout(30000) });
-                    updateQuotaFromHeaders(res.headers);
-                    if (res.status === 402) { handlePaywall(await res.json().catch(() => ({}))); return; }
+                    const res = await fetch(`${base}/api/project?symbol=${symbol}&horizon=${horizon}`, { signal: AbortSignal.timeout(30000) });
                     if (!res.ok) { const err = await res.json().catch(() => ({ detail: res.statusText })); throw new Error(err.detail || `HTTP ${res.status}`); }
                     data = await res.json();
                     break;
@@ -2290,137 +2132,15 @@ $('symbolInput').addEventListener('keydown', e => { if (e.key === 'Enter') runPr
 // Show today's date
 $('metaDate').textContent = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
 
-// ── Auth + billing helpers (Clerk + Stripe) ─────────────────────
-
-async function authHeaders() {
-    try {
-        const token = await window.Clerk?.session?.getToken?.();
-        return token ? { Authorization: `Bearer ${token}` } : {};
-    } catch { return {}; }
-}
-
-function updateQuotaFromHeaders(h) {
-    const tier = h.get('X-Quota-Tier');
-    const limit = h.get('X-Quota-Limit');
-    const used = h.get('X-Quota-Used');
-    const remaining = h.get('X-Quota-Remaining');
-    const el = $('quotaBadge');
-    if (!tier) { el.style.display = 'none'; return; }
-    el.style.display = 'inline-block';
-    el.className = 'quota-badge';
-    if (tier === 'pro') {
-        el.classList.add('pro');
-        el.textContent = `Pro · ${used || 0} / ${limit} today`;
-    } else {
-        if (remaining === '0') el.classList.add('exceeded');
-        el.textContent = `${used || 0} / ${limit} today`;
+// Deep-link: /app?ticker=XYZ prefills + auto-runs (used by /picks links).
+(function () {
+    const dlTicker = new URLSearchParams(location.search).get('ticker');
+    if (!dlTicker) return;
+    const input = document.getElementById('symbolInput');
+    if (input) {
+        input.value = dlTicker.toUpperCase();
+        try { runProjection(); } catch (_) {}
     }
-}
-
-function handlePaywall(err) {
-    if (err.tier === 'anonymous' || !window.Clerk?.user) {
-        status('Daily limit reached. Sign in for 3 free projections/day, or upgrade to Pro for unlimited.');
-        openClerkSignIn();
-    } else {
-        status('You\u2019ve used your 3 free projections today. Upgrade to Pro for unlimited.');
-        $('btnGetPro').style.display = 'inline-block';
-    }
-}
-
-async function openClerkSignIn() {
-    if (!window.Clerk) return alert('Auth loading, try again in a moment.');
-    await window.Clerk.openSignIn({ afterSignInUrl: location.pathname, afterSignUpUrl: location.pathname });
-}
-
-async function startCheckout() {
-    if (!window.Clerk?.session) { await openClerkSignIn(); return; }
-    try {
-        const res = await fetch('/api/billing/checkout', {
-            method: 'POST',
-            headers: await authHeaders(),
-        });
-        if (!res.ok) throw new Error((await res.json()).detail || `HTTP ${res.status}`);
-        const { checkout_url } = await res.json();
-        location.href = checkout_url;
-    } catch (e) {
-        status(`Checkout failed: ${e.message}`);
-    }
-}
-
-async function refreshUserPill() {
-    if (!window.Clerk) return;
-    const signedIn = !!window.Clerk.user;
-    $('btnSignIn').style.display = signedIn ? 'none' : 'inline-block';
-    const userSlot = $('userSlot');
-    userSlot.innerHTML = '';
-    if (signedIn) {
-        try {
-            window.Clerk.mountUserButton(userSlot, { afterSignOutUrl: '/' });
-        } catch {}
-    }
-    // Fetch /api/me so the quota badge reflects server truth.
-    try {
-        const res = await fetch('/api/project?symbol=__probe__&horizon=252', { headers: await authHeaders() });
-        updateQuotaFromHeaders(res.headers);
-    } catch {}
-    try {
-        const me = await (await fetch('/api/me', { headers: await authHeaders() })).json();
-        $('btnGetPro').style.display = (signedIn && me.tier !== 'pro') ? 'inline-block' : 'none';
-    } catch {}
-}
-
-// Clerk SDK loads async; wait for it, then wire listeners.
-(function waitForClerk() {
-    if (!window.Clerk?.load) { setTimeout(waitForClerk, 100); return; }
-    window.Clerk.load().then(() => {
-        refreshUserPill();
-        window.Clerk.addListener(() => refreshUserPill());
-        // Deep-link support: /app?ticker=XYZ prefills + runs immediately so
-        // clicking a pick from /picks lands in a running projection.
-        const dlTicker = new URLSearchParams(location.search).get('ticker');
-        if (dlTicker) {
-            const input = document.getElementById('symbolInput');
-            if (input) {
-                input.value = dlTicker.toUpperCase();
-                try { runProjection(); } catch (_) {}
-            }
-        }
-        // Handle post-checkout redirect flash. We show a tier-specific message
-        // by polling /api/me briefly — Stripe webhooks are usually settled by
-        // the time the user lands back, but give it a couple tries just in case.
-        const p = new URLSearchParams(location.search);
-        if (p.get('billing') === 'success') {
-            (async () => {
-                const expected = (p.get('tier') || '').toLowerCase();
-                const headers = async () => await authHeaders();
-                const fetchTier = async () => {
-                    try {
-                        const r = await fetch('/api/me', { headers: await headers() });
-                        return r.ok ? ((await r.json()).tier || '').toLowerCase() : '';
-                    } catch (_) { return ''; }
-                };
-                // Poll briefly for the webhook to settle.
-                let tier = '';
-                for (let i = 0; i < 5; i++) {
-                    tier = await fetchTier();
-                    if (tier === 'strategist' || tier === 'pro') break;
-                    await new Promise(res => setTimeout(res, 800));
-                }
-                // If the tier didn't match what was purchased, force a resync.
-                if (expected && tier && tier !== expected) {
-                    try {
-                        await fetch('/api/billing/resync', { method: 'POST', headers: await headers() });
-                        tier = await fetchTier();
-                    } catch (_) {}
-                }
-                if (tier === 'strategist') return status('Welcome to Strategist. Subscription confirmed.');
-                if (tier === 'pro')        return status('Welcome to Pro. Subscription confirmed.');
-                status('Subscription confirmed. Refresh if your tier badge hasn\u2019t updated.');
-                refreshUserPill();
-            })();
-        }
-        if (p.get('billing') === 'cancel') status('Checkout canceled \u2014 you can try again any time.');
-    });
 })();
 
 </script>

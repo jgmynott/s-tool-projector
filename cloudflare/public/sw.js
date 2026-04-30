@@ -5,15 +5,12 @@
 //   - /api/*: pass through to network (always live data)
 //   - Fonts: cache-first (immutable per version)
 
-const VERSION = 'v1';
+const VERSION = 'v2';
 const SHELL_CACHE = 's-tool-shell-' + VERSION;
 const API_PATH = '/api/';
 const SHELL_PATHS = [
-  '/', '/picks/', '/track-record/', '/backtest/',
-  '/how/', '/pricing/', '/faq/', '/app/',
+  '/app/', '/picks/',
   '/shared/skeleton.css',
-  '/shared/nav.css',
-  '/shared/nav.js',
 ];
 
 self.addEventListener('install', (e) => {

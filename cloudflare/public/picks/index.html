@@ -2,30 +2,19 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=1024" />
 <title>Portfolio intelligence — s-tool</title>
 <meta name="description" content="Ranked portfolio intelligence from a nightly full-universe scan. Strategist tier only." />
 <link rel="canonical" href="https://s-tool.io/picks" />
 <link rel="icon" type="image/svg+xml" href="/img/favicon.svg?v=20260430a" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<!-- s-tool perf hints -->
-<link rel="preconnect" href="https://fluent-mole-71.clerk.accounts.dev" crossorigin />
 <link rel="preconnect" href="https://api-production-9fce.up.railway.app" crossorigin />
-<link rel="dns-prefetch" href="https://fluent-mole-71.clerk.accounts.dev" />
 <link rel="dns-prefetch" href="https://api-production-9fce.up.railway.app" />
-<link rel="prefetch" href="/" />
-<link rel="prefetch" href="/picks/" />
-<link rel="prefetch" href="/track-record/" />
-<link rel="prefetch" href="/how/" />
-<link rel="prefetch" href="/pricing/" />
-<link rel="prefetch" href="/faq/" />
-<!-- s-tool perf hints -->
+<link rel="prefetch" href="/app/" />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/shared/nav.css" /><!-- s-tool perf skel -->
 <meta name="view-transition" content="same-origin" />
 <link rel="stylesheet" href="/shared/skeleton.css" />
-<!-- s-tool perf skel -->
 
 <style>
 :root {
@@ -1576,23 +1565,6 @@ footer a { color: var(--text-mid); }
   .pf-pos-donut-wrap { padding: 24px 14px 24px; gap: 16px; }
 }
 </style>
-<link rel="stylesheet" href="/shared/mobile.css?v=20260429e" />
-<script async
-  data-clerk-publishable-key="pk_test_Zmx1ZW50LW1vbGUtNzEuY2xlcmsuYWNjb3VudHMuZGV2JA"
-  src="https://fluent-mole-71.clerk.accounts.dev/npm/@clerk/clerk-js@5/dist/clerk.browser.js"
-  crossorigin="anonymous"
-></script>
-<script defer src="/shared/nav.js"></script>
-<!-- s-tool speculation rules -->
-<script type="speculationrules">
-{
-  "prerender": [{
-    "where": { "href_matches": "/*" },
-    "eagerness": "moderate"
-  }]
-}
-</script>
-<!-- s-tool speculation rules -->
 <!-- s-tool sw register -->
 <script>
   if ('serviceWorker' in navigator) {
@@ -1605,18 +1577,10 @@ footer a { color: var(--text-mid); }
 
 <nav>
   <div class="container nav-row">
-    <a href="/" class="logo" aria-label="s-tool home"><img src="/img/logo-stool.svg?v=20260430a" alt="s-tool" class="logo-img" style="height:36px;width:auto;display:block;"/></a>
+    <a href="/app" class="logo" aria-label="s-tool home"><img src="/img/logo-stool.svg?v=20260430a" alt="s-tool" class="logo-img" style="height:36px;width:auto;display:block;"/></a>
     <div class="nav-center">
-      <a href="/app">App</a>
+      <a href="/app">Projector</a>
       <a href="/picks" class="active">Picks</a>
-      <a href="/track-record">Track record</a>
-      <a href="/backtest">Backtest</a>
-      <a href="/how">How</a>
-      <a href="/pricing">Pricing</a>
-      <a href="/faq">FAQ</a>
-    </div>
-    <div class="nav-end" id="navEnd">
-      <div class="nav-pill-skel" aria-hidden="true"></div>
     </div>
   </div>
 </nav>
@@ -1670,13 +1634,13 @@ footer a { color: var(--text-mid); }
 </main>
 
 <footer>
-  <div>&copy; 2026 s-tool.io &nbsp;&middot;&nbsp; <a href="/">Home</a> &nbsp;&middot;&nbsp; <a href="/app">App</a> &nbsp;&middot;&nbsp; <a href="/how">How it works</a> &nbsp;&middot;&nbsp; Not investment advice.</div>
+  <div>&copy; 2026 s-tool.io &nbsp;&middot;&nbsp; <a href="/app">Projector</a> &nbsp;&middot;&nbsp; <a href="/picks">Picks</a> &nbsp;&middot;&nbsp; Not investment advice.</div>
 </footer>
 
 <!-- 84KB of inline page logic moved to /shared/picks-app.js so the
      1h Cache-Control on /shared/* skips download + parse on every
      repeat visit. defer means it executes after HTML parse but
      before DOMContentLoaded, same effective ordering as inline. -->
-<script defer src="/shared/picks-app.js?v=20260429o"></script>
+<script defer src="/shared/picks-app.js?v=20260430a"></script>
 </body>
 </html>

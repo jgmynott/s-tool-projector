@@ -57,25 +57,7 @@ window.toggleShowAll = function(tier) {
   }
 };
 
-async function authHeaders() {
-  try { const t = await window.Clerk?.session?.getToken?.(); return t ? { Authorization: `Bearer ${t}` } : {}; } catch { return {}; }
-}
-
-async function startCheckout(tier) {
-  tier = tier || 'strategist';
-  if (!window.Clerk?.session) return window.Clerk?.openSignIn({ afterSignInUrl: '/picks' });
-  try {
-    const res = await fetch(`/api/billing/checkout?tier=${encodeURIComponent(tier)}`, { method: 'POST', headers: await authHeaders() });
-    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || `HTTP ${res.status}`);
-    const { checkout_url } = await res.json();
-    location.href = checkout_url;
-  } catch (e) { alert(`Checkout failed: ${e.message}`); }
-}
-
-// Nav pill + dropdown + dark-themed Clerk modal are handled by /shared/nav.js.
-// We still need a local refreshNavPill() reference because the load() loop
-// below calls it whenever picks data refreshes. Delegate to the shared impl.
-async function refreshNavPill() { return window.STNav?.refreshPill?.(); }
+async function refreshNavPill() {}
 
 function renderTrackRecord(summary) {
   const cards = ['conservative','moderate','aggressive'].map(t => {
@@ -1795,10 +1777,7 @@ function renderGate(data) {
       <div class="eyebrow" style="margin-bottom:14px;">Strategist &middot; $29/mo</div>
       <h2>The full list, the full <em>thesis</em>, and the track record.</h2>
       <p>Strategist unlocks the ranked list across all three risk tiers, with every pick's SEC-filed fundamentals, 1-year P50 target, expected return, and the daily realized-return ledger that makes the engine falsifiable.</p>
-      <div class="gate-cta-row">
-        <button class="btn" onclick="startCheckout('strategist')">Upgrade &mdash; $29/mo</button>
-        <a href="/pricing" class="btn ghost">Compare tiers</a>
-      </div>
+      <div class="gate-cta-row"></div>
       <div style="margin-top:40px;padding-top:28px;border-top:1px solid var(--border);">
         <div style="font:600 11px 'Inter';color:var(--text-dim);letter-spacing:0.14em;text-transform:uppercase;margin-bottom:16px;">Today's picks — top 3 per tier</div>
         ${teaserHtml}
@@ -2436,7 +2415,7 @@ function renderPage(picksData, trackData, portfolioData) {
 let _pfRefreshTimer = null;
 async function refreshPortfolioOnly() {
   try {
-    const res = await fetch('/api/portfolio', { headers: await authHeaders() });
+    const res = await fetch('/api/portfolio');
     if (!res.ok) return;
     const data = await res.json();
     const node = document.getElementById('pf-panel');
@@ -2623,29 +2602,15 @@ async function load() {
   const scanMeta = document.getElementById('scanMeta');
 
   const [picksRes, trackRes, pfRes] = await Promise.all([
-    fetch('/api/picks', { headers: await authHeaders() }),
-    fetch('/api/track-record?lookback_days=90', { headers: await authHeaders() }),
-    fetch('/api/portfolio', { headers: await authHeaders() }).catch(() => null),
+    fetch('/api/picks'),
+    fetch('/api/track-record?lookback_days=90'),
+    fetch('/api/portfolio').catch(() => null),
   ]);
   const picksData = await picksRes.json().catch(() => null);
   const trackData = await trackRes.json().catch(() => null);
-  // Portfolio is best-effort: 503 (no creds), 502 (Alpaca down), or
-  // strategist-gated all return a JSON body we can pass through to
-  // renderPortfolio, which renders nothing on error.
   let portfolioData = null;
   if (pfRes && pfRes.ok) portfolioData = await pfRes.json().catch(() => null);
 
-  if (picksRes.status === 402 && picksData?.error === 'strategist_required') {
-    scanMeta.innerHTML = `<span class="meta-item"><span class="dot waiting"></span><span>Scan last updated ${picksData.scan_age_hours != null ? picksData.scan_age_hours.toFixed(1) + 'h ago' : 'recently'}</span></span>
-      <span class="meta-item">Upgrade to see the full list</span>`;
-    // Render the live portfolio panel ABOVE the gate as proof-of-life
-    // for anonymous / non-strategist visitors. The /api/portfolio
-    // response in this case is gated to a 3-position teaser.
-    const portfolioBlock = portfolioData ? renderPortfolio(portfolioData) : '';
-    content.innerHTML = portfolioBlock + renderGate({ ...picksData, summary: trackData?.summary });
-    if (portfolioData && !portfolioData.error) startPortfolioRefresh();
-    return;
-  }
   if (picksRes.status === 404) {
     scanMeta.innerHTML = '';
     content.innerHTML = `<div class="gate"><h2>Overnight scan hasn't run yet.</h2><p>Picks refresh after the daily cron at 10:00 UTC (6am ET). Check back then — or <a href="/app" style="color:var(--accent-lake);">try an individual projection</a> in the meantime.</p></div>`;
@@ -2670,21 +2635,11 @@ async function load() {
   if (portfolioData && !portfolioData.error) startPortfolioRefresh();
 }
 
-// Hook the picks-specific load() onto Clerk's session lifecycle. nav.js
-// auto-initialises on its own and exposes STNav.ready() as a single
-// promise that resolves once Clerk has loaded. We await that rather than
-// calling Clerk.load() ourselves — calling it twice with different
-// appearance configs has caused dark-modal regressions in the past.
+// No auth — load picks data immediately on script execution.
 (function () {
-  const wait = () => {
-    if (!window.STNav?.ready) return setTimeout(wait, 40);
-    // Idempotent — nav.js has already auto-initialised. We're just
-    // setting the explicit redirect so a sign-in from /picks returns here.
-    window.STNav.init({ signInRedirect: '/picks' });
-    window.STNav.ready().then((clerk) => {
-      load();
-      try { clerk?.addListener?.(load); } catch (_) {}
-    });
-  };
-  wait();
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', load);
+  } else {
+    load();
+  }
 })();

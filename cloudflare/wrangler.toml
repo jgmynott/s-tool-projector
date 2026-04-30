@@ -41,18 +41,26 @@ zone_name = "s-tool.io"
 #   wrangler secret put GITHUB_REPO     (jgmynott/s-tool-projector)
 #   wrangler secret put NTFY_TOPIC      (optional — pushes alerts on dispatch failure)
 [triggers]
-# Cloudflare Workers free tier allows up to 5 distinct cron triggers per
-# Worker. All 5 used:
-#  * "25 13,14 * * 1-5"        → trader pre_open (09:25 ET — gap-protect sweep)
+# Workers Paid plan ($5/mo) lifts the cron-trigger cap to 250.
+# Using 9 currently. targetForCron() in worker.js maps each expression
+# to a workflow + inputs.
+#  * "0 12 * * 1-5"            → morning-digest (08:00 ET DST)
+#  * "0 13 * * 1-5"            → morning-digest (08:00 ET ST)
+#  * "25 13,14 * * 1-5"        → trader pre_open (09:25 ET DST+ST)
 #  * "30 13,14 * * 1-5"        → trader open
 #  * "0,30 14-19 * * 1-5"      → trader rotate (every 30 min)
 #  * "55 19,20 * * 1-5"        → trader close
 #  * "*/5 14-19 * * 1-5"       → scalper every 5 min during RTH
-# targetForCron() in worker.js maps each expression to a workflow + inputs.
+#  * "30 20 * * 1-5"           → EOD trades report (16:30 ET DST)
+#  * "30 21 * * 1-5"           → EOD trades report (16:30 ET ST)
 crons = [
+  "0 12 * * 1-5",             # morning-digest — 08:00 ET DST
+  "0 13 * * 1-5",             # morning-digest — 08:00 ET ST
   "25 13,14 * * 1-5",         # trader pre_open — 09:25 ET (DST + ST)
   "30 13,14 * * 1-5",         # trader open    — 09:30 ET (DST + ST)
   "0,30 14-19 * * 1-5",       # trader rotate every 30 min 14:00–19:30 UTC
   "55 19,20 * * 1-5",         # trader close   — 15:55 ET (DST + ST)
   "*/5 14-19 * * 1-5",        # scalper every 5 min during RTH
+  "30 20 * * 1-5",            # EOD report     — 16:30 ET DST
+  "30 21 * * 1-5",            # EOD report     — 16:30 ET ST
 ]

@@ -1,29 +1,23 @@
 // s-tool.io worker.
-// - Serves static UI (frontend.html as index.html) from the bundled Assets binding.
+// - Serves /app and /picks from the bundled Assets binding.
 // - Reverse-proxies /api/* to the Railway-hosted FastAPI backend.
-// - Injects security headers on every response: HSTS + XFO + XCTO always;
-//   CSP only on HTML responses (JSON/assets don't need it and adding it
-//   can break Stripe/Clerk's own redirects).
+// - Injects security headers (CSP only on HTML responses).
+// Auth + billing were removed 2026-04-30 — site is open access.
 
 const RAILWAY_API = "https://api-production-9fce.up.railway.app";
 
-// Strict-ish CSP that still allows the known third parties we embed:
-//   - Clerk frontend SDK: *.clerk.accounts.dev + clerk.io
-//   - Stripe Checkout + Elements: js.stripe.com + hooks.stripe.com
-//   - ApexCharts + fonts from jsDelivr + Google Fonts
-// If we later move off one of these, trim the directive.
+// Strict-ish CSP. ApexCharts + Google Fonts are the only third parties.
 const CSP = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' https://*.clerk.accounts.dev https://*.clerk.com https://js.stripe.com https://cdn.jsdelivr.net",
+  "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data: https://fonts.gstatic.com",
-  "connect-src 'self' https://*.clerk.accounts.dev https://*.clerk.com https://api.stripe.com https://api-production-9fce.up.railway.app https://s-tool.io https://www.s-tool.io",
-  "frame-src https://js.stripe.com https://hooks.stripe.com https://*.clerk.accounts.dev",
+  "connect-src 'self' https://api-production-9fce.up.railway.app https://s-tool.io https://www.s-tool.io",
   "worker-src 'self' blob:",
   "frame-ancestors 'none'",
   "base-uri 'self'",
-  "form-action 'self' https://*.stripe.com",
+  "form-action 'self'",
 ].join("; ");
 
 function applySecurityHeaders(response, { html }) {
@@ -32,7 +26,7 @@ function applySecurityHeaders(response, { html }) {
   headers.set("X-Content-Type-Options", "nosniff");
   headers.set("X-Frame-Options", "DENY");
   headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
-  headers.set("Permissions-Policy", "geolocation=(), microphone=(), camera=(), payment=(self \"https://js.stripe.com\")");
+  headers.set("Permissions-Policy", "geolocation=(), microphone=(), camera=()");
   if (html) headers.set("Content-Security-Policy", CSP);
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }
@@ -311,8 +305,8 @@ h1 { font-size:18px; margin:0 0 4px; font-weight:600; }
 ${rows}
 <div class="foot">
   <a href="https://github.com/${env.GITHUB_REPO || "jgmynott/s-tool-projector"}/actions">actions</a> ·
-  <a href="/picks/">picks</a> ·
-  <a href="/track-record/">track record</a>
+  <a href="/app/">projector</a> ·
+  <a href="/picks/">picks</a>
 </div>
 </body>
 </html>`;
@@ -348,10 +342,15 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
+    // Site is now just /app + /picks. Bounce the old marketing routes so
+    // existing inbound links don't 404.
+    const DROPPED = new Set(["/", "/index.html", "/how", "/how/", "/pricing", "/pricing/", "/faq", "/faq/", "/backtest", "/backtest/", "/track-record", "/track-record/", "/studio", "/studio/"]);
+    if (DROPPED.has(url.pathname)) {
+      return Response.redirect(new URL("/app/", url).toString(), 302);
+    }
+
     // Phone-friendly health dashboard. Aggregates the same signals you'd
     // otherwise have to check across Railway, GitHub, and the live API.
-    // No auth — public OK because every signal here is also visible on
-    // /api/portfolio or the public Actions tab.
     if (url.pathname === "/status" || url.pathname === "/status/") {
       return await renderStatus(env);
     }
