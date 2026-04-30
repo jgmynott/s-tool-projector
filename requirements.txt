@@ -18,7 +18,7 @@ fastapi>=0.100
 uvicorn[standard]>=0.46.0
 
 # Auth + billing
-stripe>=10.0
+stripe>=15.1.0
 PyJWT[crypto]>=2.12.1
 httpx>=0.28.1
 slowapi>=0.1.9
