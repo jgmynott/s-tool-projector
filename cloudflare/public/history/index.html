@@ -315,12 +315,20 @@ const fmtHold = (secs) => {
 
 // ── data load ───────────────────────────────────────────────────────
 async function loadAll() {
-  const [pfRes, jrRes] = await Promise.all([
+  // Try 10y window first; fall back to 365d if backend is still on the old
+  // contract (le=365) — Railway redeploys lag a few minutes behind every
+  // api.py edit and the page would otherwise show blank during the gap.
+  async function fetchJournal() {
+    const r = await fetch('/api/trade-journal?lookback_days=3650').catch(() => null);
+    if (r && r.ok) return r.json().catch(() => ({}));
+    const r2 = await fetch('/api/trade-journal?lookback_days=365').catch(() => null);
+    return r2 && r2.ok ? r2.json().catch(() => ({})) : {};
+  }
+  const [pfRes, jr] = await Promise.all([
     fetch('/api/portfolio').catch(() => null),
-    fetch('/api/trade-journal?lookback_days=3650').catch(() => null),
+    fetchJournal(),
   ]);
   const pf = pfRes && pfRes.ok ? await pfRes.json().catch(() => ({})) : {};
-  const jr = jrRes && jrRes.ok ? await jrRes.json().catch(() => ({})) : {};
   const positions = pf.positions || [];
   const journal = jr.rows || [];
 
