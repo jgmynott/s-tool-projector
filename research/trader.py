@@ -252,16 +252,43 @@ def write_halt(reason: str, by: str = "trader") -> None:
 
 
 # ── Leverage clamp ───────────────────────────────────────────────────
-# Returns the smaller of the broker multiplier and LEVERAGE_MAX env.
-# Used at sizing time so position sizes never exceed the configured cap
-# even if the Alpaca account is set to a higher multiplier. Set
-# LEVERAGE_MAX=1 to enforce cash-only.
+# Alpaca's `multiplier` field is account classification, not a single
+# leverage figure. PDT-flagged accounts return multiplier=4 but actually
+# expose two distinct ceilings:
+#   regt_buying_power      = equity × 2  (overnight; all positions held
+#                            past close are subject to this)
+#   daytrading_buying_power = up to equity × 4 (intraday only; resets at
+#                             session close)
+#
+# For sizing, use the OVERNIGHT (RegT) ceiling as the safe default so a
+# position opened intraday but rolled to next-day doesn't trigger a
+# margin call when the daytrading buying power evaporates at close.
+# Daytrade sleeve could safely use the higher intraday number, but the
+# upside vs. risk-of-bug isn't worth a separate code path right now.
+#
+# Set LEVERAGE_MAX=1 in env to enforce cash-only on the live account.
 
 def effective_multiplier(acct: dict) -> float:
+    eq = 0.0
     try:
-        broker = float(acct.get("multiplier") or 1)
+        eq = float(acct.get("equity") or 0)
     except (TypeError, ValueError):
-        broker = 1.0
+        pass
+    # Prefer Alpaca's reported regt_buying_power (overnight ceiling).
+    # Fall back to multiplier × equity when not available (older API
+    # responses or paper accounts that don't surface the field).
+    regt_bp = 0.0
+    try:
+        regt_bp = float(acct.get("regt_buying_power") or 0)
+    except (TypeError, ValueError):
+        pass
+    if eq > 0 and regt_bp > 0:
+        broker = regt_bp / eq
+    else:
+        try:
+            broker = float(acct.get("multiplier") or 1)
+        except (TypeError, ValueError):
+            broker = 1.0
     try:
         cap = float(os.environ.get("LEVERAGE_MAX", LEVERAGE_MAX_DEFAULT))
     except (TypeError, ValueError):

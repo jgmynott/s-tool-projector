@@ -1408,7 +1408,27 @@ function renderPortfolio(data) {
   const dcCls = dc > 0 ? 'pos' : (dc < 0 ? 'neg' : 'flat');
   const sign = dc > 0 ? '+' : (dc < 0 ? '−' : '');
   const dcAbs = Math.abs(dc), dcpAbs = Math.abs(dcp * 100);
-  const paperTag = acct.is_paper ? `<span class="pf-paper-tag">Paper · ${acct.multiplier || 1}× margin</span>` : '';
+  // Alpaca's `multiplier` field is account classification, not a single
+  // leverage figure. PDT accounts return 4 but actually have two ceilings:
+  //   regt_buying_power      = equity × 2  (overnight; what Alpaca's UI shows)
+  //   daytrading_buying_power = up to equity × 4 (intraday; resets at close)
+  // Show both so users don't see "4× margin" and assume that's the
+  // overnight ceiling.
+  const eqVal = parseFloat(acct.equity) || 0;
+  const regtMult = (acct.regt_buying_power && eqVal > 0) ? acct.regt_buying_power / eqVal : null;
+  const dtMult = (acct.daytrading_buying_power && eqVal > 0) ? acct.daytrading_buying_power / eqVal : null;
+  let paperTag = '';
+  if (acct.is_paper) {
+    let label;
+    if (regtMult && dtMult && Math.abs(regtMult - dtMult) > 0.05) {
+      label = `Paper · PDT · ${regtMult.toFixed(0)}× overnight / ${dtMult.toFixed(0)}× intraday`;
+    } else if (regtMult) {
+      label = `Paper · ${regtMult.toFixed(0)}× margin`;
+    } else {
+      label = `Paper · margin classification ${acct.multiplier || 1}`;
+    }
+    paperTag = `<span class="pf-paper-tag" title="Alpaca multiplier=${acct.multiplier || 1} (1=cash, 2=RegT margin, 4=PDT). RegT buying power = $${(acct.regt_buying_power||0).toLocaleString()}; Daytrading buying power = $${(acct.daytrading_buying_power||0).toLocaleString()}.">${label}</span>`;
+  }
   // Stash full payload so the chart's tab buttons can re-render without
   // re-fetching. Picked up by the document-level click handler.
   window.__pfData = data;
@@ -1479,14 +1499,13 @@ function renderPortfolio(data) {
     window.__pfSleeveSummaries = sleeves;
     positionsBlock = pfPositionsDonut(positions, visibleMv);
   }
-  // Utilization = fraction of buying power currently in market value of
-  // open positions. Useful at a glance: empty between sessions = 0%,
-  // mid-day fully deployed = ~30-35% on a 4× margin paper account
-  // (~133% of equity / 4× capacity). Denominator is *total* deployable
-  // buying power (equity × margin multiplier), NOT the live
-  // buying_power field — that's remaining headroom, so dividing by it
-  // overstates utilization once positions are open.
-  const totalCapacity = (parseFloat(acct.equity) || 0) * (parseFloat(acct.multiplier) || 1);
+  // Utilization = fraction of total buying power currently in market
+  // value of open positions. Use the overnight (RegT) buying power as
+  // the denominator since most positions held mid-day will be subject
+  // to the overnight ceiling if they don't close before EOD. Falls back
+  // to equity × multiplier when regt_buying_power isn't surfaced.
+  const totalCapacity = (parseFloat(acct.regt_buying_power)
+    || ((parseFloat(acct.equity) || 0) * (parseFloat(acct.multiplier) || 1)));
   const utilization = totalCapacity > 0 ? Math.min(1, totalMv / totalCapacity) : 0;
   const utilStr = `${(utilization * 100).toFixed(0)}%`;
 

@@ -1509,6 +1509,17 @@ def portfolio(request: Request, user: Optional[dict] = Depends(auth.optional_use
         "merged_fills_n": len(merged_fills),
         "today_iso": today_iso,
     }
+    # Alpaca returns numbers as strings in JSON. Coerce to float, return
+    # None on missing/empty so the UI can render "—" rather than crashing
+    # on parseFloat("null").
+    def _f(v):
+        if v is None or v == "":
+            return None
+        try:
+            return float(v)
+        except (TypeError, ValueError):
+            return None
+
     payload = {
         "is_strategist": is_strategist,
         "as_of": now.isoformat() + "Z",
@@ -1518,7 +1529,21 @@ def portfolio(request: Request, user: Optional[dict] = Depends(auth.optional_use
             "buying_power": float(acct["buying_power"]),
             "last_equity": last_eq,
             "day_change": day_change, "day_change_pct": day_change_pct,
+            # Alpaca's `multiplier` is the account *classification*, not a
+            # single leverage number. 1=cash, 2=RegT margin, 4=PDT-flagged.
+            # Pass through the full set so the UI can show what Alpaca's
+            # app actually shows: 2× overnight (RegT) and 4× intraday (DT)
+            # are different ceilings, not contradictory.
             "multiplier": acct.get("multiplier"),
+            "regt_buying_power": _f(acct.get("regt_buying_power")),
+            "daytrading_buying_power": _f(acct.get("daytrading_buying_power")),
+            "non_marginable_buying_power": _f(acct.get("non_marginable_buying_power")),
+            "effective_buying_power": _f(acct.get("effective_buying_power")),
+            "initial_margin": _f(acct.get("initial_margin")),
+            "maintenance_margin": _f(acct.get("maintenance_margin")),
+            "sma": _f(acct.get("sma")),
+            "pattern_day_trader": bool(acct.get("pattern_day_trader")),
+            "day_trade_count": acct.get("daytrade_count") or acct.get("day_trade_count") or 0,
             "currency": acct.get("currency", "USD"),
             "is_paper": "paper" in base_url,
         },
