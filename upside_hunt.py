@@ -341,12 +341,40 @@ def sweep(limit_symbols: int | None = None):
         log.error("No rows produced. Check universe + cache coverage.")
         return
 
+    # Sanity gate: the canonical CSV in runtime_data/ has 67k rows × 35 windows
+    # generated locally on 2026-04-17 from a deep price cache (back to 2015).
+    # Cron usually runs against a much shallower price cache and produces a
+    # 4–10k-row stub. We refuse to overwrite the canonical with a stub —
+    # otherwise every nightly slow run silently degrades the training set.
+    rt_csv = ROOT / "runtime_data" / "upside_hunt_results.csv"
     out_csv = ROOT / "upside_hunt_results.csv"
+    new_rows = len(all_rows)
+    if rt_csv.exists():
+        try:
+            import pandas as _pd
+            existing_rows = len(_pd.read_csv(rt_csv))
+        except Exception:
+            existing_rows = 0
+        if new_rows < int(existing_rows * 0.8):
+            log.warning(
+                "skipping write: new run has %d rows but runtime_data canonical "
+                "has %d. Refusing to shrink the training set. Restore the deep "
+                "price cache or run regenerate_training_set.py locally to update.",
+                new_rows, existing_rows,
+            )
+            return
+
     with open(out_csv, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=all_rows[0].keys())
         writer.writeheader()
         writer.writerows(all_rows)
-    log.info("Wrote %d rows to %s", len(all_rows), out_csv)
+    # Mirror to runtime_data so cron pipelines downstream see the fresh set.
+    rt_csv.parent.mkdir(parents=True, exist_ok=True)
+    with open(rt_csv, "w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=all_rows[0].keys())
+        writer.writeheader()
+        writer.writerows(all_rows)
+    log.info("Wrote %d rows to %s and %s", new_rows, out_csv, rt_csv)
 
     # Analyze — for each method, rank each window by score desc, take top-N,
     # compute hit rate on 100%+ returns.

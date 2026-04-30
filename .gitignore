@@ -29,9 +29,12 @@ data_cache/public_pulse/
 *_backtest*.md
 phase_c_reproduction*.csv
 phase_c_reproduction*.md
-upside_hunt_results.csv
-upside_hunt_scored.csv
-upside_hunt_report.md
+# Root-level upside_hunt CSVs are ignored, but the canonical copies in
+# runtime_data/ are tracked so cron pipelines see the full 67k-row,
+# 35-window dataset (the deep price cache only exists locally).
+/upside_hunt_results.csv
+/upside_hunt_scored.csv
+/upside_hunt_report.md
 
 # Overnight / ad-hoc run logs
 overnight_v*_status.txt

@@ -42,7 +42,8 @@ sys.path.insert(0, str(ROOT))
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("wave1")
 
-SCORED_CSV = ROOT / "upside_hunt_scored.csv"
+_RT_SCORED = ROOT / "runtime_data" / "upside_hunt_scored.csv"
+SCORED_CSV = _RT_SCORED if _RT_SCORED.exists() else ROOT / "upside_hunt_scored.csv"
 PRICES_DIR = ROOT / "data_cache" / "prices"
 OUT = ROOT / "runtime_data" / "wave1_honest_audit.json"
 

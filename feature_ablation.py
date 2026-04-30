@@ -34,7 +34,8 @@ ROOT = Path(__file__).parent
 # engineered features (current, p10, p90, sigma). Always use the raw
 # upside_hunt results CSV, which has every column. The scored CSV only
 # carries the NN outputs and isn't self-contained.
-RESULTS_CSV = ROOT / "upside_hunt_results.csv"
+_RT_RESULTS = ROOT / "runtime_data" / "upside_hunt_results.csv"
+RESULTS_CSV = _RT_RESULTS if _RT_RESULTS.exists() else ROOT / "upside_hunt_results.csv"
 OUT_JSON = ROOT / "data_cache" / "feature_importance.json"
 
 FEATURES = [

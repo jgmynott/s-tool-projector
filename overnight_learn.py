@@ -41,7 +41,8 @@ logging.basicConfig(level=logging.INFO,
 log = logging.getLogger("overnight_learn")
 
 ROOT = Path(__file__).parent
-RESULTS_CSV = ROOT / "upside_hunt_results.csv"
+_RT_RESULTS = ROOT / "runtime_data" / "upside_hunt_results.csv"
+RESULTS_CSV = _RT_RESULTS if _RT_RESULTS.exists() else ROOT / "upside_hunt_results.csv"
 OUT_JSON = ROOT / "data_cache" / "production_scorer.json"
 
 # Hand-crafted methods to compare the NN against. Columns in the CSV.
@@ -501,7 +502,11 @@ def main():
     # Persist the scored df for downstream overnight_backtest.py. Contains
     # the walk-forward nn_score / moonshot_score / ensemble_score columns
     # the backtest needs to report NN-family lift alongside hand-crafted.
-    scored_csv = ROOT / "upside_hunt_scored.csv"
+    # Write scored CSV to runtime_data when that's where the input came from
+    # so cron pipelines downstream can find it. Otherwise root for local dev.
+    scored_csv = (ROOT / "runtime_data" / "upside_hunt_scored.csv"
+                  if RESULTS_CSV.parent.name == "runtime_data"
+                  else ROOT / "upside_hunt_scored.csv")
     try:
         # Keep raw feature columns too so downstream (overnight_backtest)
         # can compute size-neutral and year-OOS metrics which need the

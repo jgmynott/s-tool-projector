@@ -37,9 +37,14 @@ logging.basicConfig(level=logging.INFO,
 log = logging.getLogger("overnight_backtest")
 
 ROOT = Path(__file__).parent
-SCORED_CSV = ROOT / "upside_hunt_scored.csv"   # written by overnight_learn.py
-RESULTS_CSV = ROOT / "upside_hunt_results.csv"  # fallback if scored not present
-OUT_JSON = ROOT / "data_cache" / "backtest_report.json"
+# Prefer runtime_data/ (canonical 67k-row, 35-window CSV committed to repo).
+# Fall back to root for local dev that bypasses the runtime_data drop.
+def _pick(name):
+    rt = ROOT / "runtime_data" / name
+    return rt if rt.exists() else ROOT / name
+SCORED_CSV  = _pick("upside_hunt_scored.csv")    # written by overnight_learn.py
+RESULTS_CSV = _pick("upside_hunt_results.csv")   # fallback if scored not present
+OUT_JSON    = ROOT / "data_cache" / "backtest_report.json"
 
 TOP_N = 20
 THRESHOLDS = [0.10, 0.25, 0.50, 1.00, 2.00]  # +10%, +25%, +50%, +100%, +200%

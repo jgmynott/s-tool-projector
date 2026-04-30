@@ -34,8 +34,13 @@ import signals_short_interest_yf as si  # noqa: E402
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("si-ablation")
 
-RESULTS_CSV = ROOT / "upside_hunt_results.csv"
-OUT_DIR = ROOT / "runtime_data"
+# Canonical 67k-row, 35-window CSV lives in runtime_data (committed to repo
+# so cron has access). Falls back to root for local dev workflows that
+# regenerate via upside_hunt.py without copying to runtime_data.
+RUNTIME_CSV = ROOT / "runtime_data" / "upside_hunt_results.csv"
+ROOT_CSV    = ROOT / "upside_hunt_results.csv"
+RESULTS_CSV = RUNTIME_CSV if RUNTIME_CSV.exists() else ROOT_CSV
+OUT_DIR     = ROOT / "runtime_data"
 TOP_N = 20
 THRESHOLD = 1.0
 
