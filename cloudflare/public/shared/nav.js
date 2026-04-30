@@ -128,23 +128,37 @@
     });
   }
 
+  // Single Clerk-loaded promise — re-used by every consumer (nav.js init,
+  // picks-app.js, track-record-app.js) so we never hit Clerk.load() twice
+  // with different appearance configs.
+  let _clerkReady;
+  function ready() {
+    if (_clerkReady) return _clerkReady;
+    _clerkReady = new Promise((resolve) => {
+      const tick = () => {
+        if (!global.Clerk?.load) return setTimeout(tick, 60);
+        global.Clerk.load({ appearance: CLERK_DARK.appearance })
+          .then(() => resolve(global.Clerk))
+          .catch(() => resolve(global.Clerk));
+      };
+      tick();
+    });
+    return _clerkReady;
+  }
+
   function init(opts = {}) {
     config = { ...config, ...opts };
     document.addEventListener('click', (e) => {
       if (!e.target.closest?.('.user-pill-wrap')) closeMenu();
     });
-    const waitForClerk = () => {
-      if (!global.Clerk?.load) return setTimeout(waitForClerk, 100);
-      global.Clerk.load({ appearance: CLERK_DARK.appearance }).then(() => {
-        refreshPill();
-        global.Clerk.addListener(refreshPill);
-      });
-    };
-    waitForClerk();
+    ready().then((clerk) => {
+      refreshPill();
+      try { clerk?.addListener?.(refreshPill); } catch (_) {}
+    });
   }
 
   global.STNav = {
-    init, refreshPill, toggleMenu, closeMenu, signOut,
+    init, ready, refreshPill, toggleMenu, closeMenu, signOut,
     openProfile, openBilling: openBillingPortal, openSignIn,
   };
 })(window);
