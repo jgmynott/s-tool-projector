@@ -1,6 +1,6 @@
 {
-  "as_of": "2026-04-30T17:10:31.563788+00:00",
-  "n_rows": 471,
+  "as_of": "2026-04-30T17:20:30.045449+00:00",
+  "n_rows": 472,
   "rows": [
     {
       "ts": "2026-04-27T13:47:29.206731Z",
@@ -6202,6 +6202,17 @@
       "tier": "relvol",
       "rationale": "{\"vol_multiple\": 2.0072625635614623, \"range_pos\": 1.0, \"cur_vol\": 4833}",
       "result": "submitted"
+    },
+    {
+      "ts": "2026-04-30T17:20:30.044782+00:00",
+      "event": "sell",
+      "sleeve": "scalper",
+      "symbol": "SQQQ",
+      "qty": 9,
+      "buy_price": 52.73,
+      "sell_price": null,
+      "pnl": null,
+      "exit_reason": "max_hold"
     }
   ]
 }
