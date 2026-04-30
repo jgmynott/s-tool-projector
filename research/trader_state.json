@@ -158,24 +158,6 @@
   "breaker_fired_date": "2026-04-28",
   "scalper": {
     "positions": {
-      "GS": {
-        "symbol": "GS",
-        "qty": 1,
-        "entry_price": 916.33,
-        "opened_at": "2026-04-30T14:20:55.269400+00:00",
-        "signal": "orb",
-        "stop": 909.92,
-        "target": 925.49
-      },
-      "MS": {
-        "symbol": "MS",
-        "qty": 2,
-        "entry_price": 188.11,
-        "opened_at": "2026-04-30T14:20:55.330258+00:00",
-        "signal": "orb",
-        "stop": 186.79,
-        "target": 189.99
-      },
       "BA": {
         "symbol": "BA",
         "qty": 2.0,
