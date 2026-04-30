@@ -117,33 +117,6 @@
   "breaker_fired_date": "2026-04-28",
   "scalper": {
     "positions": {
-      "TSM": {
-        "symbol": "TSM",
-        "qty": 1.0,
-        "ref_price": 391.15,
-        "opened_at": "2026-04-30T15:00:56.809698631Z",
-        "stop_pct": -0.007,
-        "target_pct": 0.01,
-        "signal": "adopted"
-      },
-      "TSLA": {
-        "symbol": "TSLA",
-        "qty": 1,
-        "entry_price": 377.785,
-        "opened_at": "2026-04-30T15:05:40.023857+00:00",
-        "signal": "relvol",
-        "stop": 375.14,
-        "target": 381.56
-      },
-      "AMD": {
-        "symbol": "AMD",
-        "qty": 1,
-        "entry_price": 347.23,
-        "opened_at": "2026-04-30T15:05:40.075672+00:00",
-        "signal": "relvol",
-        "stop": 344.8,
-        "target": 350.7
-      },
       "AVGO": {
         "symbol": "AVGO",
         "qty": 1,
@@ -152,6 +125,24 @@
         "signal": "relvol",
         "stop": 409.97,
         "target": 416.99
+      },
+      "DE": {
+        "symbol": "DE",
+        "qty": 1.0,
+        "ref_price": 590.66,
+        "opened_at": "2026-04-30T15:31:00.309031745Z",
+        "stop_pct": -0.007,
+        "target_pct": 0.01,
+        "signal": "adopted"
+      },
+      "SOXL": {
+        "symbol": "SOXL",
+        "qty": 3,
+        "entry_price": 125.23,
+        "opened_at": "2026-04-30T15:35:38.728678+00:00",
+        "signal": "relvol",
+        "stop": 124.35,
+        "target": 126.48
       }
     },
     "fired_today": [
@@ -229,6 +220,11 @@
         "symbol": "AVGO",
         "signal": "relvol",
         "ts": "2026-04-30T15:15:38.342250+00:00"
+      },
+      {
+        "symbol": "SOXL",
+        "signal": "relvol",
+        "ts": "2026-04-30T15:35:38.728691+00:00"
       }
     ],
     "last_scan": null,

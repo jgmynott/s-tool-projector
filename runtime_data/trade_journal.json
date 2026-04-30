@@ -1,6 +1,6 @@
 {
-  "as_of": "2026-04-30T15:30:34.247746+00:00",
-  "n_rows": 326,
+  "as_of": "2026-04-30T15:35:38.729223+00:00",
+  "n_rows": 327,
   "rows": [
     {
       "ts": "2026-04-27T13:47:29.206731Z",
@@ -4325,6 +4325,20 @@
       "rationale": "",
       "result": "submitted",
       "tranche": 2
+    },
+    {
+      "ts": "2026-04-30T15:35:38.728694+00:00",
+      "event": "buy",
+      "sleeve": "scalper",
+      "symbol": "SOXL",
+      "qty": 3,
+      "ref_price": 125.23,
+      "live_price": 125.23,
+      "stop": 124.35,
+      "target": 126.48,
+      "tier": "relvol",
+      "rationale": "{\"vol_multiple\": 3.7785272769242604, \"range_pos\": 0.7181818181818183, \"cur_vol\": 32738}",
+      "result": "submitted"
     }
   ]
 }
