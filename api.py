@@ -1578,7 +1578,7 @@ def portfolio(request: Request, user: Optional[dict] = Depends(auth.optional_use
 @limiter.limit("60/minute")
 def trade_journal(
     request: Request,
-    lookback_days: int = Query(90, ge=1, le=365),
+    lookback_days: int = Query(90, ge=1, le=3650),
     user: Optional[dict] = Depends(auth.optional_user),
 ):
     """Per-trade ledger — every buy/sell the live paper trader has made,
@@ -1639,12 +1639,10 @@ def trade_journal(
             "worst_trade": min(closed, key=lambda r: r["pnl"]) if closed else None,
         },
     }
-    if is_strategist:
-        # Full ledger for paid tier; truncate to keep payload sane.
-        payload["rows"] = recent[-500:]
-    else:
-        payload["teaser"] = True
-        payload["hint"] = "Per-trade detail unlocks at Strategist tier."
+    # Paywall removed 2026-04-29 — full ledger flows to everyone. The
+    # /history page expects every row to come back so users can paginate,
+    # filter, and export to CSV; truncation here would silently hide trades.
+    payload["rows"] = recent
     return JSONResponse(headers={"Cache-Control": "no-store"}, content=payload)
 
 

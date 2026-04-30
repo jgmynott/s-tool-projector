@@ -317,7 +317,7 @@ const fmtHold = (secs) => {
 async function loadAll() {
   const [pfRes, jrRes] = await Promise.all([
     fetch('/api/portfolio').catch(() => null),
-    fetch('/api/trade-journal?lookback_days=180').catch(() => null),
+    fetch('/api/trade-journal?lookback_days=3650').catch(() => null),
   ]);
   const pf = pfRes && pfRes.ok ? await pfRes.json().catch(() => ({})) : {};
   const jr = jrRes && jrRes.ok ? await jrRes.json().catch(() => ({})) : {};
