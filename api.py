@@ -551,14 +551,12 @@ def track_record(
     latest cached price to compute realized return, then summarises by
     tier (hit rate + median/mean return + n).
 
-    Gated to Strategist tier — this is the track-record page that proves
-    the picks are worth the $29/mo, so it belongs on the same side of the
-    paywall as /picks.
+    Track record is free for everyone — paywall removed 2026-04-29
+    alongside /picks.
     """
-    is_strategist = False
+    is_strategist = True
     if user:
-        user_row = users_db.upsert_user(users_conn, user["user_id"], email=user.get("email"))
-        is_strategist = users_db.can_access_picks(user_row)
+        users_db.upsert_user(users_conn, user["user_id"], email=user.get("email"))
 
     from datetime import datetime as _dt, timedelta as _td
     from pathlib import Path as _Path
@@ -743,16 +741,13 @@ def picks(
 ):
     """Risk-tiered stock picks from cached projection scan.
 
-    Gated to the Strategist tier — this is the primary value exchange
-    for that tier. Anonymous + free + pro users get a 402 with a teaser
-    payload (top 3 tickers per bucket, no prices/scores) so the UI can
-    render an "unlock" state. Strategist users get the full ranked list.
+    Picks are free for everyone — paywall removed 2026-04-29. The user
+    upsert is kept so authenticated visits still touch users_db (audit
+    trail / future analytics), but no path returns 402.
     """
-    # Upgrade-aware preview for non-Strategists.
-    is_strategist = False
+    is_strategist = True
     if user:
-        user_row = users_db.upsert_user(users_conn, user["user_id"], email=user.get("email"))
-        is_strategist = users_db.can_access_picks(user_row)
+        users_db.upsert_user(users_conn, user["user_id"], email=user.get("email"))
 
     results = get_picks(tier=tier)
     if not results:
@@ -829,11 +824,11 @@ def portfolio(request: Request, user: Optional[dict] = Depends(auth.optional_use
     Response is micro-cached for 5s per (is_strategist) bucket — the
     fast path now serves cached bytes during refresh bursts instead
     of fanning out 7 Alpaca calls + 2 SPY fetches on every poll.
+    Paywall removed 2026-04-29; is_strategist now defaults True.
     """
-    is_strategist = False
+    is_strategist = True
     if user:
-        user_row = users_db.upsert_user(users_conn, user["user_id"], email=user.get("email"))
-        is_strategist = users_db.can_access_picks(user_row)
+        users_db.upsert_user(users_conn, user["user_id"], email=user.get("email"))
 
     # Cache check — if a recent payload exists for this tier, serve it.
     # The response is a fully-rendered dict; we only need to wrap it in
@@ -1591,14 +1586,12 @@ def trade_journal(
 
     The trader writes runtime_data/trade_journal.json after each open
     and close window (committed via .github/workflows/trader.yml).
-    Strategist-gated like /api/portfolio because it surfaces the same
-    position-level data; the aggregate stats (trade count, win rate)
-    flow through anonymously to support the public track-record page.
+    Paywall removed 2026-04-29; full position-level data flows to
+    everyone alongside the aggregate stats.
     """
-    is_strategist = False
+    is_strategist = True
     if user:
-        user_row = users_db.upsert_user(users_conn, user["user_id"], email=user.get("email"))
-        is_strategist = users_db.can_access_picks(user_row)
+        users_db.upsert_user(users_conn, user["user_id"], email=user.get("email"))
 
     from datetime import datetime as _dtj, timedelta as _tdj
     from pathlib import Path as _Pathj
