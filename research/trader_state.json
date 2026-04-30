@@ -134,15 +134,6 @@
         "stop_pct": -0.007,
         "target_pct": 0.01,
         "signal": "adopted"
-      },
-      "SOXL": {
-        "symbol": "SOXL",
-        "qty": 3,
-        "entry_price": 125.23,
-        "opened_at": "2026-04-30T15:35:38.728678+00:00",
-        "signal": "relvol",
-        "stop": 124.35,
-        "target": 126.48
       }
     },
     "fired_today": [
