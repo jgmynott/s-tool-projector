@@ -1,6 +1,6 @@
 {
-  "as_of": "2026-04-30T14:00:37.408144+00:00",
-  "n_rows": 247,
+  "as_of": "2026-04-30T14:05:33.470261+00:00",
+  "n_rows": 250,
   "rows": [
     {
       "ts": "2026-04-27T13:47:29.206731Z",
@@ -3324,6 +3324,42 @@
       "sell_price": null,
       "pnl": null,
       "exit_reason": "max_hold"
+    },
+    {
+      "ts": "2026-04-30T14:05:33.133499+00:00",
+      "event": "sell",
+      "sleeve": "scalper",
+      "symbol": "CAT",
+      "qty": 1.0,
+      "buy_price": null,
+      "sell_price": null,
+      "pnl": null,
+      "exit_reason": "max_hold"
+    },
+    {
+      "ts": "2026-04-30T14:05:33.414954+00:00",
+      "event": "sell",
+      "sleeve": "scalper",
+      "symbol": "GE",
+      "qty": 1.0,
+      "buy_price": null,
+      "sell_price": null,
+      "pnl": null,
+      "exit_reason": "max_hold"
+    },
+    {
+      "ts": "2026-04-30T14:05:33.469874+00:00",
+      "event": "buy",
+      "sleeve": "scalper",
+      "symbol": "AAPL",
+      "qty": 1,
+      "ref_price": 271.63,
+      "live_price": 271.63,
+      "stop": 269.73,
+      "target": 274.35,
+      "tier": "orb",
+      "rationale": "{\"range_high\": 270.815, \"range_low\": 268.16, \"avg_open_vol\": 29757.5, \"cur_vol\": 47423}",
+      "result": "submitted"
     }
   ]
 }

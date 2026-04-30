@@ -125,8 +125,24 @@
   },
   "breaker_fired_date": "2026-04-28",
   "scalper": {
-    "positions": {},
-    "fired_today": [],
+    "positions": {
+      "AAPL": {
+        "symbol": "AAPL",
+        "qty": 1,
+        "entry_price": 271.63,
+        "opened_at": "2026-04-30T14:05:33.469860+00:00",
+        "signal": "orb",
+        "stop": 269.73,
+        "target": 274.35
+      }
+    },
+    "fired_today": [
+      {
+        "symbol": "AAPL",
+        "signal": "orb",
+        "ts": "2026-04-30T14:05:33.469871+00:00"
+      }
+    ],
     "last_scan": null,
     "last_scan_date": "2026-04-30"
   }
