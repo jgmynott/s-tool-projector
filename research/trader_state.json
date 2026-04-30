@@ -117,15 +117,6 @@
   "breaker_fired_date": "2026-04-28",
   "scalper": {
     "positions": {
-      "NFLX": {
-        "symbol": "NFLX",
-        "qty": 5,
-        "entry_price": 94.005,
-        "opened_at": "2026-04-30T18:20:41.860438+00:00",
-        "signal": "relvol",
-        "stop": 93.35,
-        "target": 94.95
-      },
       "META": {
         "symbol": "META",
         "qty": 1,

@@ -1,6 +1,6 @@
 {
-  "as_of": "2026-04-30T18:40:30.946123+00:00",
-  "n_rows": 485,
+  "as_of": "2026-04-30T18:50:38.283794+00:00",
+  "n_rows": 486,
   "rows": [
     {
       "ts": "2026-04-27T13:47:29.206731Z",
@@ -6353,6 +6353,17 @@
       "tier": "relvol",
       "rationale": "{\"vol_multiple\": 2.3829017648192505, \"range_pos\": 0.8709677419353655, \"cur_vol\": 37767}",
       "result": "submitted"
+    },
+    {
+      "ts": "2026-04-30T18:50:38.283129+00:00",
+      "event": "sell",
+      "sleeve": "scalper",
+      "symbol": "NFLX",
+      "qty": 5,
+      "buy_price": 94.005,
+      "sell_price": null,
+      "pnl": null,
+      "exit_reason": "max_hold"
     }
   ]
 }
