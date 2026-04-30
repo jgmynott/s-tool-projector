@@ -4,7 +4,7 @@
 
 # Core data + engine
 yfinance>=0.2.31
-pandas>=2.0
+pandas>=3.0.2
 numpy>=1.24
 requests>=2.33.1
 python-dotenv>=1.0
