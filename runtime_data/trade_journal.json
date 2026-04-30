@@ -1,6 +1,6 @@
 {
-  "as_of": "2026-04-30T14:40:36.343452+00:00",
-  "n_rows": 294,
+  "as_of": "2026-04-30T14:45:36.962052+00:00",
+  "n_rows": 295,
   "rows": [
     {
       "ts": "2026-04-27T13:47:29.206731Z",
@@ -3964,6 +3964,20 @@
       "target": 53.97,
       "tier": "relvol",
       "rationale": "{\"vol_multiple\": 2.1392956501110656, \"range_pos\": 0.8888888888889767, \"cur_vol\": 28342}",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-04-30T14:45:36.961498+00:00",
+      "event": "buy",
+      "sleeve": "scalper",
+      "symbol": "IWM",
+      "qty": 1,
+      "ref_price": 274.67,
+      "live_price": 274.67,
+      "stop": 272.75,
+      "target": 277.42,
+      "tier": "relvol",
+      "rationale": "{\"vol_multiple\": 2.003657495834519, \"range_pos\": 1.0, \"cur_vol\": 24652}",
       "result": "submitted"
     }
   ]
