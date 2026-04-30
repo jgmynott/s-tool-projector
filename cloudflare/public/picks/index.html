@@ -211,11 +211,6 @@ header.hero { padding: 80px 0 40px; }
 .btn:hover { background: #82c1d6; transform: translateY(-1px); }
 .btn.ghost { background: transparent; color: var(--text-hi); border-color: var(--border-strong); }
 .btn.ghost:hover { background: rgba(95,170,197,0.08); border-color: var(--accent-lake); }
-.gate-cta-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px; }
-@media (max-width: 380px) {
-  .gate-cta-row .btn { padding: 12px 20px; font-size: 14px; }
-}
-.teaser { filter: blur(6px); pointer-events: none; user-select: none; }
 
 /* ── Methodology ─────────────────────────────────────────────── */
 .methodology {
@@ -1445,14 +1440,6 @@ footer a { color: var(--text-mid); }
 .pf-countdown-time { font: 500 16px 'Inter'; color: var(--text-hi); font-variant-numeric: tabular-nums; }
 .pf-countdown-in { font: 500 13px 'Inter'; color: var(--accent-lake); font-variant-numeric: tabular-nums; }
 
-.pf-teaser-fade { position: relative; }
-.pf-teaser-fade::after {
-  content: ''; position: absolute; inset: 0; pointer-events: none;
-  background: linear-gradient(180deg, transparent 30%, var(--bg-surface) 95%);
-}
-.pf-teaser-cta { margin-top: 14px; text-align: center; font: 500 13px 'Inter'; color: var(--text-mid); }
-.pf-teaser-cta a { color: var(--accent-lake); }
-
 @media (max-width: 720px) {
   .pf-panel { padding: 24px 22px 22px; margin: 22px 0 30px; }
   .pf-equity-row { grid-template-columns: 1fr; gap: 14px; }
@@ -1590,7 +1577,7 @@ footer a { color: var(--text-mid); }
   <div class="container">
     <div class="eyebrow">Strategist &middot; Portfolio intelligence</div>
     <h1 class="title">A <em>ranked portfolio</em> of the names your projection engine finds — not the names everyone already owns.</h1>
-    <p class="subtitle">Every night we rank every ticker in the Russell 3000, bucket by projected volatility, filter out mega-caps and index constituents, attach point-in-time SEC EDGAR fundamentals, and publish the top picks here. Then we track every pick's realized return so you can see whether the model actually earns its $29.</p>
+    <p class="subtitle">Every night we rank every ticker in the Russell 3000, bucket by projected volatility, filter out mega-caps and index constituents, attach point-in-time SEC EDGAR fundamentals, and publish the top picks here. Every pick's realized return is tracked below — track-record is the whole product.</p>
     <div class="scan-meta" id="scanMeta">
       <span class="meta-item"><span class="dot"></span><span>loading…</span></span>
     </div>
@@ -1642,6 +1629,6 @@ footer a { color: var(--text-mid); }
      1h Cache-Control on /shared/* skips download + parse on every
      repeat visit. defer means it executes after HTML parse but
      before DOMContentLoaded, same effective ordering as inline. -->
-<script defer src="/shared/picks-app.js?v=20260430b"></script>
+<script defer src="/shared/picks-app.js?v=20260430c"></script>
 </body>
 </html>

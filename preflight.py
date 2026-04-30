@@ -559,6 +559,60 @@ SURVIVING_PAGES = [
 ]
 
 
+def check_no_stale_billing_refs():
+    """The 2026-04-30 cull removed Stripe + Clerk + the paywall. Any
+    surviving billing copy on /app, /picks, or /shared is a regression —
+    user finds these by accident, gets angry, and we have to scramble.
+    Catches: hard-coded prices ($29, $19.99, $8/mo), provider names
+    (stripe, clerk), paywall plumbing (data.teaser, isStrategist,
+    /pricing, /billing, paywall, "unlock the full"). False-positive whitelist
+    keeps known-benign hits ("stripe pattern" in a CSS comment) silent."""
+    import re
+    print("\n[*] No stale billing/auth references on shipped pages")
+    targets = [
+        ROOT / "cloudflare/public/app/index.html",
+        ROOT / "cloudflare/public/picks/index.html",
+    ]
+    targets += sorted((ROOT / "cloudflare/public/shared").glob("*.js"))
+    targets += sorted((ROOT / "cloudflare/public/shared").glob("*.css"))
+    # Patterns that must not appear in shipped frontend assets.
+    forbidden = [
+        (r"\$\d+(?:\.\d+)?\s*/\s*(?:mo|month|yr|year)\b", "hard-coded monthly/yearly price"),
+        (r"\$29(?:\.\d+)?\b", "$29 paywall remnant"),
+        (r"\$19\.99\b",                                  "$19.99 paywall remnant"),
+        (r"\bstripe\b",                                  "Stripe reference"),
+        (r"\bclerk\b",                                   "Clerk reference"),
+        (r"\bpaywall\b",                                 "paywall plumbing"),
+        (r"\bisStrategist\b",                            "isStrategist gate"),
+        (r"\bdata\.teaser\b",                            "teaser-truncated payload branch"),
+        (r"href=[\"']/pricing[\"']",                     "/pricing link"),
+        (r"href=[\"']/billing[\"']",                     "/billing link"),
+        (r"href=[\"']/checkout[\"']",                    "/checkout link"),
+        (r"\bunlock the full\b",                         "paywall upgrade copy"),
+        (r"earns its \$",                                "ROI-vs-price copy"),
+    ]
+    # Substring whitelist — appearing in a tracked file means a finding is
+    # benign and should be ignored. Keep tight so real regressions surface.
+    whitelist_substrings = [
+        "stripe pattern",   # CSS comment about a visual stripe pattern
+    ]
+    bad = 0
+    for fp in targets:
+        if not fp.exists():
+            continue
+        text = fp.read_text()
+        for pat, why in forbidden:
+            for m in re.finditer(pat, text, re.IGNORECASE):
+                lineno = text.count("\n", 0, m.start()) + 1
+                line = text.splitlines()[lineno - 1].strip()
+                if any(w in line.lower() for w in whitelist_substrings):
+                    continue
+                fail(f"{fp.relative_to(ROOT)}:{lineno} — {why}: {line[:120]}")
+                bad += 1
+    if bad == 0:
+        ok(f"scanned {len(targets)} shipped assets — no billing/auth remnants")
+
+
 def check_nav_consistency():
     """Surviving pages (/app, /picks) must share an identical top-nav link
     set in the same order. Mobile is intentionally not supported — the rest
@@ -599,6 +653,7 @@ def main() -> int:
     check_rotation_pool()
     check_workflow_crons()
     check_nav_consistency()
+    check_no_stale_billing_refs()
     check_no_committed_secrets()
     check_nn_artifacts()
     check_users_sanity()

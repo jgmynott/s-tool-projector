@@ -832,8 +832,7 @@ function pfLiveActivityStrip(data) {
 // directly below the live positions block so the eye flows
 // open → closed for cross-reference. closed_today comes pre-paired from
 // /api/portfolio: {symbol, qty, buy_price, sell_price, pnl, sleeve, closed_at}.
-// Non-strategist sees teaser-truncated 3 rows + upgrade nudge.
-function pfClosedTradesPanel(closedToday, isStrategist, totalRealizedToday) {
+function pfClosedTradesPanel(closedToday, totalRealizedToday) {
   const rows = closedToday || [];
   // When the trader hasn't fired any closes yet today, show an honest
   // empty state rather than hiding the section entirely — keeps the
@@ -914,10 +913,6 @@ function pfClosedTradesPanel(closedToday, isStrategist, totalRealizedToday) {
     </div>`;
   }).join('');
 
-  const teaserCta = !isStrategist
-    ? `<div class="pf-closed-cta">Showing ${rows.length} most recent — <a href="/pricing">unlock the full ledger</a> to see every fill, sleeve, and outcome from the past 90 days.</div>`
-    : '';
-
   return `<div class="pf-closed-section">
     <div class="pf-closed-head">
       <span class="pf-closed-title">Closed today</span>
@@ -927,7 +922,6 @@ function pfClosedTradesPanel(closedToday, isStrategist, totalRealizedToday) {
       </span>
     </div>
     <div class="pf-closed-list">${items}</div>
-    ${teaserCta}
   </div>`;
 }
 
@@ -1467,17 +1461,12 @@ function renderPortfolio(data) {
     </div>`;
   } else {
     // The donut block now embeds positions inside expandable sleeve
-    // groups (no separate cards grid). Use positions-derived MV since
-    // teaser-truncated payloads exclude some positions and we don't want
-    // arc weights summing to >100% of the visible ring.
+    // groups (no separate cards grid).
     const visibleMv = positions.reduce((s, p) => s + (p.market_value || 0), 0);
     // Stash sleeve summaries so the embedded thesis blocks can surface
     // realized-today figures without re-deriving them per row.
     window.__pfSleeveSummaries = sleeves;
     positionsBlock = pfPositionsDonut(positions, visibleMv);
-    if (data.teaser) {
-      positionsBlock += `<div class="pf-teaser-cta">Showing ${positions.length} of total — <a href="/pricing">unlock the full book</a> to see every fill, sleeve allocation, and intraday rebalance.</div>`;
-    }
   }
   // Utilization = fraction of buying power currently in market value of
   // open positions. Useful at a glance: empty between sessions = 0%,
@@ -1525,13 +1514,12 @@ function renderPortfolio(data) {
           const wins = positions.filter(p => (p.unrealized_pl || 0) > 0).length;
           const losses = positions.filter(p => (p.unrealized_pl || 0) < 0).length;
           const flat = positions.length - wins - losses;
-          if (data.teaser) return `${positions.length} of ${totalPositions} shown`;
           return `<span class="pf-tally-w">${wins}</span> in green · <span class="pf-tally-l">${losses}</span> in red${flat ? ` · ${flat} flat` : ''}`;
         })()}
       </span>
     </div>
     ${positionsBlock}
-    ${pfClosedTradesPanel(closedToday, !data.teaser, realizedToday)}
+    ${pfClosedTradesPanel(closedToday, realizedToday)}
     ${sleeveBlock}
   </section>`;
 }
@@ -1767,30 +1755,6 @@ function renderMethodology(data) {
     <p><b>Thesis.</b> Each pick carries a point-in-time context line derived from the latest regulatory filings &mdash; growth, margin, free-cash-flow, and balance-sheet direction. When nothing stands out in the filings, the thesis reflects the price dynamics instead, honestly.</p>
     <p><b>Track record.</b> Every pick is logged to an immutable ledger on pick date. Realized return is computed against the entry price every night. Only picks that have had at least 7 days to age count toward the stats above &mdash; we'd rather show a small honest sample than an impressive one you can't trust.</p>
   </section>`;
-}
-
-function renderGate(data) {
-  const teaserRows = (data.teaser || []).reduce((acc, t) => {
-    (acc[t.tier] = acc[t.tier] || []).push(t.symbol); return acc;
-  }, {});
-  const teaserHtml = Object.entries(teaserRows).map(([tier, syms]) => `
-    <div style="margin-bottom:18px;">
-      <div style="font:600 11px 'Inter';color:var(--accent-lake);letter-spacing:0.2em;text-transform:uppercase;margin-bottom:10px;">${TIER_COPY[tier]?.label || tier}</div>
-      <div class="teaser" style="color:var(--text-hi);font-family:'Crimson Text',serif;font-size:22px;">${syms.join(' · ')}</div>
-    </div>`).join('');
-  const trackSummary = data.summary ? renderTrackRecord(data.summary) : '';
-  return `
-    ${trackSummary}
-    <div class="gate">
-      <div class="eyebrow" style="margin-bottom:14px;">Strategist &middot; $29/mo</div>
-      <h2>The full list, the full <em>thesis</em>, and the track record.</h2>
-      <p>Strategist unlocks the ranked list across all three risk tiers, with every pick's SEC-filed fundamentals, 1-year P50 target, expected return, and the daily realized-return ledger that makes the engine falsifiable.</p>
-      <div class="gate-cta-row"></div>
-      <div style="margin-top:40px;padding-top:28px;border-top:1px solid var(--border);">
-        <div style="font:600 11px 'Inter';color:var(--text-dim);letter-spacing:0.14em;text-transform:uppercase;margin-bottom:16px;">Today's picks — top 3 per tier</div>
-        ${teaserHtml}
-      </div>
-    </div>`;
 }
 
 function riskBand(p10Ratio) {
