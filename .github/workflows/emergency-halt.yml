@@ -1,0 +1,57 @@
+name: emergency-halt
+# Manual kill-switch — drops a HALT.flag into runtime_data/ that the trader
+# checks at the top of every run. Once committed, the next trader/scalper
+# fire will refuse to place orders and instead push a "HALT.flag present"
+# alert. Use this from the GitHub mobile app when something looks wrong
+# and you can't get to a laptop.
+#
+# To resume trading: run the clear-halt workflow.
+
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "Why are you halting? (gets committed with the flag)"
+        required: true
+        default: "manual halt"
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: trader-halt
+  cancel-in-progress: false
+
+jobs:
+  halt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Write HALT.flag
+        run: |
+          mkdir -p runtime_data
+          cat > runtime_data/HALT.flag <<EOF
+          {
+            "halted_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "reason": "${{ github.event.inputs.reason }}",
+            "by": "${{ github.actor }} via emergency-halt workflow"
+          }
+          EOF
+          cat runtime_data/HALT.flag
+
+      - name: Commit + push
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -f runtime_data/HALT.flag
+          if git diff --staged --quiet; then
+            echo "HALT.flag already present and unchanged"
+          else
+            git commit -m "chore(halt): emergency-halt by ${{ github.actor }} — ${{ github.event.inputs.reason }}"
+            git pull --rebase || true
+            git push
+          fi

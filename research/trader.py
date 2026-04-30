@@ -102,7 +102,23 @@ SLEEVES = {
 SLEEVE_NAMES = list(SLEEVES.keys())  # ['momentum', 'swing', 'daytrade']
 
 TRADE_TIERS = {"conservative", "moderate", "aggressive"}
-PORTFOLIO_DRAWDOWN_HALT_PCT = -0.03  # close everything if portfolio is down >3% intraday
+
+# ── Risk controls ───────────────────────────────────────────────────
+# Three layers of automated halt:
+#   1. Daily: today's eq vs last_close ≤ -3% → liquidate + halt today
+#   2. Rolling 5d: today's eq vs eq_5d_ago ≤ -8% → liquidate + persistent halt
+#      (manual reset required; survives the day boundary)
+#   3. Manual: HALT.flag file present → trader refuses to run
+# Tuned for paper today; tighten before going live (see TODO in cmd_live).
+PORTFOLIO_DRAWDOWN_HALT_PCT       = -0.03   # daily: -3% vs last_close
+ROLLING_5D_LOSS_HALT_PCT          = -0.08   # 5-trading-day window: -8%
+HALT_FILE                         = ROOT / "runtime_data" / "HALT.flag"
+
+# Leverage clamp — capped at the LEVERAGE_MAX env var (default 4 for
+# paper, set to 1 for live cash-only). Even if Alpaca reports a higher
+# multiplier, the trader uses min(LEVERAGE_MAX, broker_multiplier) when
+# sizing positions. Belt-and-braces against the broker config drifting.
+LEVERAGE_MAX_DEFAULT              = 4.0
 
 
 # ── env loader (no python-dotenv dep) ──
@@ -205,6 +221,81 @@ def load_state() -> dict:
 def save_state(state: dict) -> None:
     STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
     STATE_PATH.write_text(json.dumps(state, indent=2))
+
+
+# ── Halt flag (kill-switch) ──────────────────────────────────────────
+# Persistent halt survives session boundaries. Created by the breaker
+# firing (auto), the emergency-halt workflow (manual phone), or a direct
+# commit. Cleared only by the clear-halt workflow or a direct commit.
+# This is the core safety net: once tripped, the trader will not place a
+# single order until a human reviews and clears the flag.
+
+def is_halted() -> tuple[bool, dict]:
+    """Return (halted, info_dict). Info contains halted_at, reason, by
+    when the file is parseable; empty dict if the flag is corrupt or
+    missing."""
+    if not HALT_FILE.exists():
+        return False, {}
+    try:
+        return True, json.loads(HALT_FILE.read_text())
+    except Exception:
+        return True, {"reason": "halt-file present (unparseable contents)"}
+
+
+def write_halt(reason: str, by: str = "trader") -> None:
+    HALT_FILE.parent.mkdir(parents=True, exist_ok=True)
+    HALT_FILE.write_text(json.dumps({
+        "halted_at": datetime.now(timezone.utc).isoformat(),
+        "reason": reason,
+        "by": by,
+    }, indent=2))
+
+
+# ── Leverage clamp ───────────────────────────────────────────────────
+# Returns the smaller of the broker multiplier and LEVERAGE_MAX env.
+# Used at sizing time so position sizes never exceed the configured cap
+# even if the Alpaca account is set to a higher multiplier. Set
+# LEVERAGE_MAX=1 to enforce cash-only.
+
+def effective_multiplier(acct: dict) -> float:
+    try:
+        broker = float(acct.get("multiplier") or 1)
+    except (TypeError, ValueError):
+        broker = 1.0
+    try:
+        cap = float(os.environ.get("LEVERAGE_MAX", LEVERAGE_MAX_DEFAULT))
+    except (TypeError, ValueError):
+        cap = LEVERAGE_MAX_DEFAULT
+    return min(broker, max(1.0, cap))
+
+
+# ── Equity log + rolling drawdown ────────────────────────────────────
+# Track session-close equity so we can compute multi-day drawdown
+# without re-fetching the chart from Alpaca every run. Append once per
+# trading day (de-dupe by ISO date). Trim to last 30 entries.
+
+def update_equity_log(state: dict, eq: float) -> list[dict]:
+    log = state.setdefault("equity_log", [])
+    today = datetime.now(timezone.utc).date().isoformat()
+    if log and log[-1].get("date") == today:
+        log[-1]["equity"] = eq  # update intraday — we use last value
+    else:
+        log.append({"date": today, "equity": eq})
+    state["equity_log"] = log[-30:]
+    return state["equity_log"]
+
+
+def rolling_drawdown_pct(equity_log: list[dict], window_days: int) -> float | None:
+    """Return (eq_today - eq_window_ago) / eq_window_ago. None if we
+    don't have enough history yet — caller treats as "not enough data,
+    skip the gate"."""
+    if len(equity_log) < window_days + 1:
+        return None
+    eq_now = equity_log[-1].get("equity")
+    eq_then = equity_log[-(window_days + 1)].get("equity")
+    if not eq_now or not eq_then:
+        return None
+    return (eq_now - eq_then) / eq_then
 
 
 # ── Trade journal (evidence ledger) ──
@@ -506,10 +597,18 @@ def plan_open_window(picks: list[dict], account: dict, positions: list,
 
     plans: dict[str, dict] = {}
 
+    # Effective leverage cap — min of broker multiplier and LEVERAGE_MAX
+    # env. Set LEVERAGE_MAX=1 to enforce cash-only on a live account: each
+    # sleeve's effective leverage is then min(cfg["leverage"], 1.0), which
+    # bounds total deployment at 1× equity even when a sleeve was
+    # configured for 1.5× margin.
+    leverage_clamp = effective_multiplier(account)
+
     for sleeve_name, cfg in SLEEVES.items():
         sleeve_picks = picks_for_sleeve(picks, sleeve_name)
         sleeve_equity = equity_per_sleeve(equity, sleeve_name)
-        target_capital = sleeve_equity * cfg["leverage"]
+        sleeve_leverage = min(cfg["leverage"], leverage_clamp)
+        target_capital = sleeve_equity * sleeve_leverage
         n_slots = cfg["rank_range"][1] - cfg["rank_range"][0]
         per_position_target = target_capital / n_slots
         sleeve_pick_symbols = [p["symbol"] for p in sleeve_picks]
@@ -614,7 +713,9 @@ def plan_rotate_window(picks: list[dict], account: dict, positions: list,
     cfg = SLEEVES["daytrade"]
     equity = float(account["equity"])
     sleeve_equity = equity_per_sleeve(equity, "daytrade")
-    target_capital = sleeve_equity * cfg["leverage"]
+    # Honour the leverage clamp here too — see plan_open_window for context.
+    sleeve_leverage = min(cfg["leverage"], effective_multiplier(account))
+    target_capital = sleeve_equity * sleeve_leverage
     n_slots = cfg["rank_range"][1] - cfg["rank_range"][0]
     per_position_target = target_capital / n_slots
 
@@ -949,6 +1050,22 @@ def cmd_dry(api: Alpaca, window: str) -> int:
 
 
 def cmd_live(api: Alpaca, window: str) -> int:
+    # Hard halt — persistent kill-switch. If the flag file exists, refuse
+    # to do anything (no fills journaling, no trading). Cleared only by
+    # human action via clear-halt workflow or a direct commit.
+    halted, info = is_halted()
+    if halted:
+        log.error("trader HALTED — refusing to run. reason=%s halted_at=%s by=%s",
+                  info.get("reason", "?"), info.get("halted_at", "?"), info.get("by", "?"))
+        try:
+            discord_post(
+                f"⛔ **Trader run skipped — HALT.flag present** "
+                f"(reason: {info.get('reason', 'unknown')}). "
+                f"Run clear-halt workflow to resume.",
+            )
+        except Exception:
+            pass
+        return 0
     clock = api.clock()
     if not clock.get("is_open"):
         # Exit 0 (not 1) so the GH-Action issue-on-failure tripwire doesn't
@@ -1046,10 +1163,33 @@ def cmd_live(api: Alpaca, window: str) -> int:
     breaker_fired_today = state.get("breaker_fired_date") == today_iso_breaker
     last_eq = float(acct.get("last_equity", 0))
     eq = float(acct["equity"])
-    if not breaker_fired_today and last_eq > 0 and (eq - last_eq) / last_eq <= PORTFOLIO_DRAWDOWN_HALT_PCT:
-        drawdown_pct = (eq - last_eq) / last_eq * 100
-        log.error("circuit breaker: portfolio down %.1f%% intraday (eq=%s last=%s) — closing everything",
-                  drawdown_pct, eq, last_eq)
+
+    # Track equity for the multi-day breaker. Append-once-per-day with
+    # intraday updates rolling the same row forward.
+    update_equity_log(state, eq)
+
+    # Two trigger conditions, evaluated in priority order:
+    #   1. Daily: today vs yesterday close ≤ -3%
+    #   2. Rolling-5d: today vs 5 trading days ago ≤ -8%
+    # First wins. Both lead to full liquidation + persistent HALT.flag
+    # so subsequent runs (and the next session) refuse until a human
+    # clears the flag via clear-halt workflow.
+    daily_dd = ((eq - last_eq) / last_eq) if (last_eq > 0) else 0
+    rolling_5d_dd = rolling_drawdown_pct(state["equity_log"], 5)
+
+    breaker_reason = None
+    breaker_dd_pct = 0.0
+    if not breaker_fired_today and last_eq > 0 and daily_dd <= PORTFOLIO_DRAWDOWN_HALT_PCT:
+        breaker_reason = "daily_drawdown"
+        breaker_dd_pct = daily_dd * 100
+    elif rolling_5d_dd is not None and rolling_5d_dd <= ROLLING_5D_LOSS_HALT_PCT:
+        breaker_reason = "rolling_5d_drawdown"
+        breaker_dd_pct = rolling_5d_dd * 100
+
+    if breaker_reason:
+        drawdown_pct = breaker_dd_pct
+        log.error("circuit breaker [%s]: portfolio down %.1f%% (eq=%s last=%s) — closing everything",
+                  breaker_reason, drawdown_pct, eq, last_eq)
         # Snapshot positions BEFORE closing so we can journal each one. Without
         # this, breaker liquidations vanish from /api/portfolio.closed_today
         # and the dashboard shows "0 closed today" while equity drops 3%+.
@@ -1072,7 +1212,7 @@ def cmd_live(api: Alpaca, window: str) -> int:
             breaker_rows.append({
                 "ts": ts, "event": "sell", "sleeve": sleeve, "symbol": sym,
                 "qty": qty, "ref_price": avg, "live_price": cur,
-                "realized_pl": upl, "reason": "circuit_breaker",
+                "realized_pl": upl, "reason": f"circuit_breaker_{breaker_reason}",
                 "result": close_result,
             })
         if breaker_rows:
@@ -1080,15 +1220,27 @@ def cmd_live(api: Alpaca, window: str) -> int:
         state["entries"] = {}
         state["breaker_fired_date"] = today_iso_breaker
         save_state(state)
+        # Persistent kill-switch — flag survives the day boundary, blocks
+        # tomorrow's runs until a human reviews and clears via
+        # clear-halt workflow. The single-day breaker_fired_date guard
+        # used to re-arm at midnight, which is wrong: if the model just
+        # bled 8% over 5 days we don't want it self-restarting overnight.
+        write_halt(
+            f"{breaker_reason}: portfolio down {drawdown_pct:.1f}% "
+            f"(eq=${eq:,.0f}); positions liquidated. Review NN scores + "
+            f"calibration_latest.json before clearing.",
+            by="breaker",
+        )
         # Loud Discord ping so this doesn't become a "where's my portfolio?"
         # surprise. The default Trader-complete embed only fires after the
         # normal open/close window — breaker exits before either. ntfy.sh
         # gets the GH issue via alert-on-watchdog-issue.yml.
         try:
             discord_post(
-                f"🚨 **Circuit breaker fired** — portfolio down {drawdown_pct:.1f}% intraday "
-                f"(eq=${eq:,.0f} vs last_close=${last_eq:,.0f}). "
-                f"Closed {len(breaker_rows)} position(s): {', '.join(r['symbol'] for r in breaker_rows)}.",
+                f"🚨 **Circuit breaker fired [{breaker_reason}]** — portfolio down "
+                f"{drawdown_pct:.1f}% (eq=${eq:,.0f} vs last_close=${last_eq:,.0f}). "
+                f"Closed {len(breaker_rows)} position(s): {', '.join(r['symbol'] for r in breaker_rows)}. "
+                f"**HALT.flag set** — trader will not run until cleared.",
                 embed=None,
             )
         except Exception:

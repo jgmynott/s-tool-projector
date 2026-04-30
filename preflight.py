@@ -560,6 +560,25 @@ SURVIVING_PAGES = [
 ]
 
 
+def check_trader_halt_state():
+    """Flag if HALT.flag is present so a deploy doesn't accidentally
+    happen during a halt. Not a hard fail — we still want to be able to
+    ship code while halted (often you halt because something's wrong
+    that requires a fix). But surface it loudly so it's not missed."""
+    print("\n[*] Trader halt-flag state")
+    halt_path = ROOT / "runtime_data" / "HALT.flag"
+    if not halt_path.exists():
+        ok("HALT.flag not present — trader will run on next cron")
+        return
+    try:
+        import json as _j
+        info = _j.loads(halt_path.read_text())
+        warn(f"HALT.flag present — reason: {info.get('reason', '?')[:80]} "
+             f"(at {info.get('halted_at', '?')}, by {info.get('by', '?')})")
+    except Exception:
+        warn("HALT.flag present (unparseable) — clear via clear-halt workflow")
+
+
 def check_no_stale_billing_refs():
     """The 2026-04-30 cull removed Stripe + Clerk + the paywall. Any
     surviving billing copy on /app, /picks, or /shared is a regression —
@@ -655,6 +674,7 @@ def main() -> int:
     check_rotation_pool()
     check_workflow_crons()
     check_nav_consistency()
+    check_trader_halt_state()
     check_no_stale_billing_refs()
     check_no_committed_secrets()
     check_nn_artifacts()

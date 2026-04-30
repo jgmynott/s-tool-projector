@@ -1481,14 +1481,11 @@ function renderPortfolio(data) {
   }
   // Utilization = fraction of buying power currently in market value of
   // open positions. Useful at a glance: empty between sessions = 0%,
-  // mid-day fully deployed = ~60-65% (because we run 1.5× swing + 1×
-  // daytrade across half-equity each, on a 2× margin account).
-  // Utilization denominator is *total* deployable buying power (equity ×
-  // margin multiplier), NOT the live buying_power field — that field is
-  // remaining headroom, so dividing by it overstates utilization once
-  // we're partly deployed. With $100k equity and 2× margin the engine
-  // can put up to $200k in the market; mid-day we run ~57% (1.5×
-  // swing on half-equity + 1× daytrade on half-equity).
+  // mid-day fully deployed = ~30-35% on a 4× margin paper account
+  // (~133% of equity / 4× capacity). Denominator is *total* deployable
+  // buying power (equity × margin multiplier), NOT the live
+  // buying_power field — that's remaining headroom, so dividing by it
+  // overstates utilization once positions are open.
   const totalCapacity = (parseFloat(acct.equity) || 0) * (parseFloat(acct.multiplier) || 1);
   const utilization = totalCapacity > 0 ? Math.min(1, totalMv / totalCapacity) : 0;
   const utilStr = `${(utilization * 100).toFixed(0)}%`;
