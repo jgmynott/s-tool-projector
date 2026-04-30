@@ -1,6 +1,6 @@
 {
-  "as_of": "2026-04-30T18:10:33.812279+00:00",
-  "n_rows": 479,
+  "as_of": "2026-04-30T18:20:41.860983+00:00",
+  "n_rows": 480,
   "rows": [
     {
       "ts": "2026-04-27T13:47:29.206731Z",
@@ -6283,6 +6283,20 @@
       "target": 13.53,
       "tier": "relvol",
       "rationale": "{\"vol_multiple\": 2.8421373086036583, \"range_pos\": 0.9230769230769105, \"cur_vol\": 184717}",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-04-30T18:20:41.860458+00:00",
+      "event": "buy",
+      "sleeve": "scalper",
+      "symbol": "NFLX",
+      "qty": 5,
+      "ref_price": 94.005,
+      "live_price": 94.005,
+      "stop": 93.35,
+      "target": 94.95,
+      "tier": "relvol",
+      "rationale": "{\"vol_multiple\": 2.4075180340302462, \"range_pos\": 0.8064516129032199, \"cur_vol\": 45311}",
       "result": "submitted"
     }
   ]

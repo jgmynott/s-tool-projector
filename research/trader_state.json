@@ -134,6 +134,15 @@
         "signal": "relvol",
         "stop": 13.3,
         "target": 13.53
+      },
+      "NFLX": {
+        "symbol": "NFLX",
+        "qty": 5,
+        "entry_price": 94.005,
+        "opened_at": "2026-04-30T18:20:41.860438+00:00",
+        "signal": "relvol",
+        "stop": 93.35,
+        "target": 94.95
       }
     },
     "fired_today": [
@@ -241,6 +250,11 @@
         "symbol": "SOXS",
         "signal": "relvol",
         "ts": "2026-04-30T18:10:33.811758+00:00"
+      },
+      {
+        "symbol": "NFLX",
+        "signal": "relvol",
+        "ts": "2026-04-30T18:20:41.860455+00:00"
       }
     ],
     "last_scan": null,
