@@ -89,30 +89,6 @@
       "opened_at": "2026-04-30T13:30:49.783578+00:00",
       "ref_price": 148.38,
       "qty": 33
-    },
-    "DY": {
-      "sleeve": "daytrade",
-      "opened_at": "2026-04-30T13:30:50.066688+00:00",
-      "ref_price": 409.32,
-      "qty": 8
-    },
-    "PWR": {
-      "sleeve": "daytrade",
-      "opened_at": "2026-04-30T13:30:51.412595+00:00",
-      "ref_price": 628.6,
-      "qty": 5
-    },
-    "CAH": {
-      "sleeve": "daytrade",
-      "opened_at": "2026-04-30T13:30:51.770136+00:00",
-      "ref_price": 202.82,
-      "qty": 16
-    },
-    "PH": {
-      "sleeve": "daytrade",
-      "opened_at": "2026-04-30T13:30:52.206375+00:00",
-      "ref_price": 947.5,
-      "qty": 3
     }
   },
   "traded_today": {

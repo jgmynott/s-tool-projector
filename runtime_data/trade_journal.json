@@ -1,6 +1,6 @@
 {
-  "as_of": "2026-04-30T14:20:55.330746+00:00",
-  "n_rows": 256,
+  "as_of": "2026-04-30T14:25:31.593519+00:00",
+  "n_rows": 260,
   "rows": [
     {
       "ts": "2026-04-27T13:47:29.206731Z",
@@ -3443,6 +3443,54 @@
       "target": 189.99,
       "tier": "orb",
       "rationale": "{\"range_high\": 187.68, \"range_low\": 184.9, \"avg_open_vol\": 3734.3333333333335, \"cur_vol\": 4991}",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-04-30T14:25:30.703627+00:00",
+      "event": "sell",
+      "sleeve": "daytrade",
+      "symbol": "CAH",
+      "qty": "16",
+      "ref_price": 202.82,
+      "live_price": null,
+      "realized_pl": null,
+      "reason": "preopen_holdover_sweep",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-04-30T14:25:31.166941+00:00",
+      "event": "sell",
+      "sleeve": "daytrade",
+      "symbol": "DY",
+      "qty": "8",
+      "ref_price": 409.32,
+      "live_price": null,
+      "realized_pl": null,
+      "reason": "preopen_holdover_sweep",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-04-30T14:25:31.414829+00:00",
+      "event": "sell",
+      "sleeve": "daytrade",
+      "symbol": "PH",
+      "qty": "1",
+      "ref_price": 947.5,
+      "live_price": null,
+      "realized_pl": null,
+      "reason": "preopen_holdover_sweep",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-04-30T14:25:31.592976+00:00",
+      "event": "sell",
+      "sleeve": "daytrade",
+      "symbol": "PWR",
+      "qty": "5",
+      "ref_price": 628.6,
+      "live_price": null,
+      "realized_pl": null,
+      "reason": "preopen_holdover_sweep",
       "result": "submitted"
     }
   ]
