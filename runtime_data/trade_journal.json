@@ -1,6 +1,6 @@
 {
-  "as_of": "2026-04-30T17:40:39.287873+00:00",
-  "n_rows": 475,
+  "as_of": "2026-04-30T18:00:44.758924+00:00",
+  "n_rows": 477,
   "rows": [
     {
       "ts": "2026-04-27T13:47:29.206731Z",
@@ -6240,6 +6240,22 @@
       "sell_price": null,
       "pnl": null,
       "exit_reason": "max_hold"
+    },
+    {
+      "ts": "2026-04-30T18:00:44.270182+00:00",
+      "event": "buy_failed",
+      "sleeve": "daytrade",
+      "symbol": "GE",
+      "qty": 12,
+      "error": "Alpaca POST orders \u2192 HTTP 422: {\"code\":40010001,\"message\":\"client_order_id must be unique\"}"
+    },
+    {
+      "ts": "2026-04-30T18:00:44.758136+00:00",
+      "event": "buy_failed",
+      "sleeve": "daytrade",
+      "symbol": "CAT",
+      "qty": 4,
+      "error": "Alpaca POST orders \u2192 HTTP 422: {\"code\":40010001,\"message\":\"client_order_id must be unique\"}"
     }
   ]
 }
