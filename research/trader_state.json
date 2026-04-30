@@ -117,15 +117,6 @@
   "breaker_fired_date": "2026-04-28",
   "scalper": {
     "positions": {
-      "AVGO": {
-        "symbol": "AVGO",
-        "qty": 1,
-        "entry_price": 412.86,
-        "opened_at": "2026-04-30T15:15:38.342241+00:00",
-        "signal": "relvol",
-        "stop": 409.97,
-        "target": 416.99
-      },
       "DE": {
         "symbol": "DE",
         "qty": 1.0,

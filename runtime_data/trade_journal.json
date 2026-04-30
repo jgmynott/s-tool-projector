@@ -1,6 +1,6 @@
 {
-  "as_of": "2026-04-30T15:35:38.729223+00:00",
-  "n_rows": 327,
+  "as_of": "2026-04-30T15:45:36.299403+00:00",
+  "n_rows": 328,
   "rows": [
     {
       "ts": "2026-04-27T13:47:29.206731Z",
@@ -4339,6 +4339,17 @@
       "tier": "relvol",
       "rationale": "{\"vol_multiple\": 3.7785272769242604, \"range_pos\": 0.7181818181818183, \"cur_vol\": 32738}",
       "result": "submitted"
+    },
+    {
+      "ts": "2026-04-30T15:45:36.298881+00:00",
+      "event": "sell",
+      "sleeve": "scalper",
+      "symbol": "AVGO",
+      "qty": 1,
+      "buy_price": 412.86,
+      "sell_price": null,
+      "pnl": null,
+      "exit_reason": "max_hold"
     }
   ]
 }
