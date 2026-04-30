@@ -117,14 +117,14 @@
   "breaker_fired_date": "2026-04-28",
   "scalper": {
     "positions": {
-      "MSFT": {
-        "symbol": "MSFT",
+      "AMZN": {
+        "symbol": "AMZN",
         "qty": 1,
-        "entry_price": 407.48,
-        "opened_at": "2026-04-30T19:05:37.399937+00:00",
+        "entry_price": 266.24,
+        "opened_at": "2026-04-30T19:35:31.151569+00:00",
         "signal": "relvol",
-        "stop": 404.63,
-        "target": 411.55
+        "stop": 264.38,
+        "target": 268.9
       }
     },
     "fired_today": [
@@ -252,6 +252,11 @@
         "symbol": "MSFT",
         "signal": "relvol",
         "ts": "2026-04-30T19:05:37.399956+00:00"
+      },
+      {
+        "symbol": "AMZN",
+        "signal": "relvol",
+        "ts": "2026-04-30T19:35:31.151584+00:00"
       }
     ],
     "last_scan": null,
