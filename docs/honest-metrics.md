@@ -1,8 +1,8 @@
 # Honest metrics — Wave 1 + Wave 2 audit methodology
 
-Last refreshed: **2026-04-17**
+Last refreshed: **2026-04-17** (frontend surface refs updated 2026-04-30)
 
-This document is the unflattering, defensible version of the backtest. Everything published on `/track-record` and in the landing-page hero uses the filtered numbers defined here, not the pre-filter ones.
+This document is the unflattering, defensible version of the backtest. Every realized-return number rendered in the track-record block on `/picks` (and the `/api/track-record` + `/api/honest-audit` JSON consumed there) uses the filtered numbers defined here, not the pre-filter ones. The standalone `/track-record` and landing pages were retired in the 2026-04-30 cull — same data, fewer surfaces.
 
 ## The delta
 

@@ -1,6 +1,8 @@
 # Deployment & operations — s-tool
 
-Last refreshed: **2026-04-17**
+Last refreshed: **2026-04-30**
+
+> **2026-04-30 site cull note:** The frontend no longer uses Clerk or Stripe. The auth + billing endpoints (`/api/me`, `/api/billing/*`, `/api/_admin/*`) and `users_db.py` machinery still exist on the Railway backend but receive no live traffic. The "Comping a user", "Admin endpoints", and "Railway Volume (users DB persistence)" sections below are kept for reference only and apply to legacy users who signed up before the cull. Nothing in the current pipeline depends on them.
 
 The site runs unattended. GitHub Actions fires two scheduled workflows on weekdays:
 
@@ -89,13 +91,23 @@ gh run view <run-id> --repo jgmynott/s-tool-projector --log
 ## Health checks after a deploy
 
 ```bash
-curl -s https://s-tool.io/api/health | jq '.overall'
-curl -s https://s-tool.io/api/backtest-report | jq '.honest_metrics.year_oos_hit_100'
-curl -s https://s-tool.io/api/honest-audit | jq '.scorers.nn_score.overall.E_all_three'
-curl -s https://s-tool.io/api/me -H "Authorization: Bearer <token>" | jq '.tier'
+# Frontend reachable + dropped routes redirect cleanly
+curl -s -o /dev/null -w "code=%{http_code}\n"            https://s-tool.io/app/
+curl -s -o /dev/null -w "code=%{http_code}\n"            https://s-tool.io/picks/
+curl -s -o /dev/null -w "%{http_code} -> %{redirect_url}\n" https://s-tool.io/
+
+# Backend live + canonical signals fresh
+curl -s https://s-tool.io/api/health           | jq '.overall'
+curl -s https://s-tool.io/api/backtest-report  | jq '.honest_metrics.year_oos_hit_100'
+curl -s https://s-tool.io/api/honest-audit     | jq '.scorers.nn_score.overall.E_all_three'
+
+# Picks endpoint is now anonymous — no Authorization header needed.
+curl -s https://s-tool.io/api/picks            | jq '.count'
 ```
 
-## Admin endpoints (internal)
+## Admin endpoints (legacy — pre-cull only)
+
+> The 2026-04-30 cull removed Clerk + Stripe from the frontend. These admin endpoints still exist on the backend but are orphans — no live traffic touches them. Kept for reference in case a backend cleanup pass needs to migrate or delete the legacy users.
 
 Gated behind `ADMIN_TOKEN` env var on the Railway `api` service:
 
@@ -108,7 +120,9 @@ Gated behind `ADMIN_TOKEN` env var on the Railway `api` service:
 
 All require header `x-admin-token: <value matching ADMIN_TOKEN>`.
 
-## Comping a user (no Stripe subscription)
+## Comping a user (legacy — pre-cull only)
+
+> Same caveat as the admin endpoints above. Frontend no longer authenticates, so tier resolution doesn't run for new visitors. The list still works for any legacy Clerk session that happens to call `/api/me` directly.
 
 Hard-coded comped-Strategist list lives in `users_db.py`:
 
@@ -132,11 +146,14 @@ Adding an email here → `_is_owner()` returns True → `effective_tier()` retur
 # Revert the commit
 git revert <sha> && git push origin main
 
-# Force an immediate deploy of the reverted state
-gh workflow run daily-refresh-slow.yml --ref main
+# Frontend (CF Worker) — deploy whatever is currently on main
+cd cloudflare && npx wrangler deploy
 
-# Or roll back Railway to the previous image
+# Backend (Railway) — force a redeploy
 RAILWAY_TOKEN=<project-token> railway redeploy --service api
+
+# Or schedule a backend redeploy via the nightly slow path
+gh workflow run daily-refresh-slow.yml --ref main
 ```
 
 ## Pipeline history & known gotchas

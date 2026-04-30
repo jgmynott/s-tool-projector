@@ -1,130 +1,77 @@
-# Session Handoff — 2026-04-17 (evening, post honest-audit + docs sweep)
+# Session Handoff — 2026-04-30 (post site cull)
 
-> **Resume with:** `Read SESSION_HANDOFF.md and MEMORY.md, then check the backfill + regen background jobs and tell me where we left off.`
-
----
-
-## 🏃 Background jobs that should still be running
-
-Two Python processes were left running when the previous session ended:
-
-| Job | Purpose | Expected finish |
-|---|---|---|
-| `backfill_prices_historical.py --target-start 2015-01-01 --sleep 1.2` | Extending all 2,272 price CSVs back to 2015-01-02 via yfinance | ~90–120 min from 2026-04-17 17:33 local |
-| `regenerate_training_set.py` (log: `/tmp/regen_main.log`) | Polls until ≥ 85% of tickers have history to 2015-01-15, then chains `upside_hunt.py → overnight_learn.py → overnight_backtest.py → research/wave1_honest_audit_2026_04_17.py` | ~3 h end-to-end once backfill finishes |
-
-**First thing to do:** `ps aux | grep -E "(backfill_prices|regenerate_training)" | grep -v grep` and `tail -50 /tmp/regen_main.log`.
-
-- If both dead + no regen logs in `/tmp/regen_*.log` → backfill failed; investigate and restart.
-- If backfill done + regen running → let it run.
-- If regen complete → four new artifacts to commit (below).
-
-### Bug fixed mid-session (don't re-introduce)
-
-`regenerate_training_set.py` originally had `TARGET_START = "2015-01-01"` — but yfinance's first trading day of 2015 is Jan 2, so `first <= target` was always False and the poller would hang forever. Changed to `"2015-01-15"`. If you see a similar check elsewhere, apply the same fix.
+> **Resume with:** `Read SESSION_HANDOFF.md and the MEMORY.md auto-memory, then check live deploy status with curl https://s-tool.io/app/ -o /dev/null -w "%{http_code}\n" before doing anything UI.`
 
 ---
 
-## ✅ What got shipped today
+## 📍 Current product state (2026-04-30)
 
-### Wave 1 honest audit (live on prod)
-- `/api/honest-audit` serves `runtime_data/wave1_honest_audit.json`
-- Landing page + `/track-record` show **37% hit / 8.7× lift / +145% mean** (overall, 2022-24) and **61.7% / 12.8× / +331%** (2024 OOS)
-- Filters applied: $500k ADV liquidity floor + 1.5% round-trip tx cost + survivorship mid-window check
-- Published with pre-filter delta (55% → 37%) documented openly in `docs/honest-metrics.md`
+- **Live:** https://s-tool.io/app + https://s-tool.io/picks. Every other route 302-redirects to `/app/`.
+- **Stack:** Cloudflare Worker (`s-tool-site`) + Railway FastAPI (`api`) + SQLite (`projector_cache.db`). **No Clerk, no Stripe** on the frontend.
+- **Mobile:** intentionally unsupported. Both pages ship `<meta name="viewport" content="width=1024">`. Don't propose breakpoints, don't QC at phone widths. See `feedback_mobile_qc.md`.
+- **Last commit:** `bd02b17` — `cull(site): collapse to /app + /picks; remove Clerk, Stripe, mobile`. Worker version `f8ad5623-209e-4a87-b900-6d0d37e546b5`.
 
-### Wave 2
-- Top-N curve (top-5 46%, top-10 45%, top-20 37%, top-50 26%, top-100 20%)
-- Wilson 95% CIs attached to every hit-rate variant
-- 2024 OOS (n=60) spans roughly 48%–74% at 95%
+## 🔥 What just shipped (2026-04-30)
 
-### Four new data sources wired into nightly slow path
-| Feed | Table | Script |
-|---|---|---|
-| yfinance short interest (shortPctFloat, shortRatio, MoM delta) | `short_interest_yf` | `signals_short_interest_yf.py` |
-| yfinance 38 fundamental/technical ratios | `ratios_yf` | `signals_ratios_yf.py` |
-| Finnhub earnings + analyst trend | `earnings_finnhub` | `signals_earnings_finnhub.py` |
-| Finnhub `/stock/metric` (27 multi-year ratios) | `metrics_finnhub` | `signals_metrics_finnhub.py` |
+The marketing site got scrapped. User: "ditch all pages except for projector and picks page — barebones bc you cant QC anything of value" + "remove stripe and clerk — they are stupid pieces".
 
-Nightly ablation: `research/nightly_short_interest_ablation.py` writes dated JSONs to `runtime_data/short_interest_ablation_<date>.json`. Auto-promotion logic not yet built — ablations require manual review before features go into `FEATURE_COLS`.
+### Deleted from `cloudflare/public/`
 
-### Pipeline split (stable for 2+ days)
-- `daily-refresh-fast.yml` — 20:00 UTC, 45 min cap, `worker.py --preferred` (~537 tickers)
-- `daily-refresh-slow.yml` — 23:00 UTC, 150 min cap, full research + NN retrain + backtest
+- Pages: `index.html` (landing), `backtest/`, `faq/`, `how/`, `pricing/`, `studio/`, `track-record/`
+- Shared: `mobile.css`, `nav.css`, `nav.js`, `clerk-lazy.js`, `track-record-app.js`, `tokens.css`
 
-### Docs refreshed
-- `README.md` — full rewrite, honest numbers in hero table
-- `docs/deployment.md` — Railway project-vs-account token gotcha, Volume setup, gitignore pattern
-- `docs/data-sources.md` — NEW, every feed catalogued
-- `docs/honest-metrics.md` — NEW, Wave 1+2 methodology
+### Frontend strip-down
 
-Committed in `d02e586`.
+- `app/index.html`: dropped Clerk SDK script, sign-in pill, tier badge, "Get Pro" button, paywall handler, `/api/me` polling, post-checkout success flash, `authHeaders()` injection on `/api/project`. Header collapsed to logo + date/VIX. Nav reduced to Projector | Picks.
+- `picks/index.html`: same — no Clerk script, no `/shared/nav.js`, no nav-end pill, footer trimmed.
+- `shared/picks-app.js`: stripped `authHeaders()`, `startCheckout()`, `STNav` integration, the 402 strategist-required gate path. `load()` runs on DOMContentLoaded with no auth headers. Cache-bust to `?v=20260430a`.
 
-Linear S-88 updated with evening notes. Notion page `33cf521450a7812abfcdecf323b00da4` updated.
+### Worker + headers
 
----
+- `cloudflare/src/worker.js`: CSP no longer allows `*.clerk.accounts.dev`, `*.stripe.com`, or `*.clerk.com`. `/studio` CSP block deleted. Added a `DROPPED` set that 302s every culled route to `/app/`. `/status` page links updated.
+- `cloudflare/public/_headers`: Permissions-Policy stripped of Stripe payment allowance. CSP rule deleted (worker owns CSP for HTML now).
+- `cloudflare/public/sw.js`: `VERSION` bumped to `v2` so the activate handler evicts the stale `v1` cache that prefetched `/track-record/`, `/pricing/`, etc. `SHELL_PATHS` reduced to `/app/`, `/picks/`, `/shared/skeleton.css`.
 
-## 📋 When regen completes
+### Preflight
 
-```bash
-# Verify artifacts look sane
-jq '.scorers.nn_score.overall.E_all_three' runtime_data/wave1_honest_audit.json
-jq '.honest_metrics.year_oos_hit_100' runtime_data/backtest_report.json
-wc -l upside_hunt_results.csv  # should be 3-4× larger than the 2022-24-only version
+- `check_nav_consistency` rewritten — only audits the two surviving pages.
+- `check_mobile_breakpoints` removed entirely.
 
-# Commit + push
-git add upside_hunt_results.csv upside_hunt_scored.csv \
-        runtime_data/backtest_report.json \
-        runtime_data/wave1_honest_audit.json \
-        data_cache/*.json
-git commit -m "data: regenerate training set 2016-2024 (35 windows, +2021 continuity)"
-git push
+### Backend untouched
 
-# Kick a slow run to re-deploy artifacts + rebuild NN against the expanded set
-gh workflow run daily-refresh-slow.yml --ref main
-```
+`api.py` still defines `/api/me`, `/api/billing/checkout`, `/api/billing/portal`, `/api/billing/resync`, `/api/_admin/*`, the Clerk JWT verifier, the Stripe webhook handler, `users_db.py`, etc. Nothing on the live frontend calls them. They're orphans pending a backend cleanup pass.
 
-Numbers to watch after regen:
-- **2018 Q4 / 2020 / 2022 regime coverage** now in the training set — expect the overall honest hit rate to shift (could go down if tech-bear windows hurt, up if 2021 continuity helps). Either direction is fine — ship the honest number.
-- Re-run `research/wave1_honest_audit_2026_04_17.py` if the chained step failed but upside_hunt + backtest succeeded.
+## ✅ Live verification (2026-04-30 post-deploy)
 
----
-
-## 🎯 Active backlog
-
-**Pending from previous sessions:**
-- `#9` — verify live `/picks` renders asymmetric tier with 10 tickers (user verification still owed)
-- `#14` — next-session new-data-source research per Linear S-88 consolidation
-
-**Queued data sources (keys configured, not yet wired):**
-- Polygon options flow — `/v3/snapshot/options/<symbol>`, 5 req/min free tier → top-100 tickers only
-- SEC Form 4 insider transactions — bulk feed, free
-- 13F institutional ownership — SEC quarterly, free
-
-**Wave 3 skeletons (deferred, documented):**
-- Universe-level survivorship (needs historical IWV constituents — paid data or iShares filings)
-- Asymmetric tier standalone backtest + 95% CI publication
-- Walk-forward window-overlap methodology note
-- Auto-promotion of ablation-validated features into `FEATURE_COLS`
-
----
+- `/app` → 200, `viewport=1024`, zero "clerk|stripe|sign in" matches
+- `/picks` → 200, same
+- `/`, `/pricing`, `/track-record`, `/how`, `/faq` → 302 → `/app/`
+- CSP header on HTML responses contains no Clerk/Stripe domains
+- `/api/picks` → 200 (anonymous traffic works without an Authorization header)
+- `/shared/picks-app.js?v=20260430a` → 200
 
 ## 🚫 Do NOT
 
-- Re-add Russell 3000 long-tail to slow path — two past runs timed out before deploy. If needed, weekly workflow, not nightly.
-- Commit `data_cache/prices/` or `data_cache/sec_edgar/facts/` — heavy, already gitignored. Runtime JSONs belong in `runtime_data/`.
-- Reference "Medallion" anywhere in copy (trademark).
-- Quote pricing from memory — always WebFetch first.
+- Re-add a marketing page (`/`, `/pricing`, `/how`, `/faq`, `/track-record`) without explicit confirmation. The cull was deliberate.
+- Re-introduce Clerk SDK, sign-in pills, tier badges, paywall gates, or `/api/me` / `/api/billing/*` calls on the frontend.
+- Add `@media (max-width:…)` rules or do mobile QC. Site is desktop-only.
+- Reintroduce `check_mobile_breakpoints` or expand `check_nav_consistency` past the two surviving pages.
+- Reference "Medallion" anywhere in copy (trademark — see `feedback_no_medallion_name.md`).
+- Quote SaaS/API pricing from memory — always WebFetch the provider's pricing page first.
 - Publish methodology recipes (parameter values, method names, provider shopping lists) on the public site. Philosophy + stats only.
-- Ship UI changes without the 7-page mobile eyeball sweep (320–480px) + hover/click/scroll/resize interaction QC.
 
----
+## 🎯 Open questions / backlog
 
-## 📍 Current product state (2026-04-17 EOD)
+- **Backend cleanup.** Should `/api/me`, `/api/billing/*`, `/api/_admin/*`, `auth.py`, `billing.py`, `users_db.py`, the Clerk JWT verifier, and the Stripe webhook handler be deleted from `api.py`? They're orphan code now. Decision pending.
+- **Comp list (`_COMPED_STRATEGIST_EMAILS` in `users_db.py`).** Irrelevant once auth is removed — but still in code.
+- **Stripe-side cleanup.** Subscriptions on Stripe should be canceled or migrated. Out of scope for the frontend cull.
+- **Backend `/api/portfolio`.** Picks page still calls it for the live Alpaca panel. Currently public — fine since equity figures are also visible on Alpaca's own status page. If the user wants this hidden again, gate it via something other than Clerk (IP allowlist, simple shared secret, etc.).
 
-- **Live:** https://s-tool.io
-- **Stack:** Cloudflare Worker + Railway FastAPI + Clerk + Stripe + SQLite (Volume-persisted users.db)
-- **Nightly:** Fast 20:00 UTC + Slow 23:00 UTC, both auto-deploy on green
-- **Honest numbers:** 37% / 8.7× / +145% (pre-regen). Will refresh once `regen_main.log` shows `REGEN COMPLETE`.
-- **Tiers comped manually:** `kevinrvandelden@gmail.com` (hard-coded in `users_db.py`)
-- **Last commit:** `d02e586` (docs)
+## 📚 Reference docs
+
+- `README.md` — top-level project description, refreshed for the cull
+- `docs/deployment.md` — Railway secrets + rollback + admin endpoints (auth bits stale, marked accordingly)
+- `docs/data-sources.md` — every data feed in the nightly pipeline
+- `docs/honest-metrics.md` — Wave 1 + 2 backtest audit methodology
+- `docs/alpaca_integration_plan.md` — paper-trading roadmap
+- Memory: `feedback_nav_consistency.md`, `feedback_mobile_qc.md`, `project_stool_live_stack.md`, `feedback_validate_then_ship.md`
