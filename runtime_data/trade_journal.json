@@ -1,6 +1,6 @@
 {
-  "as_of": "2026-04-30T17:30:45.584532+00:00",
-  "n_rows": 473,
+  "as_of": "2026-04-30T17:39:20.117160+00:00",
+  "n_rows": 474,
   "rows": [
     {
       "ts": "2026-04-27T13:47:29.206731Z",
@@ -6216,6 +6216,14 @@
     },
     {
       "ts": "2026-04-30T17:30:45.583662+00:00",
+      "event": "buy_failed",
+      "sleeve": "daytrade",
+      "symbol": "CAT",
+      "qty": 4,
+      "error": "Alpaca POST orders \u2192 HTTP 422: {\"code\":40010001,\"message\":\"client_order_id must be unique\"}"
+    },
+    {
+      "ts": "2026-04-30T17:39:20.116302+00:00",
       "event": "buy_failed",
       "sleeve": "daytrade",
       "symbol": "CAT",
