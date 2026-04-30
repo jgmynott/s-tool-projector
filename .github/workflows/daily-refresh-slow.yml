@@ -117,6 +117,14 @@ jobs:
       - name: Short interest ablation
         run: python3 research/nightly_short_interest_ablation.py || true
 
+      # Falsification harness — predicted-vs-realized per closed trade.
+      # Reads runtime_data/trade_journal.json, FIFO-matches sells to
+      # buys, and emits per-sleeve calibration metrics. Sparse today
+      # (most positions still open) but accumulates a time-series we
+      # can chart for signal-decay early warning.
+      - name: Calibration report (predicted vs realized)
+        run: python3 research/calibration_report.py || true
+
       - name: Comprehensive backtest report
         run: python3 overnight_backtest.py || true
 

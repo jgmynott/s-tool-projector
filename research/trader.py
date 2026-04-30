@@ -389,12 +389,31 @@ def journal_alpaca_fills(api: "Alpaca", entries: dict) -> list[dict]:
         if qty <= 0 or sell_price <= 0:
             continue
         entry = entries.get(sym, {})
+        # Sleeve attribution cascade: live state first (still has it for
+        # positions that haven't been popped this run), then walk the
+        # journal back looking for the most recent BUY for this symbol
+        # with a non-unattributed sleeve. Without the journal fallback,
+        # any sell triggered by a bracket child fill (where state.entries
+        # was popped at submit time) lands as 'unattributed' and breaks
+        # per-sleeve P&L attribution downstream.
+        sleeve = entry.get("sleeve")
+        if not sleeve or sleeve == "unattributed":
+            try:
+                hist = load_journal()
+                for r in reversed(hist):
+                    if r.get("event") == "buy" and r.get("symbol") == sym:
+                        s = r.get("sleeve")
+                        if s and s != "unattributed":
+                            sleeve = s
+                            break
+            except Exception:
+                pass
         cost = buy_by_sym.get(sym) or entry.get("ref_price") or 0
         pnl = (sell_price - cost) * qty if cost else None
         rows.append({
             "ts": a.get("transaction_time"),
             "event": "sell",
-            "sleeve": entry.get("sleeve") or "unattributed",
+            "sleeve": sleeve or "unattributed",
             "symbol": sym,
             "qty": qty,
             "buy_price": cost or None,

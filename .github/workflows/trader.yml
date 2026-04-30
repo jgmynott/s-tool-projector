@@ -167,6 +167,14 @@ jobs:
         run: |
           python3 research/trader.py live --window=${{ steps.resolve.outputs.window }}
 
+      # Refresh calibration after close windows — that's when new sells
+      # land in the journal. Pure read-side, no Alpaca calls; safe to
+      # run cheaply. Skipped on open/rotate/pre_open since no new
+      # closed-trade data is being added during those windows.
+      - name: Refresh calibration report (close window only)
+        if: steps.resolve.outputs.mode == 'live' && steps.resolve.outputs.window == 'close'
+        run: python3 research/calibration_report.py || true
+
       # Persist trader_state.json + trade_journal.json so the next run
       # sees prior sleeve attribution AND so the track-record page has
       # historical fills with sleeve/tier/rationale annotations.
@@ -187,6 +195,11 @@ jobs:
           fi
           if [ -f runtime_data/trade_journal.json ]; then
             git add -f runtime_data/trade_journal.json
+          fi
+          # Calibration is only refreshed in the close window step above,
+          # but it's harmless to add unconditionally — no diff if unchanged.
+          if [ -f runtime_data/calibration_latest.json ]; then
+            git add -f runtime_data/calibration_latest.json runtime_data/calibration_*.json 2>/dev/null || true
           fi
           if git diff --staged --quiet; then
             echo "no trader artifacts changed"
