@@ -125,6 +125,33 @@
         "signal": "relvol",
         "stop": 264.38,
         "target": 268.9
+      },
+      "INTC": {
+        "symbol": "INTC",
+        "qty": 5,
+        "entry_price": 94.175,
+        "opened_at": "2026-04-30T19:55:54.974562+00:00",
+        "signal": "relvol",
+        "stop": 93.52,
+        "target": 95.12
+      },
+      "CVX": {
+        "symbol": "CVX",
+        "qty": 2,
+        "entry_price": 194.005,
+        "opened_at": "2026-04-30T19:55:55.021273+00:00",
+        "signal": "relvol",
+        "stop": 192.65,
+        "target": 195.95
+      },
+      "BA": {
+        "symbol": "BA",
+        "qty": 2,
+        "entry_price": 229.03,
+        "opened_at": "2026-04-30T19:55:55.067965+00:00",
+        "signal": "relvol",
+        "stop": 227.43,
+        "target": 231.32
       }
     },
     "fired_today": [
@@ -257,6 +284,21 @@
         "symbol": "AMZN",
         "signal": "relvol",
         "ts": "2026-04-30T19:35:31.151584+00:00"
+      },
+      {
+        "symbol": "INTC",
+        "signal": "relvol",
+        "ts": "2026-04-30T19:55:54.974575+00:00"
+      },
+      {
+        "symbol": "CVX",
+        "signal": "relvol",
+        "ts": "2026-04-30T19:55:55.021289+00:00"
+      },
+      {
+        "symbol": "BA",
+        "signal": "relvol",
+        "ts": "2026-04-30T19:55:55.067976+00:00"
       }
     ],
     "last_scan": null,

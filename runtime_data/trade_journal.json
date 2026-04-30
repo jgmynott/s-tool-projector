@@ -1,6 +1,6 @@
 {
-  "as_of": "2026-04-30T19:44:52.310236+00:00",
-  "n_rows": 477,
+  "as_of": "2026-04-30T19:55:55.068768+00:00",
+  "n_rows": 480,
   "rows": [
     {
       "ts": "2026-04-27T13:47:29.206731Z",
@@ -6234,6 +6234,48 @@
       "symbol": "CAT",
       "qty": 4,
       "error": "Alpaca POST orders \u2192 HTTP 422: {\"code\":40010001,\"message\":\"client_order_id must be unique\"}"
+    },
+    {
+      "ts": "2026-04-30T19:55:54.974578+00:00",
+      "event": "buy",
+      "sleeve": "scalper",
+      "symbol": "INTC",
+      "qty": 5,
+      "ref_price": 94.175,
+      "live_price": 94.175,
+      "stop": 93.52,
+      "target": 95.12,
+      "tier": "relvol",
+      "rationale": "{\"vol_multiple\": 4.765788381478434, \"range_pos\": 0.8437499999999953, \"cur_vol\": 203081}",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-04-30T19:55:55.021292+00:00",
+      "event": "buy",
+      "sleeve": "scalper",
+      "symbol": "CVX",
+      "qty": 2,
+      "ref_price": 194.005,
+      "live_price": 194.005,
+      "stop": 192.65,
+      "target": 195.95,
+      "tier": "relvol",
+      "rationale": "{\"vol_multiple\": 2.6544052161550464, \"range_pos\": 1.0, \"cur_vol\": 9282}",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-04-30T19:55:55.067980+00:00",
+      "event": "buy",
+      "sleeve": "scalper",
+      "symbol": "BA",
+      "qty": 2,
+      "ref_price": 229.03,
+      "live_price": 229.03,
+      "stop": 227.43,
+      "target": 231.32,
+      "tier": "relvol",
+      "rationale": "{\"vol_multiple\": 6.020276064850737, \"range_pos\": 1.0, \"cur_vol\": 8546}",
+      "result": "submitted"
     }
   ]
 }
