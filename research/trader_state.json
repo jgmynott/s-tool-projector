@@ -117,15 +117,6 @@
   "breaker_fired_date": "2026-04-28",
   "scalper": {
     "positions": {
-      "DE": {
-        "symbol": "DE",
-        "qty": 1,
-        "entry_price": 593.48,
-        "opened_at": "2026-04-30T16:25:31.171575+00:00",
-        "signal": "relvol",
-        "stop": 589.33,
-        "target": 599.41
-      },
       "SQQQ": {
         "symbol": "SQQQ",
         "qty": 9,
