@@ -125,6 +125,15 @@
         "signal": "relvol",
         "stop": 52.36,
         "target": 53.26
+      },
+      "GE": {
+        "symbol": "GE",
+        "qty": 1,
+        "entry_price": 291.11,
+        "opened_at": "2026-04-30T17:10:31.563309+00:00",
+        "signal": "relvol",
+        "stop": 289.07,
+        "target": 294.02
       }
     },
     "fired_today": [
@@ -217,6 +226,11 @@
         "symbol": "SQQQ",
         "signal": "relvol",
         "ts": "2026-04-30T16:45:35.019096+00:00"
+      },
+      {
+        "symbol": "GE",
+        "signal": "relvol",
+        "ts": "2026-04-30T17:10:31.563317+00:00"
       }
     ],
     "last_scan": null,
