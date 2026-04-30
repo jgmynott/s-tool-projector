@@ -573,11 +573,13 @@ def check_nav_consistency():
         Path("cloudflare/public/pricing/index.html"),
         Path("cloudflare/public/faq/index.html"),
     ]
+    # v2 brand: top nav is a <ul class="dnav-links"> inside .desktop-shell,
+    # plus a parallel <ul> inside .m-drawer for the mobile shell.
     nav_re = re.compile(
-        r'<(?:div|nav)[^>]*(?:nav-center|ev-center)[^>]*>(.*?)</div>',
+        r'<ul[^>]*class="dnav-links"[^>]*>(.*?)</ul>',
         re.DOTALL,
     )
-    link_re = re.compile(r'<a [^>]*href="([^"]+)"[^>]*>([^<]+)</a>')
+    link_re = re.compile(r'<a [^>]*href="([^"]+)"[^>]*>([^<]+?)(?:\s*<[^>]+>)?</a>')
     canonical = None
     bad = 0
     for p in pages:
@@ -586,9 +588,10 @@ def check_nav_consistency():
         html = p.read_text()
         m = nav_re.search(html)
         if not m:
-            fail(f"{p} has no recognizable top-nav block (need .nav-center or .ev-center)"); bad += 1; continue
+            fail(f"{p} has no recognizable top-nav block (need .dnav-links)"); bad += 1; continue
         items = [(h, l.strip()) for h, l in link_re.findall(m.group(1))]
-        labels = tuple(l for _, l in items)
+        # Drop trailing arrow/spans from link labels so canonical comparison works.
+        labels = tuple(l.split('<')[0].strip() for _, l in items)
         if canonical is None:
             canonical = labels
         elif labels != canonical:
@@ -600,13 +603,13 @@ def check_nav_consistency():
             if not missing and not extra:
                 detail.append("reordered")
             fail(f"{p} nav diverges — {'; '.join(detail)}"); bad += 1
-        # Structural check — every page must use 3-column layout (logo |
-        # nav-center | nav-end) so links land in the same horizontal slot.
-        # Pages using ev-center (the projector chrome) get ev-end instead.
-        is_ev = 'class="ev-center"' in html
-        end_class = "ev-end" if is_ev else "nav-end"
-        if f'class="{end_class}"' not in html:
-            fail(f"{p} missing .{end_class} — links will sit flush right instead of centered"); bad += 1
+        # Structural: every page must have the dnav-end column with #navEnd
+        # so the user-pill renders consistently across pages.
+        if 'id="navEnd"' not in html:
+            fail(f"{p} missing #navEnd target — user-pill will not render"); bad += 1
+        # Every page must also have a mobile shell with hamburger + drawer.
+        if 'class="mobile-shell"' not in html or 'class="m-hamburger"' not in html:
+            fail(f"{p} missing .mobile-shell + .m-hamburger — mobile users get desktop layout"); bad += 1
     if canonical and bad == 0:
         ok(f"all {len(pages)} pages have identical top nav: {' | '.join(canonical)}")
 
@@ -648,12 +651,18 @@ def check_mobile_breakpoints():
         if not style_m:
             continue
         style = style_m.group(1)
-        # Has any breakpoint <= 540px? (540 catches all phones; some pages
-        # legitimately use 540 as their phone tier rather than 480.)
+        # v2 brand: every page's mobile shell is gated by an @media
+        # (max-width:768px) rule that swaps to .mobile-shell. Accept any
+        # breakpoint <= 768px since the dual-shell pattern handles the
+        # actual responsiveness via dedicated mobile DOM.
         bps = [int(m) for m in media_re.findall(style)]
-        small_bps = [b for b in bps if b <= 540]
-        if not small_bps:
-            fail(f"{p.name} has no @media (max-width:540px) rule — phones will get desktop layout"); bad += 1
+        small_bps = [b for b in bps if b <= 768]
+        # Tokens.css carries the canonical .mobile-shell breakpoint, so
+        # if the page imports tokens/mobile.css we already have a phone
+        # layout regardless of inline media queries.
+        has_mobile_css = '/shared/mobile.css' in html
+        if not small_bps and not has_mobile_css:
+            fail(f"{p.name} has no @media (max-width:768px) rule and doesn't import mobile.css — phones will get desktop layout"); bad += 1
         # Flag fixed widths > 320px outside media queries (best-effort:
         # we strip media-query bodies to avoid false positives on
         # responsive overrides).
@@ -670,6 +679,232 @@ def check_mobile_breakpoints():
         ok(f"all {len(pages)} pages have a <=480px breakpoint")
 
 
+def check_portfolio_live():
+    """Hit the live /api/portfolio endpoint and validate the response that
+    actually ships to /picks. Caught 2026-04-28 after a deploy that left
+    every closed-today row labeled 'UNATTRIBUTED' because the sleeve
+    attribution path missed legacy_entries fallback. This check would have
+    caught it: it asserts ≥80% of closed-today rows carry a real sleeve.
+
+    Soft-fails on network errors so the gate doesn't block deploys when
+    dev environments lack internet — but a successful fetch with bad data
+    is a hard fail.
+    """
+    import urllib.request as _ur
+    import urllib.error as _ue
+    print("\n[*] Live /api/portfolio sanity")
+    url = "https://api-production-9fce.up.railway.app/api/portfolio"
+    try:
+        req = _ur.Request(url, headers={"Accept": "application/json"})
+        with _ur.urlopen(req, timeout=10) as r:
+            data = json.loads(r.read().decode())
+    except (_ue.URLError, _ue.HTTPError, TimeoutError, OSError) as e:
+        warn(f"could not fetch live portfolio ({e}) — network down? skipping live checks")
+        return
+    except json.JSONDecodeError as e:
+        fail(f"/api/portfolio returned non-JSON: {e}")
+        return
+
+    # Honor explicit error responses — the endpoint short-circuits with
+    # {error: ...} when Alpaca is down or creds are missing. A 502/503
+    # body still arrives as JSON; warn but don't gate.
+    if isinstance(data, dict) and data.get("error"):
+        warn(f"/api/portfolio returned error: {data['error']} — Alpaca upstream issue, skipping")
+        return
+
+    # Teaser detection — when fetched without a Strategist auth token, the
+    # endpoint truncates positions[] and closed_today[] to 3 rows but keeps
+    # sleeve totals + realized_today as full-book figures. Bookkeeping ties
+    # (Σ positions = Σ sleeves) are MEANT to mismatch in this state. We
+    # still run the attribution rate check — even 3 rows all unattributed
+    # is the same bug we're trying to prevent regressing.
+    is_teaser = bool(data.get("teaser"))
+    if is_teaser:
+        warn("response is teaser-truncated (no strategist auth) — skipping ledger-level ties; attribution checks still run")
+
+    # Structural — these keys are what /picks renders against. A missing
+    # one means the code drifted from the API contract.
+    for key in ("account", "positions", "sleeves", "closed_today"):
+        if key not in data:
+            fail(f"/api/portfolio missing key: {key}")
+    if failures:
+        return
+
+    acct = data.get("account") or {}
+    if not acct.get("equity"):
+        fail("/api/portfolio.account.equity is zero or missing — frontend will divide by zero")
+
+    positions = data.get("positions") or []
+    closed = data.get("closed_today") or []
+    sleeves = data.get("sleeves") or {}
+
+    # ── Sleeve attribution rate ─────────────────────────────────────────
+    canonical = {"momentum", "swing", "daytrade", "scalper", "unattributed"}
+    open_unattributed = sum(1 for p in positions if (p.get("sleeve") or "unattributed") == "unattributed")
+    closed_unattributed = sum(1 for r in closed if (r.get("sleeve") or "unattributed") == "unattributed")
+    if positions:
+        rate = 1.0 - open_unattributed / len(positions)
+        if rate < 0.80:
+            # Under teaser this is still a real bug — but a sample of 3
+            # could legitimately be 3 manual fills. Demote to warning when
+            # teaser + small sample.
+            if is_teaser and len(positions) < 5:
+                warn(f"open positions: {rate*100:.0f}% sleeve-attributed ({open_unattributed}/{len(positions)} unattributed in teaser sample) — recheck under strategist auth")
+            else:
+                fail(f"open positions: only {rate*100:.0f}% have a real sleeve — {open_unattributed}/{len(positions)} unattributed")
+        else:
+            ok(f"open positions: {rate*100:.0f}% sleeve-attributed ({len(positions)} positions)")
+    if closed:
+        rate = 1.0 - closed_unattributed / len(closed)
+        if rate < 0.80 and len(closed) >= 3:
+            if is_teaser and len(closed) < 5:
+                warn(f"closed today: {rate*100:.0f}% sleeve-attributed ({closed_unattributed}/{len(closed)} unattributed in teaser sample) — recheck under strategist auth")
+            else:
+                fail(f"closed today: only {rate*100:.0f}% have a real sleeve — {closed_unattributed}/{len(closed)} unattributed")
+        else:
+            ok(f"closed today: {rate*100:.0f}% sleeve-attributed ({len(closed)} closes)")
+
+    # Sleeve values must be canonical — flag unknowns we'd render as a
+    # broken color/badge.
+    for p in positions:
+        s = p.get("sleeve") or "unattributed"
+        if s not in canonical:
+            fail(f"position {p.get('symbol')}: unknown sleeve '{s}' (must be one of {sorted(canonical)})")
+            break
+
+    # ── Bookkeeping ties ───────────────────────────────────────────────
+    # These only make sense when positions[] / closed_today[] are the
+    # full book. Under teaser they're truncated to 3 rows while sleeves
+    # remain full-book totals — Σ positions ≈ Σ sleeves is structurally
+    # impossible. Skip the ties when teaser-flagged.
+    if not is_teaser:
+        pos_mv_sum = sum(float(p.get("market_value") or 0) for p in positions)
+        sleeve_mv_sum = sum(float((sleeves.get(s) or {}).get("mv") or 0) for s in canonical)
+        if abs(pos_mv_sum - sleeve_mv_sum) > 1.0:
+            warn(f"market value mismatch: positions sum=${pos_mv_sum:,.2f} vs sleeves sum=${sleeve_mv_sum:,.2f} (Δ${abs(pos_mv_sum-sleeve_mv_sum):,.2f})")
+        else:
+            ok(f"market-value tie: positions ≈ sleeves (${pos_mv_sum:,.0f})")
+
+        realized_today = float(data.get("realized_today") or 0)
+        closed_pnl_sum = sum(float(r.get("pnl") or 0) for r in closed)
+        if abs(realized_today - closed_pnl_sum) > 1.0 and abs(realized_today) > 1.0:
+            warn(f"realized_today=${realized_today:,.2f} vs closed_today.pnl sum=${closed_pnl_sum:,.2f} (Δ${abs(realized_today-closed_pnl_sum):,.2f})")
+        else:
+            ok(f"realized-today tie: ${realized_today:+,.0f}")
+
+    # cost_basis ≈ qty × avg_entry_price (within a cent per position).
+    cost_mismatches = 0
+    for p in positions:
+        qty = float(p.get("qty") or 0)
+        avg = float(p.get("avg_entry_price") or 0)
+        cb = float(p.get("cost_basis") or 0)
+        if cb and abs(qty * avg - cb) > 0.5:
+            cost_mismatches += 1
+    if cost_mismatches:
+        warn(f"{cost_mismatches} positions: cost_basis ≠ qty × avg_entry_price (>$0.50 drift)")
+    elif positions:
+        ok("cost_basis = qty × avg_entry_price for every position")
+
+    # unrealized_pl ≈ market_value − cost_basis (within $0.50).
+    upl_mismatches = []
+    for p in positions:
+        mv = float(p.get("market_value") or 0)
+        cb = float(p.get("cost_basis") or 0)
+        upl = float(p.get("unrealized_pl") or 0)
+        if cb and abs((mv - cb) - upl) > 0.5:
+            upl_mismatches.append(p.get("symbol"))
+    if upl_mismatches:
+        warn(f"{len(upl_mismatches)} positions with unrealized_pl drift: {upl_mismatches[:3]}")
+    elif positions:
+        ok("unrealized_pl ties to (market_value − cost_basis) for every position")
+
+    # ── Sanity ranges ──────────────────────────────────────────────────
+    crazy_pct = []
+    for p in positions:
+        plpc = float(p.get("unrealized_plpc") or 0)
+        if abs(plpc) > 1.5:  # >150% — almost certainly stale price feed
+            crazy_pct.append((p.get("symbol"), plpc))
+    if crazy_pct:
+        fail(f"{len(crazy_pct)} positions with |unrealized_plpc| > 150% — stale prices? {crazy_pct[:3]}")
+    elif positions:
+        ok("all positions have plausible day-over-day movement (<150%)")
+
+    bad_brackets = []
+    for p in positions:
+        stop = p.get("stop_price"); tgt = p.get("target_price"); ent = p.get("avg_entry_price")
+        if stop is not None and tgt is not None and ent is not None:
+            if not (float(stop) < float(ent) < float(tgt)):
+                bad_brackets.append(p.get("symbol"))
+    if bad_brackets:
+        warn(f"{len(bad_brackets)} positions with inverted bracket (stop ≥ entry or entry ≥ target): {bad_brackets[:3]}")
+    elif any(p.get("stop_price") is not None for p in positions):
+        ok("every bracketed position has stop < entry < target")
+
+    abandoned = [p.get("symbol") for p in positions
+                 if isinstance(p.get("days_held"), (int, float)) and p["days_held"] > 90]
+    if abandoned:
+        warn(f"{len(abandoned)} positions held >90 days: {abandoned[:3]}")
+
+    # Sleeve concurrent-position cap. Scalper has a hard cap of 8 in
+    # research/scalper.py (MAX_POSITIONS); the cap is enforced just
+    # before each batch fires, so a transient count above 8 can occur
+    # mid-rotation between exits and the next scan. Warn rather than
+    # fail so an in-flight rotation doesn't block deploys, but a
+    # persistent overrun should be visible to the operator.
+    n_scalper = (sleeves.get("scalper") or {}).get("n", 0)
+    if n_scalper > 8:
+        warn(f"scalper sleeve has {n_scalper} concurrent positions — hard cap is 8 (in-flight rotation, or cap not being enforced)")
+    elif n_scalper:
+        ok(f"scalper sleeve within cap ({n_scalper}/8 concurrent)")
+
+    # ── Frozen quote feed detector ─────────────────────────────────────
+    if positions:
+        same_as_entry = sum(
+            1 for p in positions
+            if p.get("current_price") and p.get("avg_entry_price")
+            and abs(float(p["current_price"]) - float(p["avg_entry_price"])) < 0.01
+        )
+        if len(positions) >= 5 and same_as_entry / len(positions) > 0.5:
+            fail(f"{same_as_entry}/{len(positions)} positions show current_price == avg_entry_price — quote feed frozen?")
+
+
+def check_nav_assets():
+    """Every page that loads /shared/nav.js MUST also load /shared/nav.css.
+    Caught 2026-04-28 when /how shipped nav.js without nav.css — a signed-
+    in user clicked the pill and the dropdown rendered as raw unstyled
+    HTML buttons over the page, looking catastrophically broken. The
+    invariant: if you wire nav.js to render the user pill, you must
+    include the matching CSS.
+
+    The /app page uses its own ev-pill paint code (no nav.js, no nav.css)
+    and is exempt — it's a separate ecosystem.
+    """
+    print("\n[*] nav.js / nav.css co-shipping")
+    pages = [
+        ROOT / "cloudflare/public/index.html",
+        ROOT / "cloudflare/public/picks/index.html",
+        ROOT / "cloudflare/public/how/index.html",
+        ROOT / "cloudflare/public/faq/index.html",
+        ROOT / "cloudflare/public/pricing/index.html",
+        ROOT / "cloudflare/public/backtest/index.html",
+        ROOT / "cloudflare/public/track-record/index.html",
+    ]
+    bad = 0
+    for p in pages:
+        if not p.exists():
+            warn(f"{p} missing — can't verify nav assets"); continue
+        html = p.read_text()
+        has_navjs = "/shared/nav.js" in html
+        has_navcss = "/shared/nav.css" in html
+        if has_navjs and not has_navcss:
+            fail(f"{p.name} loads nav.js but NOT nav.css — user pill dropdown will render unstyled")
+            bad += 1
+        elif has_navcss and not has_navjs:
+            warn(f"{p.name} loads nav.css but NOT nav.js — dead CSS download")
+    if bad == 0:
+        ok(f"all {len(pages)} pages with nav.js also load nav.css")
+
+
 def main() -> int:
     print("=" * 50)
     print("s-tool preflight")
@@ -682,10 +917,12 @@ def main() -> int:
     check_rotation_pool()
     check_workflow_crons()
     check_nav_consistency()
+    check_nav_assets()
     check_mobile_breakpoints()
     check_no_committed_secrets()
     check_nn_artifacts()
     check_users_sanity()
+    check_portfolio_live()
 
     print("\n" + "=" * 50)
     if failures:

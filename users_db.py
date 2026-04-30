@@ -308,5 +308,7 @@ def quota_for_user(user_row: Optional[dict]) -> dict:
 
 
 def can_access_picks(user_row: Optional[dict]) -> bool:
-    """Portfolio picks are gated to the Strategist tier (or the owner)."""
-    return effective_tier(user_row) == "strategist"
+    """Picks are free for everyone — paywall removed 2026-04-29.
+    Function kept so callers don't need to be rewritten; just always
+    returns True regardless of tier or auth state."""
+    return True

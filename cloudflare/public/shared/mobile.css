@@ -1,402 +1,886 @@
-/* ============================================================
-   s-tool mobile-first global override layer  (v2)
-   Goal: each page is *functional* on a 390px phone, not just
-   "responsive". Hide decorative blocks, collapse dense panels,
-   keep tap targets large, keep type readable.
-   Loaded via <link> AFTER the page's inline <style> on every page.
-   Breakpoints: 540px (phones), 380px (small phones), 360px (SE).
-   ============================================================ */
+/* s-tool mobile shell — v2 brand (forest / cream).
+ *
+ * Pattern: every page ships TWO shells. The desktop shell is the default
+ * .desktop-shell wrapper rendered by the desktop redesign. The mobile
+ * shell is .mobile-shell, structured per the mobile_redesign mockups
+ * (hamburger nav + drawer for marketing pages, top bar + bottom tab bar
+ * for app pages, sticky action bar for detail pages). At <=768px the
+ * desktop shell is fully hidden and the mobile shell paints fresh DOM —
+ * NOT a shrunk desktop. This file styles the mobile shell only.
+ *
+ * The morning-report bug — mobile.css hiding too much because it tried
+ * to retrofit the desktop DOM — is solved by giving mobile its own DOM.
+ *
+ * Tokens (forest, pine, mint, cream, charcoal, …) come from tokens.css.
+ */
 
-/* ── Universal: prevent horizontal scroll on every page ── */
-html, body { max-width: 100vw; overflow-x: hidden; }
-img, svg, video, canvas { max-width: 100%; }
+/* ── Shell visibility ─────────────────────────────────────── */
+.mobile-shell { display: none; }
 
-/* ── Phone-and-below (≤540px) ─────────────────────────────── */
-@media (max-width: 540px) {
-
-  /* ── Container + section padding ────────────────────────── */
-  body .container { padding-left: 16px; padding-right: 16px; }
-
-  /* Headers / page heroes — tighten vertical rhythm. */
-  body header.page-hero,
-  body header.hero,
-  body .page-hero,
-  body .hero { padding-top: 40px; padding-bottom: 18px; }
-
-  /* ── Display typography ─────────────────────────────────── */
-  body .title,
-  body h1.title,
-  body .hero h1,
-  body .hero-title { font-size: clamp(28px, 8.5vw, 38px) !important; line-height: 1.08 !important; }
-  body h1, body .h1 { font-size: clamp(26px, 8vw, 36px); line-height: 1.10; }
-  body h2, body .h2,
-  body .section-title { font-size: clamp(22px, 6.5vw, 28px) !important; line-height: 1.15 !important; }
-  body h3, body .h3 { font-size: clamp(18px, 5vw, 22px); line-height: 1.20; }
-  body .subtitle,
-  body .lede,
-  body p.lead,
-  body article p { font-size: 16px !important; line-height: 1.55 !important; }
-
-  /* ── Universal grid → single column ─────────────────────── */
-  body .stat-grid,
-  body .momentum-row,
-  body .enriched-row,
-  body .product-grid,
-  body .check-grid,
-  body .pick-grid,
-  body .compare,
-  body .compare-grid,
-  body .secondary,
-  body .pricing-grid,
-  body .plans,
-  body .plan-grid,
-  body .pf-positions,
-  body .pf-sleeves,
-  body .pf-equity-row,
-  body .headline,
-  body .threshold-bars,
-  body .regime-cards,
-  body .philosophy-grid,
-  body .pf-pos-donut-wrap,
-  body .tr-grid,
-  body .asym-grid,
-  body .diversification,
-  body .div-row,
-  body .three-up,
-  body .two-up,
-  body .alloc-controls,
-  body .pdl-rows { grid-template-columns: 1fr !important; gap: 12px !important; }
-
-  body .pf-sleeves.four,
-  body .pf-sleeves.five { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
-
-  /* ── Tap targets ─ buttons, CTAs, tabs, links acting as buttons. */
-  body button:not(.menu-item):not(.nav-center a):not(.user-pill):not(.pf-chart-tab):not(.pf-pdl-cta):not(summary),
-  body .btn,
-  body a.btn,
-  body .signin-btn,
-  body input[type="submit"],
-  body input[type="button"],
-  body .cta,
-  body a.cta,
-  body .check-btn,
-  body .price-cta { min-height: 44px; padding-top: 11px !important; padding-bottom: 11px !important; }
-
-  /* ── Cards / panels — sane padding ──────────────────────── */
-  body .pf-panel,
-  body .pricing-card,
-  body .price-card,
-  body .plan-card,
-  body .h-card,
-  body .formula-box,
-  body .caveats,
-  body .signal-table,
-  body .product-card,
-  body .check-card,
-  body .compare-card,
-  body .pick-card,
-  body .pc-card,
-  body .article-section { padding: 18px 16px !important; }
-
-  /* ── Smaller numbers — equity hero, big stats ───────────── */
-  body .pf-equity-num { font-size: 34px !important; line-height: 1.04 !important; }
-  body .price,
-  body .plan-price,
-  body .price-card .price,
-  body .h-card .val { font-size: 38px !important; }
-
-  /* ── /picks-specific tightening ─────────────────────────── */
-  body .pf-chart-svg { height: 180px !important; }
-  body .pf-pos-donut.alloc-donut { display: none !important; }
-  body .pf-pos-donut-wrap {
-    grid-template-columns: 1fr !important;
-    padding: 14px !important;
-    background: rgba(11,16,6,0.45);
-    margin-bottom: 14px;
-  }
-  body .pf-pos-donut-legend { width: 100%; justify-self: stretch; }
-  body .pf-chart-row { margin-top: 12px; }
-  body .pf-chart-tabs { justify-content: flex-start; gap: 4px; }
-  body .pf-chart-tab { padding: 7px 12px; font-size: 11px; min-height: 36px; }
-  body .pf-live-strip { margin-top: 14px; margin-bottom: 12px; }
-  body .pf-live-status { padding: 8px 12px !important; gap: 8px !important; font-size: 11px !important; }
-  body .pf-tk-list { max-height: 280px; }
-  body .pf-pending { padding: 8px 12px !important; gap: 8px !important; font-size: 11px; }
-  body .pf-positions-head { flex-wrap: wrap; gap: 4px 8px; margin: 16px 0 10px !important; }
-  body .pf-positions-title { font-size: 12px !important; }
-  body .pf-positions-count { font-size: 11px !important; }
-
-  /* ── /picks aggressive simplification ─────────────────────
-   * Hide decorative + non-essential blocks below the live portfolio
-   * panel. Mobile users can tap "View on desktop" or visit /app for
-   * deeper analysis. Keep the page focused on: equity, day P&L,
-   * live ticker, top open positions, today's closes. */
-  body .hero-block,                   /* portfolio-signal + alloc-widget */
-  body .trackrecord,                  /* "How the picks have actually done" */
-  body .track-link-row,               /* track-record CTA strip */
-  body .picks-tabs,                   /* tier-toggle tabs */
-  body .tab-panel,                    /* tier picks card grid */
-  body .pf-methodology,               /* methodology footer */
-  body .methodology,                  /* alt class name */
-  body .tier-pies-grid,
-  body .diversification,
-  body .alloc-block,
-  body .picks-overflow,
-  body .pf-tier-detail { display: none !important; }
-  /* Replace with a simple "View full list on desktop" CTA */
-  body main.container::before {
-    /* Only insert AFTER the live portfolio panel — using ::before on
-       the container means it sits at the END of the hidden sections.
-       Pseudo content can't be a real link, so a tiny CSS card. */
-  }
-
-  /* /picks footer rewrite is wired in HTML — short enough already */
-
-  /* ── /index aggressive simplification ─────────────────────
-   * Keep: hero (with the 1-in-20 vs 7-in-20 compare). Replace deep
-   * marketing stack with a single CTA strip. */
-  body section.checks,
-  body section.overview,
-  body .trust { display: none !important; }
-  /* Add a clean "what's next" CTA strip to replace what we hid.
-     Pseudo-content is non-tappable, so we use a real anchor that's
-     only visible on mobile, injected via .hero ::after — actually
-     simpler: adjust the existing .hero-ctas to feel like the entire
-     above-fold, and let the user tap a CTA. */
-  body .hero { padding-bottom: 36px !important; }
-  body .hero-ctas { margin-top: 24px !important; }
-  body .hero-ctas .btn { flex: 1 1 0; min-width: 140px; justify-content: center; }
-  body .hero .compare { margin-top: 28px !important; gap: 10px !important; }
-  body .compare-card { padding: 18px 16px !important; }
-  body .compare-card .cc-big { font-size: clamp(40px, 11vw, 56px) !important; }
-  body .compare-card .cc-mid { font-size: 13px !important; line-height: 1.4 !important; margin-top: 8px !important; }
-  body .compare-card .cc-sub { font-size: 11px !important; margin-top: 6px !important; }
-
-  /* ── /track-record + /backtest aggressive simplification ──
-   * These pages each have a hero + 6-8 dense analysis sections.
-   * On phones, keep the hero + first 2 sections (the live KPI cards
-   * and headline numbers) and hide the rest. Anyone wanting deep
-   * dives can use the desktop site. */
-  body main > section.section:nth-of-type(n+3),
-  body main > section.headline:nth-of-type(n+3),
-  body .table-scroll,                 /* every dense perf table */
-  body .tj-feed,                      /* trade journal */
-  body .pipeline-events,              /* pipeline status block */
-  body .tj-locked,
-  body .signal-table,                 /* signal-graveyard table */
-  body table.perf,
-  body table.signal-table,
-  body .regime-grid,
-  body .threshold-row,
-  body .threshold-bars { display: none !important; }
-  /* Keep first .headline (hero KPIs) but tighten card padding */
-  body .h-card { padding: 18px 16px !important; }
-  body .h-card .val { font-size: 32px !important; }
-  body .h-card .sub { font-size: 12px !important; }
-
-  /* ── Footer ────────────────────────────────────────────── */
-  body footer { padding: 24px 16px !important; font-size: 12px !important; }
-  body footer .footer-links { gap: 10px !important; }
-
-  /* ── Tables fall back to scroll-snap ───────────────────── */
-  body .table-scroll-allow { /* opt-in: only if explicitly tagged */
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    margin: 0 -16px;
-    padding: 0 16px;
-  }
-
-  /* ── Section spacing ─────────────────────────────────── */
-  body main > section,
-  body main > article > section { margin-top: 28px !important; margin-bottom: 28px !important; }
-
-  /* ── Closed-trades panel: 2-line card layout ───────────────
-   * The desktop 6-col grid (time | sleeve | sym | entry | exit | pnl)
-   * cannot fit at 390px wide — entry/exit get crushed and pnl gets
-   * clipped past the viewport edge. Restructure into two stacked
-   * rows: identity (time + sleeve + sym + pnl) on top, trade detail
-   * (qty + entry → exit + pct) below. */
-  body .pf-closed-row {
-    grid-template-columns: auto auto 1fr auto !important;
-    grid-template-areas:
-      "time sleeve sym pnl"
-      "entry exit . pct" !important;
-    column-gap: 8px !important;
-    row-gap: 3px !important;
-    padding: 9px 12px !important;
-    align-items: center;
-  }
-  body .pf-closed-time { grid-area: time; font-size: 10.5px !important; color: var(--text-dim) !important; }
-  body .pf-closed-tag { grid-area: sleeve; font-size: 9px !important; padding: 2px 6px !important; }
-  body .pf-closed-sym { grid-area: sym; font-size: 13px !important; font-weight: 700 !important; justify-self: start; }
-  body .pf-closed-pnl { grid-area: pnl; font-size: 13px !important; text-align: right; font-variant-numeric: tabular-nums; min-width: 0 !important; }
-  body .pf-closed-pct { grid-area: pct; font-size: 11px !important; text-align: right !important; font-variant-numeric: tabular-nums; }
-  /* Entry+exit on the second row, side by side with an inline arrow
-     between them so the user can read "$117 → $117" left-to-right. */
-  body .pf-closed-row .pf-closed-entry {
-    grid-area: entry; text-align: left !important;
-    color: var(--text-mid) !important; font-size: 11.5px !important;
-    font-variant-numeric: tabular-nums;
-    justify-self: start;
-  }
-  body .pf-closed-row .pf-closed-entry::after {
-    content: " → "; color: var(--text-dim); margin: 0 4px; font-weight: 500;
-  }
-  body .pf-closed-row .pf-closed-exit {
-    grid-area: exit; text-align: left !important;
-    color: var(--text-hi) !important; font-size: 11.5px !important;
-    font-variant-numeric: tabular-nums;
-    justify-self: start;
-  }
-  body .pf-closed-row .pf-closed-qty,
-  body .pf-closed-row .pf-closed-tier-empty,
-  body .pf-closed-row .pf-pos-tier { display: none !important; }
-  /* Closed-today header */
-  body .pf-closed-head { padding: 12px 14px !important; gap: 6px !important; }
-  body .pf-closed-title { font-size: 12px !important; }
-  body .pf-closed-summary { font-size: 11px !important; }
-
-  /* ── Open positions: same 2-line approach ────────────────── */
-  body .pf-pos-card {
-    padding: 12px 14px !important;
-  }
-  body .pf-pos-card .pos-row,
-  body .pf-pos-card .pos-grid {
-    display: grid !important;
-    grid-template-columns: auto 1fr auto !important;
-    grid-template-areas:
-      "sym name pnl"
-      "qty meta meta" !important;
-    column-gap: 10px !important;
-    row-gap: 2px !important;
-  }
-  body .pf-pos-card .pos-sym { grid-area: sym; font-size: 14px !important; font-weight: 700 !important; }
-  body .pf-pos-card .pos-name { grid-area: name; font-size: 11px !important; color: var(--text-dim) !important; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  body .pf-pos-card .pos-pnl { grid-area: pnl; font-size: 13px !important; text-align: right !important; font-variant-numeric: tabular-nums; }
-  body .pf-pos-card .pos-qty { grid-area: qty; font-size: 11px !important; color: var(--text-dim) !important; }
-  body .pf-pos-card .pos-meta { grid-area: meta; font-size: 11px !important; text-align: right; color: var(--text-mid) !important; font-variant-numeric: tabular-nums; }
-
-  /* ── Position cards (open positions) ───────────────────── */
-  body .pf-pos-card { padding: 12px 14px !important; }
-  body .pf-pos-card .pos-row { gap: 6px !important; flex-wrap: wrap; }
-
-  /* ── Sleeve sub-block (sleeves card) ───────────────────── */
-  body .pf-sleeve { padding: 10px 12px !important; }
-  body .pf-sleeve-mv { font-size: 14px !important; }
-  body .pf-sleeve-meta { font-size: 11px !important; }
+@media (max-width: 768px) {
+  .desktop-shell { display: none !important; }
+  .mobile-shell  { display: block; }
+  body { background: var(--warm-white); padding: 0; min-height: 100vh; }
 }
 
-/* ── Nav: horizontal-scroll strip on phones ───────────────── */
-@media (max-width: 540px) {
-  nav .nav-center {
-    display: flex !important;
-    overflow-x: auto;
-    flex-wrap: nowrap !important;
-    -webkit-overflow-scrolling: touch;
-    gap: 16px !important;
-    font-size: 13px !important;
-    padding: 4px 0;
-    scrollbar-width: none;
-    flex: 1 1 0;
-    min-width: 0;
-    white-space: nowrap;
-    /* Hint that there's more by fading the right edge */
-    mask-image: linear-gradient(to right, black 80%, transparent);
-    -webkit-mask-image: linear-gradient(to right, black 80%, transparent);
-  }
-  nav .nav-center::-webkit-scrollbar { display: none; }
-  nav .nav-center a {
-    white-space: nowrap;
-    flex-shrink: 0;
-    padding: 8px 0;
-    min-height: 36px;
-  }
-  nav .nav-row { gap: 10px !important; padding: 12px 0 !important; }
-  nav .logo { flex-shrink: 0; }
-  nav .nav-end { flex-shrink: 0; }
-
-  .evergreen .ev-center {
-    display: flex !important;
-    overflow-x: auto;
-    flex-wrap: nowrap !important;
-    -webkit-overflow-scrolling: touch;
-    gap: 16px !important;
-    font-size: 13px !important;
-    padding: 4px 0;
-    scrollbar-width: none;
-    flex: 1 1 0;
-    min-width: 0;
-    white-space: nowrap;
-    mask-image: linear-gradient(to right, black 80%, transparent);
-    -webkit-mask-image: linear-gradient(to right, black 80%, transparent);
-  }
-  .evergreen .ev-center::-webkit-scrollbar { display: none; }
-  .evergreen .ev-center a { white-space: nowrap; flex-shrink: 0; padding: 8px 0; min-height: 36px; }
-  .evergreen .ev-center a:nth-child(4),
-  .evergreen .ev-center a:nth-child(5) { display: inline !important; }
-  .evergreen .ev-row { padding: 12px 14px !important; gap: 10px !important; }
-  .evergreen .ev-logo, .evergreen .ev-end { flex-shrink: 0; }
+/* The mobile shell is a column with sticky top + sticky bottom regions
+ * sandwiching scrollable content. iOS-safe-area aware. */
+.mobile-shell {
+  background: var(--warm-white);
+  color: var(--charcoal);
+  font-family: var(--font-body);
+  min-height: 100vh;
+  position: relative;
 }
 
-/* Re-show nav-center on tiny screens — overrides nav.css line 111
-   which sets display:none at <460px. */
-@media (max-width: 460px) {
-  nav .nav-center { display: flex !important; }
-  nav .nav-center a:nth-child(4),
-  nav .nav-center a:nth-child(5) { display: inline !important; }
+/* ── Top bar (marketing variant: logo + hamburger) ───────── */
+.m-nav {
+  position: sticky;
+  top: 0;
+  z-index: 90;
+  background: rgba(250, 247, 240, 0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--gray-300);
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.m-nav .stool-logo .mark { width: 32px; height: 32px; }
+.m-nav .stool-logo .word { font-size: 20px; }
+
+.m-hamburger {
+  width: 44px; height: 44px;
+  display: flex; flex-direction: column;
+  justify-content: center; align-items: flex-end;
+  gap: 5px;
+  background: transparent;
+  border: none;
+  padding-right: 4px;
+}
+.m-hamburger span {
+  display: block;
+  width: 22px; height: 1.5px;
+  background: var(--charcoal);
+  transition: transform 0.2s ease, opacity 0.2s ease, width 0.2s ease;
+}
+.m-hamburger span:nth-child(2) { width: 16px; }
+.m-hamburger.open span:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
+.m-hamburger.open span:nth-child(2) { opacity: 0; }
+.m-hamburger.open span:nth-child(3) { width: 22px; transform: translateY(-6.5px) rotate(-45deg); }
+
+/* Drawer slides down from below the nav */
+.m-drawer {
+  position: fixed;
+  top: 60px; left: 0; right: 0;
+  background: var(--warm-white);
+  border-bottom: 1px solid var(--gray-300);
+  padding: 16px 24px 24px;
+  z-index: 80;
+  display: none;
+  max-height: calc(100vh - 60px);
+  overflow-y: auto;
+}
+.m-drawer.open { display: block; }
+.m-drawer ul { list-style: none; padding: 0; margin: 0; }
+.m-drawer li { border-bottom: 1px solid var(--gray-200); }
+.m-drawer li:last-child { border-bottom: none; }
+.m-drawer a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 0;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--charcoal);
+  text-decoration: none;
+}
+.m-drawer a .arrow { color: var(--gray-500); font-family: var(--font-mono); }
+.m-drawer a.active { color: var(--forest); font-weight: 600; }
+.m-drawer .drawer-cta {
+  display: block;
+  margin-top: 18px;
+  padding: 14px 18px;
+  background: var(--forest);
+  color: var(--cream);
+  text-align: center;
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: 0.01em;
+  text-decoration: none;
 }
 
-/* /backtest specifically hides .nav-center entirely at <720px in its
-   inline CSS — undo that so the nav is reachable on phones. */
-@media (max-width: 720px) {
-  body nav .nav-center { display: flex !important; }
+/* ── Top bar (app variant: logo + search + bell + avatar) ── */
+.m-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 90;
+  background: var(--warm-white);
+  border-bottom: 1px solid var(--gray-200);
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.m-topbar .stool-logo .mark { width: 28px; height: 28px; }
+.m-topbar .stool-logo .word { font-size: 18px; }
+.m-topbar .actions { display: flex; gap: 2px; align-items: center; }
+.m-icon-btn {
+  width: 40px; height: 40px;
+  border: none; background: transparent;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--charcoal);
+}
+.m-icon-btn svg { width: 20px; height: 20px; }
+.m-avatar {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: var(--forest);
+  color: var(--mint);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 14px;
+  font-weight: 500;
+  margin-left: 4px;
 }
 
-/* ── /app stat-grid + dense layouts ───────────────────────── */
-@media (max-width: 540px) {
-  body .stat-grid {
-    grid-template-columns: 1fr 1fr !important;
-    gap: 8px !important;
-  }
-  body .stat { padding: 12px 14px !important; }
-  body .stat-label { font-size: 10px !important; }
-  body .stat-value { font-size: 18px !important; }
-  body .momentum-row { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
-  body .enriched-row { grid-template-columns: 1fr !important; }
-  body .sent-intel { grid-template-columns: 1fr !important; gap: 10px !important; }
-  body .milestone-table { font-size: 12px; }
-  body .ticker-input,
-  body input[type="text"],
-  body input[type="search"],
-  body select,
-  body textarea { font-size: 16px !important; min-height: 44px; padding: 10px 12px !important; }
+/* Slim status pill below the topbar (e.g. "Scan complete · 14:32 ET · 287") */
+.m-status-strip {
+  background: var(--mint-soft);
+  padding: 9px 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--forest);
+  border-bottom: 1px solid var(--gray-200);
+}
+.m-status-strip .live-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--pine);
+  animation: m-pulse 1.5s ease-in-out infinite;
+}
+@keyframes m-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+/* ── Page header ──────────────────────────────────────────── */
+.m-page-header { padding: 24px 18px 14px; }
+.m-page-header .eyebrow {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--gray-500);
+  margin-bottom: 6px;
+  display: block;
+}
+.m-page-header h1 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 28px;
+  letter-spacing: -0.02em;
+  color: var(--charcoal);
+  line-height: 1.15;
+}
+.m-page-header h1 em { font-style: italic; color: var(--forest); }
+
+/* ── Hero (marketing) ─────────────────────────────────────── */
+.m-hero { padding: 32px 22px 40px; }
+.m-hero .eyebrow {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--pine);
+  margin-bottom: 14px;
+  display: block;
+}
+.m-hero h1 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 40px;
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+  color: var(--forest);
+  margin-bottom: 14px;
+  font-variation-settings: "opsz" 144;
+}
+.m-hero h1 em { font-style: italic; font-weight: 300; color: var(--pine); }
+.m-hero .lede {
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--gray-700);
+  margin-bottom: 22px;
+}
+.m-hero-cta {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 28px;
+}
+.m-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 15px 22px;
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 14px;
+  text-decoration: none;
+  background: var(--forest);
+  color: var(--cream);
+  border: 1px solid var(--forest);
+  min-height: 48px;
+  cursor: pointer;
+}
+.m-btn.secondary { background: transparent; color: var(--forest); }
+.m-btn .arrow { font-family: var(--font-mono); font-size: 14px; }
+
+/* Hero compass card */
+.m-hero-compass {
+  width: 100%;
+  aspect-ratio: 1;
+  margin: 0 auto 18px;
+  position: relative;
+  background: var(--cream);
+  border: 1px solid var(--gray-200);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.m-hero-compass svg { width: 88%; height: 88%; }
+.m-hero-compass .compass-meta,
+.m-hero-compass .compass-stat {
+  position: absolute;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.m-hero-compass .compass-meta { bottom: 12px; left: 14px; color: var(--gray-500); }
+.m-hero-compass .compass-stat { top: 12px; right: 14px; color: var(--forest); text-align: right; }
+
+@keyframes m-sweep {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+.m-compass-sweep {
+  transform-origin: 200px 200px;
+  animation: m-sweep 18s linear infinite;
 }
 
-/* ── Small phone (≤380px) ─────────────────────────────────── */
-@media (max-width: 380px) {
-  body .container { padding-left: 14px; padding-right: 14px; }
-  body .pf-panel,
-  body .pricing-card,
-  body .price-card,
-  body .plan-card,
-  body .h-card,
-  body .formula-box { padding: 16px 14px !important; }
-  body .pf-equity-num { font-size: 30px !important; }
-  body .pf-chart-svg { height: 160px !important; }
-  body .title,
-  body h1.title,
-  body .hero h1,
-  body .hero-title { font-size: clamp(24px, 8vw, 32px) !important; }
-  body .stat-grid { grid-template-columns: 1fr !important; }
-  body .pf-sleeves.four,
-  body .pf-sleeves.five { grid-template-columns: 1fr !important; }
+/* ── Mobile ticker strip (full-bleed dark) ────────────────── */
+.m-ticker-strip {
+  background: var(--forest);
+  color: var(--mint);
+  padding: 12px 0;
+  overflow: hidden;
+  white-space: nowrap;
+  border-top: 1px solid var(--pine);
+  border-bottom: 1px solid var(--pine);
+}
+.m-ticker-track {
+  display: inline-flex;
+  gap: 32px;
+  animation: m-ticker-scroll 36s linear infinite;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+@keyframes m-ticker-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.m-ticker-strip .tick { display: inline-flex; gap: 8px; align-items: baseline; }
+.m-ticker-strip .tick .sym       { color: var(--mint); font-weight: 500; }
+.m-ticker-strip .tick .score     { color: var(--warm-white); font-weight: 600; }
+.m-ticker-strip .tick .signal-up { color: var(--mint); }
+.m-ticker-strip .tick .signal-dn { color: #f4a8a0; }
+
+/* ── Mobile section ───────────────────────────────────────── */
+.m-section {
+  padding: 48px 22px;
+  border-bottom: 1px solid var(--gray-200);
+}
+.m-section.on-forest {
+  background: var(--forest);
+  color: var(--cream);
+  border-bottom-color: var(--pine);
+}
+.m-section.on-cream { background: var(--cream); }
+.m-section .eyebrow {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--gray-500);
+  margin-bottom: 12px;
+  display: block;
+}
+.m-section.on-forest .eyebrow { color: var(--mint); }
+.m-section h2 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 30px;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--charcoal);
+  margin-bottom: 14px;
+  font-variation-settings: "opsz" 144;
+}
+.m-section h2 em { font-style: italic; color: var(--forest); }
+.m-section.on-forest h2 { color: var(--cream); }
+.m-section.on-forest h2 em { color: var(--mint); }
+.m-section .intro {
+  font-size: 15px;
+  color: var(--gray-700);
+  line-height: 1.55;
+  margin-bottom: 24px;
+}
+.m-section.on-forest .intro { color: rgba(245, 241, 232, 0.75); }
+
+/* ── Method-style cards ──────────────────────────────────── */
+.m-method-card {
+  padding: 22px;
+  background: white;
+  border: 1px solid var(--gray-200);
+  margin-bottom: 12px;
+}
+.m-method-card .num {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--pine);
+  letter-spacing: 0.1em;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+}
+.m-method-card h3 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 22px;
+  color: var(--forest);
+  letter-spacing: -0.01em;
+  margin-bottom: 8px;
+}
+.m-method-card p {
+  font-size: 14px;
+  color: var(--gray-700);
+  line-height: 1.55;
+  margin-bottom: 14px;
+}
+.m-method-card .meta {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--gray-500);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding-top: 12px;
+  border-top: 1px solid var(--gray-200);
 }
 
-/* ── iPhone SE / very narrow (≤360px) ─────────────────────── */
-@media (max-width: 360px) {
-  body .container { padding-left: 12px; padding-right: 12px; }
-  body .pf-panel { padding: 14px 12px !important; }
-  body .pf-equity-num { font-size: 28px !important; }
-  body footer { font-size: 11px; }
-  nav .nav-center { font-size: 11.5px !important; gap: 12px !important; }
+/* ── Feature list (dark forest section) ──────────────────── */
+.m-feature {
+  padding: 20px 0;
+  border-top: 1px solid rgba(245, 241, 232, 0.18);
+  display: flex;
+  gap: 16px;
+}
+.m-feature:last-child { border-bottom: 1px solid rgba(245, 241, 232, 0.18); }
+.m-feature .num {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--mint);
+  letter-spacing: 0.1em;
+  flex-shrink: 0;
+  width: 30px;
+  padding-top: 2px;
+}
+.m-feature .body { flex: 1; }
+.m-feature h4 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 18px;
+  color: var(--mint);
+  margin-bottom: 6px;
+}
+.m-feature p {
+  font-size: 13px;
+  line-height: 1.55;
+  color: rgba(250, 247, 240, 0.78);
+}
+
+/* ── Stat grid (2 × 2 on mobile) ──────────────────────────── */
+.m-stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 0 18px 18px;
+}
+.m-stat-card {
+  background: white;
+  border: 1px solid var(--gray-200);
+  padding: 14px;
+}
+.m-stat-card .label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--gray-500);
+  margin-bottom: 8px;
+}
+.m-stat-card .value {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 24px;
+  color: var(--forest);
+  letter-spacing: -0.01em;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.m-stat-card .delta {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--pine);
+}
+.m-stat-card .delta.down { color: var(--signal-red); }
+.m-stat-card .delta.flat { color: var(--gray-500); }
+
+/* ── Panel (mobile) ────────────────────────────────────────── */
+.m-panel {
+  background: white;
+  border: 1px solid var(--gray-200);
+  margin: 0 18px 12px;
+}
+.m-panel-header {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--gray-200);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.m-panel-header .title {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 16px;
+  color: var(--charcoal);
+}
+.m-panel-header .meta {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--gray-500);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.m-panel-footer {
+  padding: 12px 16px;
+  border-top: 1px solid var(--gray-200);
+  text-align: center;
+}
+.m-panel-footer a {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--pine);
+  text-decoration: none;
+}
+
+/* ── Ticker rows (cards on mobile) ────────────────────────── */
+.m-ticker-list { padding: 0; }
+.m-ticker-row {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--gray-200);
+  display: grid;
+  grid-template-columns: 24px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  cursor: pointer;
+  min-height: 64px;
+  text-decoration: none;
+  color: inherit;
+}
+.m-ticker-row:last-child { border-bottom: none; }
+.m-ticker-row:active { background: var(--cream); }
+.m-ticker-row .rank {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--gray-500);
+  text-align: right;
+}
+.m-ticker-row .info { min-width: 0; }
+.m-ticker-row .info .top {
+  display: flex; gap: 8px; align-items: baseline;
+  margin-bottom: 2px; flex-wrap: wrap;
+}
+.m-ticker-row .info .sym {
+  font-family: var(--font-mono);
+  font-size: 14px; font-weight: 600;
+  color: var(--charcoal);
+}
+.m-ticker-row .info .price {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--gray-700);
+}
+.m-ticker-row .info .day-change {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--pine);
+}
+.m-ticker-row .info .day-change.down { color: var(--signal-red); }
+.m-ticker-row .info .meta-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--gray-500);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+.m-ticker-row .info .meta-row .sector { color: var(--gray-700); }
+.m-ticker-row .info .signal-tag {
+  display: inline-block;
+  padding: 2px 6px;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border: 1px solid currentColor;
+}
+.m-ticker-row .info .signal-tag.buy  { color: var(--forest); background: var(--mint-soft); }
+.m-ticker-row .info .signal-tag.hold { color: var(--signal-amber); background: #f5e6d4; }
+.m-ticker-row .info .signal-tag.sell { color: var(--signal-red); background: #f4dad7; }
+.m-ticker-row .score {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 22px;
+  color: var(--forest);
+  text-align: right;
+  letter-spacing: -0.01em;
+  min-width: 48px;
+}
+.m-ticker-row .score.amber { color: var(--signal-amber); }
+.m-ticker-row .score.red   { color: var(--signal-red); }
+
+/* ── Compass + factor 2x2 ─────────────────────────────────── */
+.m-compass-panel { padding: 24px 16px; }
+.m-compass-display {
+  position: relative;
+  width: 240px; height: 240px;
+  margin: 0 auto 18px;
+}
+.m-compass-display svg { width: 100%; height: 100%; }
+.m-compass-center {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  pointer-events: none;
+}
+.m-compass-center .num {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 44px;
+  color: var(--forest);
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+.m-compass-center .lbl {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--gray-500);
+  margin-top: 4px;
+}
+.m-factor-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 0 4px;
+}
+.m-factor-cell {
+  padding: 12px;
+  background: var(--cream);
+  border: 1px solid var(--gray-200);
+}
+.m-factor-cell .name {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--gray-500);
+  margin-bottom: 6px;
+}
+.m-factor-cell .v {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 22px;
+  color: var(--forest);
+  letter-spacing: -0.01em;
+  line-height: 1;
+}
+.m-factor-cell .bar {
+  margin-top: 8px;
+  height: 3px;
+  background: var(--gray-200);
+  position: relative;
+}
+.m-factor-cell .bar .fill {
+  position: absolute;
+  top: 0; left: 0;
+  height: 100%;
+  background: var(--pine);
+}
+
+/* ── Sector bars (mobile) ─────────────────────────────────── */
+.m-sector-list { padding: 14px 16px; }
+.m-sector-row {
+  display: grid;
+  grid-template-columns: 88px 1fr 32px;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+.m-sector-row .name { color: var(--charcoal); }
+.m-sector-row .bar-track {
+  height: 6px;
+  background: var(--gray-200);
+  position: relative;
+}
+.m-sector-row .bar-fill {
+  position: absolute; top: 0; left: 0;
+  height: 100%;
+  background: var(--pine);
+}
+.m-sector-row .bar-fill.amber { background: var(--signal-amber); }
+.m-sector-row .bar-fill.red   { background: var(--signal-red); }
+.m-sector-row .v { text-align: right; color: var(--charcoal); font-weight: 500; }
+
+/* ── Engine log (mobile) ──────────────────────────────────── */
+.m-log-list { padding: 4px 16px 8px; }
+.m-log-row {
+  display: flex;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px dashed var(--gray-200);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+.m-log-row:last-child { border-bottom: none; }
+.m-log-row .time { color: var(--gray-500); flex-shrink: 0; width: 56px; }
+.m-log-row .msg  { color: var(--gray-700); flex: 1; line-height: 1.45; }
+.m-log-row .msg .ok   { color: var(--pine); }
+.m-log-row .msg .warn { color: var(--signal-amber); }
+
+/* ── Score hero (dark band, ticker detail) ────────────────── */
+.m-score-hero {
+  background: var(--forest);
+  color: var(--mint);
+  padding: 30px 20px;
+  text-align: center;
+  border-bottom: 1px solid var(--pine);
+}
+.m-score-hero .lbl {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--mint);
+  margin-bottom: 14px;
+}
+.m-score-hero .num {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 88px;
+  color: var(--warm-white);
+  letter-spacing: -0.03em;
+  line-height: 1;
+  margin-bottom: 6px;
+  font-variation-settings: "opsz" 144;
+}
+.m-score-hero .of {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--mint);
+  margin-bottom: 16px;
+}
+.m-score-hero .signal-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--mint);
+  color: var(--forest);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+.m-score-hero .signal-badge .dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--forest);
+}
+
+/* ── Sticky bottom action bar ─────────────────────────────── */
+.m-action-bar {
+  position: sticky;
+  bottom: 0;
+  background: var(--warm-white);
+  border-top: 1px solid var(--gray-300);
+  padding: 12px 18px calc(12px + env(safe-area-inset-bottom, 22px));
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 90;
+}
+.m-action-icon-btn {
+  width: 44px; height: 44px;
+  border: 1px solid var(--gray-300);
+  background: var(--cream);
+  color: var(--charcoal);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.m-action-icon-btn svg { width: 20px; height: 20px; }
+.m-action-bar .m-btn { flex: 1; min-height: 44px; }
+
+/* ── Bottom tab bar (app pages) ───────────────────────────── */
+.m-tab-bar {
+  position: sticky;
+  bottom: 0;
+  background: var(--warm-white);
+  border-top: 1px solid var(--gray-300);
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  padding: 6px 0 calc(8px + env(safe-area-inset-bottom, 14px));
+  z-index: 90;
+}
+.m-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 8px 4px;
+  text-decoration: none;
+  color: var(--gray-500);
+  min-height: 56px;
+}
+.m-tab.active { color: var(--forest); }
+.m-tab svg { width: 22px; height: 22px; }
+.m-tab .label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 500;
+}
+
+/* ── Footer (mobile) ──────────────────────────────────────── */
+.m-footer {
+  background: var(--charcoal);
+  color: var(--gray-300);
+  padding: 36px 22px 60px;
+}
+.m-footer .footer-logo {
+  display: flex; align-items: center; gap: 4px;
+  margin-bottom: 22px;
+}
+.m-footer .footer-logo svg { width: 32px; height: 32px; }
+.m-footer .footer-logo .word {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 22px;
+  color: var(--mint);
+  margin-left: 2px;
+}
+.m-footer .col-title {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--mint);
+  margin-bottom: 12px;
+  margin-top: 22px;
+}
+.m-footer .col-title:first-of-type { margin-top: 0; }
+.m-footer ul { list-style: none; padding: 0; margin: 0; }
+.m-footer li { margin-bottom: 10px; }
+.m-footer a {
+  color: rgba(250, 247, 240, 0.75);
+  text-decoration: none;
+  font-size: 13px;
+}
+.m-footer .legal {
+  border-top: 1px solid rgba(245, 241, 232, 0.18);
+  margin-top: 28px;
+  padding-top: 16px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--gray-500);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  line-height: 1.6;
+}
+
+/* ── Account section in drawer ────────────────────────────── */
+.m-drawer .drawer-section {
+  margin-top: 20px;
+  padding-top: 14px;
+  border-top: 1px solid var(--gray-200);
+}
+.m-drawer .drawer-section-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--gray-500);
+  margin-bottom: 10px;
+}
+
+/* ── Generic mobile body text + content blocks ───────────── */
+.m-prose p {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--gray-700);
+  margin-bottom: 14px;
+}
+.m-prose h3 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 20px;
+  color: var(--forest);
+  letter-spacing: -0.01em;
+  margin: 24px 0 10px;
+}
+.m-prose ul {
+  margin-bottom: 14px;
+  padding-left: 20px;
+  color: var(--gray-700);
+}
+.m-prose li { margin-bottom: 6px; font-size: 15px; line-height: 1.55; }
+
+/* Reduce motion safety */
+@media (prefers-reduced-motion: reduce) {
+  .m-compass-sweep, .m-ticker-track, .live-dot { animation: none; }
 }

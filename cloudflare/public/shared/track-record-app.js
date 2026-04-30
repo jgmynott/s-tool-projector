@@ -162,19 +162,9 @@ function renderLiveTraderBlock(journal, portfolio) {
 function renderTradeJournalFeed(journal) {
   if (!journal) return '';
 
-  // Gated case — back the live-trader hero with a "this is what's behind
-  // the gate" nudge so visitors understand the upgrade unlocks per-trade
-  // evidence, not just bigger numbers.
-  if (journal.teaser) {
-    if (!journal.stats || (!journal.stats.n_buys && !journal.stats.n_sells)) {
-      return '';   // no activity at all → don't bother showing the gate
-    }
-    return `<div class="tj-locked">
-      Per-trade detail (timestamps, brackets, results) unlocks at
-      <a href="/pricing">Strategist tier</a> — the aggregate stats above
-      are everything visible without it.
-    </div>`;
-  }
+  // Paywall removed 2026-04-29 — every visitor sees the full journal.
+  // Backend should no longer return teaser:true; if it does (stale
+  // deploy), fall through to the "no rows" branch below.
 
   const rows = journal.rows || [];
   if (!rows.length) {
