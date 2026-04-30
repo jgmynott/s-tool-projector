@@ -125,6 +125,15 @@
         "signal": "relvol",
         "stop": 63.04,
         "target": 64.12
+      },
+      "SOXS": {
+        "symbol": "SOXS",
+        "qty": 37,
+        "entry_price": 13.395,
+        "opened_at": "2026-04-30T18:10:33.811741+00:00",
+        "signal": "relvol",
+        "stop": 13.3,
+        "target": 13.53
       }
     },
     "fired_today": [
@@ -227,6 +236,11 @@
         "symbol": "TQQQ",
         "signal": "relvol",
         "ts": "2026-04-30T18:05:38.477435+00:00"
+      },
+      {
+        "symbol": "SOXS",
+        "signal": "relvol",
+        "ts": "2026-04-30T18:10:33.811758+00:00"
       }
     ],
     "last_scan": null,
