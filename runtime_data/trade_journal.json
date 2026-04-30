@@ -1,6 +1,6 @@
 {
-  "as_of": "2026-04-30T18:00:44.758924+00:00",
-  "n_rows": 477,
+  "as_of": "2026-04-30T18:05:38.478017+00:00",
+  "n_rows": 478,
   "rows": [
     {
       "ts": "2026-04-27T13:47:29.206731Z",
@@ -6256,6 +6256,20 @@
       "symbol": "CAT",
       "qty": 4,
       "error": "Alpaca POST orders \u2192 HTTP 422: {\"code\":40010001,\"message\":\"client_order_id must be unique\"}"
+    },
+    {
+      "ts": "2026-04-30T18:05:38.477438+00:00",
+      "event": "buy",
+      "sleeve": "scalper",
+      "symbol": "TQQQ",
+      "qty": 7,
+      "ref_price": 63.485,
+      "live_price": 63.485,
+      "stop": 63.04,
+      "target": 64.12,
+      "tier": "relvol",
+      "rationale": "{\"vol_multiple\": 2.6834803174749218, \"range_pos\": 0.8103448275862073, \"cur_vol\": 41319}",
+      "result": "submitted"
     }
   ]
 }
