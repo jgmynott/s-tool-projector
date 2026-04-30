@@ -1,6 +1,6 @@
 {
-  "as_of": "2026-04-30T14:30:46.423607+00:00",
-  "n_rows": 286,
+  "as_of": "2026-04-30T14:35:32.784675+00:00",
+  "n_rows": 288,
   "rows": [
     {
       "ts": "2026-04-27T13:47:29.206731Z",
@@ -3868,6 +3868,31 @@
       "rationale": "",
       "result": "submitted",
       "tranche": 2
+    },
+    {
+      "ts": "2026-04-30T14:35:32.728713+00:00",
+      "event": "sell",
+      "sleeve": "scalper",
+      "symbol": "AAPL",
+      "qty": 1,
+      "buy_price": 271.63,
+      "sell_price": null,
+      "pnl": null,
+      "exit_reason": "max_hold"
+    },
+    {
+      "ts": "2026-04-30T14:35:32.784042+00:00",
+      "event": "buy",
+      "sleeve": "scalper",
+      "symbol": "XOM",
+      "qty": 3,
+      "ref_price": 154.62,
+      "live_price": 154.62,
+      "stop": 153.54,
+      "target": 156.17,
+      "tier": "orb",
+      "rationale": "{\"range_high\": 154.34, \"range_low\": 151.71, \"avg_open_vol\": 7993.166666666667, \"cur_vol\": 11336}",
+      "result": "submitted"
     }
   ]
 }
