@@ -117,15 +117,6 @@
   "breaker_fired_date": "2026-04-28",
   "scalper": {
     "positions": {
-      "SOXS": {
-        "symbol": "SOXS",
-        "qty": 37,
-        "entry_price": 13.395,
-        "opened_at": "2026-04-30T18:10:33.811741+00:00",
-        "signal": "relvol",
-        "stop": 13.3,
-        "target": 13.53
-      },
       "NFLX": {
         "symbol": "NFLX",
         "qty": 5,
@@ -143,6 +134,15 @@
         "signal": "relvol",
         "stop": 612.25,
         "target": 622.73
+      },
+      "SPY": {
+        "symbol": "SPY",
+        "qty": 1,
+        "entry_price": 718.51,
+        "opened_at": "2026-04-30T18:40:30.945457+00:00",
+        "signal": "relvol",
+        "stop": 713.48,
+        "target": 725.7
       }
     },
     "fired_today": [
@@ -260,6 +260,11 @@
         "symbol": "META",
         "signal": "relvol",
         "ts": "2026-04-30T18:35:30.244412+00:00"
+      },
+      {
+        "symbol": "SPY",
+        "signal": "relvol",
+        "ts": "2026-04-30T18:40:30.945474+00:00"
       }
     ],
     "last_scan": null,

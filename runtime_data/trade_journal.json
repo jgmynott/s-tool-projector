@@ -1,6 +1,6 @@
 {
-  "as_of": "2026-04-30T18:35:30.244997+00:00",
-  "n_rows": 483,
+  "as_of": "2026-04-30T18:40:30.946123+00:00",
+  "n_rows": 485,
   "rows": [
     {
       "ts": "2026-04-27T13:47:29.206731Z",
@@ -6327,6 +6327,31 @@
       "target": 622.73,
       "tier": "relvol",
       "rationale": "{\"vol_multiple\": 2.012492836676218, \"range_pos\": 0.7952286282306206, \"cur_vol\": 29265}",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-04-30T18:40:30.836350+00:00",
+      "event": "sell",
+      "sleeve": "scalper",
+      "symbol": "SOXS",
+      "qty": 37,
+      "buy_price": 13.395,
+      "sell_price": null,
+      "pnl": null,
+      "exit_reason": "max_hold"
+    },
+    {
+      "ts": "2026-04-30T18:40:30.945478+00:00",
+      "event": "buy",
+      "sleeve": "scalper",
+      "symbol": "SPY",
+      "qty": 1,
+      "ref_price": 718.51,
+      "live_price": 718.51,
+      "stop": 713.48,
+      "target": 725.7,
+      "tier": "relvol",
+      "rationale": "{\"vol_multiple\": 2.3829017648192505, \"range_pos\": 0.8709677419353655, \"cur_vol\": 37767}",
       "result": "submitted"
     }
   ]
