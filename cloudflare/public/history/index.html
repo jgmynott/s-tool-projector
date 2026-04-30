@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=1024" />
+<title>Trade history — s-tool</title>
+<meta name="description" content="Number-heavy ledger of every active and closed trade in the live paper book. Entry, exit, units, P&L, hold duration, sleeve, risk tier." />
+<link rel="canonical" href="https://s-tool.io/history" />
+<link rel="icon" type="image/svg+xml" href="/img/favicon.svg?v=20260430a" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="preconnect" href="https://api-production-9fce.up.railway.app" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" />
+
+<style>
+:root {
+  --bg-deepest: #0B1006; --bg-base: #111512; --bg-surface: #1A1F1B;
+  --bg-card: #1F2722;
+  --accent-deep: #022834; --accent-alpine: #0A6577; --accent-lake: #5FAAC5;
+  --text-hi: #EDECE6; --text-mid: #9BA1B9; --text-dim: #6B7382;
+  --border: rgba(155,161,185,0.14);
+  --border-strong: rgba(95,170,197,0.30);
+  --pos: #6ee7b7; --neg: #fca5a5; --caution: #f5d58f;
+  --tier-conservative: #5FAAC5;
+  --tier-moderate:     #e8b86a;
+  --tier-aggressive:   #e8946a;
+  --tier-asymmetric:   #ba8cff;
+  --radius-md: 16px; --radius-sm: 10px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { overflow-x: hidden; }
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg-deepest);
+  color: var(--text-hi); line-height: 1.55;
+  -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+}
+a { color: inherit; text-decoration: none; }
+.container { max-width: 1320px; margin: 0 auto; padding: 0 32px; }
+
+nav { position: sticky; top: 0; z-index: 50; backdrop-filter: blur(14px); background: rgba(11,16,6,0.82); border-bottom: 1px solid var(--border); }
+.nav-row { display: flex; align-items: center; justify-content: space-between; padding: 18px 0; gap: 24px; }
+.logo { display: flex; align-items: center; gap: 10px; font: 700 18px 'Inter'; letter-spacing: -0.04em; color: var(--text-hi); }
+.nav-center { display: flex; gap: 28px; font: 500 14px 'Inter'; color: var(--text-mid); }
+.nav-center a:hover { color: var(--text-hi); }
+.nav-center a.active { color: var(--text-hi); border-bottom: 1px solid var(--accent-lake); padding-bottom: 2px; }
+
+header.hero { padding: 52px 0 28px; border-bottom: 1px solid var(--border); margin-bottom: 28px; }
+.eyebrow { font: 600 11px 'Inter'; color: var(--accent-lake); letter-spacing: 0.24em; text-transform: uppercase; display: inline-block; margin-bottom: 14px; }
+.title { font-family: 'Crimson Text', Georgia, serif; font-size: 38px; font-weight: 400; line-height: 1.1; letter-spacing: -0.02em; }
+.subtitle { color: var(--text-mid); font-size: 15px; max-width: 70ch; margin-top: 12px; line-height: 1.5; }
+
+/* Summary stat strip — five tabular numbers, dim labels. */
+.stats {
+  display: grid; grid-template-columns: repeat(5, 1fr);
+  gap: 28px; margin: 22px 0 0;
+  padding: 18px 22px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: rgba(255,255,255,0.015);
+}
+.stat-label { font: 600 10px 'Inter'; color: var(--text-dim); letter-spacing: 0.18em; text-transform: uppercase; }
+.stat-val   { font: 600 19px 'Inter'; color: var(--text-hi); margin-top: 4px; font-variant-numeric: tabular-nums; }
+.stat-val.pos { color: var(--pos); }
+.stat-val.neg { color: var(--neg); }
+
+/* Filter / control row */
+.controls {
+  display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+  margin: 24px 0 14px;
+}
+.controls input[type="search"], .controls select {
+  background: var(--bg-card); border: 1px solid var(--border);
+  color: var(--text-hi); font: 500 13px 'Inter';
+  padding: 9px 12px; border-radius: 6px; outline: none;
+  min-width: 160px;
+}
+.controls input[type="search"]:focus, .controls select:focus {
+  border-color: var(--accent-lake);
+}
+.controls .spacer { flex: 1; }
+.btn {
+  background: var(--accent-lake); color: var(--bg-deepest);
+  font: 600 13px 'Inter'; padding: 9px 16px; border-radius: 6px;
+  border: none; cursor: pointer; transition: background .12s;
+}
+.btn:hover { background: #82c1d6; }
+.btn.ghost {
+  background: transparent; color: var(--text-mid);
+  border: 1px solid var(--border-strong);
+}
+.btn.ghost:hover { color: var(--text-hi); border-color: var(--accent-lake); }
+
+/* Table — broker-log uniform monospace numerics. */
+.table-wrap {
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--bg-base);
+}
+table.history { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+table.history thead th {
+  font: 700 10px 'Inter'; color: var(--text-dim);
+  letter-spacing: 0.16em; text-transform: uppercase;
+  text-align: left; padding: 12px 14px;
+  background: rgba(255,255,255,0.02);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap; cursor: pointer; user-select: none;
+}
+table.history thead th.num { text-align: right; }
+table.history thead th .arrow { color: var(--accent-lake); margin-left: 4px; }
+table.history tbody td {
+  padding: 11px 14px; font: 500 13px 'Inter'; color: var(--text-mid);
+  border-bottom: 1px solid rgba(155,161,185,0.05);
+  white-space: nowrap;
+}
+table.history tbody tr:hover td { background: rgba(95,170,197,0.04); }
+table.history tbody tr:last-child td { border-bottom: none; }
+table.history td.num { text-align: right; color: var(--text-hi); font-weight: 600; }
+table.history td.sym { font-weight: 700; color: var(--text-hi); letter-spacing: -0.005em; }
+table.history td.pos { color: var(--pos); }
+table.history td.neg { color: var(--neg); }
+
+.status-pill {
+  font: 700 9.5px 'Inter'; letter-spacing: 0.14em; text-transform: uppercase;
+  padding: 3px 8px; border-radius: 4px; border: 1px solid currentColor;
+  display: inline-block; line-height: 1.4;
+}
+.status-pill.open   { color: var(--accent-lake); }
+.status-pill.closed { color: var(--text-dim); }
+
+.sleeve-pill {
+  font: 600 9px 'Inter'; letter-spacing: 0.10em; text-transform: uppercase;
+  padding: 3px 8px; border-radius: 4px; display: inline-block; line-height: 1.4;
+}
+.sleeve-pill.momentum    { background: rgba(186,140,255,0.14); color: #ba8cff; }
+.sleeve-pill.swing       { background: rgba(95,170,197,0.14);  color: var(--accent-lake); }
+.sleeve-pill.daytrade    { background: rgba(232,184,106,0.14); color: #e8b86a; }
+.sleeve-pill.scalper     { background: rgba(110,231,183,0.14); color: var(--pos); }
+.sleeve-pill.unattributed{ background: rgba(155,161,185,0.10); color: var(--text-dim); }
+
+.tier-pill {
+  font: 600 9px 'Inter'; letter-spacing: 0.10em; text-transform: uppercase;
+  padding: 3px 8px; border-radius: 4px; display: inline-block; line-height: 1.4;
+  border: 1px solid currentColor;
+}
+.tier-pill.conservative { color: var(--tier-conservative); }
+.tier-pill.moderate     { color: var(--tier-moderate); }
+.tier-pill.aggressive   { color: var(--tier-aggressive); }
+.tier-pill.asymmetric   { color: var(--tier-asymmetric); }
+.tier-pill.none         { color: var(--text-dim); border-color: var(--border); }
+
+/* Pagination */
+.pagination {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 18px; gap: 16px; flex-wrap: wrap;
+  font: 500 13px 'Inter'; color: var(--text-mid);
+}
+.pagination .pages { display: flex; gap: 6px; }
+.pagination button {
+  background: var(--bg-card); border: 1px solid var(--border);
+  color: var(--text-mid); font: 500 12px 'Inter';
+  padding: 6px 12px; border-radius: 4px; cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+.pagination button:hover:not(:disabled) { color: var(--text-hi); border-color: var(--accent-lake); }
+.pagination button.current { background: var(--accent-lake); color: var(--bg-deepest); border-color: var(--accent-lake); }
+.pagination button:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.empty {
+  padding: 60px 20px; text-align: center;
+  color: var(--text-dim); font: 500 14px 'Inter';
+}
+
+footer { margin: 60px 0 30px; padding: 22px 0; border-top: 1px solid var(--border);
+         text-align: center; color: var(--text-dim); font: 500 12px 'Inter'; }
+footer a { color: var(--text-mid); }
+footer a:hover { color: var(--accent-lake); }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="container nav-row">
+    <a href="/app" class="logo" aria-label="s-tool home"><img src="/img/logo-stool.svg?v=20260430a" alt="s-tool" style="height:36px;width:auto;display:block;"/></a>
+    <div class="nav-center">
+      <a href="/app">Projector</a>
+      <a href="/picks">Picks</a>
+      <a href="/history" class="active">History</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="container">
+    <div class="eyebrow">Strategist &middot; Trade ledger</div>
+    <h1 class="title">Every <em style="color:var(--accent-lake);font-style:italic;">active and closed trade</em> in the live paper book.</h1>
+    <p class="subtitle">Number-heavy view. Entry, exit, units, P&amp;L, hold duration. Filter by symbol, sleeve, or status. Download as CSV. Paginated 100 per page.</p>
+    <div class="stats" id="stats">
+      <div><div class="stat-label">Active</div><div class="stat-val" id="s-active">—</div></div>
+      <div><div class="stat-label">Closed</div><div class="stat-val" id="s-closed">—</div></div>
+      <div><div class="stat-label">Win rate</div><div class="stat-val" id="s-winrate">—</div></div>
+      <div><div class="stat-label">Realized P&amp;L</div><div class="stat-val" id="s-realized">—</div></div>
+      <div><div class="stat-label">Open P&amp;L</div><div class="stat-val" id="s-unrealized">—</div></div>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+  <div class="controls">
+    <input type="search" id="f-symbol"  placeholder="Symbol…"   autocomplete="off" />
+    <select id="f-status">
+      <option value="all">All trades</option>
+      <option value="open">Active only</option>
+      <option value="closed">Closed only</option>
+    </select>
+    <select id="f-sleeve">
+      <option value="all">All sleeves</option>
+      <option value="momentum">Momentum</option>
+      <option value="swing">Swing</option>
+      <option value="daytrade">Day trade</option>
+      <option value="scalper">Scalper</option>
+      <option value="unattributed">Manual</option>
+    </select>
+    <select id="f-tier">
+      <option value="all">All tiers</option>
+      <option value="conservative">Conservative</option>
+      <option value="moderate">Moderate</option>
+      <option value="aggressive">Aggressive</option>
+      <option value="asymmetric">Asymmetric</option>
+    </select>
+    <div class="spacer"></div>
+    <button class="btn ghost" id="btn-csv">Download CSV</button>
+  </div>
+
+  <div class="table-wrap">
+    <table class="history" id="trade-table">
+      <thead>
+        <tr>
+          <th data-sort="status">Status</th>
+          <th data-sort="symbol">Symbol</th>
+          <th data-sort="sleeve">Strategy</th>
+          <th data-sort="tier">Risk tier</th>
+          <th data-sort="qty"        class="num">Units</th>
+          <th data-sort="entry"      class="num">Entry</th>
+          <th data-sort="exit"       class="num">Exit</th>
+          <th data-sort="pnl_pct"    class="num">P&amp;L %</th>
+          <th data-sort="pnl"        class="num">P&amp;L $</th>
+          <th data-sort="hold_secs"  class="num">Hold (dd:hh:mm:ss)</th>
+          <th data-sort="entry_ts"   class="num">Opened</th>
+        </tr>
+      </thead>
+      <tbody id="trade-rows"></tbody>
+    </table>
+  </div>
+
+  <div class="pagination" id="pagination" style="display:none;">
+    <div id="page-info"></div>
+    <div class="pages" id="page-buttons"></div>
+  </div>
+</main>
+
+<footer>
+  <div>&copy; 2026 s-tool.io &nbsp;&middot;&nbsp; <a href="/app">Projector</a> &nbsp;&middot;&nbsp; <a href="/picks">Picks</a> &nbsp;&middot;&nbsp; <a href="/history">History</a> &nbsp;&middot;&nbsp; Not investment advice.</div>
+</footer>
+
+<script>
+'use strict';
+// Single self-contained boot — no external bundle. The page hits two
+// endpoints, builds a unified array of {status, symbol, sleeve, tier, qty,
+// entry, exit, pnl, pnl_pct, hold_secs, entry_ts, exit_ts}, then renders
+// with current filter/sort/page state.
+
+const PAGE_SIZE = 100;
+const SLEEVE_LABEL = { momentum: 'Momentum', swing: 'Swing', daytrade: 'Day trade', scalper: 'Scalper', unattributed: 'Manual' };
+
+const state = {
+  rows: [],
+  filtered: [],
+  page: 1,
+  sortKey: 'entry_ts',
+  sortDir: 'desc',
+};
+
+// ── formatters ──────────────────────────────────────────────────────
+const fmtPx = (v) => v == null || !isFinite(v) ? '—' : (v >= 100 ? '$' + Number(v).toFixed(2) : '$' + Number(v).toFixed(2));
+const fmtUsd = (v) => {
+  if (v == null || !isFinite(v)) return '—';
+  const sign = v >= 0 ? '+' : '−';
+  const abs = Math.abs(v);
+  return sign + '$' + abs.toFixed(2);
+};
+const fmtPct = (v) => {
+  if (v == null || !isFinite(v)) return '—';
+  const sign = v >= 0 ? '+' : '';
+  return sign + (v * 100).toFixed(2) + '%';
+};
+const fmtQty = (v) => v == null || !isFinite(v) ? '—' : Math.round(v).toString();
+const fmtDate = (iso) => {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d)) return '—';
+  return d.toISOString().slice(0, 16).replace('T', ' ');
+};
+// dd:hh:mm:ss — leading dd shown only when held more than a day. Always
+// pad mm/ss to two digits. Sub-second trades (rare on swing) clamp to 00.
+const fmtHold = (secs) => {
+  if (secs == null || !isFinite(secs) || secs < 0) return '—';
+  const s = Math.floor(secs);
+  const dd = Math.floor(s / 86400);
+  const hh = Math.floor((s % 86400) / 3600);
+  const mm = Math.floor((s % 3600) / 60);
+  const ss = s % 60;
+  const pad = (n) => String(n).padStart(2, '0');
+  if (dd > 0) return `${pad(dd)}:${pad(hh)}:${pad(mm)}:${pad(ss)}`;
+  return `${pad(hh)}:${pad(mm)}:${pad(ss)}`;
+};
+
+// ── data load ───────────────────────────────────────────────────────
+async function loadAll() {
+  const [pfRes, jrRes] = await Promise.all([
+    fetch('/api/portfolio').catch(() => null),
+    fetch('/api/trade-journal?lookback_days=180').catch(() => null),
+  ]);
+  const pf = pfRes && pfRes.ok ? await pfRes.json().catch(() => ({})) : {};
+  const jr = jrRes && jrRes.ok ? await jrRes.json().catch(() => ({})) : {};
+  const positions = pf.positions || [];
+  const journal = jr.rows || [];
+
+  const now = Date.now();
+
+  // Active trades: one row per current Alpaca position.
+  // Hold = (now - opened_at). Entry = avg_entry_price. Exit = blank.
+  // P&L from unrealized_pl + unrealized_plpc.
+  const activeRows = positions.map(p => {
+    const openedTs = p.opened_at ? new Date(p.opened_at).getTime() : null;
+    const holdSecs = openedTs ? (now - openedTs) / 1000 : null;
+    return {
+      status: 'open',
+      symbol: p.symbol,
+      sleeve: p.sleeve || 'unattributed',
+      tier: p.source_tier || null,
+      qty: parseFloat(p.qty),
+      entry: parseFloat(p.avg_entry_price),
+      exit: null,
+      current: parseFloat(p.current_price),
+      pnl: parseFloat(p.unrealized_pl),
+      pnl_pct: parseFloat(p.unrealized_plpc),
+      hold_secs: holdSecs,
+      entry_ts: p.opened_at,
+      exit_ts: null,
+    };
+  });
+
+  // Closed trades: FIFO-pair every SELL with a prior BUY for the same
+  // symbol. SELL row already has buy_price + sell_price + pnl, but we
+  // need the matched BUY's ts to compute hold + tier. Same algorithm
+  // as research/calibration_report.py.
+  const buysBySym = {};
+  const closedRows = [];
+  const chrono = [...journal].sort((a, b) => (a.ts || '').localeCompare(b.ts || ''));
+  for (const r of chrono) {
+    const sym = r.symbol;
+    if (!sym) continue;
+    if (r.event === 'buy') {
+      (buysBySym[sym] = buysBySym[sym] || []).push(r);
+    } else if (r.event === 'sell') {
+      const queue = buysBySym[sym];
+      const buy = queue && queue.length ? queue.shift() : null;
+      const buyPrice = (r.buy_price ?? buy?.ref_price ?? buy?.live_price);
+      const sellPrice = r.sell_price;
+      if (buyPrice == null || sellPrice == null) continue;
+      const bp = parseFloat(buyPrice);
+      const sp = parseFloat(sellPrice);
+      if (!isFinite(bp) || !isFinite(sp) || bp <= 0) continue;
+      const buyTs = buy?.ts || null;
+      const sellTs = r.ts || null;
+      const holdSecs = (buyTs && sellTs) ? (new Date(sellTs).getTime() - new Date(buyTs).getTime()) / 1000 : null;
+      const pnl = r.pnl != null ? parseFloat(r.pnl) : (sp - bp) * parseFloat(r.qty || 0);
+      closedRows.push({
+        status: 'closed',
+        symbol: sym,
+        sleeve: r.sleeve || buy?.sleeve || 'unattributed',
+        tier: buy?.tier || null,
+        qty: parseFloat(r.qty || buy?.qty || 0),
+        entry: bp,
+        exit: sp,
+        current: null,
+        pnl: pnl,
+        pnl_pct: (sp - bp) / bp,
+        hold_secs: holdSecs,
+        entry_ts: buyTs,
+        exit_ts: sellTs,
+      });
+    }
+  }
+
+  state.rows = [...activeRows, ...closedRows];
+  renderStats();
+  applyFilters();
+}
+
+// ── stat strip ──────────────────────────────────────────────────────
+function renderStats() {
+  const open = state.rows.filter(r => r.status === 'open');
+  const closed = state.rows.filter(r => r.status === 'closed');
+  const wins = closed.filter(r => r.pnl > 0).length;
+  const winrate = closed.length ? wins / closed.length : null;
+  const realized = closed.reduce((s, r) => s + (r.pnl || 0), 0);
+  const unrealized = open.reduce((s, r) => s + (r.pnl || 0), 0);
+  document.getElementById('s-active').textContent = open.length;
+  document.getElementById('s-closed').textContent = closed.length;
+  document.getElementById('s-winrate').textContent = winrate == null ? '—' : (winrate * 100).toFixed(1) + '%';
+  const rEl = document.getElementById('s-realized');
+  rEl.textContent = fmtUsd(realized);
+  rEl.className = 'stat-val ' + (realized > 0 ? 'pos' : realized < 0 ? 'neg' : '');
+  const uEl = document.getElementById('s-unrealized');
+  uEl.textContent = fmtUsd(unrealized);
+  uEl.className = 'stat-val ' + (unrealized > 0 ? 'pos' : unrealized < 0 ? 'neg' : '');
+}
+
+// ── filter + sort ───────────────────────────────────────────────────
+function applyFilters() {
+  const sym = (document.getElementById('f-symbol').value || '').trim().toUpperCase();
+  const status = document.getElementById('f-status').value;
+  const sleeve = document.getElementById('f-sleeve').value;
+  const tier = document.getElementById('f-tier').value;
+  let rows = state.rows.slice();
+  if (sym)             rows = rows.filter(r => r.symbol && r.symbol.includes(sym));
+  if (status !== 'all')rows = rows.filter(r => r.status === status);
+  if (sleeve !== 'all')rows = rows.filter(r => (r.sleeve || 'unattributed') === sleeve);
+  if (tier !== 'all')  rows = rows.filter(r => (r.tier || 'none') === tier);
+  state.filtered = sortRows(rows, state.sortKey, state.sortDir);
+  state.page = 1;
+  renderTable();
+}
+
+function sortRows(rows, key, dir) {
+  const mult = dir === 'asc' ? 1 : -1;
+  return rows.slice().sort((a, b) => {
+    const av = a[key], bv = b[key];
+    // null/undefined sort to the bottom regardless of dir — open trades
+    // with no exit_ts shouldn't outrank a real value just because asc.
+    if (av == null && bv == null) return 0;
+    if (av == null) return 1;
+    if (bv == null) return -1;
+    if (typeof av === 'number' && typeof bv === 'number') return (av - bv) * mult;
+    return String(av).localeCompare(String(bv)) * mult;
+  });
+}
+
+// ── render ─────────────────────────────────────────────────────────
+function renderTable() {
+  const tbody = document.getElementById('trade-rows');
+  const total = state.filtered.length;
+  if (total === 0) {
+    tbody.innerHTML = `<tr><td colspan="11" class="empty">No trades match the current filters.</td></tr>`;
+    document.getElementById('pagination').style.display = 'none';
+    return;
+  }
+  const start = (state.page - 1) * PAGE_SIZE;
+  const slice = state.filtered.slice(start, start + PAGE_SIZE);
+  tbody.innerHTML = slice.map(rowHtml).join('');
+  renderPagination(total);
+  // Update sort indicator on header
+  document.querySelectorAll('th[data-sort]').forEach(th => {
+    const k = th.getAttribute('data-sort');
+    const arrow = k === state.sortKey ? `<span class="arrow">${state.sortDir === 'asc' ? '↑' : '↓'}</span>` : '';
+    th.innerHTML = th.textContent.replace(/[↑↓]\s*$/, '').trim() + arrow;
+  });
+}
+
+function rowHtml(r) {
+  const pnlCls = r.pnl == null ? '' : (r.pnl > 0 ? 'pos' : (r.pnl < 0 ? 'neg' : ''));
+  const tierKey = r.tier || 'none';
+  const tierLbl = r.tier ? r.tier[0].toUpperCase() + r.tier.slice(1) : '—';
+  const sleeveKey = r.sleeve || 'unattributed';
+  const sleeveLbl = SLEEVE_LABEL[sleeveKey] || sleeveKey;
+  return `<tr>
+    <td><span class="status-pill ${r.status}">${r.status === 'open' ? 'OPEN' : 'CLOSED'}</span></td>
+    <td class="sym">${escapeHtml(r.symbol || '—')}</td>
+    <td><span class="sleeve-pill ${sleeveKey}">${sleeveLbl}</span></td>
+    <td><span class="tier-pill ${tierKey}">${tierLbl}</span></td>
+    <td class="num">${fmtQty(r.qty)}</td>
+    <td class="num">${fmtPx(r.entry)}</td>
+    <td class="num">${r.exit == null ? '—' : fmtPx(r.exit)}</td>
+    <td class="num ${pnlCls}">${fmtPct(r.pnl_pct)}</td>
+    <td class="num ${pnlCls}">${fmtUsd(r.pnl)}</td>
+    <td class="num">${fmtHold(r.hold_secs)}</td>
+    <td class="num">${fmtDate(r.entry_ts)}</td>
+  </tr>`;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function renderPagination(total) {
+  const pages = Math.ceil(total / PAGE_SIZE);
+  const wrap = document.getElementById('pagination');
+  if (pages <= 1) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'flex';
+  const start = (state.page - 1) * PAGE_SIZE + 1;
+  const end = Math.min(state.page * PAGE_SIZE, total);
+  document.getElementById('page-info').textContent =
+    `Showing ${start.toLocaleString()}–${end.toLocaleString()} of ${total.toLocaleString()}`;
+  // Limited button strip — prev/next + window of ≤7 pages around current.
+  const buttons = document.getElementById('page-buttons');
+  const out = [];
+  out.push(`<button ${state.page === 1 ? 'disabled' : ''} data-pg="prev">‹ Prev</button>`);
+  const win = 3;
+  let lo = Math.max(1, state.page - win);
+  let hi = Math.min(pages, state.page + win);
+  if (lo > 1)        out.push(`<button data-pg="1">1</button>` + (lo > 2 ? `<span style="padding:6px 4px;color:var(--text-dim);">…</span>` : ''));
+  for (let p = lo; p <= hi; p++) {
+    out.push(`<button data-pg="${p}" class="${p === state.page ? 'current' : ''}">${p}</button>`);
+  }
+  if (hi < pages)    out.push((hi < pages - 1 ? `<span style="padding:6px 4px;color:var(--text-dim);">…</span>` : '') + `<button data-pg="${pages}">${pages}</button>`);
+  out.push(`<button ${state.page === pages ? 'disabled' : ''} data-pg="next">Next ›</button>`);
+  buttons.innerHTML = out.join('');
+  buttons.querySelectorAll('button[data-pg]').forEach(b => {
+    b.addEventListener('click', () => {
+      const v = b.getAttribute('data-pg');
+      if (v === 'prev') state.page = Math.max(1, state.page - 1);
+      else if (v === 'next') state.page = Math.min(pages, state.page + 1);
+      else state.page = parseInt(v, 10);
+      renderTable();
+      window.scrollTo({ top: document.querySelector('.controls').offsetTop - 20, behavior: 'smooth' });
+    });
+  });
+}
+
+// ── CSV download ───────────────────────────────────────────────────
+function downloadCsv() {
+  const cols = [
+    ['status', 'Status'],
+    ['symbol', 'Symbol'],
+    ['sleeve', 'Strategy'],
+    ['tier', 'RiskTier'],
+    ['qty', 'Units'],
+    ['entry', 'EntryPrice'],
+    ['exit', 'ExitPrice'],
+    ['pnl_pct', 'PnLPct'],
+    ['pnl', 'PnLUsd'],
+    ['hold_secs', 'HoldSeconds'],
+    ['entry_ts', 'OpenedAt'],
+    ['exit_ts', 'ClosedAt'],
+  ];
+  const header = cols.map(c => c[1]).join(',');
+  const escape = (v) => {
+    if (v == null) return '';
+    const s = String(v);
+    if (s.includes(',') || s.includes('"') || s.includes('\n')) return '"' + s.replace(/"/g, '""') + '"';
+    return s;
+  };
+  const lines = state.filtered.map(r => cols.map(c => {
+    const v = r[c[0]];
+    if (typeof v === 'number') return Number.isFinite(v) ? v.toString() : '';
+    return escape(v);
+  }).join(','));
+  const csv = [header, ...lines].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().slice(0, 10);
+  a.href = url; a.download = `s-tool-trades-${stamp}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+
+// ── wire up ────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('f-symbol').addEventListener('input', applyFilters);
+  document.getElementById('f-status').addEventListener('change', applyFilters);
+  document.getElementById('f-sleeve').addEventListener('change', applyFilters);
+  document.getElementById('f-tier').addEventListener('change', applyFilters);
+  document.getElementById('btn-csv').addEventListener('click', downloadCsv);
+  document.querySelectorAll('th[data-sort]').forEach(th => {
+    th.addEventListener('click', () => {
+      const k = th.getAttribute('data-sort');
+      if (state.sortKey === k) state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
+      else { state.sortKey = k; state.sortDir = 'desc'; }
+      state.filtered = sortRows(state.filtered, state.sortKey, state.sortDir);
+      state.page = 1;
+      renderTable();
+    });
+  });
+  loadAll();
+});
+</script>
+</body>
+</html>

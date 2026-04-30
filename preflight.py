@@ -556,6 +556,7 @@ def check_workflow_crons():
 SURVIVING_PAGES = [
     Path("cloudflare/public/app/index.html"),
     Path("cloudflare/public/picks/index.html"),
+    Path("cloudflare/public/history/index.html"),
 ]
 
 
@@ -572,6 +573,7 @@ def check_no_stale_billing_refs():
     targets = [
         ROOT / "cloudflare/public/app/index.html",
         ROOT / "cloudflare/public/picks/index.html",
+        ROOT / "cloudflare/public/history/index.html",
     ]
     targets += sorted((ROOT / "cloudflare/public/shared").glob("*.js"))
     targets += sorted((ROOT / "cloudflare/public/shared").glob("*.css"))

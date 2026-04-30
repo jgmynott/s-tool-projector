@@ -1188,7 +1188,7 @@ footer a { color: var(--text-mid); }
    "what's open" then immediately "what just closed" without leaving the
    page. Same color system as live positions for sleeve continuity. */
 .pf-closed-section { margin-top: 22px; padding-top: 22px; border-top: 1px solid var(--border); }
-.pf-closed-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
+.pf-closed-section-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
 .pf-closed-title { font: 500 13px 'Inter'; color: var(--text-mid); letter-spacing: 0.06em; }
 .pf-closed-summary { font: 500 12px 'Inter'; color: var(--text-dim); font-variant-numeric: tabular-nums; }
 .pf-closed-summary .pos { color: var(--pos); }
@@ -1197,12 +1197,28 @@ footer a { color: var(--text-mid); }
 /* Even-spaced grid: time | sleeve | tier | sym | qty | entry | exit | pct | pnl
    Tier column reserved even when empty so all rows visually align.
    Numeric columns right-aligned; tabular-nums keeps digits in vertical lock. */
-.pf-closed-row {
+.pf-closed-row, .pf-closed-head {
   display: grid;
   grid-template-columns: 56px 88px 96px 60px 56px 1fr 1fr 70px 84px;
   gap: 12px;
   align-items: center;
   padding: 8px 14px;
+}
+.pf-closed-head {
+  font: 700 9.5px 'Inter';
+  color: var(--text-dim);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  border-bottom: 1px solid rgba(155,161,185,0.14);
+  margin-bottom: 4px;
+  padding-top: 10px; padding-bottom: 10px;
+}
+.pf-closed-head .pf-closed-qty,
+.pf-closed-head .pf-closed-entry,
+.pf-closed-head .pf-closed-exit,
+.pf-closed-head .pf-closed-pct,
+.pf-closed-head .pf-closed-pnl { text-align: right; color: var(--text-dim); font-size: 9.5px; font-weight: 700; }
+.pf-closed-row {
   border: 1px solid var(--border);
   border-radius: 6px;
   background: rgba(255,255,255,0.02);
@@ -1234,22 +1250,25 @@ footer a { color: var(--text-mid); }
 .pf-closed-pnl.neg { color: var(--neg); }
 @media (max-width: 720px) {
   /* Drop tier + qty columns; collapse layout but keep entry/exit/pnl visible */
-  .pf-closed-row {
+  .pf-closed-row, .pf-closed-head {
     grid-template-columns: 50px 78px 56px 1fr 1fr 76px;
     grid-template-areas: "time sleeve sym entry exit pnl";
     gap: 8px;
     padding: 8px 10px;
   }
   .pf-closed-time { grid-area: time; }
-  .pf-closed-tag  { grid-area: sleeve; }
+  .pf-closed-tag, .pf-closed-head .pf-closed-tag-h { grid-area: sleeve; }
   .pf-closed-sym  { grid-area: sym; }
   .pf-closed-entry{ grid-area: entry; }
   .pf-closed-exit { grid-area: exit; }
   .pf-closed-pnl  { grid-area: pnl; }
   .pf-closed-row .pf-closed-tier-empty,
   .pf-closed-row .pf-pos-tier,
+  .pf-closed-head .pf-closed-tier-h,
   .pf-closed-row .pf-closed-qty,
-  .pf-closed-row .pf-closed-pct { display: none; }
+  .pf-closed-head .pf-closed-qty,
+  .pf-closed-row .pf-closed-pct,
+  .pf-closed-head .pf-closed-pct { display: none; }
 }
 .pf-closed-empty { padding: 22px; text-align: center; font: 500 13px 'Inter';
   color: var(--text-mid); border: 1px dashed var(--border); border-radius: 6px; }
@@ -1569,6 +1588,7 @@ footer a { color: var(--text-mid); }
     <div class="nav-center">
       <a href="/app">Projector</a>
       <a href="/picks" class="active">Picks</a>
+      <a href="/history">History</a>
     </div>
   </div>
 </nav>
@@ -1622,13 +1642,13 @@ footer a { color: var(--text-mid); }
 </main>
 
 <footer>
-  <div>&copy; 2026 s-tool.io &nbsp;&middot;&nbsp; <a href="/app">Projector</a> &nbsp;&middot;&nbsp; <a href="/picks">Picks</a> &nbsp;&middot;&nbsp; Not investment advice.</div>
+  <div>&copy; 2026 s-tool.io &nbsp;&middot;&nbsp; <a href="/app">Projector</a> &nbsp;&middot;&nbsp; <a href="/picks">Picks</a> &nbsp;&middot;&nbsp; <a href="/history">History</a> &nbsp;&middot;&nbsp; Not investment advice.</div>
 </footer>
 
 <!-- 84KB of inline page logic moved to /shared/picks-app.js so the
      1h Cache-Control on /shared/* skips download + parse on every
      repeat visit. defer means it executes after HTML parse but
      before DOMContentLoaded, same effective ordering as inline. -->
-<script defer src="/shared/picks-app.js?v=20260430c"></script>
+<script defer src="/shared/picks-app.js?v=20260430d"></script>
 </body>
 </html>

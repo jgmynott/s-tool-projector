@@ -914,12 +914,23 @@ function pfClosedTradesPanel(closedToday, totalRealizedToday) {
   }).join('');
 
   return `<div class="pf-closed-section">
-    <div class="pf-closed-head">
+    <div class="pf-closed-section-head">
       <span class="pf-closed-title">Closed today</span>
       <span class="pf-closed-summary">
         ${rows.length} ${rows.length === 1 ? 'trade' : 'trades'} ·
         <span class="${totalCls}">${totalStr} realized</span>
       </span>
+    </div>
+    <div class="pf-closed-head">
+      <span class="pf-closed-time">Time</span>
+      <span class="pf-closed-tag-h">Strategy</span>
+      <span class="pf-closed-tier-h">Risk tier</span>
+      <span>Symbol</span>
+      <span class="pf-closed-qty">Units</span>
+      <span class="pf-closed-entry">Entry</span>
+      <span class="pf-closed-exit">Exit</span>
+      <span class="pf-closed-pct">Return</span>
+      <span class="pf-closed-pnl">P&amp;L</span>
     </div>
     <div class="pf-closed-list">${items}</div>
   </div>`;
