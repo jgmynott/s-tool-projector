@@ -307,6 +307,42 @@ def plan(api: Alpaca, state: dict) -> dict:
         if sym not in live_syms:
             open_positions.pop(sym, None)
 
+    # Discover any Alpaca-side scalper position the local trader_state
+    # doesn't know about and absorb it into open_positions before the cap
+    # check. Without this, a state-write failure or a manual scalper
+    # entry would let the cap silently allow the 9th, 10th… buy through —
+    # caught 2026-04-28 when /api/portfolio reported 12 concurrent
+    # scalper positions while MAX_POSITIONS=8. We look up the most recent
+    # filled BUY orders and treat any sleeve-prefixed symbol still alive
+    # at Alpaca as occupying a slot.
+    try:
+        recent = api._req("GET", "orders?status=closed&direction=desc&limit=200&side=buy")
+        for o in (recent or []):
+            cid = o.get("client_order_id") or ""
+            sym = o.get("symbol")
+            if not sym or not cid.startswith("scalper-"):
+                continue
+            if sym in open_positions or sym not in live_syms:
+                continue
+            # Adopt the lost position so the cap counts it. ref_price /
+            # qty are best-effort from the order; opened_at falls back to
+            # the activity time. force-close on next MAX_HOLD_MIN scan.
+            open_positions[sym] = {
+                "symbol": sym,
+                "qty": float(o.get("filled_qty") or o.get("qty") or 0),
+                "ref_price": float(o.get("filled_avg_price") or 0) or None,
+                "opened_at": (o.get("filled_at") or o.get("submitted_at")
+                              or now.isoformat()),
+                "stop_pct": STOP_PCT, "target_pct": TARGET_PCT,
+                "signal": "adopted",
+            }
+            log.warning("scalper: adopted lost position %s from Alpaca (state divergence)", sym)
+    except Exception as e:
+        # Don't abort the rotation if the lookup fails — fall back to the
+        # local-only count. The cap may still be breached, but scalp
+        # rotation must not stall on an Alpaca read error.
+        log.warning("scalper: could not reconcile Alpaca-side positions: %s", e)
+
     exits: list[dict] = []
     for sym, info in list(open_positions.items()):
         opened_at = datetime.fromisoformat(info["opened_at"])
@@ -412,7 +448,10 @@ def submit_scalper_buy(api: Alpaca, e: dict, state: dict, journal_rows: list) ->
 def submit_scalper_exit(api: Alpaca, x: dict, state: dict, journal_rows: list) -> bool:
     sym = x["symbol"]
     try:
-        api.close_position(sym)
+        # force_close cancels any pending child stop/take orders before
+        # liquidating — without it, a held bracket pins available=0 and
+        # DELETE positions/<sym> returns 403.
+        api.force_close(sym)
     except RuntimeError as e:
         log.error("scalper exit %s failed: %s", sym, e)
         return False

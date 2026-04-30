@@ -151,6 +151,34 @@ class Alpaca:
     def close_position(self, symbol: str) -> dict:
         return self._req("DELETE", f"positions/{symbol}")
 
+    def open_orders(self, symbol: str) -> list:
+        """List open orders for one symbol. Used to clear bracket children
+        before force-liquidation. Bracket BUY orders create GTC stop_loss
+        and take_profit child SELL orders that persist overnight; if a
+        daytrade is held over, those children pin available=0 on the
+        position the next morning and DELETE positions/<sym> returns 403."""
+        return self._req("GET", f"orders?status=open&symbols={symbol}")
+
+    def cancel_order(self, order_id: str) -> dict:
+        try:
+            return self._req("DELETE", f"orders/{order_id}")
+        except Exception:
+            return {}
+
+    def force_close(self, symbol: str) -> dict:
+        """Cancel any pending orders for the symbol, then liquidate. The
+        cancel pass is best-effort — a no-op if there are no open orders.
+        Without this, force-liquidation fails with 403 available=0 when
+        bracket children are still pending."""
+        try:
+            for o in self.open_orders(symbol) or []:
+                oid = o.get("id")
+                if oid:
+                    self.cancel_order(oid)
+        except Exception:
+            pass  # cancel pass is best-effort; fall through to close
+        return self.close_position(symbol)
+
     def latest_trade(self, symbol: str) -> float | None:
         """Last printed trade price from Alpaca's market-data API. Lives at
         data.alpaca.markets, NOT paper-api.alpaca.markets — same creds work.
@@ -780,7 +808,7 @@ def execute_sleeve_plan(api: Alpaca, plan: dict, state: dict, sleeve_name: str,
     executed, failed = [], []
     for s in plan["sells"]:
         try:
-            api.close_position(s["symbol"])
+            api.force_close(s["symbol"])
             executed.append({"side": "sell", **s})
             state.setdefault("entries", {}).pop(s["symbol"], None)
         except Exception as e:
@@ -940,7 +968,7 @@ def cmd_live(api: Alpaca, window: str) -> int:
             for h in held:
                 sym = h["symbol"]
                 try:
-                    api.close_position(sym)
+                    api.force_close(sym)
                     close_result = "submitted"
                 except Exception as e:
                     log.error("pre_open close %s failed: %s", sym, e)
@@ -1018,7 +1046,7 @@ def cmd_live(api: Alpaca, window: str) -> int:
             sleeve = (state.get("entries", {}).get(sym, {}) or {}).get("sleeve") or "unattributed"
             close_result = "submitted"
             try:
-                api.close_position(sym)
+                api.force_close(sym)
             except Exception as e:
                 log.error("halt-close %s failed: %s", sym, e)
                 close_result = f"failed: {str(e)[:60]}"
@@ -1134,7 +1162,7 @@ def cmd_live(api: Alpaca, window: str) -> int:
         for h in held:
             sym = h["symbol"]
             try:
-                api.close_position(sym)
+                api.force_close(sym)
                 close_result = "submitted"
             except Exception as e:
                 log.error("pre_open close %s failed: %s", sym, e)
