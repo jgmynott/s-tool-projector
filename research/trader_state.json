@@ -116,17 +116,7 @@
   },
   "breaker_fired_date": "2026-04-28",
   "scalper": {
-    "positions": {
-      "DE": {
-        "symbol": "DE",
-        "qty": 1.0,
-        "ref_price": 590.66,
-        "opened_at": "2026-04-30T15:31:00.309031745Z",
-        "stop_pct": -0.007,
-        "target_pct": 0.01,
-        "signal": "adopted"
-      }
-    },
+    "positions": {},
     "fired_today": [
       {
         "symbol": "AAPL",
