@@ -158,33 +158,6 @@
   "breaker_fired_date": "2026-04-28",
   "scalper": {
     "positions": {
-      "XOM": {
-        "symbol": "XOM",
-        "qty": 3,
-        "entry_price": 154.62,
-        "opened_at": "2026-04-30T14:35:32.784021+00:00",
-        "signal": "orb",
-        "stop": 153.54,
-        "target": 156.17
-      },
-      "JPM": {
-        "symbol": "JPM",
-        "qty": 1,
-        "entry_price": 313.77,
-        "opened_at": "2026-04-30T14:40:36.199626+00:00",
-        "signal": "relvol",
-        "stop": 311.57,
-        "target": 316.91
-      },
-      "BAC": {
-        "symbol": "BAC",
-        "qty": 9,
-        "entry_price": 53.435,
-        "opened_at": "2026-04-30T14:40:36.284157+00:00",
-        "signal": "relvol",
-        "stop": 53.06,
-        "target": 53.97
-      },
       "IWM": {
         "symbol": "IWM",
         "qty": 1,
@@ -202,6 +175,33 @@
         "signal": "relvol",
         "stop": 1409.53,
         "target": 1433.66
+      },
+      "TSM": {
+        "symbol": "TSM",
+        "qty": 1.0,
+        "ref_price": 391.15,
+        "opened_at": "2026-04-30T15:00:56.809698631Z",
+        "stop_pct": -0.007,
+        "target_pct": 0.01,
+        "signal": "adopted"
+      },
+      "TSLA": {
+        "symbol": "TSLA",
+        "qty": 1,
+        "entry_price": 377.785,
+        "opened_at": "2026-04-30T15:05:40.023857+00:00",
+        "signal": "relvol",
+        "stop": 375.14,
+        "target": 381.56
+      },
+      "AMD": {
+        "symbol": "AMD",
+        "qty": 1,
+        "entry_price": 347.23,
+        "opened_at": "2026-04-30T15:05:40.075672+00:00",
+        "signal": "relvol",
+        "stop": 344.8,
+        "target": 350.7
       }
     },
     "fired_today": [
@@ -264,6 +264,16 @@
         "symbol": "ASML",
         "signal": "relvol",
         "ts": "2026-04-30T14:55:36.354568+00:00"
+      },
+      {
+        "symbol": "TSLA",
+        "signal": "relvol",
+        "ts": "2026-04-30T15:05:40.023873+00:00"
+      },
+      {
+        "symbol": "AMD",
+        "signal": "relvol",
+        "ts": "2026-04-30T15:05:40.075686+00:00"
       }
     ],
     "last_scan": null,

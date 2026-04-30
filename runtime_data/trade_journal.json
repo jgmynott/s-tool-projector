@@ -1,6 +1,6 @@
 {
-  "as_of": "2026-04-30T15:00:33.549823+00:00",
-  "n_rows": 301,
+  "as_of": "2026-04-30T15:05:40.076284+00:00",
+  "n_rows": 305,
   "rows": [
     {
       "ts": "2026-04-27T13:47:29.206731Z",
@@ -4042,6 +4042,56 @@
       "symbol": "CAT",
       "qty": 4,
       "error": "Alpaca POST orders \u2192 HTTP 422: {\"code\":40010001,\"message\":\"client_order_id must be unique\"}"
+    },
+    {
+      "ts": "2026-04-30T15:05:39.843879+00:00",
+      "event": "sell",
+      "sleeve": "scalper",
+      "symbol": "JPM",
+      "qty": 1,
+      "buy_price": 313.77,
+      "sell_price": null,
+      "pnl": null,
+      "exit_reason": "max_hold"
+    },
+    {
+      "ts": "2026-04-30T15:05:39.980785+00:00",
+      "event": "sell",
+      "sleeve": "scalper",
+      "symbol": "BAC",
+      "qty": 9,
+      "buy_price": 53.435,
+      "sell_price": null,
+      "pnl": null,
+      "exit_reason": "max_hold"
+    },
+    {
+      "ts": "2026-04-30T15:05:40.023876+00:00",
+      "event": "buy",
+      "sleeve": "scalper",
+      "symbol": "TSLA",
+      "qty": 1,
+      "ref_price": 377.785,
+      "live_price": 377.785,
+      "stop": 375.14,
+      "target": 381.56,
+      "tier": "relvol",
+      "rationale": "{\"vol_multiple\": 2.0976794387479765, \"range_pos\": 0.7989276139410197, \"cur_vol\": 15548}",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-04-30T15:05:40.075688+00:00",
+      "event": "buy",
+      "sleeve": "scalper",
+      "symbol": "AMD",
+      "qty": 1,
+      "ref_price": 347.23,
+      "live_price": 347.23,
+      "stop": 344.8,
+      "target": 350.7,
+      "tier": "relvol",
+      "rationale": "{\"vol_multiple\": 2.134433373808613, \"range_pos\": 0.6279926335175031, \"cur_vol\": 32080}",
+      "result": "submitted"
     }
   ]
 }
