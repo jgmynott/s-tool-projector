@@ -33,6 +33,16 @@ JOURNAL = REPO / "runtime_data" / "trade_journal.json"
 DAYS_BACK = int(os.environ.get("BACKFILL_DAYS", "14"))
 
 
+class AlpacaError(RuntimeError):
+    """Raised on any non-2xx Alpaca response so callers can decide whether
+    to retry, skip, or abort. Prior version sys.exit'd on first HTTPError
+    which made a single 429 fatal across a 365-day backfill walk."""
+    def __init__(self, code: int, body: str):
+        super().__init__(f"HTTP {code}: {body}")
+        self.code = code
+        self.body = body
+
+
 def alpaca_get(path: str) -> list:
     base = os.environ.get("ALPACA_BASE_URL", "").rstrip("/")
     key = os.environ.get("ALPACA_API_KEY", "")
@@ -50,19 +60,51 @@ def alpaca_get(path: str) -> list:
             return json.loads(resp.read())
     except HTTPError as e:
         body = e.read().decode("utf-8", errors="replace")[:500]
-        print(f"HTTP {e.code} from {url}: {body}", file=sys.stderr)
-        sys.exit(3)
+        raise AlpacaError(e.code, body)
 
 
 def fetch_fills(days_back: int) -> list[dict]:
+    """One request per day. Alpaca paper rate-limits at 200 req/min so we
+    sleep 0.4s between requests = 150 req/min — well under the cap. A
+    365-day backfill takes ~2.5 min; keeps us comfortably below Alpaca's
+    rate-limit ceiling. Empty days are skipped silently (weekends, market
+    holidays — Alpaca returns []).
+
+    Also short-circuits on a streak of empty days: once we've seen 60
+    consecutive empty days, we assume the account had no activity prior
+    and stop walking back. Saves ~15 min on a fresh account."""
+    import time
     today = datetime.now(timezone.utc).date()
     out: list[dict] = []
+    empty_streak = 0
     for i in range(days_back + 1):
         d = (today - timedelta(days=i)).isoformat()
-        rows = alpaca_get(f"/account/activities/FILL?date={d}")
+        if i > 0:
+            time.sleep(0.4)
+        try:
+            rows = alpaca_get(f"/account/activities/FILL?date={d}")
+        except AlpacaError as e:
+            # On 429 sleep longer and retry once. Other 4xx/5xx skip.
+            if e.code == 429:
+                time.sleep(15)
+                try:
+                    rows = alpaca_get(f"/account/activities/FILL?date={d}")
+                except AlpacaError as e2:
+                    print(f"backfill: skipping {d} after 429 retry: {e2.code}", flush=True)
+                    continue
+            else:
+                print(f"backfill: skipping {d}: {e}", flush=True)
+                continue
         if not isinstance(rows, list):
             continue
-        out.extend(rows)
+        if rows:
+            out.extend(rows)
+            empty_streak = 0
+        else:
+            empty_streak += 1
+            if empty_streak >= 60 and i >= 60:
+                print(f"backfill: 60 consecutive empty days at {d}, stopping early")
+                break
     return out
 
 
