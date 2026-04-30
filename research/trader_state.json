@@ -158,42 +158,6 @@
   "breaker_fired_date": "2026-04-28",
   "scalper": {
     "positions": {
-      "C": {
-        "symbol": "C",
-        "qty": 3,
-        "entry_price": 128.155,
-        "opened_at": "2026-04-30T14:10:37.671870+00:00",
-        "signal": "relvol",
-        "stop": 127.26,
-        "target": 129.44
-      },
-      "BLK": {
-        "symbol": "BLK",
-        "qty": 1,
-        "entry_price": 1050.385,
-        "opened_at": "2026-04-30T14:10:37.716931+00:00",
-        "signal": "orb",
-        "stop": 1043.03,
-        "target": 1060.89
-      },
-      "COST": {
-        "symbol": "COST",
-        "qty": 1,
-        "entry_price": 1014.12,
-        "opened_at": "2026-04-30T14:10:37.762472+00:00",
-        "signal": "orb",
-        "stop": 1007.02,
-        "target": 1024.26
-      },
-      "HD": {
-        "symbol": "HD",
-        "qty": 1,
-        "entry_price": 326.47,
-        "opened_at": "2026-04-30T14:10:37.807083+00:00",
-        "signal": "relvol",
-        "stop": 324.18,
-        "target": 329.73
-      },
       "GS": {
         "symbol": "GS",
         "qty": 1,
@@ -229,6 +193,24 @@
         "signal": "orb",
         "stop": 153.54,
         "target": 156.17
+      },
+      "JPM": {
+        "symbol": "JPM",
+        "qty": 1,
+        "entry_price": 313.77,
+        "opened_at": "2026-04-30T14:40:36.199626+00:00",
+        "signal": "relvol",
+        "stop": 311.57,
+        "target": 316.91
+      },
+      "BAC": {
+        "symbol": "BAC",
+        "qty": 9,
+        "entry_price": 53.435,
+        "opened_at": "2026-04-30T14:40:36.284157+00:00",
+        "signal": "relvol",
+        "stop": 53.06,
+        "target": 53.97
       }
     },
     "fired_today": [
@@ -271,6 +253,16 @@
         "symbol": "XOM",
         "signal": "orb",
         "ts": "2026-04-30T14:35:32.784039+00:00"
+      },
+      {
+        "symbol": "JPM",
+        "signal": "relvol",
+        "ts": "2026-04-30T14:40:36.199637+00:00"
+      },
+      {
+        "symbol": "BAC",
+        "signal": "relvol",
+        "ts": "2026-04-30T14:40:36.284164+00:00"
       }
     ],
     "last_scan": null,

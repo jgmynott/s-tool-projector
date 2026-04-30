@@ -1,6 +1,6 @@
 {
-  "as_of": "2026-04-30T14:35:32.784675+00:00",
-  "n_rows": 288,
+  "as_of": "2026-04-30T14:40:36.343452+00:00",
+  "n_rows": 294,
   "rows": [
     {
       "ts": "2026-04-27T13:47:29.206731Z",
@@ -3892,6 +3892,78 @@
       "target": 156.17,
       "tier": "orb",
       "rationale": "{\"range_high\": 154.34, \"range_low\": 151.71, \"avg_open_vol\": 7993.166666666667, \"cur_vol\": 11336}",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-04-30T14:40:35.136915+00:00",
+      "event": "sell",
+      "sleeve": "scalper",
+      "symbol": "C",
+      "qty": 3,
+      "buy_price": 128.155,
+      "sell_price": null,
+      "pnl": null,
+      "exit_reason": "max_hold"
+    },
+    {
+      "ts": "2026-04-30T14:40:35.390078+00:00",
+      "event": "sell",
+      "sleeve": "scalper",
+      "symbol": "BLK",
+      "qty": 1,
+      "buy_price": 1050.385,
+      "sell_price": null,
+      "pnl": null,
+      "exit_reason": "max_hold"
+    },
+    {
+      "ts": "2026-04-30T14:40:35.643665+00:00",
+      "event": "sell",
+      "sleeve": "scalper",
+      "symbol": "COST",
+      "qty": 1,
+      "buy_price": 1014.12,
+      "sell_price": null,
+      "pnl": null,
+      "exit_reason": "max_hold"
+    },
+    {
+      "ts": "2026-04-30T14:40:36.112905+00:00",
+      "event": "sell",
+      "sleeve": "scalper",
+      "symbol": "HD",
+      "qty": 1,
+      "buy_price": 326.47,
+      "sell_price": null,
+      "pnl": null,
+      "exit_reason": "max_hold"
+    },
+    {
+      "ts": "2026-04-30T14:40:36.199686+00:00",
+      "event": "buy",
+      "sleeve": "scalper",
+      "symbol": "JPM",
+      "qty": 1,
+      "ref_price": 313.77,
+      "live_price": 313.77,
+      "stop": 311.57,
+      "target": 316.91,
+      "tier": "relvol",
+      "rationale": "{\"vol_multiple\": 2.3813970520919163, \"range_pos\": 1.0, \"cur_vol\": 7432}",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-04-30T14:40:36.284167+00:00",
+      "event": "buy",
+      "sleeve": "scalper",
+      "symbol": "BAC",
+      "qty": 9,
+      "ref_price": 53.435,
+      "live_price": 53.435,
+      "stop": 53.06,
+      "target": 53.97,
+      "tier": "relvol",
+      "rationale": "{\"vol_multiple\": 2.1392956501110656, \"range_pos\": 0.8888888888889767, \"cur_vol\": 28342}",
       "result": "submitted"
     }
   ]
