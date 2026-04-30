@@ -36,12 +36,6 @@
       "ref_price": 50.58,
       "qty": 96
     },
-    "CRS": {
-      "sleeve": "swing",
-      "opened_at": "2026-04-28T15:41:50.432775+00:00",
-      "ref_price": 426.16,
-      "qty": 11
-    },
     "HWM": {
       "sleeve": "swing",
       "opened_at": "2026-04-28T15:41:51.044689+00:00",
@@ -56,8 +50,8 @@
     },
     "TSM": {
       "sleeve": "swing",
-      "opened_at": "2026-04-28T15:41:53.646630+00:00",
-      "ref_price": 404.98,
+      "opened_at": "2026-04-30T13:30:39.656312+00:00",
+      "ref_price": 393.83,
       "qty": 12
     },
     "CVNA": {
@@ -68,15 +62,15 @@
     },
     "WDC": {
       "sleeve": "momentum",
-      "opened_at": "2026-04-29T13:31:05.208988+00:00",
-      "ref_price": 390.99,
-      "qty": 25
+      "opened_at": "2026-04-30T13:30:37.561619+00:00",
+      "ref_price": 412.76,
+      "qty": 24
     },
     "STX": {
       "sleeve": "swing",
-      "opened_at": "2026-04-29T13:31:05.969109+00:00",
-      "ref_price": 579.03,
-      "qty": 8
+      "opened_at": "2026-04-30T13:30:39.288053+00:00",
+      "ref_price": 643.3,
+      "qty": 7
     },
     "CIEN": {
       "sleeve": "swing",
@@ -84,35 +78,49 @@
       "ref_price": 473.69,
       "qty": 10
     },
-    "JBL": {
+    "KLAC": {
       "sleeve": "swing",
-      "opened_at": "2026-04-29T14:31:04.689254+00:00",
-      "ref_price": 330.83,
-      "qty": 15
+      "opened_at": "2026-04-30T13:30:39.457798+00:00",
+      "ref_price": 1816.21,
+      "qty": 2
+    },
+    "APH": {
+      "sleeve": "swing",
+      "opened_at": "2026-04-30T13:30:49.783578+00:00",
+      "ref_price": 148.38,
+      "qty": 33
+    },
+    "DY": {
+      "sleeve": "daytrade",
+      "opened_at": "2026-04-30T13:30:50.066688+00:00",
+      "ref_price": 409.32,
+      "qty": 8
+    },
+    "PWR": {
+      "sleeve": "daytrade",
+      "opened_at": "2026-04-30T13:30:51.412595+00:00",
+      "ref_price": 628.6,
+      "qty": 5
+    },
+    "CAH": {
+      "sleeve": "daytrade",
+      "opened_at": "2026-04-30T13:30:51.770136+00:00",
+      "ref_price": 202.82,
+      "qty": 16
+    },
+    "PH": {
+      "sleeve": "daytrade",
+      "opened_at": "2026-04-30T13:30:52.206375+00:00",
+      "ref_price": 947.5,
+      "qty": 3
     }
   },
   "traded_today": {
-    "2026-04-29": [
-      "EME",
-      "APH",
-      "WAB",
+    "2026-04-30": [
       "DY",
-      "AZZ",
-      "GE",
-      "CW",
-      "CASY",
-      "BK",
-      "WELL",
-      "DAL",
-      "ARM",
-      "ATO",
-      "BKNG",
-      "LII",
-      "CSTM",
-      "MCO",
-      "CSX",
-      "DGX",
-      "DD"
+      "PWR",
+      "CAH",
+      "PH"
     ]
   },
   "breaker_fired_date": "2026-04-28",
