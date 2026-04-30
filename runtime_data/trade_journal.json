@@ -1,6 +1,6 @@
 {
-  "as_of": "2026-04-30T15:25:52.164006+00:00",
-  "n_rows": 316,
+  "as_of": "2026-04-30T15:27:39.078197+00:00",
+  "n_rows": 321,
   "rows": [
     {
       "ts": "2026-04-27T13:47:29.206731Z",
@@ -4224,6 +4224,46 @@
       "realized_pl": null,
       "reason": "preopen_holdover_sweep",
       "result": "submitted"
+    },
+    {
+      "ts": "2026-04-30T15:27:33.557395+00:00",
+      "event": "buy_failed",
+      "sleeve": "swing",
+      "symbol": "TSM",
+      "qty": 12,
+      "error": "Alpaca POST orders \u2192 HTTP 422: {\"code\":40010001,\"message\":\"client_order_id must be unique\"}"
+    },
+    {
+      "ts": "2026-04-30T15:27:33.969382+00:00",
+      "event": "buy_failed",
+      "sleeve": "daytrade",
+      "symbol": "GE",
+      "qty": 11,
+      "error": "Alpaca POST orders \u2192 HTTP 422: {\"code\":40010001,\"message\":\"client_order_id must be unique\"}"
+    },
+    {
+      "ts": "2026-04-30T15:27:34.375872+00:00",
+      "event": "buy_failed",
+      "sleeve": "daytrade",
+      "symbol": "CAT",
+      "qty": 4,
+      "error": "Alpaca POST orders \u2192 HTTP 422: {\"code\":40010001,\"message\":\"client_order_id must be unique\"}"
+    },
+    {
+      "ts": "2026-04-30T15:27:36.335421+00:00",
+      "event": "buy_failed",
+      "sleeve": "daytrade",
+      "symbol": "CAH",
+      "qty": 16,
+      "error": "Alpaca POST orders \u2192 HTTP 422: {\"code\":40010001,\"message\":\"client_order_id must be unique\"}"
+    },
+    {
+      "ts": "2026-04-30T15:27:39.077366+00:00",
+      "event": "buy_failed",
+      "sleeve": "daytrade",
+      "symbol": "PH",
+      "qty": 3,
+      "error": "Alpaca POST orders \u2192 HTTP 422: {\"code\":40010001,\"message\":\"client_order_id must be unique\"}"
     }
   ]
 }
