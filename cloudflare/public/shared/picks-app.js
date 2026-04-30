@@ -1408,26 +1408,30 @@ function renderPortfolio(data) {
   const dcCls = dc > 0 ? 'pos' : (dc < 0 ? 'neg' : 'flat');
   const sign = dc > 0 ? '+' : (dc < 0 ? '−' : '');
   const dcAbs = Math.abs(dc), dcpAbs = Math.abs(dcp * 100);
-  // Alpaca's `multiplier` field is account classification, not a single
-  // leverage figure. PDT accounts return 4 but actually have two ceilings:
-  //   regt_buying_power      = equity × 2  (overnight; what Alpaca's UI shows)
-  //   daytrading_buying_power = up to equity × 4 (intraday; resets at close)
-  // Show both so users don't see "4× margin" and assume that's the
-  // overnight ceiling.
-  const eqVal = parseFloat(acct.equity) || 0;
-  const regtMult = (acct.regt_buying_power && eqVal > 0) ? acct.regt_buying_power / eqVal : null;
-  const dtMult = (acct.daytrading_buying_power && eqVal > 0) ? acct.daytrading_buying_power / eqVal : null;
+  // Alpaca's `multiplier` is account classification, NOT a single
+  // leverage figure and NOT a dynamic ratio. The buying-power fields
+  // (regt_buying_power, daytrading_buying_power) are *remaining*
+  // headroom after open positions consume margin — they shrink as
+  // positions accumulate. To label the account, use the static class
+  // ceiling derived from multiplier:
+  //   1 → cash (no margin)
+  //   2 → RegT margin (2× overnight, 2× intraday)
+  //   4 → PDT-flagged (2× overnight, 4× intraday)
   let paperTag = '';
   if (acct.is_paper) {
+    const mult = parseInt(acct.multiplier, 10) || 1;
     let label;
-    if (regtMult && dtMult && Math.abs(regtMult - dtMult) > 0.05) {
-      label = `Paper · PDT · ${regtMult.toFixed(0)}× overnight / ${dtMult.toFixed(0)}× intraday`;
-    } else if (regtMult) {
-      label = `Paper · ${regtMult.toFixed(0)}× margin`;
-    } else {
-      label = `Paper · margin classification ${acct.multiplier || 1}`;
-    }
-    paperTag = `<span class="pf-paper-tag" title="Alpaca multiplier=${acct.multiplier || 1} (1=cash, 2=RegT margin, 4=PDT). RegT buying power = $${(acct.regt_buying_power||0).toLocaleString()}; Daytrading buying power = $${(acct.daytrading_buying_power||0).toLocaleString()}.">${label}</span>`;
+    if (mult === 1)      label = 'Paper · cash';
+    else if (mult === 2) label = 'Paper · 2× margin';
+    else if (mult === 4) label = 'Paper · PDT · 2× overnight / 4× intraday';
+    else                 label = `Paper · margin class ${mult}`;
+    const regt = acct.regt_buying_power || 0;
+    const dt   = acct.daytrading_buying_power || 0;
+    const tip  = `Account class: multiplier=${mult} (1=cash, 2=RegT, 4=PDT). `
+               + `Remaining buying power — overnight: $${regt.toLocaleString(undefined,{maximumFractionDigits:0})}, `
+               + `intraday: $${dt.toLocaleString(undefined,{maximumFractionDigits:0})}. `
+               + `Day-trade count (rolling 5d): ${acct.day_trade_count || 0}.`;
+    paperTag = `<span class="pf-paper-tag" title="${tip}">${label}</span>`;
   }
   // Stash full payload so the chart's tab buttons can re-render without
   // re-fetching. Picked up by the document-level click handler.
@@ -1499,13 +1503,16 @@ function renderPortfolio(data) {
     window.__pfSleeveSummaries = sleeves;
     positionsBlock = pfPositionsDonut(positions, visibleMv);
   }
-  // Utilization = fraction of total buying power currently in market
-  // value of open positions. Use the overnight (RegT) buying power as
-  // the denominator since most positions held mid-day will be subject
-  // to the overnight ceiling if they don't close before EOD. Falls back
-  // to equity × multiplier when regt_buying_power isn't surfaced.
-  const totalCapacity = (parseFloat(acct.regt_buying_power)
-    || ((parseFloat(acct.equity) || 0) * (parseFloat(acct.multiplier) || 1)));
+  // Utilization = market value / overnight ceiling. Use the static
+  // class ceiling (equity × 2 for RegT/PDT, × 1 for cash), NOT the
+  // dynamic regt_buying_power — that's remaining headroom and shrinks
+  // as positions are added, which would make utilization look like
+  // it's stuck at 100% the moment we deploy any capital.
+  const overnightMult = (() => {
+    const m = parseInt(acct.multiplier, 10) || 1;
+    return (m === 4 || m === 2) ? 2.0 : 1.0;
+  })();
+  const totalCapacity = (parseFloat(acct.equity) || 0) * overnightMult;
   const utilization = totalCapacity > 0 ? Math.min(1, totalMv / totalCapacity) : 0;
   const utilStr = `${(utilization * 100).toFixed(0)}%`;
 

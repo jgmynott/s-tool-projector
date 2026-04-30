@@ -269,26 +269,25 @@ def write_halt(reason: str, by: str = "trader") -> None:
 # Set LEVERAGE_MAX=1 in env to enforce cash-only on the live account.
 
 def effective_multiplier(acct: dict) -> float:
-    eq = 0.0
+    """Return the OVERNIGHT (RegT) leverage ceiling for the account
+    class. Uses a static lookup against Alpaca's `multiplier` field,
+    NOT the dynamic regt_buying_power (that's *remaining* headroom
+    after open positions consume margin — using it for sizing would
+    under-deploy progressively as positions accumulate).
+
+    Alpaca's classification map:
+      1 → cash account (no margin)
+      2 → RegT margin (2× overnight, 2× intraday)
+      4 → PDT-flagged (2× overnight, 4× intraday)
+    Trader sizes assuming hold-overnight is possible (swing/momentum
+    sleeves), so we return the overnight ceiling, not the intraday.
+    """
     try:
-        eq = float(acct.get("equity") or 0)
+        cls = int(float(acct.get("multiplier") or 1))
     except (TypeError, ValueError):
-        pass
-    # Prefer Alpaca's reported regt_buying_power (overnight ceiling).
-    # Fall back to multiplier × equity when not available (older API
-    # responses or paper accounts that don't surface the field).
-    regt_bp = 0.0
-    try:
-        regt_bp = float(acct.get("regt_buying_power") or 0)
-    except (TypeError, ValueError):
-        pass
-    if eq > 0 and regt_bp > 0:
-        broker = regt_bp / eq
-    else:
-        try:
-            broker = float(acct.get("multiplier") or 1)
-        except (TypeError, ValueError):
-            broker = 1.0
+        cls = 1
+    overnight_by_class = {1: 1.0, 2: 2.0, 4: 2.0}
+    broker = overnight_by_class.get(cls, 1.0)
     try:
         cap = float(os.environ.get("LEVERAGE_MAX", LEVERAGE_MAX_DEFAULT))
     except (TypeError, ValueError):
