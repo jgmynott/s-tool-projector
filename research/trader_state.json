@@ -158,15 +158,6 @@
   "breaker_fired_date": "2026-04-28",
   "scalper": {
     "positions": {
-      "IWM": {
-        "symbol": "IWM",
-        "qty": 1,
-        "entry_price": 274.67,
-        "opened_at": "2026-04-30T14:45:36.961478+00:00",
-        "signal": "relvol",
-        "stop": 272.75,
-        "target": 277.42
-      },
       "ASML": {
         "symbol": "ASML",
         "qty": 1,
@@ -202,6 +193,15 @@
         "signal": "relvol",
         "stop": 344.8,
         "target": 350.7
+      },
+      "AVGO": {
+        "symbol": "AVGO",
+        "qty": 1,
+        "entry_price": 412.86,
+        "opened_at": "2026-04-30T15:15:38.342241+00:00",
+        "signal": "relvol",
+        "stop": 409.97,
+        "target": 416.99
       }
     },
     "fired_today": [
@@ -274,6 +274,11 @@
         "symbol": "AMD",
         "signal": "relvol",
         "ts": "2026-04-30T15:05:40.075686+00:00"
+      },
+      {
+        "symbol": "AVGO",
+        "signal": "relvol",
+        "ts": "2026-04-30T15:15:38.342250+00:00"
       }
     ],
     "last_scan": null,

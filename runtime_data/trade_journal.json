@@ -1,6 +1,6 @@
 {
-  "as_of": "2026-04-30T15:05:40.076284+00:00",
-  "n_rows": 305,
+  "as_of": "2026-04-30T15:15:38.342835+00:00",
+  "n_rows": 307,
   "rows": [
     {
       "ts": "2026-04-27T13:47:29.206731Z",
@@ -4091,6 +4091,31 @@
       "target": 350.7,
       "tier": "relvol",
       "rationale": "{\"vol_multiple\": 2.134433373808613, \"range_pos\": 0.6279926335175031, \"cur_vol\": 32080}",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-04-30T15:15:38.282365+00:00",
+      "event": "sell",
+      "sleeve": "scalper",
+      "symbol": "IWM",
+      "qty": 1,
+      "buy_price": 274.67,
+      "sell_price": null,
+      "pnl": null,
+      "exit_reason": "max_hold"
+    },
+    {
+      "ts": "2026-04-30T15:15:38.342253+00:00",
+      "event": "buy",
+      "sleeve": "scalper",
+      "symbol": "AVGO",
+      "qty": 1,
+      "ref_price": 412.86,
+      "live_price": 412.86,
+      "stop": 409.97,
+      "target": 416.99,
+      "tier": "relvol",
+      "rationale": "{\"vol_multiple\": 2.4392010411361964, \"range_pos\": 0.6813880126183067, \"cur_vol\": 21554}",
       "result": "submitted"
     }
   ]
