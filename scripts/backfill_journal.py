@@ -236,10 +236,57 @@ def order_to_row(o: dict) -> dict:
     }
 
 
+def drop_orphaned_stubs(rows: list[dict]) -> list[dict]:
+    """trader.py writes 'submitted' stub rows the moment it submits a sell
+    order — sell_price=None, pnl=None — and the actual fill row lands 7-9
+    minutes later via the synchronous fill-poll OR the next backfill. The
+    stubs duplicate the fills (same symbol + qty + side, ts within ~30
+    min) so they double-count in /history and the closed-pair stats.
+
+    Strategy: for each (symbol, qty, side) group with at least one
+    sell_price-bearing fill, drop every stub (sell_price=None) within
+    ±30 min of any fill. Stubs that survive (no matching fill) stay
+    because they're either still-pending submissions or fills the
+    backfill genuinely missed."""
+    from datetime import datetime as _dt
+    def _epoch(ts: str) -> float:
+        if not ts: return 0.0
+        try: return _dt.fromisoformat(ts.replace("Z", "+00:00")).timestamp()
+        except Exception: return 0.0
+    fills_by_key: dict = {}
+    for r in rows:
+        if r.get("event") != "sell": continue
+        if not r.get("sell_price"): continue
+        try: qty = float(r.get("qty") or 0)
+        except (TypeError, ValueError): continue
+        key = (r.get("symbol"), round(qty, 4))
+        fills_by_key.setdefault(key, []).append(_epoch(r.get("ts") or ""))
+    n_dropped = 0
+    out: list[dict] = []
+    for r in rows:
+        is_stub = (r.get("event") == "sell"
+                   and r.get("result") == "submitted"
+                   and not r.get("sell_price"))
+        if is_stub:
+            try: qty = float(r.get("qty") or 0)
+            except (TypeError, ValueError): qty = 0
+            key = (r.get("symbol"), round(qty, 4))
+            stub_t = _epoch(r.get("ts") or "")
+            fill_times = fills_by_key.get(key, [])
+            if any(abs(stub_t - ft) <= 1800 for ft in fill_times):
+                n_dropped += 1
+                continue
+        out.append(r)
+    if n_dropped:
+        print(f"backfill: dropped {n_dropped} orphan stub sells (deduped against fills)")
+    return out
+
+
 def fifo_pair_pnl(rows: list[dict]) -> list[dict]:
     """Walk chronologically and FIFO-pair sells against open buys per symbol
     so backfilled sells get a buy_price + pnl. Without this every backfilled
     sell shows pnl=None and the track-record realized totals stay wrong."""
+    rows = drop_orphaned_stubs(rows)
     rows = sorted(rows, key=lambda r: (r.get("ts") or ""))
     open_lots: dict[str, list[list]] = {}
     for r in rows:

@@ -5,6 +5,16 @@ name: backfill-trade-journal
 # the journaling fix, etc.).
 
 on:
+  # 20:30 UTC weekdays = 16:30 ET = 30 min after market close. By then:
+  #   - trader.yml close window (19:48 UTC) has flushed today's force-closes
+  #   - scalper.yml last tick (19:55 UTC) has finished
+  #   - Alpaca's activities feed has settled
+  # Sweeping at this point captures any bracket-child fills that landed
+  # async during the day — orders the trader didn't see come back through
+  # its synchronous fill-poll. Keeps trade_journal.json self-healing without
+  # manual intervention.
+  schedule:
+    - cron: "30 20 * * 1-5"
   workflow_dispatch:
     inputs:
       days:
@@ -40,7 +50,10 @@ jobs:
           ALPACA_API_KEY:    ${{ secrets.ALPACA_API_KEY }}
           ALPACA_API_SECRET: ${{ secrets.ALPACA_API_SECRET }}
           ALPACA_BASE_URL:   ${{ secrets.ALPACA_BASE_URL }}
-          BACKFILL_DAYS:     ${{ github.event.inputs.days }}
+          # Schedule fires with no inputs → fall back to 3 days (catches
+          # today's bracket fills + a 2-day buffer for late-settling
+          # activities). Manual dispatch passes its inputs through.
+          BACKFILL_DAYS:     ${{ github.event.inputs.days || '3' }}
           BACKFILL_RESET:    ${{ github.event.inputs.reset == 'true' && '1' || '0' }}
         run: python3 scripts/backfill_journal.py
 
@@ -54,7 +67,8 @@ jobs:
           if git diff --staged --quiet; then
             echo "no journal changes"
           else
-            git commit -m "chore(journal): backfill ${{ github.event.inputs.days }}d Alpaca FILL activities $(date -u +%Y-%m-%dT%H:%MZ)"
+            DAYS="${{ github.event.inputs.days || '3' }}"
+            git commit -m "chore(journal): backfill ${DAYS}d Alpaca FILL activities $(date -u +%Y-%m-%dT%H:%MZ)"
             git pull --rebase || true
             git push
           fi
