@@ -924,9 +924,9 @@ function pfClosedTradesPanel(closedToday, isStrategist, totalRealizedToday) {
     </div>`;
   }).join('');
 
-  // Paywall removed 2026-04-29: closed-today shows the full ledger
-  // to every visitor, no upgrade prompt.
-  const teaserCta = '';
+  const teaserCta = !isStrategist
+    ? `<div class="pf-closed-cta">Showing ${rows.length} most recent — <a href="/pricing">unlock the full ledger</a> to see every fill, sleeve, and outcome from the past 90 days.</div>`
+    : '';
 
   return `<div class="pf-closed-section">
     <div class="pf-closed-head">
@@ -1485,7 +1485,9 @@ function renderPortfolio(data) {
     // realized-today figures without re-deriving them per row.
     window.__pfSleeveSummaries = sleeves;
     positionsBlock = pfPositionsDonut(positions, visibleMv);
-    // Paywall removed 2026-04-29: positions list shows everything.
+    if (data.teaser) {
+      positionsBlock += `<div class="pf-teaser-cta">Showing ${positions.length} of total — <a href="/pricing">unlock the full book</a> to see every fill, sleeve allocation, and intraday rebalance.</div>`;
+    }
   }
   // Utilization = fraction of buying power currently in market value of
   // open positions. Useful at a glance: empty between sessions = 0%,
@@ -1777,13 +1779,31 @@ function renderMethodology(data) {
   </section>`;
 }
 
-// Paywall removed 2026-04-29 — renderGate is no longer reachable from
-// the main flow because /api/picks now returns 200 with full data for
-// everyone (users_db.can_access_picks → True). Kept as a no-op so any
-// edge-case caller doesn't crash.
 function renderGate(data) {
-  const trackSummary = data && data.summary ? renderTrackRecord(data.summary) : '';
-  return trackSummary;
+  const teaserRows = (data.teaser || []).reduce((acc, t) => {
+    (acc[t.tier] = acc[t.tier] || []).push(t.symbol); return acc;
+  }, {});
+  const teaserHtml = Object.entries(teaserRows).map(([tier, syms]) => `
+    <div style="margin-bottom:18px;">
+      <div style="font:600 11px 'Inter';color:var(--accent-lake);letter-spacing:0.2em;text-transform:uppercase;margin-bottom:10px;">${TIER_COPY[tier]?.label || tier}</div>
+      <div class="teaser" style="color:var(--text-hi);font-family:'Crimson Text',serif;font-size:22px;">${syms.join(' · ')}</div>
+    </div>`).join('');
+  const trackSummary = data.summary ? renderTrackRecord(data.summary) : '';
+  return `
+    ${trackSummary}
+    <div class="gate">
+      <div class="eyebrow" style="margin-bottom:14px;">Strategist &middot; $29/mo</div>
+      <h2>The full list, the full <em>thesis</em>, and the track record.</h2>
+      <p>Strategist unlocks the ranked list across all three risk tiers, with every pick's SEC-filed fundamentals, 1-year P50 target, expected return, and the daily realized-return ledger that makes the engine falsifiable.</p>
+      <div class="gate-cta-row">
+        <button class="btn" onclick="startCheckout('strategist')">Upgrade &mdash; $29/mo</button>
+        <a href="/pricing" class="btn ghost">Compare tiers</a>
+      </div>
+      <div style="margin-top:40px;padding-top:28px;border-top:1px solid var(--border);">
+        <div style="font:600 11px 'Inter';color:var(--text-dim);letter-spacing:0.14em;text-transform:uppercase;margin-bottom:16px;">Today's picks — top 3 per tier</div>
+        ${teaserHtml}
+      </div>
+    </div>`;
 }
 
 function riskBand(p10Ratio) {
@@ -2615,9 +2635,17 @@ async function load() {
   let portfolioData = null;
   if (pfRes && pfRes.ok) portfolioData = await pfRes.json().catch(() => null);
 
-  // Paywall removed 2026-04-29 — /api/picks no longer returns 402.
-  // Should never hit this branch in normal operation; if a stale
-  // backend deploy lingers it'd fall through to the regular render.
+  if (picksRes.status === 402 && picksData?.error === 'strategist_required') {
+    scanMeta.innerHTML = `<span class="meta-item"><span class="dot waiting"></span><span>Scan last updated ${picksData.scan_age_hours != null ? picksData.scan_age_hours.toFixed(1) + 'h ago' : 'recently'}</span></span>
+      <span class="meta-item">Upgrade to see the full list</span>`;
+    // Render the live portfolio panel ABOVE the gate as proof-of-life
+    // for anonymous / non-strategist visitors. The /api/portfolio
+    // response in this case is gated to a 3-position teaser.
+    const portfolioBlock = portfolioData ? renderPortfolio(portfolioData) : '';
+    content.innerHTML = portfolioBlock + renderGate({ ...picksData, summary: trackData?.summary });
+    if (portfolioData && !portfolioData.error) startPortfolioRefresh();
+    return;
+  }
   if (picksRes.status === 404) {
     scanMeta.innerHTML = '';
     content.innerHTML = `<div class="gate"><h2>Overnight scan hasn't run yet.</h2><p>Picks refresh after the daily cron at 10:00 UTC (6am ET). Check back then — or <a href="/app" style="color:var(--accent-lake);">try an individual projection</a> in the meantime.</p></div>`;

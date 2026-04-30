@@ -3,697 +3,1643 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Today's picks — s-tool</title>
-<meta name="description" content="A ranked portfolio of names the projection engine surfaced — point-in-time SEC fundamentals attached, every pick logged. Free." />
+<title>Portfolio intelligence — s-tool</title>
+<meta name="description" content="Ranked portfolio intelligence from a nightly full-universe scan. Strategist tier only." />
 <link rel="canonical" href="https://s-tool.io/picks" />
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%23faf7f0' stroke='%230d4a2c' stroke-width='4'/%3E%3Ccircle cx='50' cy='50' r='30' fill='%234a8b5e'/%3E%3Ctext x='50' y='66' text-anchor='middle' font-family='Georgia' font-style='italic' font-size='44' font-weight='700' fill='%230d4a2c'%3ES%3C/text%3E%3C/svg%3E" />
-
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230A6577'/%3E%3Cpath d='M16 44 L24 32 L34 38 L48 18' stroke='%23D2DDEA' stroke-width='4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<!-- s-tool perf hints -->
 <link rel="preconnect" href="https://fluent-mole-71.clerk.accounts.dev" crossorigin />
 <link rel="preconnect" href="https://api-production-9fce.up.railway.app" crossorigin />
+<link rel="dns-prefetch" href="https://fluent-mole-71.clerk.accounts.dev" />
 <link rel="dns-prefetch" href="https://api-production-9fce.up.railway.app" />
 <link rel="prefetch" href="/" />
+<link rel="prefetch" href="/picks/" />
 <link rel="prefetch" href="/track-record/" />
 <link rel="prefetch" href="/how/" />
-
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Geist:wght@300..700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/shared/tokens.css?v=20260429i" />
-<link rel="stylesheet" href="/shared/nav.css?v=20260429i" />
-<link rel="stylesheet" href="/shared/mobile.css?v=20260429i" />
+<link rel="prefetch" href="/pricing/" />
+<link rel="prefetch" href="/faq/" />
+<!-- s-tool perf hints -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/shared/nav.css" /><!-- s-tool perf skel -->
+<meta name="view-transition" content="same-origin" />
 <link rel="stylesheet" href="/shared/skeleton.css" />
+<!-- s-tool perf skel -->
 
 <style>
-/* picks-app.js renders into #content. The classes it emits are styled
- * here in the v2 brand. Tokens come from tokens.css. */
-
 :root {
-  /* Compatibility shim: old picks-app.js code references these names.
-   * Map them to v2 brand tokens so any CSS we don't restyle still
-   * paints with the new palette. */
-  --tier-conservative: #4a8b5e;
-  --tier-moderate:     #c97a2c;
-  --tier-aggressive:   #b8453a;
-  --tier-asymmetric:   #1f6e3f;
+  --bg-deepest: #0B1006; --bg-base: #111512; --bg-surface: #1A1F1B;
+  --bg-card: #1F2722; --bg-card-hi: #232D28;
+  --accent-deep: #022834; --accent-alpine: #0A6577; --accent-lake: #5FAAC5;
+  --text-hi: #EDECE6; --text-mid: #9BA1B9; --text-dim: #6B7382;
+  --border: rgba(155,161,185,0.14);
+  --border-strong: rgba(95,170,197,0.30);
+  --pos: #6ee7b7; --neg: #fca5a5; --caution: #f5d58f;
+  /* Canonical tier palette — same hues used on /track-record so a pick's
+     "section of origin" reads identically wherever it surfaces (live
+     positions, picks page, journal feed, track record). Risk progresses
+     cool→warm: lake → amber → orange → violet. */
+  --tier-conservative: #5FAAC5;
+  --tier-moderate:     #e8b86a;
+  --tier-aggressive:   #e8946a;
+  --tier-asymmetric:   #ba8cff;
+  --radius-lg: 22px; --radius-md: 16px; --radius-sm: 10px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { overflow-x: hidden; }
+body {
+  font-family: 'Inter', sans-serif;
+  background: radial-gradient(1200px 600px at 20% -10%, rgba(10,101,119,0.20), transparent 60%),
+              radial-gradient(900px 500px at 85% -8%, rgba(2,40,52,0.28), transparent 70%),
+              var(--bg-deepest);
+  color: var(--text-hi); line-height: 1.55;
+  -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+}
+a { color: inherit; text-decoration: none; }
+.container { max-width: 1240px; margin: 0 auto; padding: 0 32px; }
 
-  --pos: #1f6e3f;
-  --neg: #b8453a;
-  --caution: #c97a2c;
-}
+/* ── Nav ──────────────────────────────────────────────────────── */
+nav { position: sticky; top: 0; z-index: 50; backdrop-filter: blur(14px); background: rgba(11,16,6,0.82); border-bottom: 1px solid var(--border); }
+.nav-row { display: flex; align-items: center; justify-content: space-between; padding: 18px 0; gap: 24px; }
+.logo { display: flex; align-items: center; gap: 10px; font: 700 18px 'Inter'; letter-spacing: -0.04em; color: var(--text-hi); }
+.logo-mark { width: 28px; height: 28px; border-radius: 7px; background: linear-gradient(135deg, var(--accent-deep), var(--accent-alpine), var(--accent-lake)); display: flex; align-items: center; justify-content: center; }
+.nav-center { display: flex; gap: 28px; font: 500 14px 'Inter'; color: var(--text-mid); }
+.nav-center a:hover { color: var(--text-hi); }
+.nav-center a.active { color: var(--text-hi); border-bottom: 1px solid var(--accent-lake); padding-bottom: 2px; }
+.nav-end { display: flex; align-items: center; gap: 14px; min-width: 120px; justify-content: flex-end; }
+/* user-pill + dropdown live in /shared/nav.css */
+.signin-btn { font: 500 14px 'Inter'; color: var(--text-hi); border: 1px solid var(--border-strong); padding: 9px 18px; border-radius: 999px; cursor: pointer; background: transparent; }
+.signin-btn:hover { background: rgba(95,170,197,0.08); }
 
-/* ── Picks hero (desktop) ──────────────────────────────────── */
-.picks-hero {
-  padding: 56px 32px 36px;
-  max-width: var(--container);
-  margin: 0 auto;
-}
-.picks-hero .hero-eyebrow {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.18em;
-  color: var(--pine);
-  margin-bottom: 16px;
-}
-.picks-hero h1 {
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: clamp(40px, 5.2vw, 72px);
-  line-height: 1;
-  letter-spacing: -0.03em;
-  color: var(--forest);
-  font-variation-settings: "opsz" 144;
-  max-width: 22ch;
-}
-.picks-hero h1 em { font-style: italic; font-weight: 300; color: var(--pine); }
-.picks-hero p.lede { margin-top: 22px; max-width: 720px; }
-
-.scan-meta {
-  margin-top: 28px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 22px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  color: var(--gray-500);
-  text-transform: uppercase;
-}
+/* ── Hero ─────────────────────────────────────────────────────── */
+header.hero { padding: 80px 0 40px; }
+.eyebrow { font: 600 11px 'Inter'; color: var(--accent-lake); letter-spacing: 0.24em; text-transform: uppercase; display: inline-block; margin-bottom: 22px; }
+.title { font-family: 'Crimson Text', Georgia, serif; font-size: clamp(40px, 5.2vw, 64px); font-weight: 400; line-height: 1.04; letter-spacing: -0.022em; }
+.title em { font-style: italic; color: var(--accent-lake); }
+.subtitle { color: var(--text-mid); font-size: 18px; max-width: 62ch; margin-top: 22px; line-height: 1.55; }
+.scan-meta { margin-top: 28px; display: flex; flex-wrap: wrap; gap: 10px 22px; font: 500 13px 'Inter'; color: var(--text-dim); }
 .scan-meta .meta-item { display: inline-flex; align-items: center; gap: 8px; }
-.scan-meta .dot {
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: var(--pine);
-  box-shadow: 0 0 8px var(--mint);
-}
-.scan-meta .dot.waiting { background: var(--signal-amber); box-shadow: none; }
+.scan-meta .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--pos); box-shadow: 0 0 10px rgba(110,231,183,0.6); }
+.scan-meta .dot.waiting { background: var(--caution); }
 
-/* ── Section headers + tier sections ──────────────────────── */
-.section-eyebrow {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.18em;
-  color: var(--pine);
-  text-transform: uppercase;
-  margin-bottom: 12px;
-}
-.section-title {
-  font-family: var(--font-display);
-  font-size: 28px;
-  font-weight: 500;
-  line-height: 1.15;
-  letter-spacing: -0.015em;
-  color: var(--forest);
-  margin-bottom: 28px;
-}
-.section-title .muted { color: var(--gray-500); font-style: italic; }
+/* ── Track record dashboard ──────────────────────────────────── */
+.trackrecord { margin: 48px 0 72px; }
+.section-eyebrow { font: 600 11px 'Inter'; color: var(--accent-lake); letter-spacing: 0.20em; text-transform: uppercase; margin-bottom: 12px; }
+.section-title { font-family: 'Crimson Text', serif; font-size: 28px; font-weight: 400; line-height: 1.2; color: var(--text-hi); margin-bottom: 28px; }
+.section-title .muted { color: var(--text-mid); font-style: italic; }
+.tr-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.tr-card { padding: 28px 28px 24px; border: 1px solid var(--border); border-radius: var(--radius-md); background: linear-gradient(180deg, var(--bg-surface), rgba(2,40,52,0.10)); }
+.tr-tier { font: 600 11px 'Inter'; color: var(--accent-lake); letter-spacing: 0.22em; text-transform: uppercase; margin-bottom: 14px; }
+.tr-big { font: 400 48px/1 'Crimson Text', Georgia, serif; color: var(--text-hi); letter-spacing: -0.022em; }
+.tr-big.pos { color: var(--pos); } .tr-big.neg { color: var(--neg); }
+.tr-bigsub { font: 500 14px 'Inter'; color: var(--text-mid); margin-top: 10px; }
+.tr-bigsub .hit-pill { display: inline-block; padding: 2px 10px; border-radius: 999px; background: rgba(95,170,197,0.12); color: var(--accent-lake); font-size: 12px; margin-left: 6px; }
+.tr-waiting { font: 400 15px/1.5 'Crimson Text', Georgia, serif; color: var(--text-mid); font-style: italic; padding-top: 4px; }
+@media (max-width: 820px) { .tr-grid { grid-template-columns: 1fr; } }
 
-.tier-section { margin: 64px 0; }
-.tier-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px 24px;
-  margin-bottom: 24px;
-  padding: 0 0 16px 18px;
-  border-bottom: 1px solid var(--gray-300);
-  border-left: 3px solid var(--pine);
-}
-.tier-name {
-  font-family: var(--font-display);
-  font-size: clamp(28px, 3.4vw, 36px);
-  font-weight: 500;
-  letter-spacing: -0.015em;
-  color: var(--charcoal);
-}
-.tier-name em { color: var(--pine); font-style: italic; }
-.tier-count {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: var(--gray-500);
-  margin-left: 14px;
-}
-.tier-blurb { color: var(--gray-700); font-size: 15px; max-width: 58ch; line-height: 1.55; }
+/* ── Tier sections ───────────────────────────────────────────── */
+.tier-section { margin: 72px 0; }
+.tier-head { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 12px 24px; margin-bottom: 28px; padding: 0 0 18px 18px; border-bottom: 1px solid var(--border); border-left: 3px solid var(--accent-lake); }
+.tier-name { font-family: 'Crimson Text', serif; font-size: 36px; font-weight: 400; letter-spacing: -0.015em; }
+.tier-name em { color: var(--accent-lake); font-style: italic; }
+.tier-count { font: 500 13px 'Inter'; color: var(--text-dim); margin-left: 14px; }
+.tier-blurb { color: var(--text-mid); font-size: 15px; max-width: 58ch; line-height: 1.55; }
+/* Tier-specific accents — left bar + italic pop on the section header.
+   The pick rows below inherit the pick-card design; the header carries
+   the tier identity so the eye sweeps across one consistent color band. */
 .tier-section[data-tier="conservative"] .tier-head { border-left-color: var(--tier-conservative); }
 .tier-section[data-tier="conservative"] .tier-name em { color: var(--tier-conservative); }
 .tier-section[data-tier="moderate"]     .tier-head { border-left-color: var(--tier-moderate); }
 .tier-section[data-tier="moderate"]     .tier-name em { color: var(--tier-moderate); }
 .tier-section[data-tier="aggressive"]   .tier-head { border-left-color: var(--tier-aggressive); }
 .tier-section[data-tier="aggressive"]   .tier-name em { color: var(--tier-aggressive); }
-.asym-section .tier-head, .asym-section .asym-head {
-  border-left: 3px solid var(--tier-asymmetric); padding-left: 18px;
-}
+.asym-section .tier-head, .asym-section .asym-head { border-left: 3px solid var(--tier-asymmetric); padding-left: 18px; }
 .asym-section .asym-tier em { color: var(--tier-asymmetric); }
 
-/* ── Track record dashboard summary cards (top of #content) ── */
-.tr-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1px;
-  background: var(--gray-300);
-  border: 1px solid var(--gray-300);
-  margin: 32px 0;
-}
-.tr-card {
-  background: white;
-  padding: 28px 24px 24px;
-}
-.tr-tier {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.18em;
-  color: var(--pine);
-  text-transform: uppercase;
-  margin-bottom: 14px;
-}
-.tr-big {
-  font-family: var(--font-display);
-  font-size: 48px;
-  font-weight: 500;
-  line-height: 1;
-  letter-spacing: -0.022em;
-  color: var(--charcoal);
-  font-variation-settings: "opsz" 144;
-}
-.tr-big.pos { color: var(--pine); }
-.tr-big.neg { color: var(--signal-red); }
-.tr-bigsub {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--gray-500);
-  margin-top: 10px;
-  letter-spacing: 0.04em;
-}
-.tr-bigsub .hit-pill {
-  display: inline-block;
-  padding: 2px 10px;
-  background: var(--mint-soft);
-  color: var(--forest);
-  font-size: 11px;
-  margin-left: 6px;
-}
-.tr-waiting {
-  font-family: var(--font-display);
-  font-style: italic;
-  font-weight: 300;
-  font-size: 15px;
-  color: var(--gray-700);
-  padding-top: 4px;
-  line-height: 1.5;
-}
-@media (max-width: 820px) { .tr-grid { grid-template-columns: 1fr; } }
-
-/* ── Pick cards (desktop grid, mobile single column) ──────── */
+/* ── Pick cards ──────────────────────────────────────────────── */
 .pick-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
 @media (max-width: 920px) { .pick-grid { grid-template-columns: 1fr; } }
-
 .pick-card {
-  padding: 24px 26px 22px;
-  background: white;
-  border: 1px solid var(--gray-300);
-  transition: border-color 0.18s, transform 0.18s;
+  padding: 26px 28px 24px; border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+  transition: border-color .2s, transform .2s, box-shadow .2s;
 }
-.pick-card:hover {
-  border-color: var(--forest);
-  transform: translateY(-1px);
-}
+.pick-card:hover { border-color: var(--border-strong); background: var(--bg-card-hi); transform: translateY(-1px); box-shadow: 0 10px 40px rgba(2,40,52,0.35); }
 
-.pc-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 20px;
-}
+.pc-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 22px; }
 .pc-id { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1; }
 .pc-ticker-row { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
-.pc-sym {
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 28px;
-  letter-spacing: -0.02em;
-  color: var(--forest);
-}
-.pc-name {
-  font-family: var(--font-body);
-  font-weight: 500;
-  font-size: 14px;
-  color: var(--charcoal);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 28ch;
-}
-.pc-meta {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--gray-500);
-  flex-wrap: wrap;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-.pc-meta .dot-sep { color: var(--gray-300); }
-.size-pill {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 8px;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  font-weight: 600;
-}
-.size-pill.neutral { background: var(--mint-soft); color: var(--forest); }
-.size-pill.caution { background: #f5e6d4; color: var(--signal-amber); }
-.size-pill.warn    { background: #f4dad7; color: var(--signal-red); }
+.pc-sym { font: 700 28px 'Inter'; letter-spacing: -0.025em; color: var(--text-hi); }
+.pc-name { font: 500 15px 'Inter'; color: var(--text-hi); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 28ch; }
+.pc-meta { display: flex; align-items: center; gap: 10px; font: 400 13px 'Inter'; color: var(--text-mid); flex-wrap: wrap; }
+.pc-meta .dot-sep { color: var(--border); }
+.size-pill { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 999px; font: 600 10px 'Inter'; letter-spacing: 0.08em; text-transform: uppercase; }
+.size-pill.neutral { background: rgba(95,170,197,0.10); color: var(--accent-lake); }
+.size-pill.caution { background: rgba(245,213,143,0.12); color: #f5d58f; }
+.size-pill.warn { background: rgba(252,165,165,0.14); color: #fca5a5; }
 .pc-badge {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  padding: 5px 9px;
-  background: var(--mint-soft);
-  color: var(--forest);
-  font-weight: 600;
+  font: 600 10px 'Inter'; letter-spacing: 0.14em; text-transform: uppercase;
+  padding: 6px 10px; border-radius: 6px;
+  background: rgba(95,170,197,0.10); color: var(--accent-lake);
   white-space: nowrap;
 }
 
-/* Confidence number block */
-.pc-conf {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 6px;
-  min-width: 92px;
-  position: relative;
-}
+/* Confidence badge — prominent top-right element on each card */
+.pc-conf { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; min-width: 92px; }
 .pc-conf-num {
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 36px;
-  line-height: 1;
-  letter-spacing: -0.02em;
-  color: var(--forest);
-  position: relative;
-  padding-right: 22px;
+  font: 500 34px/1 'Crimson Text', Georgia, serif;
+  letter-spacing: -0.02em; font-variant-numeric: tabular-nums;
+  color: var(--text-hi);
+  position: relative; padding-right: 22px;
 }
 .pc-conf-num::after {
   content: '/100';
-  position: absolute;
-  right: 0;
-  top: 58%;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--gray-500);
-  letter-spacing: 0.04em;
+  position: absolute; right: 0; top: 58%;
+  font: 500 11px 'Inter'; color: var(--text-dim); letter-spacing: 0;
 }
-.pc-conf-num.conf-high { color: var(--forest); }
-.pc-conf-num.conf-mid  { color: var(--pine); }
-.pc-conf-num.conf-low  { color: var(--gray-700); }
+.pc-conf-num.conf-high { color: #6ee7b7; }
+.pc-conf-num.conf-mid  { color: #c7d96b; }
+.pc-conf-num.conf-low  { color: var(--text-mid); }
 .pc-conf-label {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--pine);
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  text-align: right;
-  white-space: nowrap;
-  font-weight: 600;
+  font: 600 10px 'Inter'; color: var(--accent-lake);
+  letter-spacing: 0.16em; text-transform: uppercase;
+  text-align: right; white-space: nowrap;
 }
-.pc-conf-bar { width: 92px; height: 3px; background: var(--gray-200); }
+.pc-conf-bar {
+  width: 92px; height: 4px; border-radius: 2px;
+  background: rgba(155,161,185,0.18); overflow: hidden;
+}
 .pc-conf-bar > span {
-  display: block;
-  height: 100%;
-  background: linear-gradient(90deg, var(--sage), var(--forest));
+  display: block; height: 100%; border-radius: 2px;
+  background: linear-gradient(90deg, var(--accent-alpine), var(--accent-lake));
 }
 .pc-conf-break {
   display: none;
-  position: absolute;
-  right: 0;
-  top: 100%;
-  margin-top: 8px;
-  z-index: 10;
-  background: white;
-  border: 1px solid var(--gray-300);
-  padding: 10px 12px;
-  min-width: 180px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--gray-700);
-  box-shadow: 0 8px 24px rgba(13, 74, 44, 0.12);
+  position: absolute; right: 0; top: 100%; margin-top: 8px; z-index: 10;
+  background: var(--bg-card-hi); border: 1px solid var(--border-strong);
+  border-radius: 8px; padding: 10px 12px; min-width: 180px;
+  font: 500 11px 'Inter'; color: var(--text-mid);
 }
 .pc-conf:hover .pc-conf-break { display: block; }
+.pc-conf { position: relative; }
 .pc-conf-break .brk-row { display: flex; justify-content: space-between; padding: 2px 0; }
-.pc-conf-break .brk-row span:last-child { color: var(--charcoal); font-weight: 500; }
+.pc-conf-break .brk-row span:last-child { color: var(--text-hi); font-variant-numeric: tabular-nums; }
 
-.pc-hero {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  padding: 16px 0 18px;
-  border-top: 1px solid var(--gray-200);
-  border-bottom: 1px solid var(--gray-200);
-}
+.pc-hero { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 18px 0 20px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
 .pc-hero .h-item { text-align: left; }
-.pc-hero .h-label {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--gray-500);
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  margin-bottom: 6px;
-}
-.pc-hero .h-val {
-  font-family: var(--font-display);
-  font-weight: 500;
-  font-size: 26px;
-  line-height: 1;
-  letter-spacing: -0.02em;
-  color: var(--charcoal);
-  font-variation-settings: "opsz" 144;
-}
-.pc-hero .h-val.pos { color: var(--pine); }
-.pc-hero .h-val.neg { color: var(--signal-red); }
+.pc-hero .h-label { font: 600 10px 'Inter'; color: var(--text-dim); letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 6px; }
+.pc-hero .h-val { font: 400 28px/1 'Crimson Text', Georgia, serif; letter-spacing: -0.02em; color: var(--text-hi); }
+.pc-hero .h-val.pos { color: var(--pos); } .pc-hero .h-val.neg { color: var(--neg); }
 
-.pc-thesis { padding: 20px 0 16px; }
-.pc-thesis-eyebrow {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--pine);
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  display: inline-block;
+.pc-thesis { padding: 22px 0 18px; }
+.pc-thesis-eyebrow { font: 600 10px 'Inter'; color: var(--accent-lake); letter-spacing: 0.20em; text-transform: uppercase; display: inline-block; margin-bottom: 10px; }
+.pc-thesis-body {
+  font-family: 'Crimson Text', Georgia, serif; font-weight: 400;
+  font-size: 19px; line-height: 1.52; color: var(--text-hi);
+  max-width: 58ch;
+}
+.pc-thesis-body.empty { color: var(--text-mid); font-style: italic; }
+
+.pc-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px 16px; padding-top: 18px; border-top: 1px solid var(--border); }
+.pc-stat { }
+.pc-stat .s-label { font: 600 10px 'Inter'; color: var(--text-dim); letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 4px; }
+.pc-stat .s-val { font: 500 15px 'Inter'; color: var(--text-hi); font-variant-numeric: tabular-nums; }
+.pc-stat .s-val.pos { color: var(--pos); } .pc-stat .s-val.neg { color: var(--neg); }
+.pc-stat .s-val.dim { color: var(--text-mid); }
+
+.pc-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 18px; margin-top: 18px; border-top: 1px solid var(--border); font: 500 12px 'Inter'; color: var(--text-dim); }
+.pc-foot a { color: var(--accent-lake); }
+.pc-foot a:hover { color: var(--text-hi); }
+
+/* Gate (for non-Strategist) */
+.gate { padding: 56px 48px; border: 1px solid var(--border-strong); border-radius: var(--radius-lg); background: linear-gradient(180deg, var(--bg-surface), rgba(2,40,52,0.3)); margin: 56px 0; }
+.gate h2 { font-family: 'Crimson Text', serif; font-weight: 400; font-size: 36px; letter-spacing: -0.01em; line-height: 1.12; margin-bottom: 14px; }
+.gate h2 em { color: var(--accent-lake); font-style: italic; }
+.gate p { color: var(--text-mid); font-size: 16px; max-width: 64ch; margin-bottom: 28px; line-height: 1.55; }
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 14px 26px; border-radius: 999px; font: 500 15px/1 'Inter'; cursor: pointer; transition: all .2s; border: 1px solid transparent; text-decoration: none; white-space: nowrap; background: var(--accent-lake); color: var(--bg-deepest); }
+.btn:hover { background: #82c1d6; transform: translateY(-1px); }
+.btn.ghost { background: transparent; color: var(--text-hi); border-color: var(--border-strong); }
+.btn.ghost:hover { background: rgba(95,170,197,0.08); border-color: var(--accent-lake); }
+.gate-cta-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px; }
+@media (max-width: 380px) {
+  .gate-cta-row .btn { padding: 12px 20px; font-size: 14px; }
+}
+.teaser { filter: blur(6px); pointer-events: none; user-select: none; }
+
+/* ── Methodology ─────────────────────────────────────────────── */
+.methodology {
+  margin: 80px 0 32px; padding: 32px 36px;
+  border: 1px solid var(--border); border-radius: var(--radius-md);
+  background: rgba(10,101,119,0.06);
+}
+.methodology h3 { font-family: 'Crimson Text', serif; font-size: 22px; font-weight: 400; letter-spacing: -0.01em; margin-bottom: 12px; }
+.methodology p { color: var(--text-mid); font-size: 15px; line-height: 1.62; max-width: 74ch; margin-bottom: 10px; }
+.methodology .kicker { font: 600 10px 'Inter'; color: var(--accent-lake); letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 8px; }
+.methodology b { color: var(--text-hi); }
+
+/* Sector diversification — shown in each tier header */
+.sector-strip { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; font: 500 12px 'Inter'; }
+.sector-strip .sector-label { color: var(--text-dim); letter-spacing: 0.14em; text-transform: uppercase; font: 600 10px 'Inter'; }
+.sector-pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: rgba(95,170,197,0.07); border: 1px solid var(--border); color: var(--text-mid); }
+.sector-pill .sp-count { color: var(--text-hi); font-variant-numeric: tabular-nums; font-weight: 600; }
+.sector-pill.sp-heavy { background: rgba(245,213,143,0.10); border-color: rgba(245,213,143,0.35); color: #f5d58f; }
+.sector-pill.sp-heavy .sp-count { color: #f5d58f; }
+.sector-warn {
+  margin-top: 14px; padding: 12px 16px; border-radius: var(--radius-sm);
+  background: rgba(245,213,143,0.08); border-left: 3px solid #f5d58f;
+  color: var(--text-mid); font: 500 13px 'Inter'; line-height: 1.5;
+}
+.sector-warn b { color: #f5d58f; font-weight: 600; }
+
+/* Portfolio-level diversification banner (sits above the three tier sections) */
+.diversification {
+  margin: 0 0 40px; padding: 24px 28px; border-radius: var(--radius-md);
+  border: 1px solid var(--border); background: var(--bg-surface);
+  display: grid; grid-template-columns: 1fr auto; gap: 20px; align-items: center;
+}
+.diversification .div-title { font-family: 'Crimson Text', serif; font-size: 20px; line-height: 1.25; color: var(--text-hi); margin-bottom: 6px; }
+.diversification .div-sub { font: 500 13px 'Inter'; color: var(--text-mid); line-height: 1.55; }
+.diversification .div-bar { display: flex; width: 220px; max-width: 100%; height: 10px; border-radius: 999px; overflow: hidden; background: rgba(155,161,185,0.12); }
+.diversification .div-bar > span { display: block; height: 100%; }
+.diversification .div-legend { display: flex; flex-wrap: wrap; gap: 10px 18px; margin-top: 14px; font: 500 12px 'Inter'; color: var(--text-mid); }
+.diversification .legend-item { display: inline-flex; align-items: center; gap: 6px; }
+.diversification .legend-dot { display: inline-block; width: 8px; height: 8px; border-radius: 2px; }
+.diversification .legend-pct { color: var(--text-hi); font-variant-numeric: tabular-nums; }
+@keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+@media (max-width: 720px) { .diversification { grid-template-columns: 1fr; } .diversification .div-bar { width: 100%; } }
+
+/* ── Asymmetric tier — H7 EWMA-vol scoring, 2.02x backtest lift ── */
+.asym-section {
+  margin: 72px 0 88px;
+  padding: 40px 40px 32px;
+  border: 1px solid rgba(95,170,197,0.35);
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(ellipse 80% 60% at 30% 0%, rgba(10,101,119,0.22), transparent 70%),
+    linear-gradient(180deg, rgba(31,39,34,0.6), rgba(2,40,52,0.35));
+  position: relative;
+}
+.asym-section::before {
+  content: "";
+  position: absolute; inset: 0;
+  background-image: radial-gradient(circle at 80% 20%, rgba(95,170,197,0.08), transparent 50%);
+  border-radius: inherit;
+  pointer-events: none;
+}
+.asym-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; flex-wrap: wrap; margin-bottom: 32px; }
+.asym-head > div:first-child { flex: 1; min-width: 0; }
+.asym-tier { font-family: 'Crimson Text', serif; font-size: 42px; font-weight: 400; letter-spacing: -0.02em; color: var(--text-hi); }
+.asym-tier em { color: var(--accent-lake); font-style: italic; }
+.asym-blurb { color: var(--text-mid); font-size: 15.5px; line-height: 1.55; max-width: 72ch; margin-top: 14px; }
+.asym-blurb b { color: var(--text-hi); }
+.asym-stats { display: flex; gap: 24px; padding: 18px 22px; border: 1px solid var(--border); border-radius: var(--radius-md); background: rgba(11,16,6,0.35); }
+.asym-stats .s-val { font: 400 26px/1 'Crimson Text', serif; color: var(--text-hi); letter-spacing: -0.02em; }
+.asym-stats .s-label { font: 600 10px 'Inter'; color: var(--text-dim); letter-spacing: 0.2em; text-transform: uppercase; margin-top: 6px; }
+
+.asym-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+@media (max-width: 920px) { .asym-grid { grid-template-columns: 1fr; } }
+
+.asym-card {
+  padding: 24px 26px 22px;
+  border: 1px solid var(--border); border-radius: var(--radius-md);
+  background: var(--bg-card);
+  transition: border-color .2s, transform .2s;
+}
+.asym-card:hover { border-color: var(--accent-lake); transform: translateY(-1px); }
+.asym-card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+.asym-card-ticker { display: flex; align-items: baseline; gap: 10px; }
+.asym-card-sym { font: 700 22px 'Inter'; color: var(--text-hi); letter-spacing: -0.02em; }
+.asym-card-name { font: 500 13px 'Inter'; color: var(--text-mid); max-width: 28ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.asym-card-rank { font: 600 11px 'Inter'; color: var(--accent-lake); letter-spacing: 0.18em; text-transform: uppercase; }
+
+.asym-band { padding: 14px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.asym-band .bcol { text-align: left; }
+.asym-band .bcol.hi { text-align: right; }
+.asym-band .bcol.mid { text-align: center; }
+.asym-band .lbl { font: 600 9px 'Inter'; color: var(--text-dim); letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 6px; }
+.asym-band .val { font: 400 22px/1 'Crimson Text', serif; letter-spacing: -0.02em; }
+.asym-band .val.up { color: #6ee7b7; }
+.asym-band .val.down { color: #fca5a5; }
+.asym-band .val.mid { color: var(--text-hi); }
+.asym-band .sub { font: 500 11px 'Inter'; color: var(--text-mid); margin-top: 4px; }
+
+.asym-thesis { padding: 14px 0 6px; font-family: 'Crimson Text', serif; font-size: 15px; line-height: 1.5; color: var(--text-hi); max-width: 56ch; }
+.asym-thesis-eyebrow { font: 600 9px 'Inter'; color: var(--accent-lake); letter-spacing: 0.18em; text-transform: uppercase; display: inline-block; margin-bottom: 8px; }
+
+.asym-risk {
+  margin-top: 12px; padding: 8px 12px; border-radius: 6px;
+  font: 500 11px 'Inter'; display: inline-flex; align-items: center; gap: 6px;
+}
+.asym-risk.binary  { background: rgba(252,165,165,0.14); color: #fca5a5; }
+.asym-risk.severe  { background: rgba(252,165,165,0.10); color: #fca5a5; }
+.asym-risk.meaningful { background: rgba(245,213,143,0.12); color: #f5d58f; }
+.asym-risk.limited { background: rgba(110,231,183,0.10); color: #6ee7b7; }
+
+.asym-foot { margin-top: 14px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; font: 500 12px 'Inter'; color: var(--text-dim); }
+.asym-foot > span { flex: 1 1 auto; min-width: 0; }
+.asym-foot a { color: var(--accent-lake); white-space: nowrap; flex-shrink: 0; }
+@media (max-width: 540px) {
+  .asym-foot { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .asym-foot > span { width: 100%; }
+}
+
+footer { border-top: 1px solid var(--border); padding: 48px 32px; text-align: center; color: var(--text-dim); font-size: 13px; margin-top: 80px; }
+footer a { color: var(--text-mid); }
+
+.loading { padding: 64px 0; text-align: center; color: var(--text-dim); font-size: 14px; }
+
+/* Hero block: Portfolio signal + Allocation widget stacked without chrome.
+ * Visually unified so users see WHY each tier gets its dollars. */
+.hero-block { display: flex; flex-direction: column; gap: 18px; margin: 28px 0 26px; }
+.hero-block .diversification { margin: 0; }
+.hero-block .alloc-widget { margin: 0; }
+
+/* Compact "backtest evidence" link row — replaces the empty track-record
+ * cards when picks haven't matured yet. Points to the dedicated page. */
+.track-link-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 20px;
+  margin: 8px 0 22px;
+  padding: 14px 20px;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  background: rgba(95,170,197,0.04);
+}
+.track-link-row .tl-copy { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.track-link-row .tl-eyebrow { font: 600 10px 'Inter'; color: var(--accent-lake); letter-spacing: 0.22em; text-transform: uppercase; }
+.track-link-row .tl-title { font: 500 14px 'Inter'; color: var(--text-mid); }
+.track-link-row .tl-cta { font: 500 13px 'Inter'; color: var(--accent-lake); white-space: nowrap; padding: 8px 14px; border-radius: 999px; border: 1px solid rgba(95,170,197,0.35); transition: all .15s; }
+.track-link-row .tl-cta:hover { background: rgba(95,170,197,0.10); color: var(--text-hi); }
+@media (max-width: 540px) {
+  .track-link-row { flex-direction: column; align-items: flex-start; gap: 10px; padding: 12px 14px; }
+  .track-link-row .tl-cta { align-self: stretch; text-align: center; }
+}
+
+/* ── In-page tab nav (Conservative / Moderate / Aggressive / Asymmetric) ──
+ * Sits in normal page flow below the allocator. NOT sticky — never
+ * conflicts with the top site nav. Each tab is a button carrying the
+ * tier label + a number ($ + pick count) so the tab itself earns its
+ * space numerically. */
+.picks-tabs {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+  padding: 8px;
+  border: 1px solid var(--border); border-radius: 16px;
+  background: rgba(11,16,6,0.4);
+  margin: 40px 0 28px;
+}
+.picks-tabs .pt-btn {
+  padding: 14px 16px;
+  border: 1px solid transparent; border-radius: 12px;
+  background: transparent;
+  color: var(--text-mid);
+  cursor: pointer;
+  font-family: 'Inter';
+  text-align: left;
+  transition: background .15s, border-color .15s, color .15s, transform .15s;
+  display: flex; flex-direction: column; gap: 6px; min-width: 0;
+}
+.picks-tabs .pt-btn:hover {
+  background: rgba(95,170,197,0.08);
+  color: var(--text-hi);
+}
+.picks-tabs .pt-btn.active {
+  background: var(--bg-card);
+  border-color: var(--border-strong);
+  color: var(--text-hi);
+  box-shadow: 0 8px 32px rgba(2,40,52,0.25);
+}
+.pt-btn .pt-head { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.pt-btn .pt-dot { width: 9px; height: 9px; border-radius: 2px; flex-shrink: 0; }
+.pt-btn .pt-name { font: 600 14px 'Inter'; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pt-btn .pt-meta { font: 500 12px 'Inter'; color: var(--text-dim); font-variant-numeric: tabular-nums; padding-left: 19px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pt-btn.active .pt-meta { color: var(--text-mid); }
+@media (max-width: 720px) {
+  .picks-tabs { grid-template-columns: repeat(2, 1fr); padding: 6px; gap: 6px; margin: 28px 0 20px; }
+  .picks-tabs .pt-btn { padding: 11px 12px; }
+  .pt-btn .pt-name { font-size: 13px; }
+  .pt-btn .pt-meta { font-size: 11px; padding-left: 17px; }
+}
+@media (max-width: 420px) {
+  .picks-tabs { grid-template-columns: 1fr 1fr; }
+}
+
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+/* Overflow picks hidden until the user clicks "Show remaining" — keeps
+ * each tab tight on first render. */
+.tab-panel:not(.show-all) [data-overflow] { display: none; }
+
+/* ── Allocation widget (donut + per-tier ticker composition) ──
+ * Top bar: donut + profile selector + portfolio size.
+ * Body: four tier composition rows, each showing the tickers that
+ * compose the slice with their individual dollar allocation. Text is
+ * never clipped — chips wrap naturally and the row expands vertically. */
+.alloc-widget {
+  margin: 28px 0 0; padding: 32px;
+  border: 1px solid var(--border); border-radius: var(--radius-md);
+  background: linear-gradient(180deg, var(--bg-surface), rgba(2,40,52,0.12));
+  display: flex; flex-direction: column; gap: 28px;
+}
+.alloc-top {
+  display: grid; grid-template-columns: auto 1fr auto;
+  gap: 36px; align-items: center;
+}
+.alloc-intro { min-width: 0; }
+.aw-title { font: 600 11px 'Inter'; color: var(--accent-lake); letter-spacing: 0.24em; text-transform: uppercase; margin-bottom: 10px; }
+.aw-sub { font: 500 14px/1.55 'Inter'; color: var(--text-mid); max-width: 48ch; }
+.aw-sub b { color: var(--text-hi); }
+
+.alloc-donut { position: relative; flex-shrink: 0; }
+.alloc-donut.master { width: 320px; height: 320px; }
+.alloc-donut svg { width: 100%; height: 100%; display: block; }
+.alloc-donut .dt-center {
+  position: absolute; inset: 0;
+  /* Confine center text to a square that comfortably fits inside the
+   * donut's inner radius, so captions never bleed behind the arcs.
+   * The portfolio donut's strategy ring sits at r=11.5 with stroke
+   * 4.4 → inner edge at r=9.3. In a 400px donut that's a ~177px clear
+   * hole, so dt-inner at 44% (~176px) lands exactly inside it. */
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  pointer-events: none; text-align: center;
+  padding: 0;
+  overflow: visible;
+}
+.alloc-donut .dt-inner {
+  width: 58%; display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+/* Portfolio donut has a tighter clear-area than the master donut, so
+   the inner box must be narrower than .alloc-donut.master's 58%. */
+.pf-pos-donut.alloc-donut .dt-inner { width: 46%; }
+.alloc-donut .dt-total {
+  font: 400 46px/1 'Crimson Text', Georgia, serif;
+  letter-spacing: -0.022em; color: var(--text-hi);
+  font-variant-numeric: tabular-nums;
+}
+.alloc-donut .dt-sub {
+  font: 600 10px 'Inter'; color: var(--accent-lake);
+  letter-spacing: 0.22em; text-transform: uppercase; margin-top: 12px;
+}
+.alloc-donut .dt-caption {
+  font: 500 11px/1.4 'Inter'; color: var(--text-mid);
+  margin-top: 8px;
+}
+
+.alloc-controls { display: flex; flex-direction: column; gap: 14px; min-width: 200px; }
+.alloc-control label { display: block; font: 600 10px 'Inter'; color: var(--text-dim); letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 6px; }
+.alloc-control input, .alloc-control select {
+  width: 100%;
+  padding: 10px 14px;
+  background: rgba(11,16,6,0.5);
+  border: 1px solid var(--border-strong); border-radius: 10px;
+  font: 500 15px 'Inter'; color: var(--text-hi);
+  font-variant-numeric: tabular-nums;
+}
+.alloc-control input:focus, .alloc-control select:focus { outline: none; border-color: var(--accent-lake); }
+
+/* ── Per-tier pie grid ──
+ * Four cards, each with a mini donut chart of that tier's intra-tier
+ * allocation plus a bar-chart legend of every ticker sorted by size.
+ * Desktop: 4 columns. Tablet: 2 columns. Mobile: 1 column. */
+.tier-pies-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px;
+  border-top: 1px solid var(--border); padding-top: 28px;
+}
+@media (max-width: 1100px) { .tier-pies-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 620px)  { .tier-pies-grid { grid-template-columns: 1fr; } }
+
+.tp-card {
+  padding: 20px;
+  border: 1px solid var(--border); border-radius: 14px;
+  background: linear-gradient(180deg, rgba(11,16,6,0.55), rgba(2,40,52,0.08));
+  display: flex; flex-direction: column; gap: 14px;
+  transition: border-color .15s, transform .15s;
+}
+.tp-card:hover { border-color: var(--border-strong); }
+.tp-card.tp-empty { opacity: 0.55; }
+.tp-head {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  gap: 12px; padding-bottom: 14px; border-bottom: 1px dashed var(--border);
+}
+.tp-head-left { display: flex; gap: 10px; align-items: center; min-width: 0; }
+.tp-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+.tp-name { font: 600 15px 'Inter'; color: var(--text-hi); letter-spacing: -0.01em; }
+.tp-sub { font: 500 10px 'Inter'; color: var(--text-dim); letter-spacing: 0.1em; text-transform: uppercase; margin-top: 2px; }
+.tp-head-right { text-align: right; font-variant-numeric: tabular-nums; }
+.tp-pct { font: 600 13px 'Inter'; color: var(--text-mid); }
+.tp-dollar { font: 400 22px/1 'Crimson Text', Georgia, serif; color: var(--text-hi); letter-spacing: -0.02em; margin-top: 4px; }
+
+.tp-pie-wrap { display: flex; justify-content: center; padding: 6px 0 2px; }
+.mini-pie { width: 140px; height: 140px; display: block; }
+
+.tp-legend {
+  display: flex; flex-direction: column; gap: 4px;
+  padding-top: 8px; border-top: 1px dashed var(--border);
+}
+.tp-legend-row {
+  display: grid; grid-template-columns: 46px 1fr auto;
+  align-items: center; gap: 10px;
+  padding: 5px 2px;
+  font-variant-numeric: tabular-nums;
+}
+.tp-lg-sym { font: 700 12px 'Inter'; color: var(--text-hi); letter-spacing: -0.01em; }
+.tp-lg-bar {
+  height: 7px; border-radius: 3px;
+  background: linear-gradient(90deg, var(--c) var(--w, 0%), rgba(155,161,185,0.08) var(--w, 0%));
+  min-width: 0;
+}
+.tp-lg-amt { font: 600 12px 'Inter'; color: var(--text-mid); }
+
+.tp-msg { font: 500 13px/1.5 'Inter'; color: var(--text-dim); font-style: italic; padding: 18px 2px; text-align: center; }
+
+/* Custom tooltip for pie/donut slices. Follows the cursor and shows the
+ * ticker, tier, dollar amount, % of portfolio, % of tier. Pointer-events
+ * disabled so the tooltip never intercepts the mouse. */
+.chart-tooltip {
+  position: fixed; z-index: 9999; pointer-events: none;
+  padding: 12px 14px;
+  background: rgba(11,16,6,0.96);
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.55);
+  font-family: 'Inter'; font-variant-numeric: tabular-nums;
+  min-width: 180px;
+  opacity: 0; transform: translateY(4px);
+  transition: opacity .12s ease, transform .12s ease;
+  backdrop-filter: blur(10px);
+}
+.chart-tooltip.visible { opacity: 1; transform: translateY(0); }
+.ct-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed rgba(155,161,185,0.22); }
+.ct-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+.ct-sym { font: 700 16px 'Inter'; color: var(--text-hi); letter-spacing: -0.015em; }
+.ct-tier { font: 600 10px 'Inter'; color: var(--text-dim); letter-spacing: 0.2em; text-transform: uppercase; }
+.ct-badges { display: inline-flex; flex-wrap: wrap; gap: 4px 8px; margin-left: auto; align-items: center; justify-content: flex-end; }
+.ct-badges .ct-tier { margin-left: 0; }
+.ct-sleeve-lbl, .ct-tier-lbl { padding: 2px 7px; border-radius: 4px; border: 1px solid currentColor; background: transparent; font-size: 9px; }
+.ct-rows { display: flex; flex-direction: column; gap: 6px; }
+/* P&L hero — the model's verdict on this position. Green/red, big,
+   first thing the eye reads after the symbol. Sits between header and
+   the secondary rows, with its own faint divider above. */
+.ct-pl-hero {
+  display: flex; align-items: baseline; gap: 10px;
+  padding: 6px 0 12px;
+  margin-bottom: 8px;
+  border-bottom: 1px dashed rgba(155,161,185,0.18);
+  font-variant-numeric: tabular-nums;
+}
+.ct-pl-arrow { font-size: 16px; line-height: 1; }
+.ct-pl-num { font: 700 22px 'Crimson Text', Georgia, serif; letter-spacing: -0.012em; line-height: 1; }
+.ct-pl-hero.pos { color: var(--pos); text-shadow: 0 0 18px rgba(110,231,183,0.35); }
+.ct-pl-hero.neg { color: var(--neg); text-shadow: 0 0 18px rgba(252,165,165,0.30); }
+.ct-pl-hero.flat { color: var(--text-dim); }
+.ct-row { display: flex; justify-content: space-between; gap: 18px; font-size: 12.5px; }
+.ct-row .ct-label { color: var(--text-dim); }
+.ct-row .ct-value { color: var(--text-hi); font-weight: 600; }
+.ct-row .ct-value.big { font: 400 16px/1 'Crimson Text', Georgia, serif; color: var(--text-hi); letter-spacing: -0.01em; }
+
+/* Visual affordance: slice under cursor brightens slightly. Critical:
+ * pointer-events: visibleStroke so only the rendered arc receives hover.
+ * Without this, SVG stroke-dasharray hit-tests the FULL circumference
+ * (including the invisible dash gaps), so the last-rendered circle in
+ * DOM order wins every hover regardless of visible color. That bug made
+ * every slice resolve to the asymmetric tier's tooltip. */
+.alloc-donut circle[data-sym],
+.alloc-donut circle[data-pf-sym],
+.mini-pie circle[data-sym] {
+  cursor: pointer; transition: stroke-width .12s ease;
+  pointer-events: visibleStroke;
+}
+.alloc-donut.master circle[data-sym].hover { stroke-width: 8.5; }
+.mini-pie circle[data-sym].hover { stroke-width: 10.5; }
+/* Portfolio donut hover: subtle stroke bump on whichever ring received
+   the hover. Inner stroke is fatter so it gets a smaller bump. */
+.pf-pos-donut circle[data-pf-sym].hover { stroke-width: 5; }
+
+/* Background tracks (no data-sym OR data-pf-sym) should not swallow events */
+.alloc-donut svg circle:not([data-sym]):not([data-pf-sym]),
+.mini-pie circle:not([data-sym]) { pointer-events: none; }
+
+@media (max-width: 920px) {
+  .alloc-widget { padding: 24px; }
+  .alloc-top { grid-template-columns: 1fr; gap: 24px; }
+  .alloc-donut.master { justify-self: center; width: 280px; height: 280px; }
+  /* dt-total font-size intentionally not overridden here — renderMasterDonut
+   * sets it inline, viewport-aware, based on the formatted string length. */
+  .alloc-controls { flex-direction: row; flex-wrap: wrap; min-width: 0; }
+  .alloc-controls .alloc-control { flex: 1; min-width: 140px; }
+}
+@media (max-width: 540px) {
+  .alloc-widget { padding: 20px; }
+  .alloc-donut.master { width: 240px; height: 240px; }
+  .mini-pie { width: 130px; height: 130px; }
+  .tp-card { padding: 16px; }
+}
+
+.pc-alloc, .asym-alloc {
+  margin-top: 10px; padding: 8px 12px; border-radius: 8px;
+  background: rgba(95,170,197,0.08); color: var(--accent-lake);
+  font: 600 13px 'Inter'; font-variant-numeric: tabular-nums;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.pc-alloc::before, .asym-alloc::before {
+  content: "◆"; font-size: 10px; opacity: 0.7;
+}
+
+/* "Show remaining" toggle at the foot of each tab panel. */
+.show-all-row { display: flex; justify-content: center; margin: 20px 0 8px; }
+.show-all-btn {
+  padding: 10px 22px; border-radius: 999px;
+  background: transparent; color: var(--accent-lake);
+  border: 1px solid rgba(95,170,197,0.35);
+  font: 500 13px 'Inter'; cursor: pointer;
+  transition: all .15s;
+}
+.show-all-btn:hover { background: rgba(95,170,197,0.10); color: var(--text-hi); border-color: var(--accent-lake); }
+
+/* ── Live portfolio panel (Alpaca paper) ─────────────────────── */
+.pf-panel {
+  margin: 28px 0 36px; padding: 32px 32px 28px;
+  border: 1px solid var(--border); border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, rgba(10,101,119,0.10), rgba(2,40,52,0.06)), var(--bg-surface);
+  position: relative; overflow: visible;
+}
+.pf-panel::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(600px 200px at 90% -20%, rgba(95,170,197,0.10), transparent 60%);
+}
+.pf-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+.pf-eyebrow { font: 600 10px 'Inter'; color: var(--accent-lake); letter-spacing: 0.22em; text-transform: uppercase; display: flex; align-items: center; gap: 8px; }
+.pf-live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--pos); box-shadow: 0 0 8px rgba(110,231,183,0.6); animation: pf-pulse 2s ease-in-out infinite; }
+@keyframes pf-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+.pf-paper-tag { font: 500 11px 'Inter'; color: var(--text-dim); border: 1px solid var(--border); padding: 4px 10px; border-radius: 999px; }
+
+.pf-equity-row { display: block; margin-top: 8px; }
+.pf-equity-num { font: 400 56px/1 'Crimson Text', Georgia, serif; letter-spacing: -0.022em; color: var(--text-hi); font-variant-numeric: tabular-nums; }
+.pf-equity-sub { display: flex; align-items: center; gap: 14px; margin-top: 10px; flex-wrap: wrap; }
+.pf-day-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 14px; border-radius: 999px;
+  font: 600 13px 'Inter'; font-variant-numeric: tabular-nums;
+}
+.pf-day-pill.pos { background: rgba(110,231,183,0.10); color: var(--pos); border: 1px solid rgba(110,231,183,0.25); }
+.pf-day-pill.neg { background: rgba(252,165,165,0.10); color: var(--neg); border: 1px solid rgba(252,165,165,0.25); }
+.pf-day-pill.flat { background: rgba(155,161,185,0.10); color: var(--text-mid); border: 1px solid var(--border); }
+/* Realized-today pill — same shape as day pill but slightly tighter
+   visual weight so it reads as secondary information. Only renders
+   after at least one position has closed today (Math.abs(realized) > 0.5). */
+.pf-realized-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 12px; border-radius: 999px;
+  font: 500 12px 'Inter'; font-variant-numeric: tabular-nums; cursor: help;
+}
+.pf-realized-pill.pos { background: rgba(110,231,183,0.06); color: var(--pos); border: 1px dashed rgba(110,231,183,0.30); }
+.pf-realized-pill.neg { background: rgba(252,165,165,0.06); color: var(--neg); border: 1px dashed rgba(252,165,165,0.30); }
+.pf-day-label { font: 500 12px 'Inter'; color: var(--text-dim); }
+.pf-util { font: 500 11px 'Inter'; color: var(--text-dim); border-left: 1px solid var(--border); padding-left: 12px; margin-left: 4px; font-variant-numeric: tabular-nums; }
+@media (max-width: 540px) { .pf-util { border-left: none; padding-left: 0; margin-left: 0; flex-basis: 100%; } }
+.pf-curve { width: 240px; height: 64px; }
+.pf-curve path.line { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.pf-curve path.area { stroke: none; opacity: 0.18; }
+
+/* Interactive equity chart — replaces the cramped sparkline with a full-
+   width 200px chart that has its own row below the equity hero. Three
+   tabs (1D intraday · 1W last 7 daily · 1M last 30 daily) toggle the
+   data window without re-fetching. Hover snaps to nearest data point,
+   surfaces date + value in a floating tooltip. Pure SVG, no library. */
+.pf-chart-row { margin-top: 18px; }
+.pf-chart-tabs { display: flex; gap: 6px; margin-bottom: 10px; justify-content: flex-end; }
+.pf-chart-tab { background: transparent; border: 1px solid var(--border);
+  color: var(--text-dim); font: 600 11px 'Inter'; letter-spacing: 0.10em;
+  text-transform: uppercase; padding: 5px 12px; border-radius: 4px;
+  cursor: pointer; transition: all 0.15s ease; font-variant-numeric: tabular-nums; }
+.pf-chart-tab:hover { color: var(--text-mid); border-color: var(--border-strong); }
+.pf-chart-tab.active { color: var(--text-hi); border-color: var(--accent-lake);
+  background: rgba(95,170,197,0.08); }
+/* Chart canvas — full container width. Height is generous (380px desktop,
+   320px tablet, 240px mobile) so the curve reads as a proper financial
+   chart rather than a horizontal ribbon. preserveAspectRatio="none"
+   stretches the SVG viewBox to fill the box; vector-effect:
+   non-scaling-stroke on the line/area paths keeps stroke widths crisp
+   regardless of how aggressively the box stretches the data points.
+   viewBox is widened to 1200×400 (3:1) so the rendered shape needs
+   minimal x-stretching at typical desktop widths. */
+/* Container is intrinsic-height so the legend below the SVG flows
+   naturally instead of overflowing onto the live strip. The SVG itself
+   carries the height that used to be on .pf-chart. */
+.pf-chart { position: relative; width: 100%; margin: 4px 0 0; }
+.pf-chart-svg { display: block; width: 100%; height: 380px; overflow: visible; }
+@media (max-width: 1080px) { .pf-chart-svg { height: 320px; } }
+@media (max-width: 720px)  { .pf-chart-svg { height: 240px; } }
+.pf-chart-grid { stroke: var(--border); stroke-width: 1; stroke-dasharray: 2 4; opacity: 0.6;
+  vector-effect: non-scaling-stroke; }
+.pf-chart-y-label { fill: var(--text-dim); font: 500 11px 'Inter'; text-anchor: end;
+  font-variant-numeric: tabular-nums; }
+/* Push X-axis labels well below the line so they don't kiss the chart fill. */
+.pf-chart-x-label { fill: var(--text-dim); font: 500 11px 'Inter'; text-anchor: middle;
+  font-variant-numeric: tabular-nums; }
+.pf-chart-area { stroke: none; opacity: 0.14; }
+.pf-chart-line { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+  vector-effect: non-scaling-stroke; }
+.pf-chart-spy-line { fill: none; stroke: #9BA1B9; stroke-width: 1.5;
+  stroke-dasharray: 5 4; stroke-linecap: round; stroke-linejoin: round;
+  vector-effect: non-scaling-stroke; opacity: 0.85; }
+.pf-chart-cursor { stroke: var(--text-mid); stroke-width: 1; stroke-dasharray: 3 3; pointer-events: none; }
+.pf-chart-dot { pointer-events: none; }
+.pf-chart-hit { cursor: crosshair; }
+/* Legend strip — pill-style items above the SVG (header), so each
+   comparison reads as a self-contained chip. Sits above the chart so it
+   can NEVER visually collide with the live-activity strip below — the
+   chart's overflow:visible behaviour at narrow widths previously bled
+   into the live banner. */
+.pf-chart-legend {
+  display: flex; gap: 10px; margin: 0 0 12px;
+  align-items: center; flex-wrap: wrap;
+  font: 500 12px 'Inter'; color: var(--text-mid); font-variant-numeric: tabular-nums;
+}
+.pf-chart-legend-item {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgba(11,16,26,0.32);
+}
+.pf-chart-legend-item .pf-chart-legend-name { color: var(--text-mid); font-weight: 500; }
+.pf-chart-legend-item .pf-chart-legend-name strong { color: var(--text-hi); font-weight: 600; }
+.pf-chart-legend-item .pos { color: var(--pos); font-weight: 600; }
+.pf-chart-legend-item .neg { color: var(--neg); font-weight: 600; }
+.pf-chart-legend-swatch { display: inline-block; width: 14px; height: 2px; border-radius: 1px; }
+.pf-chart-legend-swatch.spy { background: repeating-linear-gradient(to right, #9BA1B9 0 4px, transparent 4px 7px); height: 2px; }
+.pf-chart-legend-window { margin-left: auto; color: var(--text-low); font-size: 10px; opacity: 0.8; }
+.pf-chart-tooltip { position: absolute; pointer-events: none;
+  background: var(--bg-deep); border: 1px solid var(--border-strong);
+  border-radius: 4px; padding: 6px 10px; font: 500 11px 'Inter';
+  font-variant-numeric: tabular-nums; z-index: 10;
+  white-space: nowrap; transform: translate(-50%, -100%); margin-top: -8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+.pf-chart-tt-val { display: block; color: var(--text-hi); font-weight: 600; font-size: 12px; font-variant-numeric: tabular-nums; }
+.pf-chart-tt-spy { display: block; color: #9BA1B9; font-weight: 500; font-size: 11px; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.pf-chart-tt-name { color: var(--text-dim); font-weight: 500; margin-right: 4px; }
+.pf-chart-tt-pct { font-weight: 700; font-variant-numeric: tabular-nums; }
+.pf-chart-tt-pct.pos { color: var(--pos); }
+.pf-chart-tt-pct.neg { color: var(--neg); }
+.pf-chart-tt-date { display: block; color: var(--text-dim); margin-top: 4px; font-size: 10px; }
+.pf-chart-empty { padding: 60px 20px; text-align: center; color: var(--text-dim);
+  font: 500 12px 'Inter'; border: 1px dashed var(--border); border-radius: 6px; }
+
+.pf-sleeves { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 22px 0 8px; padding-top: 18px; border-top: 1px solid var(--border); }
+.pf-sleeves.four { grid-template-columns: repeat(4, 1fr); }
+.pf-sleeves.five { grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.pf-sleeve { padding: 12px 16px; border-radius: var(--radius-sm); background: rgba(255,255,255,0.02); border: 1px solid var(--border); }
+.pf-sleeve-name { font: 600 10px 'Inter'; color: var(--accent-lake); letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 6px; }
+.pf-sleeve-name.momentum { color: #ba8cff; }   /* high-conviction violet */
+.pf-sleeve-name.daytrade { color: #e8b86a; }
+.pf-sleeve-name.unattributed { color: var(--text-dim); }
+.pf-sleeve-mv { font: 500 16px 'Inter'; color: var(--text-hi); font-variant-numeric: tabular-nums; }
+.pf-sleeve-meta { font: 500 12px 'Inter'; color: var(--text-mid); margin-top: 2px; font-variant-numeric: tabular-nums; }
+.pf-sleeve-meta.pos { color: var(--pos); } .pf-sleeve-meta.neg { color: var(--neg); }
+.pf-sleeve-realized { font: 500 11px 'Inter'; margin-top: 4px; padding-top: 4px; border-top: 1px dashed var(--border); font-variant-numeric: tabular-nums; }
+.pf-sleeve-realized.pos { color: var(--pos); }
+.pf-sleeve-realized.neg { color: var(--neg); }
+
+.pf-positions-head { display: flex; justify-content: space-between; align-items: baseline; margin: 22px 0 12px; }
+.pf-positions-title { font: 500 13px 'Inter'; color: var(--text-mid); letter-spacing: 0.06em; }
+.pf-positions-count { font: 500 12px 'Inter'; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+.pf-tally-w { color: var(--pos); font-weight: 600; }
+.pf-tally-l { color: var(--neg); font-weight: 600; }
+/* ── Capital-allocation donut for open positions ──
+ * Sits between the head and the cards. Sleeve-colored slices, sized by
+ * market value. Center: total deployed + count. Hover/tap a slice for the
+ * tooltip (wirePortfolioTooltips). Legend column on the right shows
+ * sleeve totals so the user can decode "violet = momentum" instantly. */
+/* Premium centerpiece — radial halo behind the donut tinted by total
+   day P&L (green when up, red when down), thin top-rim highlight for
+   the "polished glass" feel, and a soft drop-shadow under the rings.
+   overflow stays VISIBLE so the donut's 3D shadow can extend past the
+   panel edge — the rim highlight uses a pseudo-element constrained to
+   the panel bounds, no clipping needed. */
+.pf-pos-donut-wrap {
+  display: grid;
+  /* Column 1 is donut-sized (320px) plus 24px on each side so the
+     drop-shadow has guaranteed room to render without touching column
+     borders. minmax(0,...) keeps it from forcing overflow at narrow
+     viewports. */
+  grid-template-columns: minmax(0, 368px) minmax(0, 1fr);
+  gap: 36px;
+  align-items: center;
+  justify-items: center;
+  /* Generous padding: the donut's drop-shadow spreads ~24px past the
+     element box, so the wrap padding must exceed that on every side.
+     48px gives a clean halo without the shadow biting the panel border. */
+  padding: 48px 48px 48px;
+  margin-bottom: 24px;
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 18px;
+  background:
+    radial-gradient(620px 360px at 18% 0%, rgba(95,170,197,0.10), transparent 62%),
+    linear-gradient(180deg, rgba(11,16,6,0.65), rgba(2,40,52,0.14));
+  position: relative;
+  box-shadow:
+    0 1px 0 0 rgba(255,255,255,0.04) inset,
+    0 24px 60px -28px rgba(0,0,0,0.55);
+}
+/* Legend keeps its left-aligned text — donut alone gets justify-self:center */
+.pf-pos-donut-legend { justify-self: stretch; }
+/* Top-edge rim highlight — 1px gradient line for premium card feel.
+   border-radius matches the panel so the highlight curves correctly. */
+.pf-pos-donut-wrap::before {
+  content: ''; position: absolute; left: 0; right: 0; top: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.10), transparent);
+  pointer-events: none;
+  border-top-left-radius: 18px; border-top-right-radius: 18px;
+}
+/* Aggregate P&L halo — colors the corner radial behind the donut */
+.pf-pos-donut-wrap.panel-glow-pos {
+  background:
+    radial-gradient(640px 380px at 22% 30%, rgba(110,231,183,0.10), transparent 62%),
+    linear-gradient(180deg, rgba(11,16,6,0.65), rgba(2,40,52,0.14));
+}
+.pf-pos-donut-wrap.panel-glow-neg {
+  background:
+    radial-gradient(640px 380px at 22% 30%, rgba(252,165,165,0.09), transparent 62%),
+    linear-gradient(180deg, rgba(11,16,6,0.65), rgba(2,40,52,0.14));
+}
+/* 3D lift — controlled shadow that fits inside the wrap's 48px padding
+   on every side. Far shadow + tight contact + faint top-rim cheat +
+   ambient lake glow. Total visual extent is ~32px past the element box,
+   well within the padding budget. */
+.pf-pos-donut.alloc-donut {
+  width: 320px; height: 320px;
+  filter:
+    drop-shadow(0 14px 24px rgba(0,0,0,0.50))
+    drop-shadow(0 6px 10px rgba(0,0,0,0.30))
+    drop-shadow(0 1px 2px rgba(0,0,0,0.22))
+    drop-shadow(0 -1px 0 rgba(255,255,255,0.05))
+    drop-shadow(0 0 24px rgba(95,170,197,0.07));
+  transform: translateZ(0);
+  transition: transform .25s cubic-bezier(.2,.7,.2,1), filter .25s ease;
+}
+/* Subtle hover-lift */
+.pf-pos-donut-wrap:hover .pf-pos-donut.alloc-donut {
+  transform: translateY(-2px);
+  filter:
+    drop-shadow(0 18px 28px rgba(0,0,0,0.55))
+    drop-shadow(0 8px 12px rgba(0,0,0,0.32))
+    drop-shadow(0 1px 2px rgba(0,0,0,0.22))
+    drop-shadow(0 -1px 0 rgba(255,255,255,0.06))
+    drop-shadow(0 0 30px rgba(95,170,197,0.10));
+}
+.pf-pos-donut.alloc-donut svg circle { stroke-linecap: butt; }
+/* The dome overlay blends with the colored rings beneath to fake
+   curvature: highlight at top-left, shadow at bottom-right. */
+.pf-pos-donut.alloc-donut svg .pf-donut-dome-overlay {
+  mix-blend-mode: overlay;
+  opacity: 0.85;
+}
+.pf-pos-donut.alloc-donut .dt-eyebrow {
+  font: 600 9px 'Inter'; color: var(--accent-lake);
+  letter-spacing: 0.30em; text-transform: uppercase;
+  display: inline-flex; align-items: center; gap: 7px;
   margin-bottom: 10px;
 }
-.pc-thesis-body {
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: 17px;
-  line-height: 1.55;
-  color: var(--charcoal);
-  font-variation-settings: "opsz" 72;
+.pf-pos-donut.alloc-donut .dt-live {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--pos);
+  box-shadow: 0 0 8px rgba(110,231,183,0.7);
+  animation: pf-pulse 2s ease-in-out infinite;
 }
-.pc-thesis-body em { font-style: italic; color: var(--forest); }
-
-.pc-foot {
-  margin-top: 16px;
-  padding-top: 14px;
-  border-top: 1px solid var(--gray-200);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--gray-500);
-  letter-spacing: 0.06em;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.pc-foot a {
-  color: var(--pine);
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: 600;
-}
-.pc-foot a:hover { color: var(--forest); }
-
-/* ── Live portfolio block (.pf-card) ──────────────────────── */
-.pf-card {
-  background: white;
-  border: 1px solid var(--gray-300);
-  padding: 28px 28px 22px;
-  margin-bottom: 32px;
-}
-.pf-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 16px;
-  flex-wrap: wrap;
-  margin-bottom: 18px;
-}
-.pf-eyebrow {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.18em;
-  color: var(--pine);
-  text-transform: uppercase;
-}
-.pf-equity-row { display: block; margin-top: 6px; }
-.pf-equity-num {
-  font-family: var(--font-display);
-  font-weight: 500;
-  font-size: 56px;
+.pf-pos-donut.alloc-donut .dt-total {
+  font-family: 'Crimson Text', Georgia, serif;
+  letter-spacing: -0.024em;
   line-height: 1;
-  letter-spacing: -0.022em;
-  color: var(--charcoal);
-  font-variation-settings: "opsz" 144;
+  color: var(--text-hi);
 }
-.pf-equity-sub {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-top: 12px;
-  flex-wrap: wrap;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--gray-500);
+.pf-pos-donut.alloc-donut .dt-sub { color: var(--accent-lake); }
+.pf-pos-donut.alloc-donut .dt-pl {
+  font: 600 16px 'Inter'; font-variant-numeric: tabular-nums;
+  letter-spacing: -0.005em; margin-top: 10px;
 }
-.pf-equity-sub .pos { color: var(--pine); font-weight: 600; }
-.pf-equity-sub .neg { color: var(--signal-red); font-weight: 600; }
+.pf-pos-donut.alloc-donut .dt-pl.pos { color: var(--pos); text-shadow: 0 0 16px rgba(110,231,183,0.30); }
+.pf-pos-donut.alloc-donut .dt-pl.neg { color: var(--neg); text-shadow: 0 0 16px rgba(252,165,165,0.26); }
+.pf-pos-donut.alloc-donut .dt-pl.flat { color: var(--text-dim); }
+.pf-pos-donut.alloc-donut .dt-caption {
+  margin-top: 8px; font: 500 10.5px 'Inter';
+  color: var(--text-dim); letter-spacing: 0.10em; text-transform: uppercase;
+}
+.pf-pos-donut-legend { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 
-.pf-sleeves {
+/* Tier mini-key sits at the top of the legend column. Outer ring shows
+   /picks tier on each slice; the chip strip teaches that color mapping
+   without competing with the per-sleeve rows below. */
+.pf-pdl-tier-key {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px;
+  padding: 8px 12px; margin-bottom: 4px;
+  border-radius: 8px;
+  background: rgba(11,16,6,0.25);
+  border: 1px dashed var(--border);
+  font-variant-numeric: tabular-nums;
+}
+.pf-pdl-tk-label {
+  font: 600 9px 'Inter'; color: var(--text-dim);
+  letter-spacing: 0.16em; text-transform: uppercase;
+  margin-right: 4px;
+}
+.pf-pdl-tk-chip {
+  width: 9px; height: 9px; border-radius: 2px;
+  display: inline-block; flex-shrink: 0;
+}
+.pf-pdl-tk-name {
+  font: 500 11px 'Inter'; color: var(--text-mid);
+  margin-right: 6px;
+}
+.pf-pdl-tk-name:last-child { margin-right: 0; }
+.pf-pdl-tk-divider {
+  width: 1px; height: 12px; align-self: center;
+  background: var(--border); margin: 0 4px;
+}
+
+/* Each sleeve row is a <details> group: the summary is the legend line you
+   used to see (dot · name · count · $ · %); opening it reveals the
+   nested column-labeled position rows for that sleeve. The summary is
+   visually unchanged from the prior flat row so the feel doesn't shift. */
+.pf-pdl-group {
+  border-radius: 10px;
+  background: rgba(11,16,6,0.35);
+  border: 1px solid transparent;
+  overflow: hidden;
+  transition: background .15s ease, border-color .15s ease;
+}
+.pf-pdl-group[open] {
+  background: rgba(11,16,6,0.55);
+  border-color: var(--border);
+}
+.pf-pdl-group.pf-pdl-empty .pf-pdl-summary { cursor: default; }
+.pf-pdl-summary {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1px;
-  background: var(--gray-300);
-  border: 1px solid var(--gray-300);
-  margin: 22px 0 8px;
+  grid-template-columns: 14px minmax(0,1fr) auto auto auto 14px;
+  align-items: center; gap: 12px;
+  padding: 10px 12px;
+  font-variant-numeric: tabular-nums;
+  list-style: none;
+  cursor: pointer; user-select: none;
 }
-.pf-sleeves.four  { grid-template-columns: repeat(4, 1fr); }
-.pf-sleeves.five  { grid-template-columns: repeat(5, 1fr); }
-.pf-sleeve {
-  background: white;
-  padding: 16px 14px;
+.pf-pdl-summary::-webkit-details-marker { display: none; }
+.pf-pdl-summary:hover { background: rgba(95,170,197,0.05); }
+.pf-pdl-group.pf-pdl-empty .pf-pdl-summary:hover { background: transparent; }
+.pf-pdl-dot { width: 10px; height: 10px; border-radius: 3px; }
+.pf-pdl-name { font: 600 12px 'Inter'; color: var(--text-hi); letter-spacing: 0.04em; }
+.pf-pdl-count { font: 500 11px 'Inter'; color: var(--text-dim); letter-spacing: 0.06em; font-variant-numeric: tabular-nums; }
+.pf-pdl-amt { font: 500 13px 'Inter'; color: var(--text-mid); }
+.pf-pdl-pct { font: 600 13px 'Inter'; color: var(--text-hi); min-width: 48px; text-align: right; }
+.pf-pdl-chev {
+  width: 8px; height: 8px;
+  border-right: 1.5px solid var(--text-dim);
+  border-bottom: 1.5px solid var(--text-dim);
+  transform: rotate(-45deg);
+  transition: transform .18s ease;
+  justify-self: end;
 }
-.pf-sleeve-name {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--gray-500);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  margin-bottom: 8px;
+.pf-pdl-group[open] .pf-pdl-chev { transform: rotate(45deg); border-color: var(--text-mid); }
+.pf-pdl-group.pf-pdl-empty .pf-pdl-chev { display: none; }
+
+/* Body opens below the summary — sleeve-thesis line + column headers +
+   line-style position rows. No abs-positioned controls; pure flow. */
+.pf-pdl-body {
+  padding: 0 12px 10px;
 }
-.pf-sleeve-val {
-  font-family: var(--font-display);
-  font-weight: 500;
-  font-size: 22px;
-  color: var(--forest);
-  letter-spacing: -0.01em;
-  line-height: 1;
+.pf-pdl-thesis {
+  font: 500 12.5px/1.55 'Inter'; color: var(--text-mid);
+  padding: 12px 2px 12px;
+  border-top: 1px dashed var(--border);
 }
-.pf-sleeve-sub {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--gray-500);
-  margin-top: 6px;
+.pf-pdl-thesis b { color: var(--text-hi); font-weight: 600; }
+.pf-pdl-thesis .ts-rule {
+  display: inline-block; padding: 1px 7px; margin-right: 6px;
+  border-radius: 4px; background: rgba(95,170,197,0.10);
+  color: var(--accent-lake);
+  font: 600 9px 'Inter'; letter-spacing: 0.16em; text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+  vertical-align: 1px;
 }
 
-@media (max-width: 760px) {
-  .pf-sleeves, .pf-sleeves.four, .pf-sleeves.five {
-    grid-template-columns: repeat(2, 1fr);
+/* Column headers + position lines share grid template so values line up
+   under their labels.
+   SYM | TIER | MV | COST | DAY% | UPNL | ACQUIRED | TREND */
+.pf-pdl-cols, .pf-pdl-line {
+  display: grid;
+  grid-template-columns:
+    minmax(60px, 0.85fr)   /* sym */
+    62px                   /* tier pill */
+    minmax(64px, 0.85fr)   /* market value */
+    minmax(64px, 0.85fr)   /* cost basis */
+    62px                   /* day % */
+    minmax(64px, 0.85fr)   /* unrealized $ */
+    62px                   /* acquired date */
+    32px;                  /* trend arrow */
+  gap: 10px;
+  align-items: center;
+  padding: 8px 4px;
+  font-variant-numeric: tabular-nums;
+}
+.pf-pdl-cols {
+  font: 600 9px 'Inter'; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--text-dim);
+  padding: 8px 4px 6px;
+  border-bottom: 1px solid var(--border);
+}
+.pf-pdl-line {
+  border-bottom: 1px dashed rgba(155,161,185,0.07);
+  font: 500 12px 'Inter'; color: var(--text-mid);
+  border-radius: 4px;
+  transition: background .12s ease;
+}
+.pf-pdl-line:last-child { border-bottom: none; }
+.pf-pdl-line:hover { background: rgba(95,170,197,0.05); }
+
+.pf-rl-sym {
+  font: 700 13.5px 'Inter';
+  color: var(--text-hi);
+  white-space: nowrap;
+}
+/* Defensive: never let any default browser marker, list-style, or
+   inherited ::before content prefix a row with dots. The ticker column
+   is the row's leading element and must render clean, no leftover
+   marker glyphs from earlier mask designs or from <details> defaults. */
+.pf-pdl-line { list-style: none; }
+.pf-pdl-line::before, .pf-pdl-line::marker,
+.pf-rl-sym::before, .pf-rl-sym::marker { content: none; display: none; }
+
+.pf-rl-tier {
+  font: 600 9px 'Inter'; padding: 2px 6px; border-radius: 4px;
+  letter-spacing: 0.10em; text-transform: uppercase;
+  border: 1px solid currentColor; background: transparent;
+  text-align: center; white-space: nowrap;
+  justify-self: start;
+}
+.pf-rl-tier.conservative { color: var(--tier-conservative); }
+.pf-rl-tier.moderate     { color: var(--tier-moderate); }
+.pf-rl-tier.aggressive   { color: var(--tier-aggressive); }
+.pf-rl-tier.asymmetric   { color: var(--tier-asymmetric); }
+.pf-rl-tier.scalper      { color: var(--pos); }
+.pf-rl-tier.daytrade     { color: var(--tier-moderate); }
+.pf-rl-tier.unattributed { color: var(--text-dim); }
+
+.pf-rl-mv   { color: var(--text-hi); font-weight: 600; font-size: 12.5px; }
+.pf-rl-cost { color: var(--text-mid); font-weight: 500; font-size: 12px; }
+.pf-rl-pct  { font-weight: 600; font-size: 12.5px; text-align: right; }
+.pf-rl-pct.pos { color: var(--pos); }
+.pf-rl-pct.neg { color: var(--neg); }
+.pf-rl-pct.flat { color: var(--text-dim); }
+.pf-rl-pl { font-weight: 500; }
+.pf-rl-pl.pos { color: var(--pos); }
+.pf-rl-pl.neg { color: var(--neg); }
+.pf-rl-acquired { font: 500 11px 'Inter'; color: var(--text-dim); text-align: right; cursor: help; }
+
+/* Trend arrow — color set inline (rgba intensity scaled to |day %|);
+   glyph snaps tight to the column. Slight scale on hover gives the
+   user a visual confirm that this thing is interactive (it's a tooltip
+   target, not a click target). */
+.pf-rl-trend {
+  font-size: 13px; line-height: 1; text-align: center;
+  cursor: help; transition: transform .12s ease;
+}
+.pf-rl-trend:hover { transform: scale(1.18); }
+
+/* Mobile collapses progressively: at <860px drop cost basis + acquired
+   date (still visible in tooltip on the row); at <540px also drop
+   unrealized $. The trend arrow stays at every breakpoint — its job
+   IS to compress the day move into a single colored glyph. */
+@media (max-width: 860px) {
+  .pf-pdl-cols, .pf-pdl-line {
+    grid-template-columns:
+      minmax(54px, 0.95fr) 56px minmax(60px, 0.9fr) 58px minmax(60px, 0.9fr) 28px;
+    gap: 8px;
   }
+  .pf-pdl-cols .col-cost, .pf-pdl-line .pf-rl-cost,
+  .pf-pdl-cols .col-acquired, .pf-pdl-line .pf-rl-acquired { display: none; }
+}
+@media (max-width: 540px) {
+  .pf-pdl-cols, .pf-pdl-line {
+    grid-template-columns: minmax(52px, 1fr) 48px minmax(58px, 0.95fr) 56px 26px;
+    gap: 6px;
+    padding: 8px 2px;
+  }
+  .pf-pdl-cols .col-pl, .pf-pdl-line .pf-rl-pl { display: none; }
+  .pf-pdl-summary { grid-template-columns: 12px minmax(0,1fr) auto auto 12px; gap: 9px; padding: 9px 10px; }
+  .pf-pdl-summary .pf-pdl-amt { display: none; }
 }
 
-/* ── Generic chart panel ──────────────────────────────────── */
-.pf-chart-row { margin-top: 16px; }
-.pf-chart-row svg, .pf-chart-row canvas { width: 100%; height: auto; }
-
-/* ── Allocation widget ────────────────────────────────────── */
-.alloc-widget {
-  margin-top: 32px;
-  background: white;
-  border: 1px solid var(--gray-300);
-  padding: 24px;
+.pf-positions { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+.pf-pos {
+  padding: 14px 16px; border-radius: var(--radius-sm);
+  background: var(--bg-card); border: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 6px;
+  transition: border-color .15s, transform .15s;
+  position: relative; overflow: hidden;
 }
-.aw-title {
-  font-family: var(--font-display);
-  font-size: 18px;
-  font-weight: 500;
-  color: var(--forest);
-  margin-bottom: 4px;
+/* Top-edge weight bar — at-a-glance "this card is X% of book". The fill
+ * is sleeve-colored and sized to the position's share of total deployed.
+ * Track is faint so a 1% slice still shows context against a 12% slice. */
+.pf-pos-weight-bar {
+  position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: rgba(155,161,185,0.08);
+  pointer-events: none;
 }
-.aw-sub {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--gray-500);
-  letter-spacing: 0.06em;
+.pf-pos-weight-fill {
+  height: 100%;
+  border-bottom-right-radius: 2px;
+  transition: width .25s ease;
 }
-.alloc-control { margin-top: 16px; }
+.pf-pos-weight {
+  margin-left: auto;
+  font: 600 11px 'Inter'; color: var(--text-mid);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+/* Scalper sleeve tag (was missing — donut + tag now use the same green) */
+.pf-pos-tag.scalper { background: rgba(110,231,183,0.14); color: var(--pos); }
+.pf-pos:hover { border-color: var(--border-strong); transform: translateY(-1px); }
+/* Row 1: sym + sleeve-tag + tier-pill on the left, weight % on the far right.
+ * pf-pos-weight uses margin-left:auto to claim the right edge regardless of
+ * how many pills are present (e.g. 0 or 1 tier pill depending on source). */
+.pf-pos-row1 { display: flex; align-items: center; gap: 8px; }
+.pf-pos-sym { font: 600 15px 'Inter'; color: var(--text-hi); letter-spacing: -0.005em; }
+.pf-pos-tag { font: 600 9px 'Inter'; padding: 2px 7px; border-radius: 4px; letter-spacing: 0.10em; text-transform: uppercase; }
+.pf-pos-tag.momentum { background: rgba(186,140,255,0.14); color: #ba8cff; }
+.pf-pos-tag.swing { background: rgba(95,170,197,0.14); color: var(--accent-lake); }
+.pf-pos-tag.daytrade { background: rgba(232,184,106,0.14); color: #e8b86a; }
+.pf-pos-tag.unattributed { background: rgba(155,161,185,0.10); color: var(--text-dim); }
+/* Source-tier pill — outline-only so it visually nests next to the
+   sleeve pill without competing for weight. Color tracks the tier
+   palette so a strategist seeing a violet pill knows it came from the
+   Asymmetric tier without having to read it. */
+.pf-pos-tier { font: 600 9px 'Inter'; padding: 2px 7px; border-radius: 4px;
+  letter-spacing: 0.10em; text-transform: uppercase; border: 1px solid currentColor;
+  background: transparent; }
+.pf-pos-tier.conservative { color: var(--tier-conservative); }
+.pf-pos-tier.moderate     { color: var(--tier-moderate); }
+.pf-pos-tier.aggressive   { color: var(--tier-aggressive); }
+.pf-pos-tier.asymmetric   { color: var(--tier-asymmetric); }
+.pf-pos-row2 { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.pf-pos-mv { font: 500 14px 'Inter'; color: var(--text-mid); font-variant-numeric: tabular-nums; }
+.pf-pos-pct { font: 600 14px 'Inter'; font-variant-numeric: tabular-nums; }
+.pf-pos-pct.pos { color: var(--pos); } .pf-pos-pct.neg { color: var(--neg); }
+.pf-pos-row3 { display: flex; justify-content: space-between; align-items: center; gap: 8px; font: 500 11px 'Inter'; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+.pf-pos-pl.pos { color: var(--pos); } .pf-pos-pl.neg { color: var(--neg); }
 
-/* Old class fallback shim (in case picks-app.js produces extra classes
- * we haven't restyled yet — keep the warm-white background, charcoal text). */
-#content [class*="bg-"], #content [class*="text-"] { color: inherit; }
-.muted { color: var(--gray-500); }
+/* Bracket strip — visual stop ◀ entry ●▶ target with current-price tick. */
+.pf-pos-bracket { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+.pf-bracket-bar { position: relative; height: 4px; background: var(--border); border-radius: 2px; }
+.pf-bracket-fill { position: absolute; top: 0; bottom: 0; border-radius: 2px; }
+.pf-bracket-tick { position: absolute; top: -3px; width: 2px; height: 10px; background: var(--text-mid); transform: translateX(-1px); }
+.pf-bracket-tick.entry { background: var(--text-hi); }
+.pf-bracket-tick.cur { width: 8px; height: 8px; top: -2px; border-radius: 50%; transform: translateX(-4px); background: var(--text-hi); border: 2px solid var(--bg-surface); }
+.pf-bracket-tick.cur.pos { background: var(--pos); }
+.pf-bracket-tick.cur.neg { background: var(--neg); }
+.pf-bracket-labels { display: flex; justify-content: space-between; margin-top: 6px; font: 500 10px 'Inter'; color: var(--text-dim); font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
+.pf-bracket-labels .neg { color: var(--neg); }
+.pf-bracket-labels .pos { color: var(--pos); }
 
-/* ── Mobile shell adjustments for picks ───────────────────── */
-@media (max-width: 768px) {
-  /* picks-app.js renders into #content. On mobile, scale type and
-   * collapse multi-column grids so the rendered output fits the
-   * mobile shell aesthetic. */
-  #content { padding: 0 16px 24px; }
-  .tier-head { padding-left: 14px; padding-bottom: 12px; margin-bottom: 18px; flex-direction: column; align-items: flex-start; gap: 6px; }
-  .tier-name { font-size: 26px; }
-  .tier-count { margin-left: 0; }
-  .pick-grid { grid-template-columns: 1fr; gap: 12px; }
-  .pick-card { padding: 18px 18px 16px; }
-  .pc-head { flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
-  .pc-sym { font-size: 22px; }
-  .pc-conf-num { font-size: 28px; padding-right: 18px; }
-  .pc-conf-num::after { font-size: 9px; }
-  .pc-hero { grid-template-columns: 1fr 1fr; gap: 8px; padding: 14px 0; }
-  .pc-hero .h-val { font-size: 20px; }
-  .pc-thesis-body { font-size: 15px; }
-  .pf-card { padding: 18px 16px 16px; margin-bottom: 18px; }
+/* Closed trades — paired buy/sell rows from today's Alpaca FILL activity.
+   Sits right below the live positions block so a viewer can scan
+   "what's open" then immediately "what just closed" without leaving the
+   page. Same color system as live positions for sleeve continuity. */
+.pf-closed-section { margin-top: 22px; padding-top: 22px; border-top: 1px solid var(--border); }
+.pf-closed-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
+.pf-closed-title { font: 500 13px 'Inter'; color: var(--text-mid); letter-spacing: 0.06em; }
+.pf-closed-summary { font: 500 12px 'Inter'; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+.pf-closed-summary .pos { color: var(--pos); }
+.pf-closed-summary .neg { color: var(--neg); }
+.pf-closed-list { display: flex; flex-direction: column; gap: 3px; }
+/* Even-spaced grid: time | sleeve | tier | sym | qty | entry | exit | pct | pnl
+   Tier column reserved even when empty so all rows visually align.
+   Numeric columns right-aligned; tabular-nums keeps digits in vertical lock. */
+.pf-closed-row {
+  display: grid;
+  grid-template-columns: 56px 88px 96px 60px 56px 1fr 1fr 70px 84px;
+  gap: 12px;
+  align-items: center;
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: rgba(255,255,255,0.02);
+  font: 500 12px 'Inter';
+  font-variant-numeric: tabular-nums;
+}
+.pf-closed-row:hover { border-color: var(--border-strong); background: rgba(255,255,255,0.035); }
+.pf-closed-time { color: var(--text-dim); font-size: 11px; }
+.pf-closed-sym  { font: 600 13.5px 'Inter'; color: var(--text-hi); }
+.pf-closed-tag {
+  font: 600 9px 'Inter'; letter-spacing: 0.10em; text-transform: uppercase;
+  padding: 3px 8px; border-radius: 4px; text-align: center;
+  justify-self: start;
+}
+.pf-closed-tag.momentum     { background: rgba(186,140,255,0.14); color: #ba8cff; }
+.pf-closed-tag.swing        { background: rgba(95,170,197,0.14);  color: var(--accent-lake); }
+.pf-closed-tag.daytrade     { background: rgba(232,184,106,0.14); color: #e8b86a; }
+.pf-closed-tag.scalper      { background: rgba(110,231,183,0.14); color: var(--pos); }
+.pf-closed-tag.unattributed { background: rgba(155,161,185,0.10); color: var(--text-dim); }
+.pf-closed-tier-empty { /* placeholder so grid stays aligned */ }
+.pf-closed-qty   { color: var(--text-dim); font-size: 11px; text-align: right; }
+.pf-closed-entry { color: var(--text-mid); text-align: right; font-variant-numeric: tabular-nums; }
+.pf-closed-exit  { color: var(--text-hi);  text-align: right; font-variant-numeric: tabular-nums; }
+.pf-closed-pct   { font-size: 11.5px; text-align: right; color: var(--text-dim); }
+.pf-closed-pct.pos { color: var(--pos); }
+.pf-closed-pct.neg { color: var(--neg); }
+.pf-closed-pnl   { font: 700 12.5px 'Inter'; text-align: right; color: var(--text-mid); }
+.pf-closed-pnl.pos { color: var(--pos); }
+.pf-closed-pnl.neg { color: var(--neg); }
+@media (max-width: 720px) {
+  /* Drop tier + qty columns; collapse layout but keep entry/exit/pnl visible */
+  .pf-closed-row {
+    grid-template-columns: 50px 78px 56px 1fr 1fr 76px;
+    grid-template-areas: "time sleeve sym entry exit pnl";
+    gap: 8px;
+    padding: 8px 10px;
+  }
+  .pf-closed-time { grid-area: time; }
+  .pf-closed-tag  { grid-area: sleeve; }
+  .pf-closed-sym  { grid-area: sym; }
+  .pf-closed-entry{ grid-area: entry; }
+  .pf-closed-exit { grid-area: exit; }
+  .pf-closed-pnl  { grid-area: pnl; }
+  .pf-closed-row .pf-closed-tier-empty,
+  .pf-closed-row .pf-pos-tier,
+  .pf-closed-row .pf-closed-qty,
+  .pf-closed-row .pf-closed-pct { display: none; }
+}
+.pf-closed-empty { padding: 22px; text-align: center; font: 500 13px 'Inter';
+  color: var(--text-mid); border: 1px dashed var(--border); border-radius: 6px; }
+.pf-closed-empty .small { font-size: 11px; color: var(--text-dim); display: block; margin-top: 4px; }
+.pf-closed-cta { margin-top: 10px; padding: 10px 14px; text-align: center; font: 500 12px 'Inter'; color: var(--text-mid); border-top: 1px dashed var(--border); }
+.pf-closed-cta a { color: var(--accent-lake); text-decoration: underline; text-underline-offset: 3px; }
+
+/* ── Live activity strip ─────────────────────────────────────────
+   Status header + vertical ticker of buys/sells. The status row is
+   always visible; the ticker holds 15 events max with newest at top.
+   New events animate in via slideInDown keyframe. Designed to be the
+   "watchable" element on /picks while the trader is active. */
+.pf-live-strip {
+  margin: 22px 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, rgba(11,16,6,0.55), rgba(2,40,52,0.10));
+  overflow: hidden;
+}
+.pf-live-status {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  font: 500 12px 'Inter'; color: var(--text-mid);
+  font-variant-numeric: tabular-nums;
+}
+.pf-live-status .pf-live-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--pos);
+  box-shadow: 0 0 10px rgba(110,231,183,0.7);
+  animation: pf-pulse 2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+.pf-live-status .pf-live-label {
+  font: 700 10px 'Inter'; color: var(--accent-lake);
+  letter-spacing: 0.22em; text-transform: uppercase;
+}
+.pf-live-status .pf-live-bit { color: var(--text-mid); }
+.pf-live-status .pf-live-bit b { color: var(--text-hi); font-weight: 600; }
+.pf-tk-list {
+  display: flex; flex-direction: column;
+  max-height: 320px; overflow-y: auto;
+  padding: 4px 0;
+}
+.pf-tk-row {
+  display: grid;
+  /* time | action | ticker | sleeve | trade(qty+price→price) | % | $ */
+  grid-template-columns: 48px 52px 56px 78px minmax(120px, 1fr) 72px 72px;
+  align-items: center; gap: 12px;
+  padding: 9px 16px;
+  font: 500 12.5px 'Inter';
+  color: var(--text-mid);
+  font-variant-numeric: tabular-nums;
+  border-bottom: 1px dashed rgba(155,161,185,0.06);
+  transition: background .12s ease;
+}
+/* Subtle row tint by win/loss state — adds at-a-glance scannability
+   without overpowering the cell-level pct/$ colors. */
+.pf-tk-row.pos { box-shadow: inset 3px 0 0 rgba(110,231,183,0.40); }
+.pf-tk-row.neg { box-shadow: inset 3px 0 0 rgba(255,107,107,0.40); }
+.pf-tk-row.flat { box-shadow: inset 3px 0 0 rgba(155,161,185,0.18); }
+.pf-tk-row:last-child { border-bottom: none; }
+.pf-tk-row:hover { background: rgba(95,170,197,0.04); }
+.pf-tk-row.fresh { animation: pf-tk-slide-in 0.5s cubic-bezier(.2,.7,.2,1) both; background: rgba(95,170,197,0.08); }
+@keyframes pf-tk-slide-in {
+  0% { opacity: 0; transform: translateY(-12px); background: rgba(95,170,197,0.18); }
+  100% { opacity: 1; transform: translateY(0); background: rgba(95,170,197,0.08); }
+}
+.pf-tk-row.fresh { animation-fill-mode: both; }
+/* fade fresh background after 4s so older "fresh" rows don't keep tint */
+.pf-tk-row.fresh { animation: pf-tk-slide-in 0.5s cubic-bezier(.2,.7,.2,1), pf-tk-settle 4s 0.5s forwards; }
+@keyframes pf-tk-settle {
+  to { background: transparent; }
+}
+.pf-tk-time { color: var(--text-dim); font-size: 11px; }
+.pf-tk-action {
+  font: 700 9.5px 'Inter';
+  letter-spacing: 0.14em;
+  padding: 2px 7px;
+  border-radius: 4px;
+  text-align: center;
+  border: 1px solid currentColor;
+  background: transparent;
+  justify-self: start;
+}
+.pf-tk-action.buy { color: var(--accent-lake); }
+.pf-tk-action.sell { color: var(--text-hi); }
+.pf-tk-sym { font: 700 13px 'Inter'; color: var(--text-hi); letter-spacing: -0.005em; }
+.pf-tk-sleeve {
+  font: 600 9px 'Inter'; letter-spacing: 0.10em; text-transform: uppercase;
+  padding: 2px 7px; border-radius: 4px;
+}
+.pf-tk-sleeve.momentum    { background: rgba(186,140,255,0.14); color: #ba8cff; }
+.pf-tk-sleeve.swing       { background: rgba(95,170,197,0.14);  color: var(--accent-lake); }
+.pf-tk-sleeve.daytrade    { background: rgba(232,184,106,0.14); color: #e8b86a; }
+.pf-tk-sleeve.scalper     { background: rgba(110,231,183,0.14); color: var(--pos); }
+.pf-tk-sleeve.unattributed{ background: rgba(155,161,185,0.10); color: var(--text-dim); }
+.pf-tk-meta { color: var(--text-dim); font-size: 11.5px; }
+/* Trade cell — qty then entry→exit move. Two pieces, dim labels,
+   high-contrast prices, em-dash arrow that survives text-overflow. */
+.pf-tk-trade { display: inline-flex; align-items: baseline; gap: 10px; min-width: 0; overflow: hidden; }
+.pf-tk-qty { color: var(--text-dim); font-size: 11px; flex: 0 0 auto; }
+.pf-tk-move {
+  color: var(--text-hi); font: 600 12px 'Inter'; font-variant-numeric: tabular-nums;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.pf-tk-livedot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--accent-lake);
+  box-shadow: 0 0 6px rgba(95,170,197,0.7);
+  animation: pf-livedot-pulse 2s ease-in-out infinite;
+  flex: 0 0 auto;
+}
+@keyframes pf-livedot-pulse {
+  0%, 100% { opacity: 0.4; transform: scale(0.85); }
+  50% { opacity: 1; transform: scale(1.1); }
+}
+.pf-tk-pct { font: 700 12.5px 'Inter'; font-variant-numeric: tabular-nums; text-align: right; }
+.pf-tk-pl { font: 700 13px 'Inter'; font-variant-numeric: tabular-nums; text-align: right; }
+.pf-tk-pct.pos, .pf-tk-pl.pos { color: var(--pos); }
+.pf-tk-pct.neg, .pf-tk-pl.neg { color: var(--neg); }
+.pf-tk-pct.flat, .pf-tk-pl.flat { color: var(--text-dim); }
+.pf-tk-empty {
+  padding: 28px 16px;
+  text-align: center;
+  font: 500 12.5px 'Inter';
+  color: var(--text-dim);
+}
+@media (max-width: 720px) {
+  /* Two-line layout: row 1 = identity (time/side/ticker/sleeve/pct), row 2 = trade detail (qty+move) and $ amount */
+  .pf-tk-row {
+    grid-template-columns: 44px 44px 1fr auto;
+    grid-template-areas:
+      "time action sym pct"
+      "trade trade trade pl";
+    gap: 4px 10px;
+    padding: 9px 14px;
+  }
+  .pf-tk-time { grid-area: time; }
+  .pf-tk-action { grid-area: action; }
+  .pf-tk-sym { grid-area: sym; }
+  .pf-tk-pct { grid-area: pct; }
+  .pf-tk-trade { grid-area: trade; padding-left: 2px; }
+  .pf-tk-pl { grid-area: pl; }
+  .pf-tk-sleeve { display: none; }
+  .pf-live-status { padding: 9px 12px; gap: 10px; font-size: 11px; }
+  .pf-live-status .pf-live-bit { white-space: nowrap; }
+}
+@media (max-width: 380px) {
+  .pf-tk-row { padding: 8px 10px; gap: 3px 8px; font-size: 11.5px; }
+  .pf-tk-move { font-size: 11px; }
+  .pf-tk-pl { font-size: 12px; }
+}
+
+/* Pending-order strip — surfaces in-flight bracket buys submitted by the
+   trader but not yet filled at Alpaca. Lake-blue tint to match the live
+   eyebrow but with a subtle spinning "↻" so the live-action quality reads
+   without text. Renders above positions, below equity hero. */
+.pf-pending { margin: 14px 0 0; padding: 10px 14px; border-radius: var(--radius-sm);
+  background: rgba(95,170,197,0.06); border: 1px solid rgba(95,170,197,0.18);
+  display: flex; align-items: center; gap: 10px 14px; flex-wrap: wrap; }
+.pf-pending-icon { font: 600 14px 'Inter'; color: var(--accent-lake);
+  animation: pf-spin 2.4s linear infinite; line-height: 1; }
+@keyframes pf-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.pf-pending-label { font: 500 12px 'Inter'; color: var(--text-mid); letter-spacing: 0.02em; }
+.pf-pending-item { display: inline-flex; gap: 6px; align-items: baseline;
+  padding: 2px 8px; border-radius: 4px; background: rgba(255,255,255,0.03); }
+.pf-pending-sym { font: 600 12px 'Inter'; color: var(--text-hi); font-variant-numeric: tabular-nums; }
+.pf-pending-meta { font: 500 10px 'Inter'; color: var(--text-dim); }
+.pf-pending-more { font: 500 11px 'Inter'; color: var(--text-dim); font-style: italic; }
+
+/* Rotation indicator — small footer line on the daytrade sleeve card.
+   Static off-hours, live-pulsing during 14:00-19:30 UTC weekdays. */
+.pf-sleeve-rotation { font: 500 10px 'Inter'; color: var(--text-dim);
+  margin-top: 6px; padding-top: 4px; border-top: 1px dotted rgba(155,161,185,0.18);
+  letter-spacing: 0.02em; font-variant-numeric: tabular-nums; }
+.pf-sleeve-rotation .live { color: #e8b86a; margin-right: 4px;
+  animation: pf-pulse 1.6s ease-in-out infinite; display: inline-block; }
+@keyframes pf-pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 1.0; } }
+
+.pf-empty { padding: 36px 28px 28px; text-align: center; color: var(--text-mid); font: 500 14px 'Inter'; line-height: 1.6; border: 1px dashed var(--border); border-radius: var(--radius-sm); max-width: 720px; margin: 0 auto; }
+.pf-empty strong { color: var(--text-hi); display: block; margin-bottom: 8px; font: 400 22px 'Crimson Text', serif; letter-spacing: -0.012em; }
+.pf-countdown { margin-top: 22px; padding-top: 22px; border-top: 1px solid var(--border); display: flex; justify-content: center; align-items: baseline; gap: 8px 16px; flex-wrap: wrap; }
+.pf-countdown-label { font: 600 10px 'Inter'; color: var(--text-dim); letter-spacing: 0.20em; text-transform: uppercase; }
+.pf-countdown-time { font: 500 16px 'Inter'; color: var(--text-hi); font-variant-numeric: tabular-nums; }
+.pf-countdown-in { font: 500 13px 'Inter'; color: var(--accent-lake); font-variant-numeric: tabular-nums; }
+
+.pf-teaser-fade { position: relative; }
+.pf-teaser-fade::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(180deg, transparent 30%, var(--bg-surface) 95%);
+}
+.pf-teaser-cta { margin-top: 14px; text-align: center; font: 500 13px 'Inter'; color: var(--text-mid); }
+.pf-teaser-cta a { color: var(--accent-lake); }
+
+@media (max-width: 720px) {
+  .pf-panel { padding: 24px 22px 22px; margin: 22px 0 30px; }
+  .pf-equity-row { grid-template-columns: 1fr; gap: 14px; }
+  .pf-curve { width: 100%; height: 56px; }
+  .pf-equity-num { font-size: 44px; }
+  .pf-sleeves { grid-template-columns: 1fr; gap: 8px; }
+  .pf-positions { grid-template-columns: 1fr 1fr; }
+  .pf-pending { padding: 8px 12px; gap: 8px 10px; }
+  /* Donut + legend stack on tablet/phone — donut on top, legend below.
+   * Padding stays generous (40px each side) so the drop-shadow has
+   * guaranteed clearance — clipping the shadow makes the donut read
+   * as "cut off" even when the rings themselves are intact. */
+  .pf-pos-donut-wrap {
+    grid-template-columns: 1fr;
+    gap: 28px;
+    padding: 40px 32px 40px;
+    justify-items: center;
+  }
+  .pf-pos-donut.alloc-donut { width: 300px; height: 300px; }
+  .pf-pos-donut-legend { width: 100%; justify-self: stretch; }
+  /* Tier-key wraps to multiple rows at narrow widths */
+  .pf-pdl-tier-key { padding: 10px 12px; gap: 6px 8px; }
+  .pf-pdl-tk-divider { display: none; }
+}
+@media (max-width: 480px) {
+  .pf-panel { padding: 20px 18px 18px; }
   .pf-equity-num { font-size: 38px; }
-  .tr-grid { grid-template-columns: 1fr; margin: 18px 0; }
-  .tr-card { padding: 18px 16px; }
-  .tr-big { font-size: 32px; }
-  .picks-hero, .picks-hero h1 { display: none; }
-  .scan-meta { display: none; }
+  .pf-positions { grid-template-columns: 1fr; }
+  .pf-head { gap: 8px; }
+  .pf-pos-donut-wrap { padding: 36px 24px 36px; gap: 24px; }
+  .pf-pos-donut.alloc-donut { width: 260px; height: 260px; }
+  /* Tighten the 3D shadow at smaller sizes — full-strength looks
+     overweight on 280px and below. */
+  .pf-pos-donut.alloc-donut {
+    filter:
+      drop-shadow(0 16px 28px rgba(0,0,0,0.50))
+      drop-shadow(0 6px 12px rgba(0,0,0,0.30))
+      drop-shadow(0 1px 2px rgba(0,0,0,0.22))
+      drop-shadow(0 0 28px rgba(95,170,197,0.06));
+  }
+  /* Center text scales down so it fits the 280px donut hole (~129px clear) */
+  .pf-pos-donut.alloc-donut .dt-pl { font-size: 13px; margin-top: 7px; }
+  .pf-pos-donut.alloc-donut .dt-eyebrow { font-size: 8px; margin-bottom: 6px; letter-spacing: 0.20em; }
+  .pf-pos-donut.alloc-donut .dt-caption { font-size: 9px; margin-top: 5px; letter-spacing: 0.06em; }
+  /* Legend rows tighten on small phones — keep amount + pct side-by-side
+   * but trim padding so 4-5 sleeves fit without scrolling. */
+  .pf-pdl-summary { padding: 8px 10px; gap: 10px; }
+  .pf-pdl-pct { min-width: 42px; }
+  /* Pending strip at narrow widths: stack the label, then wrap pills onto
+     their own line so each one stays atomic and readable. */
+  .pf-pending { flex-direction: column; align-items: flex-start; }
+  .pf-pending-label { font-size: 11px; }
+  .pf-pending-item { font-size: 11px; }
+  /* Closed-row PnL/pct shrink + push to right on narrow widths */
+  .pf-closed-pnl { min-width: 70px; font-size: 12px; }
+  .pf-closed-pct { min-width: 0; }
+}
+
+/* ── 390px tier (standard iPhone 12-15 Pro). The 480px breakpoint above
+ * already collapses grids; this tier reclaims canvas the bigger paddings
+ * waste at standard mobile width. ── */
+@media (max-width: 480px) {
+  /* Container padding: 32px each side at desktop is 64px gone; reduce to
+   * 14px each at <480px so a 390px viewport shows 362px of usable canvas
+   * (vs 326px before). Cards inside stay at their own padding. */
+  .container { padding: 0 14px; }
+  /* Pick-card confidence column was forcing 92px even at 320px — let it
+   * shrink. Min reduces to 60px which still fits "82%" + "STRONG" label. */
+  .pc-conf { min-width: 60px; }
+  /* Donut controls stacked underneath the donut at <920px but kept a
+   * 200px min-width that overflowed at <360px. Let them flow full-width. */
+  .alloc-controls .alloc-control { min-width: 0; }
+  /* Diversification widget: title + bar were grid 1fr/auto so the 220px
+   * bar pushed the title narrow. Stack at mobile so each gets full width. */
+  .diversification .div-row { grid-template-columns: 1fr; gap: 12px; }
+  /* size-pill on pick card header: keep on its own line if needed, never
+   * force a horizontal squeeze with the ticker + name. */
+  .pc-head { flex-wrap: wrap; }
+}
+
+/* ── 360px tier (iPhone SE / older Androids / inside-app embed). At this
+ * size every fixed-width element has to give. ── */
+@media (max-width: 360px) {
+  .container { padding: 0 10px; }
+  .pf-panel { padding: 18px 14px 16px; }
+  .pf-equity-num { font-size: 32px; }
+  /* Donut shrinks one more step so the legend below has room for full
+   * sleeve labels without truncating. Padding stays at 28px so the
+   * drop-shadow (now scaled smaller via 480px breakpoint) still has
+   * room to render without touching the panel border. */
+  .pf-pos-donut-wrap { padding: 28px 18px 28px; gap: 20px; }
+  .pf-pos-donut.alloc-donut { width: 220px; height: 220px; }
+  .alloc-donut.master { width: 220px; height: 220px; }
+  /* Center stack at 240px is tight (~110px clear hole) — tighten
+     typography proportionally and trim eyebrow letter-spacing. */
+  .pf-pos-donut.alloc-donut .dt-pl { font-size: 11px; margin-top: 5px; letter-spacing: 0; }
+  .pf-pos-donut.alloc-donut .dt-eyebrow { font-size: 7px; margin-bottom: 4px; letter-spacing: 0.16em; }
+  .pf-pos-donut.alloc-donut .dt-caption { font-size: 8.5px; margin-top: 3px; letter-spacing: 0.04em; }
+  /* dt-inner expands slightly at very small sizes so the 11px P&L
+     line has room — donut hole is proportionally similar but caption
+     was clipping. */
+  .pf-pos-donut.alloc-donut .dt-inner { width: 50%; }
+  /* Tier-key wrap behavior — items can wrap to 3-4 lines at this width */
+  .pf-pdl-tier-key { padding: 8px 10px; gap: 4px 6px; }
+  .pf-pdl-tk-label { font-size: 8px; letter-spacing: 0.10em; }
+  .pf-pdl-tk-name { font-size: 10px; }
+}
+/* ── 320px tier (legacy / iPhone SE 1st-gen). Defensive only. ── */
+@media (max-width: 320px) {
+  .pf-pos-donut.alloc-donut { width: 200px; height: 200px; }
+  .pf-pos-donut-wrap { padding: 24px 14px 24px; gap: 16px; }
 }
 </style>
-
+<link rel="stylesheet" href="/shared/mobile.css?v=20260429e" />
 <script async
   data-clerk-publishable-key="pk_test_Zmx1ZW50LW1vbGUtNzEuY2xlcmsuYWNjb3VudHMuZGV2JA"
   src="https://fluent-mole-71.clerk.accounts.dev/npm/@clerk/clerk-js@5/dist/clerk.browser.js"
   crossorigin="anonymous"
 ></script>
-<script defer src="/shared/nav.js?v=20260429i"></script>
+<script defer src="/shared/nav.js"></script>
+<!-- s-tool speculation rules -->
 <script type="speculationrules">
-{ "prerender": [{ "where": { "href_matches": "/*" }, "eagerness": "moderate" }] }
+{
+  "prerender": [{
+    "where": { "href_matches": "/*" },
+    "eagerness": "moderate"
+  }]
+}
 </script>
+<!-- s-tool speculation rules -->
+<!-- s-tool sw register -->
 <script>
   if ('serviceWorker' in navigator) {
     addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
   }
 </script>
+<!-- s-tool sw register -->
 </head>
 <body>
 
-<!-- ============================================================
-     DESKTOP SHELL chrome — visible >=769px
-     ============================================================ -->
-<div class="desktop-shell">
-
-<nav class="dnav">
-  <div class="dnav-row">
-    <a class="stool-logo" href="/" aria-label="s-tool home">
-      <svg class="mark" viewBox="0 0 100 100" aria-hidden="true">
-        <circle cx="50" cy="50" r="48" fill="none" stroke="#0d4a2c" stroke-width="2"/>
-        <circle cx="50" cy="50" r="36" fill="#4a8b5e"/>
-        <circle cx="50" cy="50" r="24" fill="#a3d4b3"/>
-        <line x1="50" y1="2" x2="50" y2="98" stroke="#0d4a2c" stroke-width="1.5"/>
-        <line x1="2" y1="50" x2="98" y2="50" stroke="#0d4a2c" stroke-width="1.5"/>
-        <line x1="16" y1="16" x2="84" y2="84" stroke="#0d4a2c" stroke-width="1"/>
-        <line x1="84" y1="16" x2="16" y2="84" stroke="#0d4a2c" stroke-width="1"/>
-        <text x="50" y="62" text-anchor="middle" font-family="Fraunces, Georgia, serif" font-style="italic" font-size="36" font-weight="700" fill="#0d4a2c">S</text>
-      </svg>
-      <span class="word">tool</span>
-    </a>
-    <ul class="dnav-links">
-      <li><a href="/app">App</a></li>
-      <li><a href="/picks" class="active">Picks</a></li>
-      <li><a href="/track-record">Track record</a></li>
-      <li><a href="/backtest">Backtest</a></li>
-      <li><a href="/how">How</a></li>
-      <li><a href="/pricing">Pricing</a></li>
-      <li><a href="/faq">FAQ</a></li>
-    </ul>
-    <div class="dnav-end" id="navEnd">
+<nav>
+  <div class="container nav-row">
+    <a href="/" class="logo" aria-label="s-tool home"><img src="/img/logo-stool.png?v=20260429f" srcset="/img/logo-stool.png?v=20260429f 1x, /img/logo-stool@2x.png?v=20260429f 2x, /img/logo-stool@3x.png?v=20260429f 3x" alt="s-tool" class="logo-img" style="height:36px;width:auto;display:block;"/></a>
+    <div class="nav-center">
+      <a href="/app">App</a>
+      <a href="/picks" class="active">Picks</a>
+      <a href="/track-record">Track record</a>
+      <a href="/backtest">Backtest</a>
+      <a href="/how">How</a>
+      <a href="/pricing">Pricing</a>
+      <a href="/faq">FAQ</a>
+    </div>
+    <div class="nav-end" id="navEnd">
       <div class="nav-pill-skel" aria-hidden="true"></div>
     </div>
   </div>
 </nav>
 
-<header class="picks-hero">
-  <div class="hero-eyebrow">Portfolio intelligence · daily scan</div>
-  <h1>A ranked portfolio of names the engine <em>surfaced</em>.</h1>
-  <p class="lede">Every weekday after market close, s-tool ranks the Russell 3000 across momentum, fundamentals, and risk; filters out names too small to trade; attaches point-in-time SEC EDGAR fundamentals; and publishes the top picks here. Then we track every pick's realized return so you can see whether the model earns its keep.</p>
-  <div class="scan-meta" id="scanMeta">
-    <span class="meta-item"><span class="dot waiting"></span><span>loading…</span></span>
+<header class="hero">
+  <div class="container">
+    <div class="eyebrow">Strategist &middot; Portfolio intelligence</div>
+    <h1 class="title">A <em>ranked portfolio</em> of the names your projection engine finds — not the names everyone already owns.</h1>
+    <p class="subtitle">Every night we rank every ticker in the Russell 3000, bucket by projected volatility, filter out mega-caps and index constituents, attach point-in-time SEC EDGAR fundamentals, and publish the top picks here. Then we track every pick's realized return so you can see whether the model actually earns its $29.</p>
+    <div class="scan-meta" id="scanMeta">
+      <span class="meta-item"><span class="dot"></span><span>loading…</span></span>
+    </div>
   </div>
 </header>
 
-</div><!-- /.desktop-shell (top) -->
-
-
-<!-- ============================================================
-     MOBILE SHELL chrome top — visible <=768px
-     ============================================================ -->
-<div class="mobile-shell">
-
-<nav class="m-nav">
-  <a class="stool-logo" href="/" aria-label="s-tool home">
-    <svg class="mark" viewBox="0 0 100 100" aria-hidden="true">
-      <circle cx="50" cy="50" r="48" fill="none" stroke="#0d4a2c" stroke-width="2"/>
-      <circle cx="50" cy="50" r="36" fill="#4a8b5e"/>
-      <circle cx="50" cy="50" r="24" fill="#a3d4b3"/>
-      <text x="50" y="62" text-anchor="middle" font-family="Fraunces, serif" font-size="32" font-style="italic" font-weight="500" fill="#0d4a2c">S</text>
-    </svg>
-    <span class="word">tool</span>
-  </a>
-  <button class="m-hamburger" id="mHamburger" aria-label="Open menu" aria-expanded="false">
-    <span></span><span></span><span></span>
-  </button>
-</nav>
-
-<div class="m-drawer" id="mDrawer">
-  <ul>
-    <li><a href="/app">App <span class="arrow">→</span></a></li>
-    <li><a href="/picks" class="active">Picks <span class="arrow">→</span></a></li>
-    <li><a href="/track-record">Track record <span class="arrow">→</span></a></li>
-    <li><a href="/backtest">Backtest <span class="arrow">→</span></a></li>
-    <li><a href="/how">How <span class="arrow">→</span></a></li>
-    <li><a href="/pricing">Pricing <span class="arrow">→</span></a></li>
-    <li><a href="/faq">FAQ <span class="arrow">→</span></a></li>
-  </ul>
-  <div class="drawer-section" id="mDrawerAccount">
-    <div class="drawer-section-label">Account</div>
-    <a href="#" class="drawer-cta" onclick="event.preventDefault(); window.STNav?.openSignIn?.();">Sign in</a>
-  </div>
-</div>
-
-<div class="m-status-strip" id="mStatusStrip">
-  <span class="live-dot"></span>
-  <span id="mStatusText">Loading scan…</span>
-</div>
-
-<div class="m-page-header">
-  <div class="eyebrow" id="mPageEyebrow">Today's portfolio</div>
-  <h1>Ranked <em>picks today.</em></h1>
-</div>
-
-</div><!-- /.mobile-shell (top) -->
-
-
-<!-- ============================================================
-     SHARED CONTENT — picks-app.js renders into #content
-     ============================================================ -->
 <main class="container" id="content">
-  <!-- Skeleton shown until /api/picks resolves. Visual matches the
-       live-portfolio + tier-section structure to avoid layout shift. -->
+  <!-- Initial skeleton — matches the live-portfolio panel + tier-section
+       layout so when data lands there's zero structural shift. JS replaces
+       the entire #content block once /api/picks resolves. -->
   <div class="pf-card" aria-busy="true" aria-label="Loading portfolio">
-    <div class="pf-head"><span class="sk sk-pill" style="width:140px;"></span></div>
+    <div class="pf-head">
+      <span class="sk sk-pill" style="width:140px;"></span>
+    </div>
     <div class="pf-equity-row">
       <span class="sk sk-line xl" style="width:280px;"></span>
       <div style="margin-top:14px;">
@@ -701,13 +1647,17 @@
         <span class="sk sk-pill" style="width:90px;"></span>
       </div>
     </div>
-    <div class="pf-sleeves" style="margin-top:22px;">
+    <div class="pf-chart-row" style="margin-top:18px;">
+      <span class="sk sk-block" style="height:380px;border-radius:8px;"></span>
+    </div>
+    <div class="pf-sleeves sk-grid cols-3" style="margin-top:22px;">
       <span class="sk sk-card" style="height:96px;"></span>
       <span class="sk sk-card" style="height:96px;"></span>
       <span class="sk sk-card" style="height:96px;"></span>
     </div>
   </div>
-  <div style="margin:48px 0 24px;">
+
+  <div style="margin:56px 0 28px;">
     <span class="sk sk-line lg" style="width:240px;"></span>
     <span class="sk sk-line"    style="width:480px;"></span>
   </div>
@@ -719,149 +1669,14 @@
   </div>
 </main>
 
-
-<!-- ============================================================
-     DESKTOP SHELL footer
-     ============================================================ -->
-<div class="desktop-shell">
-<footer class="dfooter">
-  <div class="dfooter-inner">
-    <div>
-      <a class="stool-logo inverse" href="/" aria-label="s-tool home">
-        <svg class="mark" viewBox="0 0 100 100" aria-hidden="true">
-          <circle cx="50" cy="50" r="48" fill="none" stroke="#a3d4b3" stroke-width="2"/>
-          <circle cx="50" cy="50" r="36" fill="#1f6e3f"/>
-          <circle cx="50" cy="50" r="24" fill="#4a8b5e"/>
-          <text x="50" y="62" text-anchor="middle" font-family="Fraunces, serif" font-style="italic" font-size="36" font-weight="700" fill="#a3d4b3">S</text>
-        </svg>
-        <span class="word">tool</span>
-      </a>
-      <p class="dfooter-tagline">A precision instrument for market signals. Built for honest scoring, not hype.</p>
-    </div>
-    <div class="dfooter-col">
-      <h5>Product</h5>
-      <ul>
-        <li><a href="/app">Projector</a></li>
-        <li><a href="/picks">Picks</a></li>
-        <li><a href="/track-record">Track record</a></li>
-        <li><a href="/backtest">Backtest</a></li>
-      </ul>
-    </div>
-    <div class="dfooter-col">
-      <h5>Resources</h5>
-      <ul>
-        <li><a href="/how">Methodology</a></li>
-        <li><a href="/faq">FAQ</a></li>
-        <li><a href="/pricing">Pricing</a></li>
-      </ul>
-    </div>
-    <div class="dfooter-col">
-      <h5>Legal</h5>
-      <ul>
-        <li><a href="/faq#disclosure">Disclosures</a></li>
-      </ul>
-    </div>
-  </div>
-  <div class="dfooter-bottom">
-    <span>&copy; 2026 s-tool.io · Not investment advice</span>
-    <span>Daily scan after market close</span>
-  </div>
-</footer>
-</div>
-
-
-<!-- ============================================================
-     MOBILE SHELL footer + bottom tab bar
-     ============================================================ -->
-<div class="mobile-shell">
-
-<footer class="m-footer">
-  <div class="footer-logo">
-    <svg viewBox="0 0 100 100" aria-hidden="true">
-      <circle cx="50" cy="50" r="48" fill="none" stroke="#a3d4b3" stroke-width="2"/>
-      <circle cx="50" cy="50" r="36" fill="#1f6e3f"/>
-      <circle cx="50" cy="50" r="24" fill="#4a8b5e"/>
-      <text x="50" y="62" text-anchor="middle" font-family="Fraunces, serif" font-size="32" font-style="italic" font-weight="500" fill="#a3d4b3">S</text>
-    </svg>
-    <span class="word">tool</span>
-  </div>
-  <div class="col-title">Product</div>
-  <ul>
-    <li><a href="/picks">Picks</a></li>
-    <li><a href="/app">Projector</a></li>
-    <li><a href="/track-record">Track record</a></li>
-  </ul>
-  <div class="col-title">Resources</div>
-  <ul>
-    <li><a href="/how">Methodology</a></li>
-    <li><a href="/faq">FAQ</a></li>
-  </ul>
-  <div class="legal">
-    <p>s-tool.io · Score the signal</p>
-    <p style="margin-top: 8px;">Not investment advice. Past performance does not predict future results.</p>
-  </div>
+<footer>
+  <div>&copy; 2026 s-tool.io &nbsp;&middot;&nbsp; <a href="/">Home</a> &nbsp;&middot;&nbsp; <a href="/app">App</a> &nbsp;&middot;&nbsp; <a href="/how">How it works</a> &nbsp;&middot;&nbsp; Not investment advice.</div>
 </footer>
 
-<div class="m-tab-bar">
-  <a class="m-tab" href="/picks" aria-current="page" style="color: var(--forest);">
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="3" fill="currentColor"/><line x1="12" y1="3" x2="12" y2="6" stroke="currentColor" stroke-width="1.6"/><line x1="12" y1="18" x2="12" y2="21" stroke="currentColor" stroke-width="1.6"/><line x1="3" y1="12" x2="6" y2="12" stroke="currentColor" stroke-width="1.6"/><line x1="18" y1="12" x2="21" y2="12" stroke="currentColor" stroke-width="1.6"/></svg>
-    <span class="label">Picks</span>
-  </a>
-  <a class="m-tab" href="/app">
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 21V5a2 2 0 012-2h10a2 2 0 012 2v16l-7-4-7 4z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
-    <span class="label">App</span>
-  </a>
-  <a class="m-tab" href="/track-record">
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 7h7v7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    <span class="label">Record</span>
-  </a>
-  <a class="m-tab" href="/backtest">
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-    <span class="label">Backtest</span>
-  </a>
-  <a class="m-tab" href="/how">
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.6"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-    <span class="label">How</span>
-  </a>
-</div>
-
-</div><!-- /.mobile-shell (bottom) -->
-
-
-<script>
-// Mobile drawer toggle
-(function(){
-  var ham = document.getElementById('mHamburger');
-  var drawer = document.getElementById('mDrawer');
-  if (!ham || !drawer) return;
-  ham.addEventListener('click', function(){
-    var open = drawer.classList.toggle('open');
-    ham.classList.toggle('open', open);
-    ham.setAttribute('aria-expanded', open ? 'true' : 'false');
-  });
-})();
-
-// Mirror desktop scanMeta text into the mobile status strip
-(function(){
-  var src = document.getElementById('scanMeta');
-  var dst = document.getElementById('mStatusText');
-  if (!src || !dst) return;
-  function summarize() {
-    // Take the most informative meta-item text and render it as a
-    // single short status line.
-    var first = src.querySelector('.meta-item:not(:has(.waiting)) span:nth-child(2)');
-    if (first && first.textContent.trim()) {
-      dst.textContent = first.textContent.trim();
-    } else {
-      dst.textContent = 'Loading scan…';
-    }
-  }
-  summarize();
-  new MutationObserver(summarize).observe(src, { childList: true, subtree: true, characterData: true });
-})();
-</script>
-
-<!-- picks-app.js renders into #content. ?v= bumped after CSS rewrite. -->
-<script defer src="/shared/picks-app.js?v=20260429i"></script>
+<!-- 84KB of inline page logic moved to /shared/picks-app.js so the
+     1h Cache-Control on /shared/* skips download + parse on every
+     repeat visit. defer means it executes after HTML parse but
+     before DOMContentLoaded, same effective ordering as inline. -->
+<script defer src="/shared/picks-app.js?v=20260429o"></script>
 </body>
 </html>
