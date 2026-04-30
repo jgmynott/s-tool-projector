@@ -1,6 +1,6 @@
 {
-  "as_of": "2026-04-30T19:00:56.901930+00:00",
-  "n_rows": 488,
+  "as_of": "2026-04-30T19:05:37.400620+00:00",
+  "n_rows": 491,
   "rows": [
     {
       "ts": "2026-04-27T13:47:29.206731Z",
@@ -6380,6 +6380,42 @@
       "symbol": "CAT",
       "qty": 4,
       "error": "Alpaca POST orders \u2192 HTTP 422: {\"code\":40010001,\"message\":\"client_order_id must be unique\"}"
+    },
+    {
+      "ts": "2026-04-30T19:05:37.052151+00:00",
+      "event": "sell",
+      "sleeve": "scalper",
+      "symbol": "META",
+      "qty": 1,
+      "buy_price": 616.565,
+      "sell_price": null,
+      "pnl": null,
+      "exit_reason": "max_hold"
+    },
+    {
+      "ts": "2026-04-30T19:05:37.314025+00:00",
+      "event": "sell",
+      "sleeve": "scalper",
+      "symbol": "SPY",
+      "qty": 1,
+      "buy_price": 718.51,
+      "sell_price": null,
+      "pnl": null,
+      "exit_reason": "max_hold"
+    },
+    {
+      "ts": "2026-04-30T19:05:37.399974+00:00",
+      "event": "buy",
+      "sleeve": "scalper",
+      "symbol": "MSFT",
+      "qty": 1,
+      "ref_price": 407.48,
+      "live_price": 407.48,
+      "stop": 404.63,
+      "target": 411.55,
+      "tier": "relvol",
+      "rationale": "{\"vol_multiple\": 2.490555851110013, \"range_pos\": 0.8531073446327719, \"cur_vol\": 52589}",
+      "result": "submitted"
     }
   ]
 }

@@ -117,23 +117,14 @@
   "breaker_fired_date": "2026-04-28",
   "scalper": {
     "positions": {
-      "META": {
-        "symbol": "META",
+      "MSFT": {
+        "symbol": "MSFT",
         "qty": 1,
-        "entry_price": 616.565,
-        "opened_at": "2026-04-30T18:35:30.244400+00:00",
+        "entry_price": 407.48,
+        "opened_at": "2026-04-30T19:05:37.399937+00:00",
         "signal": "relvol",
-        "stop": 612.25,
-        "target": 622.73
-      },
-      "SPY": {
-        "symbol": "SPY",
-        "qty": 1,
-        "entry_price": 718.51,
-        "opened_at": "2026-04-30T18:40:30.945457+00:00",
-        "signal": "relvol",
-        "stop": 713.48,
-        "target": 725.7
+        "stop": 404.63,
+        "target": 411.55
       }
     },
     "fired_today": [
@@ -256,6 +247,11 @@
         "symbol": "SPY",
         "signal": "relvol",
         "ts": "2026-04-30T18:40:30.945474+00:00"
+      },
+      {
+        "symbol": "MSFT",
+        "signal": "relvol",
+        "ts": "2026-04-30T19:05:37.399956+00:00"
       }
     ],
     "last_scan": null,
