@@ -178,12 +178,27 @@
   },
   "breaker_fired_date": "2026-04-28",
   "scalper": {
-    "positions": {},
+    "positions": {
+      "ASML": {
+        "symbol": "ASML",
+        "qty": 1,
+        "entry_price": 1433.32,
+        "opened_at": "2026-05-01T18:36:56.248044+00:00",
+        "signal": "relvol",
+        "stop": 1423.29,
+        "target": 1447.65
+      }
+    },
     "fired_today": [
       {
         "symbol": "DE",
         "signal": "relvol",
         "ts": "2026-05-01T15:10:26.419295+00:00"
+      },
+      {
+        "symbol": "ASML",
+        "signal": "relvol",
+        "ts": "2026-05-01T18:36:56.248053+00:00"
       }
     ],
     "last_scan": null,
