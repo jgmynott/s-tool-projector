@@ -1,6 +1,6 @@
 {
-  "as_of": "2026-05-01T13:40:35.497031+00:00",
-  "n_rows": 497,
+  "as_of": "2026-05-01T14:34:54.512840+00:00",
+  "n_rows": 500,
   "rows": [
     {
       "ts": "2026-04-27T13:47:29.206731Z",
@@ -6519,6 +6519,42 @@
       "rationale": "Ranked on model output alone \u2014 +14% expected return against 30% realized vol. The Sharpe proxy of 0.",
       "result": "submitted",
       "tranche": 2
+    },
+    {
+      "ts": "2026-05-01T14:34:53.969048+00:00",
+      "event": "sell",
+      "sleeve": "daytrade",
+      "symbol": "GE",
+      "qty": "8",
+      "ref_price": 289.93,
+      "live_price": null,
+      "realized_pl": null,
+      "reason": "preopen_holdover_sweep",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-05-01T14:34:54.259533+00:00",
+      "event": "sell",
+      "sleeve": "daytrade",
+      "symbol": "IBKR",
+      "qty": "43",
+      "ref_price": 79.5,
+      "live_price": null,
+      "realized_pl": null,
+      "reason": "preopen_holdover_sweep",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-05-01T14:34:54.512237+00:00",
+      "event": "sell",
+      "sleeve": "daytrade",
+      "symbol": "TSM",
+      "qty": "8",
+      "ref_price": 396.06,
+      "live_price": null,
+      "realized_pl": null,
+      "reason": "preopen_holdover_sweep",
+      "result": "submitted"
     }
   ]
 }

@@ -24,12 +24,6 @@
       "ref_price": 168.01,
       "qty": 29
     },
-    "TSM": {
-      "sleeve": "daytrade",
-      "opened_at": "2026-05-01T13:40:33.297724+00:00",
-      "ref_price": 396.06,
-      "qty": 8
-    },
     "WDC": {
       "sleeve": "momentum",
       "opened_at": "2026-04-30T13:30:37.561619+00:00",
@@ -83,18 +77,6 @@
       "opened_at": "2026-05-01T13:40:32.763731+00:00",
       "ref_price": 890.11,
       "qty": 5
-    },
-    "IBKR": {
-      "sleeve": "daytrade",
-      "opened_at": "2026-05-01T13:40:34.240530+00:00",
-      "ref_price": 79.5,
-      "qty": 43
-    },
-    "GE": {
-      "sleeve": "daytrade",
-      "opened_at": "2026-05-01T13:40:35.496358+00:00",
-      "ref_price": 289.93,
-      "qty": 11
     }
   },
   "traded_today": {
@@ -297,7 +279,7 @@
   "equity_log": [
     {
       "date": "2026-05-01",
-      "equity": 102630.05
+      "equity": 102865.74
     }
   ]
 }
