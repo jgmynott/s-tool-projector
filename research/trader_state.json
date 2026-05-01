@@ -171,192 +171,25 @@
   "breaker_fired_date": "2026-04-28",
   "scalper": {
     "positions": {
-      "AMZN": {
-        "symbol": "AMZN",
+      "DE": {
+        "symbol": "DE",
         "qty": 1,
-        "entry_price": 266.24,
-        "opened_at": "2026-04-30T19:35:31.151569+00:00",
+        "entry_price": 579.21,
+        "opened_at": "2026-05-01T15:10:26.419283+00:00",
         "signal": "relvol",
-        "stop": 264.38,
-        "target": 268.9
-      },
-      "INTC": {
-        "symbol": "INTC",
-        "qty": 5,
-        "entry_price": 94.175,
-        "opened_at": "2026-04-30T19:55:54.974562+00:00",
-        "signal": "relvol",
-        "stop": 93.52,
-        "target": 95.12
-      },
-      "CVX": {
-        "symbol": "CVX",
-        "qty": 2,
-        "entry_price": 194.005,
-        "opened_at": "2026-04-30T19:55:55.021273+00:00",
-        "signal": "relvol",
-        "stop": 192.65,
-        "target": 195.95
-      },
-      "BA": {
-        "symbol": "BA",
-        "qty": 2,
-        "entry_price": 229.03,
-        "opened_at": "2026-04-30T19:55:55.067965+00:00",
-        "signal": "relvol",
-        "stop": 227.43,
-        "target": 231.32
+        "stop": 575.16,
+        "target": 585.0
       }
     },
     "fired_today": [
       {
-        "symbol": "AAPL",
-        "signal": "orb",
-        "ts": "2026-04-30T14:05:33.469871+00:00"
-      },
-      {
-        "symbol": "C",
-        "signal": "relvol",
-        "ts": "2026-04-30T14:10:37.671881+00:00"
-      },
-      {
-        "symbol": "BLK",
-        "signal": "orb",
-        "ts": "2026-04-30T14:10:37.716941+00:00"
-      },
-      {
-        "symbol": "COST",
-        "signal": "orb",
-        "ts": "2026-04-30T14:10:37.762484+00:00"
-      },
-      {
-        "symbol": "HD",
-        "signal": "relvol",
-        "ts": "2026-04-30T14:10:37.807097+00:00"
-      },
-      {
-        "symbol": "GS",
-        "signal": "orb",
-        "ts": "2026-04-30T14:20:55.269408+00:00"
-      },
-      {
-        "symbol": "MS",
-        "signal": "orb",
-        "ts": "2026-04-30T14:20:55.330265+00:00"
-      },
-      {
-        "symbol": "XOM",
-        "signal": "orb",
-        "ts": "2026-04-30T14:35:32.784039+00:00"
-      },
-      {
-        "symbol": "JPM",
-        "signal": "relvol",
-        "ts": "2026-04-30T14:40:36.199637+00:00"
-      },
-      {
-        "symbol": "BAC",
-        "signal": "relvol",
-        "ts": "2026-04-30T14:40:36.284164+00:00"
-      },
-      {
-        "symbol": "IWM",
-        "signal": "relvol",
-        "ts": "2026-04-30T14:45:36.961496+00:00"
-      },
-      {
-        "symbol": "ASML",
-        "signal": "relvol",
-        "ts": "2026-04-30T14:55:36.354568+00:00"
-      },
-      {
-        "symbol": "TSLA",
-        "signal": "relvol",
-        "ts": "2026-04-30T15:05:40.023873+00:00"
-      },
-      {
-        "symbol": "AMD",
-        "signal": "relvol",
-        "ts": "2026-04-30T15:05:40.075686+00:00"
-      },
-      {
-        "symbol": "AVGO",
-        "signal": "relvol",
-        "ts": "2026-04-30T15:15:38.342250+00:00"
-      },
-      {
-        "symbol": "SOXL",
-        "signal": "relvol",
-        "ts": "2026-04-30T15:35:38.728691+00:00"
-      },
-      {
         "symbol": "DE",
         "signal": "relvol",
-        "ts": "2026-04-30T16:25:31.171593+00:00"
-      },
-      {
-        "symbol": "SQQQ",
-        "signal": "relvol",
-        "ts": "2026-04-30T16:45:35.019096+00:00"
-      },
-      {
-        "symbol": "GE",
-        "signal": "relvol",
-        "ts": "2026-04-30T17:10:31.563317+00:00"
-      },
-      {
-        "symbol": "TQQQ",
-        "signal": "relvol",
-        "ts": "2026-04-30T18:05:38.477435+00:00"
-      },
-      {
-        "symbol": "SOXS",
-        "signal": "relvol",
-        "ts": "2026-04-30T18:10:33.811758+00:00"
-      },
-      {
-        "symbol": "NFLX",
-        "signal": "relvol",
-        "ts": "2026-04-30T18:20:41.860455+00:00"
-      },
-      {
-        "symbol": "META",
-        "signal": "relvol",
-        "ts": "2026-04-30T18:35:30.244412+00:00"
-      },
-      {
-        "symbol": "SPY",
-        "signal": "relvol",
-        "ts": "2026-04-30T18:40:30.945474+00:00"
-      },
-      {
-        "symbol": "MSFT",
-        "signal": "relvol",
-        "ts": "2026-04-30T19:05:37.399956+00:00"
-      },
-      {
-        "symbol": "AMZN",
-        "signal": "relvol",
-        "ts": "2026-04-30T19:35:31.151584+00:00"
-      },
-      {
-        "symbol": "INTC",
-        "signal": "relvol",
-        "ts": "2026-04-30T19:55:54.974575+00:00"
-      },
-      {
-        "symbol": "CVX",
-        "signal": "relvol",
-        "ts": "2026-04-30T19:55:55.021289+00:00"
-      },
-      {
-        "symbol": "BA",
-        "signal": "relvol",
-        "ts": "2026-04-30T19:55:55.067976+00:00"
+        "ts": "2026-05-01T15:10:26.419295+00:00"
       }
     ],
     "last_scan": null,
-    "last_scan_date": "2026-04-30"
+    "last_scan_date": "2026-05-01"
   },
   "equity_log": [
     {

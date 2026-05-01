@@ -1,6 +1,6 @@
 {
-  "as_of": "2026-05-01T15:04:56.775109+00:00",
-  "n_rows": 535,
+  "as_of": "2026-05-01T15:10:26.419880+00:00",
+  "n_rows": 542,
   "rows": [
     {
       "ts": "2026-04-27T13:47:29.206731Z",
@@ -7057,6 +7057,86 @@
       "rationale": "",
       "result": "submitted",
       "tranche": 2
+    },
+    {
+      "ts": "2026-05-01T15:10:25.745937+00:00",
+      "event": "sell",
+      "sleeve": "scalper",
+      "symbol": "BA",
+      "qty": 2.0,
+      "buy_price": null,
+      "sell_price": null,
+      "pnl": null,
+      "exit_reason": "max_hold"
+    },
+    {
+      "ts": "2026-05-01T15:10:25.831534+00:00",
+      "event": "sell",
+      "sleeve": "scalper",
+      "symbol": "CVX",
+      "qty": 2.0,
+      "buy_price": null,
+      "sell_price": null,
+      "pnl": null,
+      "exit_reason": "max_hold"
+    },
+    {
+      "ts": "2026-05-01T15:10:25.911933+00:00",
+      "event": "sell",
+      "sleeve": "scalper",
+      "symbol": "INTC",
+      "qty": 5.0,
+      "buy_price": null,
+      "sell_price": null,
+      "pnl": null,
+      "exit_reason": "max_hold"
+    },
+    {
+      "ts": "2026-05-01T15:10:25.998591+00:00",
+      "event": "sell",
+      "sleeve": "scalper",
+      "symbol": "AMZN",
+      "qty": 1.0,
+      "buy_price": null,
+      "sell_price": null,
+      "pnl": null,
+      "exit_reason": "max_hold"
+    },
+    {
+      "ts": "2026-05-01T15:10:26.215299+00:00",
+      "event": "sell",
+      "sleeve": "scalper",
+      "symbol": "GS",
+      "qty": 1.0,
+      "buy_price": null,
+      "sell_price": null,
+      "pnl": null,
+      "exit_reason": "max_hold"
+    },
+    {
+      "ts": "2026-05-01T15:10:26.370637+00:00",
+      "event": "sell",
+      "sleeve": "scalper",
+      "symbol": "CAT",
+      "qty": 1.0,
+      "buy_price": null,
+      "sell_price": null,
+      "pnl": null,
+      "exit_reason": "max_hold"
+    },
+    {
+      "ts": "2026-05-01T15:10:26.419298+00:00",
+      "event": "buy",
+      "sleeve": "scalper",
+      "symbol": "DE",
+      "qty": 1,
+      "ref_price": 579.21,
+      "live_price": 579.21,
+      "stop": 575.16,
+      "target": 585.0,
+      "tier": "relvol",
+      "rationale": "{\"vol_multiple\": 3.3469632392115076, \"range_pos\": 0.8869565217391322, \"cur_vol\": 1933}",
+      "result": "submitted"
     }
   ]
 }
