@@ -77,6 +77,18 @@
       "opened_at": "2026-05-01T13:40:32.763731+00:00",
       "ref_price": 890.11,
       "qty": 5
+    },
+    "FIX": {
+      "sleeve": "momentum",
+      "opened_at": "2026-05-01T14:36:45.820574+00:00",
+      "ref_price": 1840.25,
+      "qty": 5
+    },
+    "AGX": {
+      "sleeve": "swing",
+      "opened_at": "2026-05-01T14:36:46.368635+00:00",
+      "ref_price": 601.83,
+      "qty": 8
     }
   },
   "traded_today": {
@@ -279,7 +291,7 @@
   "equity_log": [
     {
       "date": "2026-05-01",
-      "equity": 102865.74
+      "equity": 102747.95
     }
   ]
 }

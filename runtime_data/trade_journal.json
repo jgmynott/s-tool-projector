@@ -1,6 +1,6 @@
 {
-  "as_of": "2026-05-01T14:34:54.512840+00:00",
-  "n_rows": 500,
+  "as_of": "2026-05-01T14:36:47.376748+00:00",
+  "n_rows": 505,
   "rows": [
     {
       "ts": "2026-04-27T13:47:29.206731Z",
@@ -6555,6 +6555,58 @@
       "realized_pl": null,
       "reason": "preopen_holdover_sweep",
       "result": "submitted"
+    },
+    {
+      "ts": "2026-05-01T14:36:45.820554+00:00",
+      "event": "buy",
+      "sleeve": "momentum",
+      "symbol": "FIX",
+      "qty": 5,
+      "ref_price": 1840.25,
+      "live_price": 1827.73,
+      "stop": 1736.34,
+      "target": 2010.5,
+      "tier": "aggressive",
+      "rationale": "Top-line is accelerating at 33% year-on-year, and the gross-margin line (24%) is holding through the",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-05-01T14:36:46.368616+00:00",
+      "event": "buy",
+      "sleeve": "swing",
+      "symbol": "AGX",
+      "qty": 8,
+      "ref_price": 601.83,
+      "live_price": 671.41,
+      "stop": 624.41,
+      "target": 772.12,
+      "tier": "aggressive",
+      "rationale": "Free-cash conversion at 43% of revenue is the quiet specialist skill here \u2014 the number earnings-base",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-05-01T14:36:47.204436+00:00",
+      "event": "buy_failed",
+      "sleeve": "daytrade",
+      "symbol": "TSM",
+      "qty": 8,
+      "error": "Alpaca POST orders \u2192 HTTP 422: {\"code\":40010001,\"message\":\"client_order_id must be unique\"}"
+    },
+    {
+      "ts": "2026-05-01T14:36:47.290601+00:00",
+      "event": "buy_failed",
+      "sleeve": "daytrade",
+      "symbol": "IBKR",
+      "qty": 43,
+      "error": "Alpaca POST orders \u2192 HTTP 422: {\"code\":40010001,\"message\":\"client_order_id must be unique\"}"
+    },
+    {
+      "ts": "2026-05-01T14:36:47.375866+00:00",
+      "event": "buy_failed",
+      "sleeve": "daytrade",
+      "symbol": "GE",
+      "qty": 11,
+      "error": "Alpaca POST orders \u2192 HTTP 422: {\"code\":40010001,\"message\":\"client_order_id must be unique\"}"
     }
   ]
 }
