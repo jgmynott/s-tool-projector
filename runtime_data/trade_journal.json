@@ -1,6 +1,6 @@
 {
-  "as_of": "2026-05-01T15:10:26.419880+00:00",
-  "n_rows": 542,
+  "as_of": "2026-05-01T16:04:20.256747+00:00",
+  "n_rows": 545,
   "rows": [
     {
       "ts": "2026-04-27T13:47:29.206731Z",
@@ -7137,6 +7137,51 @@
       "tier": "relvol",
       "rationale": "{\"vol_multiple\": 3.3469632392115076, \"range_pos\": 0.8869565217391322, \"cur_vol\": 1933}",
       "result": "submitted"
+    },
+    {
+      "ts": "2026-05-01T16:04:20.148419+00:00",
+      "event": "buy",
+      "sleeve": "daytrade",
+      "symbol": "CAT",
+      "qty": 1,
+      "ref_price": 890.11,
+      "live_price": 882.15,
+      "stop": 855.69,
+      "target": 895.38,
+      "tier": "moderate",
+      "rationale": "",
+      "result": "submitted",
+      "tranche": 0
+    },
+    {
+      "ts": "2026-05-01T16:04:20.202754+00:00",
+      "event": "buy",
+      "sleeve": "daytrade",
+      "symbol": "CAT",
+      "qty": 1,
+      "ref_price": 890.11,
+      "live_price": 882.15,
+      "stop": 855.69,
+      "target": 908.61,
+      "tier": "moderate",
+      "rationale": "",
+      "result": "submitted",
+      "tranche": 1
+    },
+    {
+      "ts": "2026-05-01T16:04:20.256192+00:00",
+      "event": "buy",
+      "sleeve": "daytrade",
+      "symbol": "CAT",
+      "qty": 1,
+      "ref_price": 890.11,
+      "live_price": 882.15,
+      "stop": 855.69,
+      "target": 926.26,
+      "tier": "moderate",
+      "rationale": "",
+      "result": "submitted",
+      "tranche": 2
     }
   ]
 }

@@ -73,10 +73,10 @@
       "qty": 5
     },
     "CAT": {
-      "sleeve": "swing",
-      "opened_at": "2026-05-01T13:40:32.763731+00:00",
+      "sleeve": "daytrade",
+      "opened_at": "2026-05-01T16:04:20.256212+00:00",
       "ref_price": 890.11,
-      "qty": 5
+      "qty": 3
     },
     "FIX": {
       "sleeve": "momentum",
@@ -165,7 +165,8 @@
       "DGX",
       "CSX",
       "LH",
-      "BG"
+      "BG",
+      "CAT"
     ]
   },
   "breaker_fired_date": "2026-04-28",
@@ -194,7 +195,7 @@
   "equity_log": [
     {
       "date": "2026-05-01",
-      "equity": 102427.22
+      "equity": 103101.48
     }
   ]
 }
