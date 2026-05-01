@@ -1,6 +1,6 @@
 {
-  "as_of": "2026-05-01T16:11:19.314945+00:00",
-  "n_rows": 547,
+  "as_of": "2026-05-01T17:08:54.129589+00:00",
+  "n_rows": 550,
   "rows": [
     {
       "ts": "2026-04-27T13:47:29.206731Z",
@@ -7204,6 +7204,51 @@
       "sell_price": null,
       "pnl": null,
       "exit_reason": "max_hold"
+    },
+    {
+      "ts": "2026-05-01T17:08:53.096106+00:00",
+      "event": "buy",
+      "sleeve": "daytrade",
+      "symbol": "DD",
+      "qty": 25,
+      "ref_price": 45.66,
+      "live_price": 46.04,
+      "stop": 44.66,
+      "target": 46.73,
+      "tier": "moderate",
+      "rationale": "",
+      "result": "submitted",
+      "tranche": 0
+    },
+    {
+      "ts": "2026-05-01T17:08:53.563135+00:00",
+      "event": "buy",
+      "sleeve": "daytrade",
+      "symbol": "DD",
+      "qty": 25,
+      "ref_price": 45.66,
+      "live_price": 46.04,
+      "stop": 44.66,
+      "target": 47.42,
+      "tier": "moderate",
+      "rationale": "",
+      "result": "submitted",
+      "tranche": 1
+    },
+    {
+      "ts": "2026-05-01T17:08:54.128986+00:00",
+      "event": "buy",
+      "sleeve": "daytrade",
+      "symbol": "DD",
+      "qty": 25,
+      "ref_price": 45.66,
+      "live_price": 46.04,
+      "stop": 44.66,
+      "target": 48.34,
+      "tier": "moderate",
+      "rationale": "",
+      "result": "submitted",
+      "tranche": 2
     }
   ]
 }

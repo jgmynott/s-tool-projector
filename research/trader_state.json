@@ -149,6 +149,12 @@
       "opened_at": "2026-05-01T15:04:56.774376+00:00",
       "ref_price": 127.07,
       "qty": 26
+    },
+    "DD": {
+      "sleeve": "daytrade",
+      "opened_at": "2026-05-01T17:08:54.129009+00:00",
+      "ref_price": 45.66,
+      "qty": 75
     }
   },
   "traded_today": {
@@ -166,7 +172,8 @@
       "CSX",
       "LH",
       "BG",
-      "CAT"
+      "CAT",
+      "DD"
     ]
   },
   "breaker_fired_date": "2026-04-28",
@@ -185,7 +192,7 @@
   "equity_log": [
     {
       "date": "2026-05-01",
-      "equity": 103101.48
+      "equity": 103209.78
     }
   ]
 }
