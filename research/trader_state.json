@@ -90,71 +90,11 @@
       "ref_price": 601.83,
       "qty": 8
     },
-    "TT": {
-      "sleeve": "daytrade",
-      "opened_at": "2026-05-01T15:04:47.046924+00:00",
-      "ref_price": 492.54,
-      "qty": 6
-    },
     "GS": {
       "sleeve": "daytrade",
       "opened_at": "2026-05-01T15:04:47.970395+00:00",
       "ref_price": 923.77,
       "qty": 3
-    },
-    "ETR": {
-      "sleeve": "daytrade",
-      "opened_at": "2026-05-01T15:04:48.875722+00:00",
-      "ref_price": 117.91,
-      "qty": 28
-    },
-    "BKNG": {
-      "sleeve": "daytrade",
-      "opened_at": "2026-05-01T15:04:49.852797+00:00",
-      "ref_price": 168.36,
-      "qty": 20
-    },
-    "AXON": {
-      "sleeve": "daytrade",
-      "opened_at": "2026-05-01T15:04:50.747339+00:00",
-      "ref_price": 401.76,
-      "qty": 8
-    },
-    "CSTM": {
-      "sleeve": "daytrade",
-      "opened_at": "2026-05-01T15:04:51.739448+00:00",
-      "ref_price": 29.66,
-      "qty": 115
-    },
-    "DGX": {
-      "sleeve": "daytrade",
-      "opened_at": "2026-05-01T15:04:52.654311+00:00",
-      "ref_price": 194.2,
-      "qty": 17
-    },
-    "CSX": {
-      "sleeve": "daytrade",
-      "opened_at": "2026-05-01T15:04:54.957305+00:00",
-      "ref_price": 45.43,
-      "qty": 75
-    },
-    "LH": {
-      "sleeve": "daytrade",
-      "opened_at": "2026-05-01T15:04:55.883464+00:00",
-      "ref_price": 256.8,
-      "qty": 13
-    },
-    "BG": {
-      "sleeve": "daytrade",
-      "opened_at": "2026-05-01T15:04:56.774376+00:00",
-      "ref_price": 127.07,
-      "qty": 26
-    },
-    "DD": {
-      "sleeve": "daytrade",
-      "opened_at": "2026-05-01T17:08:54.129009+00:00",
-      "ref_price": 45.66,
-      "qty": 75
     }
   },
   "traded_today": {
