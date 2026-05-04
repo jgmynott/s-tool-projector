@@ -145,14 +145,14 @@
         "stop": 50.85,
         "target": 51.72
       },
-      "SOXS": {
-        "symbol": "SOXS",
-        "qty": 37,
-        "entry_price": 13.47,
-        "opened_at": "2026-05-04T16:09:40.741506+00:00",
+      "COST": {
+        "symbol": "COST",
+        "qty": 1,
+        "entry_price": 1017.285,
+        "opened_at": "2026-05-04T16:16:20.250396+00:00",
         "signal": "relvol",
-        "stop": 13.38,
-        "target": 13.6
+        "stop": 1010.16,
+        "target": 1027.46
       }
     },
     "fired_today": [
@@ -190,6 +190,11 @@
         "symbol": "SOXS",
         "signal": "relvol",
         "ts": "2026-05-04T16:09:40.741514+00:00"
+      },
+      {
+        "symbol": "COST",
+        "signal": "relvol",
+        "ts": "2026-05-04T16:16:20.250413+00:00"
       }
     ],
     "last_scan": null,
