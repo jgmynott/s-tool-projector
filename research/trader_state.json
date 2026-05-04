@@ -107,6 +107,42 @@
       "opened_at": "2026-05-04T13:31:25.724443+00:00",
       "ref_price": 142.3,
       "qty": 24
+    },
+    "GLW": {
+      "sleeve": "daytrade",
+      "opened_at": "2026-05-04T14:01:24.235718+00:00",
+      "ref_price": 158.26,
+      "qty": 21
+    },
+    "PH": {
+      "sleeve": "daytrade",
+      "opened_at": "2026-05-04T14:01:24.598911+00:00",
+      "ref_price": 882.23,
+      "qty": 3
+    },
+    "TT": {
+      "sleeve": "daytrade",
+      "opened_at": "2026-05-04T14:01:24.949450+00:00",
+      "ref_price": 486.48,
+      "qty": 7
+    },
+    "WMB": {
+      "sleeve": "daytrade",
+      "opened_at": "2026-05-04T14:01:27.164332+00:00",
+      "ref_price": 75.54,
+      "qty": 45
+    },
+    "L": {
+      "sleeve": "daytrade",
+      "opened_at": "2026-05-04T14:01:29.580905+00:00",
+      "ref_price": 111.7,
+      "qty": 30
+    },
+    "DGX": {
+      "sleeve": "daytrade",
+      "opened_at": "2026-05-04T14:01:29.942142+00:00",
+      "ref_price": 192.67,
+      "qty": 17
     }
   },
   "traded_today": {
@@ -114,7 +150,13 @@
       "CAT",
       "GE",
       "APH",
-      "GS"
+      "GS",
+      "GLW",
+      "PH",
+      "TT",
+      "WMB",
+      "L",
+      "DGX"
     ]
   },
   "breaker_fired_date": "2026-04-28",
@@ -157,7 +199,7 @@
     },
     {
       "date": "2026-05-04",
-      "equity": 103204.29
+      "equity": 103528.77
     }
   ]
 }
