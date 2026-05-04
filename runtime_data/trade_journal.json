@@ -1,6 +1,6 @@
 {
-  "as_of": "2026-05-04T15:06:18.780516+00:00",
-  "n_rows": 658,
+  "as_of": "2026-05-04T15:21:23.288485+00:00",
+  "n_rows": 659,
   "rows": [
     {
       "ts": "2026-04-27T13:47:29.206731Z",
@@ -8713,6 +8713,17 @@
       "symbol": "TSM",
       "qty": 1.0,
       "buy_price": null,
+      "sell_price": null,
+      "pnl": null,
+      "exit_reason": "max_hold"
+    },
+    {
+      "ts": "2026-05-04T15:21:23.287859+00:00",
+      "event": "sell",
+      "sleeve": "scalper",
+      "symbol": "DE",
+      "qty": 1,
+      "buy_price": 578.24,
       "sell_price": null,
       "pnl": null,
       "exit_reason": "max_hold"
