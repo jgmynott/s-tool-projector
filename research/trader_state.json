@@ -134,6 +134,15 @@
         "signal": "relvol",
         "stop": 389.52,
         "target": 396.19
+      },
+      "DE": {
+        "symbol": "DE",
+        "qty": 1,
+        "entry_price": 578.24,
+        "opened_at": "2026-05-04T14:56:12.989860+00:00",
+        "signal": "relvol",
+        "stop": 574.19,
+        "target": 584.02
       }
     },
     "fired_today": [
@@ -146,6 +155,11 @@
         "symbol": "TSLA",
         "signal": "relvol",
         "ts": "2026-05-04T14:51:19.534868+00:00"
+      },
+      {
+        "symbol": "DE",
+        "signal": "relvol",
+        "ts": "2026-05-04T14:56:12.989873+00:00"
       }
     ],
     "last_scan": null,
