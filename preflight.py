@@ -554,7 +554,6 @@ def check_workflow_crons():
 
 
 SURVIVING_PAGES = [
-    Path("cloudflare/public/app/index.html"),
     Path("cloudflare/public/picks/index.html"),
     Path("cloudflare/public/history/index.html"),
 ]
@@ -590,7 +589,6 @@ def check_no_stale_billing_refs():
     import re
     print("\n[*] No stale billing/auth references on shipped pages")
     targets = [
-        ROOT / "cloudflare/public/app/index.html",
         ROOT / "cloudflare/public/picks/index.html",
         ROOT / "cloudflare/public/history/index.html",
     ]
@@ -635,12 +633,11 @@ def check_no_stale_billing_refs():
 
 
 def check_nav_consistency():
-    """Surviving pages (/app, /picks) must share an identical top-nav link
-    set in the same order. Mobile is intentionally not supported — the rest
-    of the cull (Backtest, FAQ, How, Pricing, Track record, landing) shipped
-    2026-04-30."""
+    """Surviving pages (/picks, /history) must share an identical top-nav
+    link set in the same order. Per 2026-05-04 Option-B redesign (Linear
+    S-104), /app was removed and /picks is now the single hero surface."""
     import re
-    print("\n[*] Top-nav consistency (projector + picks)")
+    print("\n[*] Top-nav consistency (picks + history)")
     nav_re = re.compile(r'<(?:div|nav)[^>]*nav-center[^>]*>(.*?)</div>', re.DOTALL)
     link_re = re.compile(r'<a [^>]*href="([^"]+)"[^>]*>([^<]+)</a>')
     canonical = None

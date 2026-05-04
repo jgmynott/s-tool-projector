@@ -1,5 +1,5 @@
 // s-tool.io worker.
-// - Serves /app and /picks from the bundled Assets binding.
+// - Serves /picks and /history from the bundled Assets binding.
 // - Reverse-proxies /api/* to the Railway-hosted FastAPI backend.
 // - Injects security headers (CSP only on HTML responses).
 // Auth + billing were removed 2026-04-30 — site is open access.
@@ -305,8 +305,8 @@ h1 { font-size:18px; margin:0 0 4px; font-weight:600; }
 ${rows}
 <div class="foot">
   <a href="https://github.com/${env.GITHUB_REPO || "jgmynott/s-tool-projector"}/actions">actions</a> ·
-  <a href="/app/">projector</a> ·
-  <a href="/picks/">picks</a>
+  <a href="/picks/">picks</a> ·
+  <a href="/history/">history</a>
 </div>
 </body>
 </html>`;
@@ -342,11 +342,13 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    // Site is now just /app + /picks. Bounce the old marketing routes so
-    // existing inbound links don't 404.
-    const DROPPED = new Set(["/", "/index.html", "/how", "/how/", "/pricing", "/pricing/", "/faq", "/faq/", "/backtest", "/backtest/", "/track-record", "/track-record/", "/studio", "/studio/"]);
-    if (DROPPED.has(url.pathname)) {
-      return Response.redirect(new URL("/app/", url).toString(), 302);
+    // Site is now /picks (hero) + /history. /app and the old marketing
+    // routes redirect to /picks so existing bookmarks don't 404. Phase 1
+    // of the picks-as-hero redesign (Linear S-104) removed the per-ticker
+    // projector page entirely; /api/project is gone too.
+    const DROPPED = new Set(["/", "/index.html", "/app", "/app/", "/how", "/how/", "/pricing", "/pricing/", "/faq", "/faq/", "/backtest", "/backtest/", "/track-record", "/track-record/", "/studio", "/studio/"]);
+    if (DROPPED.has(url.pathname) || url.pathname.startsWith("/app/")) {
+      return Response.redirect(new URL("/picks/", url).toString(), 301);
     }
 
     // Phone-friendly health dashboard. Aggregates the same signals you'd

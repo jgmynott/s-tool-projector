@@ -11,7 +11,6 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="preconnect" href="https://api-production-9fce.up.railway.app" crossorigin />
 <link rel="dns-prefetch" href="https://api-production-9fce.up.railway.app" />
-<link rel="prefetch" href="/app/" />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" />
 <meta name="view-transition" content="same-origin" />
 <link rel="stylesheet" href="/shared/skeleton.css" />
@@ -727,6 +726,12 @@ footer a { color: var(--text-mid); }
 .pf-chart-spy-line { fill: none; stroke: #9BA1B9; stroke-width: 1.5;
   stroke-dasharray: 5 4; stroke-linecap: round; stroke-linejoin: round;
   vector-effect: non-scaling-stroke; opacity: 0.85; }
+.pf-chart-prior-close { stroke: var(--text-dim); stroke-width: 1;
+  stroke-dasharray: 2 5; opacity: 0.45;
+  vector-effect: non-scaling-stroke; pointer-events: none; }
+.pf-chart-prior-close-label { fill: var(--text-dim); font: 500 10px 'Inter';
+  letter-spacing: 0.04em; opacity: 0.7; pointer-events: none;
+  text-transform: uppercase; }
 .pf-chart-cursor { stroke: var(--text-mid); stroke-width: 1; stroke-dasharray: 3 3; pointer-events: none; }
 .pf-chart-dot { pointer-events: none; }
 .pf-chart-hit { cursor: crosshair; }
@@ -1584,9 +1589,8 @@ footer a { color: var(--text-mid); }
 
 <nav>
   <div class="container nav-row">
-    <a href="/app" class="logo" aria-label="s-tool home"><img src="/img/logo-stool.svg?v=20260430a" alt="s-tool" class="logo-img" style="height:36px;width:auto;display:block;"/></a>
+    <a href="/picks" class="logo" aria-label="s-tool home"><img src="/img/logo-stool.svg?v=20260430a" alt="s-tool" class="logo-img" style="height:36px;width:auto;display:block;"/></a>
     <div class="nav-center">
-      <a href="/app">Projector</a>
       <a href="/picks" class="active">Picks</a>
       <a href="/history">History</a>
     </div>
@@ -1642,13 +1646,13 @@ footer a { color: var(--text-mid); }
 </main>
 
 <footer>
-  <div>&copy; 2026 s-tool.io &nbsp;&middot;&nbsp; <a href="/app">Projector</a> &nbsp;&middot;&nbsp; <a href="/picks">Picks</a> &nbsp;&middot;&nbsp; <a href="/history">History</a> &nbsp;&middot;&nbsp; Not investment advice.</div>
+  <div>&copy; 2026 s-tool.io &nbsp;&middot;&nbsp; <a href="/picks">Picks</a> &nbsp;&middot;&nbsp; <a href="/history">History</a> &nbsp;&middot;&nbsp; Not investment advice.</div>
 </footer>
 
 <!-- 84KB of inline page logic moved to /shared/picks-app.js so the
      1h Cache-Control on /shared/* skips download + parse on every
      repeat visit. defer means it executes after HTML parse but
      before DOMContentLoaded, same effective ordering as inline. -->
-<script defer src="/shared/picks-app.js?v=20260430g"></script>
+<script defer src="/shared/picks-app.js?v=20260504c"></script>
 </body>
 </html>

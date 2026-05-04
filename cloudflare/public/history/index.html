@@ -179,9 +179,8 @@ footer a:hover { color: var(--accent-lake); }
 
 <nav>
   <div class="container nav-row">
-    <a href="/app" class="logo" aria-label="s-tool home"><img src="/img/logo-stool.svg?v=20260430a" alt="s-tool" style="height:36px;width:auto;display:block;"/></a>
+    <a href="/picks" class="logo" aria-label="s-tool home"><img src="/img/logo-stool.svg?v=20260430a" alt="s-tool" style="height:36px;width:auto;display:block;"/></a>
     <div class="nav-center">
-      <a href="/app">Projector</a>
       <a href="/picks">Picks</a>
       <a href="/history" class="active">History</a>
     </div>
@@ -244,7 +243,8 @@ footer a:hover { color: var(--accent-lake); }
           <th data-sort="pnl_pct"    class="num">P&amp;L %</th>
           <th data-sort="pnl"        class="num">P&amp;L $</th>
           <th data-sort="hold_secs"  class="num">Hold (dd:hh:mm:ss)</th>
-          <th data-sort="entry_ts"   class="num">Opened</th>
+          <th data-sort="entry_ts"   class="num">Date placed</th>
+          <th data-sort="exit_ts"    class="num">Date closed</th>
         </tr>
       </thead>
       <tbody id="trade-rows"></tbody>
@@ -258,7 +258,7 @@ footer a:hover { color: var(--accent-lake); }
 </main>
 
 <footer>
-  <div>&copy; 2026 s-tool.io &nbsp;&middot;&nbsp; <a href="/app">Projector</a> &nbsp;&middot;&nbsp; <a href="/picks">Picks</a> &nbsp;&middot;&nbsp; <a href="/history">History</a> &nbsp;&middot;&nbsp; Not investment advice.</div>
+  <div>&copy; 2026 s-tool.io &nbsp;&middot;&nbsp; <a href="/picks">Picks</a> &nbsp;&middot;&nbsp; <a href="/history">History</a> &nbsp;&middot;&nbsp; Not investment advice.</div>
 </footer>
 
 <script>
@@ -459,7 +459,7 @@ function renderTable() {
   const tbody = document.getElementById('trade-rows');
   const total = state.filtered.length;
   if (total === 0) {
-    tbody.innerHTML = `<tr><td colspan="11" class="empty">No trades match the current filters.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="12" class="empty">No trades match the current filters.</td></tr>`;
     document.getElementById('pagination').style.display = 'none';
     return;
   }
@@ -493,6 +493,7 @@ function rowHtml(r) {
     <td class="num ${pnlCls}">${fmtUsd(r.pnl)}</td>
     <td class="num">${fmtHold(r.hold_secs)}</td>
     <td class="num">${fmtDate(r.entry_ts)}</td>
+    <td class="num">${fmtDate(r.exit_ts)}</td>
   </tr>`;
 }
 

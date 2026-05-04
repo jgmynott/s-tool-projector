@@ -28,10 +28,13 @@ from slowapi.middleware import SlowAPIMiddleware
 
 from db import (
     init_db, get_projection, get_projection_age_hours, save_projection,
-    list_cached_symbols, get_sentiment, get_picks_history,
+    get_picks_history,
     save_pipeline_event, get_pipeline_events,
 )
-from projector_engine import run_projection
+# /api/project was retired 2026-05-04 (Linear S-104). Per-ticker projections
+# are no longer a user-facing surface; /picks is the single hero page.
+# projector_engine + run_projection remain on disk because nightly
+# enrichment + cached lookups (get_projection at line ~613) still use it.
 from hardening import health_checker
 from portfolio_scanner import get_picks, get_scan_age_hours, load_cached_asymmetric_picks
 
@@ -267,118 +270,11 @@ def _quota_headers(used: int, limit: Optional[int], tier: str) -> dict[str, str]
 
 
 # ── Endpoints ──
-
-@app.get("/api/project")
-@limiter.limit("30/minute")
-def project(
-    request: Request,
-    symbol: str = Query(..., min_length=1, max_length=10),
-    horizon: int = Query(252, ge=5, le=756),
-    force: bool = Query(False),
-    user: Optional[dict] = Depends(auth.optional_user),
-):
-    """Return projection for a symbol. Uses cache if fresh, else computes live."""
-    symbol = symbol.upper().strip()
-
-    # ── Quota check ──
-    clerk_user_id = user["user_id"] if user else None
-    anon_key = None if clerk_user_id else _anon_key(request)
-    user_row = None
-    if clerk_user_id:
-        user_row = users_db.upsert_user(users_conn, clerk_user_id, email=user.get("email"))
-
-    quota = users_db.quota_for_user(user_row)
-    used = users_db.projections_in_last_24h(
-        users_conn, clerk_user_id=clerk_user_id, anon_key=anon_key
-    )
-
-    # Pre-launch safeguard: hard cap non-owner users to 5/hour.
-    user_email = user.get("email") if user else None
-    is_owner = user_email and user_email.lower() == OWNER_EMAIL.lower()
-    if not is_owner:
-        hourly = users_db.projections_in_last_hour(
-            users_conn, clerk_user_id=clerk_user_id, anon_key=anon_key
-        )
-        if hourly >= PRE_LAUNCH_HOURLY_CAP:
-            return JSONResponse(
-                status_code=429,
-                content={
-                    "error": "pre_launch_cap",
-                    "limit": PRE_LAUNCH_HOURLY_CAP,
-                    "used": hourly,
-                    "hint": "Pre-launch rate limit: 5 projections per hour. Check back soon.",
-                },
-            )
-
-    if PAYWALL_ENABLED and quota["limit"] is not None and used >= quota["limit"]:
-        return JSONResponse(
-            status_code=402,
-            content={
-                "error": "quota_exceeded",
-                "tier": quota["tier"],
-                "limit": quota["limit"],
-                "used": used,
-                "hint": "Sign in for 3 free projections/day, or upgrade to Pro for unlimited.",
-            },
-            headers=_quota_headers(used, quota["limit"], quota["tier"]),
-        )
-
-    # ── Cache hit path ──
-    if not force:
-        age = get_projection_age_hours(conn, symbol, horizon)
-        if age is not None and age < STALE_HOURS:
-            cached = get_projection(conn, symbol, horizon)
-            if cached:
-                log.info(f"Cache hit: {symbol} h={horizon} age={age:.1f}h user={clerk_user_id or 'anon'}")
-                users_db.record_usage(
-                    users_conn, action="project", clerk_user_id=clerk_user_id,
-                    anon_key=anon_key, symbol=symbol,
-                )
-                return JSONResponse(
-                    content=cached,
-                    headers=_quota_headers(used + 1, quota["limit"], quota["tier"]),
-                )
-
-    # ── Compute on demand ──
-    log.info(f"Computing: {symbol} h={horizon} user={clerk_user_id or 'anon'}")
-    try:
-        result = run_projection(symbol, horizon_days=horizon)
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    except Exception as e:
-        log.exception(f"Projection failed for {symbol}")
-        raise HTTPException(status_code=500, detail=f"Projection failed: {e}")
-
-    save_projection(conn, result)
-    users_db.record_usage(
-        users_conn,
-        action="project_force" if force else "project",
-        clerk_user_id=clerk_user_id,
-        anon_key=anon_key,
-        symbol=symbol,
-    )
-    log.info(f"Saved: {symbol} h={horizon} in {result['compute_secs']:.1f}s")
-
-    return JSONResponse(
-        content=get_projection(conn, symbol, horizon),
-        headers=_quota_headers(used + 1, quota["limit"], quota["tier"]),
-    )
-
-
-@app.get("/api/cached")
-def cached():
-    return list_cached_symbols(conn)
-
-
-@app.get("/api/sentiment")
-def sentiment(
-    ticker: str = Query(..., min_length=1, max_length=10),
-    days: int = Query(10, ge=1, le=90),
-):
-    rows = get_sentiment(conn, ticker.upper().strip(), days)
-    if not rows:
-        raise HTTPException(status_code=404, detail=f"No sentiment data for {ticker}")
-    return rows
+#
+# /api/project, /api/cached, /api/sentiment were retired 2026-05-04 (Linear
+# S-104). These powered the per-ticker projector page (/app), which the
+# 2026-05-04 Option-B redesign deprecated in favour of /picks as the single
+# hero surface. Worker now 301s /app and old marketing routes to /picks.
 
 
 @app.get("/api/data-status")

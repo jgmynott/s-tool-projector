@@ -154,13 +154,6 @@ function pfEquityChart(data) {
     if (acctLastEq && acctLastEq > 0) traderBaseline = acctLastEq;
     if (rawSpy.length) {
       const spySlice = keepIdx.map(i => rawSpy[i] ?? null);
-      // Normalize SPY to trader's first equity value so both lines start
-      // from the same y-coord and the alpha gap reads naturally.
-      const traderStart = pts.find(v => v != null);
-      const spyAnchor = spySlice.find(v => v != null);
-      if (traderStart && spyAnchor) {
-        spyPts = spySlice.map(c => c == null ? null : (c / spyAnchor) * traderStart);
-      }
       // SPY baseline for legend = yesterday's SPY close. The daily history
       // ends "today" (we re-stamp the last bar to now), so [-2] is the
       // most recent prior-day close — the SPY equivalent of last_equity.
@@ -173,6 +166,25 @@ function pfEquityChart(data) {
       // Latest raw SPY close from today's intraday series.
       for (let i = rawSpy.length - 1; i >= 0; i--) {
         if (rawSpy[i] != null) { spyLastRaw = rawSpy[i]; break; }
+      }
+      // Anchor SPY to YESTERDAY'S CLOSE (priorSpyClose → last_equity), not
+      // to the first intraday tick. The trader's pts already bake in the
+      // overnight gap (pts[0] = first intraday equity = last_equity + overnight pnl).
+      // If we anchor SPY to first_intraday_spy → first_intraday_equity, both
+      // lines start from the same y and the overnight gap silently disappears
+      // — letting SPY visually sit ABOVE S-Tool even when S-Tool is +0.60%
+      // and SPY is -0.06% from prior close. Anchoring SPY's prior-day close
+      // to last_equity puts both series on a shared dollar baseline so the
+      // visual gap = last_equity × (trader_pct − spy_pct), matching the legend.
+      if (spyBaselineRaw && acctLastEq && acctLastEq > 0) {
+        spyPts = spySlice.map(c => c == null ? null : (c / spyBaselineRaw) * acctLastEq);
+      } else {
+        // Fallback: previous behaviour if either prior-day anchor is missing.
+        const traderStart = pts.find(v => v != null);
+        const spyAnchor = spySlice.find(v => v != null);
+        if (traderStart && spyAnchor) {
+          spyPts = spySlice.map(c => c == null ? null : (c / spyAnchor) * traderStart);
+        }
       }
     }
   } else {
@@ -249,11 +261,16 @@ function pfChartSvg(pts, ts, isIntraday, spyPts, opts = {}) {
   const innerH = h - padT - padB;
 
   // Y-range covers BOTH series so SPY's curve doesn't clip out of frame
-  // when the trader has dramatically out- or under-performed.
+  // when the trader has dramatically out- or under-performed. On 1D we
+  // also include the prior-close reference (traderBaseline) so the dashed
+  // "yesterday's close" line is always visible — without this, a strong
+  // gap-up day would push the prior-close line off the bottom of the chart.
   const allVals = pts.slice();
   if (spyPts && spyPts.length) {
     for (const v of spyPts) if (v != null) allVals.push(v);
   }
+  const showPriorClose = isIntraday && opts.traderBaseline && opts.traderBaseline > 0;
+  if (showPriorClose) allVals.push(opts.traderBaseline);
   const min = Math.min(...allVals), max = Math.max(...allVals);
   const span = (max - min) || 1;
   const yPad = span * 0.06;
@@ -264,8 +281,14 @@ function pfChartSvg(pts, ts, isIntraday, spyPts, opts = {}) {
   const y = (v) => padT + (1 - (v - yMin) / yRange) * innerH;
 
   const last = pts[pts.length - 1], first = pts[0];
-  const stroke = last >= first ? 'var(--pos)' : 'var(--neg)';
-  const strokeRaw = last >= first ? '#6EE7B7' : '#FCA5A5';   // for fill (CSS var won't resolve in fill attr)
+  // Line color must use the SAME baseline as the legend pct, otherwise a 1D
+  // chart that gaps up overnight and bleeds intraday (but is still up vs
+  // prior close) shows a green "+0.37%" legend with a red line. On 1D the
+  // baseline is yesterday's close (traderBaseline). On 1W/1M, both are the
+  // first visible point, so first is the correct baseline.
+  const colorRef = (opts.traderBaseline && opts.traderBaseline > 0) ? opts.traderBaseline : first;
+  const stroke = last >= colorRef ? 'var(--pos)' : 'var(--neg)';
+  const strokeRaw = last >= colorRef ? '#6EE7B7' : '#FCA5A5';   // for fill (CSS var won't resolve in fill attr)
 
   const linePts = pts.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`);
   const linePath = `M ${linePts.join(' L ')}`;
@@ -395,11 +418,20 @@ function pfChartSvg(pts, ts, isIntraday, spyPts, opts = {}) {
   // Legend renders ABOVE the SVG so it can never visually collide with the
   // live-activity strip below the chart. (Mobile bug 2026-04-29: at narrow
   // widths the legend below the SVG was overlapping with the live banner.)
+  // Prior-close reference line (1D only). Sits behind the data lines so it
+  // reads as a baseline, not a competing series. Above this line = up today;
+  // below = down today — at a glance, no math needed.
+  const priorCloseLine = showPriorClose
+    ? `<line class="pf-chart-prior-close" x1="${padL}" y1="${y(opts.traderBaseline).toFixed(1)}" x2="${(w - padR).toFixed(1)}" y2="${y(opts.traderBaseline).toFixed(1)}"/>
+       <text x="${(w - padR - 6).toFixed(1)}" y="${(y(opts.traderBaseline) - 6).toFixed(1)}" class="pf-chart-prior-close-label" text-anchor="end">prior close</text>`
+    : '';
+
   return `<div class="pf-chart" id="pfChart">
     ${legend}
     <svg class="pf-chart-svg" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
       ${yLabels}
       ${xLabels}
+      ${priorCloseLine}
       <path class="pf-chart-area" d="${areaPath}" fill="${strokeRaw}"/>
       ${spyPath ? `<path class="pf-chart-spy-line" d="${spyPath}"/>` : ''}
       <path class="pf-chart-line" d="${linePath}" stroke="${stroke}"/>
