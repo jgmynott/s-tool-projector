@@ -18,12 +18,6 @@
       "ref_price": 241.7,
       "qty": 20
     },
-    "GLW": {
-      "sleeve": "swing",
-      "opened_at": "2026-04-28T15:41:52.670716+00:00",
-      "ref_price": 168.01,
-      "qty": 29
-    },
     "WDC": {
       "sleeve": "momentum",
       "opened_at": "2026-04-30T13:30:37.561619+00:00",
@@ -60,12 +54,6 @@
       "ref_price": 328.49,
       "qty": 31
     },
-    "CRS": {
-      "sleeve": "swing",
-      "opened_at": "2026-05-01T13:40:28.707026+00:00",
-      "ref_price": 426.16,
-      "qty": 12
-    },
     "EME": {
       "sleeve": "swing",
       "opened_at": "2026-05-01T13:40:29.687442+00:00",
@@ -74,15 +62,9 @@
     },
     "CAT": {
       "sleeve": "daytrade",
-      "opened_at": "2026-05-01T16:04:20.256212+00:00",
-      "ref_price": 890.11,
+      "opened_at": "2026-05-04T13:31:24.155075+00:00",
+      "ref_price": 889.67,
       "qty": 3
-    },
-    "FIX": {
-      "sleeve": "momentum",
-      "opened_at": "2026-05-01T14:36:45.820574+00:00",
-      "ref_price": 1840.25,
-      "qty": 5
     },
     "AGX": {
       "sleeve": "swing",
@@ -92,28 +74,47 @@
     },
     "GS": {
       "sleeve": "daytrade",
-      "opened_at": "2026-05-01T15:04:47.970395+00:00",
-      "ref_price": 923.77,
+      "opened_at": "2026-05-04T13:31:26.645179+00:00",
+      "ref_price": 923.71,
       "qty": 3
+    },
+    "PLTR": {
+      "sleeve": "momentum",
+      "opened_at": "2026-05-04T13:31:20.279724+00:00",
+      "ref_price": 144.07,
+      "qty": 71
+    },
+    "IBKR": {
+      "sleeve": "swing",
+      "opened_at": "2026-05-04T13:31:22.931007+00:00",
+      "ref_price": 80.46,
+      "qty": 64
+    },
+    "TSM": {
+      "sleeve": "swing",
+      "opened_at": "2026-05-04T13:31:23.799396+00:00",
+      "ref_price": 397.67,
+      "qty": 12
+    },
+    "GE": {
+      "sleeve": "daytrade",
+      "opened_at": "2026-05-04T13:31:25.349298+00:00",
+      "ref_price": 286.51,
+      "qty": 12
+    },
+    "APH": {
+      "sleeve": "daytrade",
+      "opened_at": "2026-05-04T13:31:25.724443+00:00",
+      "ref_price": 142.3,
+      "qty": 24
     }
   },
   "traded_today": {
-    "2026-05-01": [
-      "TSM",
-      "IBKR",
-      "GE",
-      "TT",
-      "GS",
-      "ETR",
-      "BKNG",
-      "AXON",
-      "CSTM",
-      "DGX",
-      "CSX",
-      "LH",
-      "BG",
+    "2026-05-04": [
       "CAT",
-      "DD"
+      "GE",
+      "APH",
+      "GS"
     ]
   },
   "breaker_fired_date": "2026-04-28",
@@ -153,6 +154,10 @@
     {
       "date": "2026-05-01",
       "equity": 103151.11
+    },
+    {
+      "date": "2026-05-04",
+      "equity": 103204.29
     }
   ]
 }
