@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=1024" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Trade history — s-tool</title>
 <meta name="description" content="Number-heavy ledger of every active and closed trade in the live paper book. Entry, exit, units, P&L, hold duration, sleeve, risk tier." />
 <link rel="canonical" href="https://s-tool.io/history" />
@@ -89,11 +89,17 @@ header.hero { padding: 52px 0 28px; border-bottom: 1px solid var(--border); marg
 }
 .btn.ghost:hover { color: var(--text-hi); border-color: var(--accent-lake); }
 
-/* Table — broker-log uniform monospace numerics. */
+/* Table — broker-log uniform monospace numerics. The 12-col ledger is
+   wider than typical phone widths, so on narrow viewports we let it
+   scroll horizontally instead of forcing column compression. */
 .table-wrap {
   border: 1px solid var(--border); border-radius: var(--radius-sm);
-  overflow: hidden;
+  overflow-x: auto;
   background: var(--bg-base);
+  -webkit-overflow-scrolling: touch;
+}
+@media (max-width: 1080px) {
+  table.history { min-width: 1080px; }
 }
 table.history { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
 table.history thead th {

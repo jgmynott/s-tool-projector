@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=1024" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Portfolio intelligence — s-tool</title>
 <meta name="description" content="Ranked portfolio intelligence from a nightly full-universe scan. Strategist tier only." />
 <link rel="canonical" href="https://s-tool.io/picks" />
@@ -1320,13 +1320,15 @@ footer a { color: var(--text-mid); }
   padding: 0;
 }
 /* Shared grid template applied to both header and data rows so columns line
-   up exactly. Eight fixed-width columns matching a broker fill log:
-   time | side | ticker | sleeve | qty | price | pct | $pnl */
+   up exactly. Nine fixed-width columns matching a broker fill log:
+   time | side | ticker | sleeve | tier | qty | price | pct | $pnl
+   Bigger row height + tier pill (added 2026-05-04, Linear S-105) so the
+   live ticker reads as a real market feed instead of a thin status bar. */
 .pf-tk-head, .pf-tk-row {
   display: grid;
-  grid-template-columns: 56px 56px 64px 92px 64px 84px 76px 80px;
+  grid-template-columns: 60px 56px 70px 86px 56px 64px 88px 80px 86px;
   align-items: center; gap: 14px;
-  padding: 10px 16px;
+  padding: 12px 18px;
 }
 .pf-tk-head {
   font: 700 9.5px 'Inter';
@@ -1344,11 +1346,12 @@ footer a { color: var(--text-mid); }
   text-align: right; color: var(--text-dim); font-weight: 700;
 }
 .pf-tk-row {
-  font: 500 12.5px 'Inter';
+  font: 500 13.5px 'Inter';
   color: var(--text-mid);
   font-variant-numeric: tabular-nums;
   border-bottom: 1px solid rgba(155,161,185,0.06);
   transition: background .12s ease;
+  min-height: 44px;
 }
 /* Subtle row tint by win/loss state — adds at-a-glance scannability
    without overpowering the cell-level pct/$ colors. */
@@ -1413,6 +1416,30 @@ footer a { color: var(--text-mid); }
   font: 500 12.5px 'Inter';
   color: var(--text-dim);
 }
+/* Risk-tier pill — small uppercase chip next to the sleeve. Mirrors the
+   tier color tokens used by the donut outer ring + scoreboard mix cells
+   so the same name reads in the same color across the whole page. */
+.pf-tk-tier {
+  font: 700 9px 'Inter'; letter-spacing: 0.10em; text-transform: uppercase;
+  padding: 2px 6px; border-radius: 4px; text-align: center;
+  border: 1px solid currentColor; background: transparent;
+  justify-self: start;
+}
+.pf-tk-tier.conservative { color: var(--tier-conservative); }
+.pf-tk-tier.moderate     { color: var(--tier-moderate); }
+.pf-tk-tier.aggressive   { color: var(--tier-aggressive); }
+.pf-tk-tier.asymmetric   { color: var(--tier-asymmetric); }
+.pf-tk-tier.none         { color: var(--text-dim); border-color: rgba(155,161,185,0.18); }
+
+@media (max-width: 1080px) {
+  /* On medium widths drop tier pill — sleeve color already encodes
+     strategy, tier is redundant when space is tight. */
+  .pf-tk-head, .pf-tk-row {
+    grid-template-columns: 56px 50px 64px 84px 56px 80px 76px 80px;
+    gap: 12px; padding: 10px 14px;
+  }
+  .pf-tk-tier { display: none; }
+}
 @media (max-width: 720px) {
   /* Five-column collapse on phones: time | side | sym | price | pl. Sleeve,
      qty and pct are hidden — they're nice-to-have, the broker-log essence
@@ -1422,13 +1449,175 @@ footer a { color: var(--text-mid); }
     gap: 10px;
     padding: 9px 14px;
   }
-  .pf-tk-sleeve, .pf-tk-qty, .pf-tk-pct { display: none; }
+  .pf-tk-sleeve, .pf-tk-tier, .pf-tk-qty, .pf-tk-pct { display: none; }
   .pf-live-status { padding: 9px 12px; gap: 10px; font-size: 11px; }
   .pf-live-status .pf-live-bit { white-space: nowrap; }
 }
 @media (max-width: 380px) {
   .pf-tk-head, .pf-tk-row { padding: 8px 10px; gap: 8px; font-size: 11.5px; }
   .pf-tk-pl { font-size: 12px; }
+}
+
+/* ── Hero grid: donut + scoreboard ─────────────────────────────────
+   Phase 2 of the picks-as-hero redesign (Linear S-105). The donut +
+   scoreboard sit at the top of the live-portfolio panel so a landing
+   visitor reads what the model is doing in 5 seconds.
+   - Wide desktop (≥1180px): 2-col, donut takes all remaining space,
+     scoreboard is a fixed-width side rail (340px).
+   - Tablet (900-1180px): 2-col, scoreboard narrower (300px).
+   - Mobile (<900px): stacks vertically, scoreboard ABOVE the donut so
+     the 5 stat tiles are the very first thing on screen. */
+.pf-hero-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 24px;
+  align-items: start;
+  margin-top: 14px;
+}
+.pf-hero-donut-col { min-width: 0; }
+/* The .pf-positions-head block originally lived between the equity chart
+   and the donut. Inside the hero grid it's the donut column's title row,
+   so it sits flush with the top of that column. */
+.pf-positions-head--hero { margin: 0 0 10px; }
+
+@media (max-width: 1180px) {
+  .pf-hero-grid { grid-template-columns: minmax(0, 1fr) 300px; gap: 20px; }
+}
+@media (max-width: 900px) {
+  .pf-hero-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+  }
+  /* Scoreboard renders BEFORE the donut on mobile so the 5 stat tiles
+     are the first thing visible on landing — desktop shows it on the
+     right, mobile stacks it on top. */
+  .pf-hero-grid .pf-scoreboard { order: -1; }
+}
+
+/* ── Today's scoreboard ────────────────────────────────────────────
+   5 stat tiles: trades today, realized P&L, win rate, strategy mix,
+   risk-profile mix. Fixed-width on desktop, full-width on mobile. */
+.pf-scoreboard {
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 14px;
+  background:
+    radial-gradient(420px 280px at 100% 0%, rgba(95,170,197,0.06), transparent 60%),
+    linear-gradient(180deg, rgba(11,16,6,0.55), rgba(2,40,52,0.10));
+  padding: 16px 16px 14px;
+  position: relative;
+  box-shadow:
+    0 1px 0 0 rgba(255,255,255,0.03) inset,
+    0 18px 40px -28px rgba(0,0,0,0.45);
+}
+.pf-scoreboard::before {
+  content: ''; position: absolute; left: 0; right: 0; top: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.10), transparent);
+  border-top-left-radius: 14px; border-top-right-radius: 14px;
+  pointer-events: none;
+}
+.pf-sb-eyebrow {
+  display: inline-flex; align-items: center; gap: 8px;
+  font: 600 9.5px 'Inter'; color: var(--accent-lake);
+  letter-spacing: 0.20em; text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.pf-sb-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--pos);
+  box-shadow: 0 0 8px rgba(110,231,183,0.7);
+  animation: pf-pulse 2s ease-in-out infinite;
+}
+.pf-sb-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+/* Strategies and Risk profiles tiles span both columns — their mix
+   cells need horizontal room to read cleanly. */
+.pf-sb-tile:nth-child(4),
+.pf-sb-tile:nth-child(5) { grid-column: 1 / -1; }
+.pf-sb-tile {
+  padding: 10px 12px;
+  border: 1px solid rgba(155,161,185,0.10);
+  border-radius: 10px;
+  background: rgba(11,16,6,0.32);
+  min-height: 64px;
+}
+.pf-sb-tile.pos { border-color: rgba(110,231,183,0.22); }
+.pf-sb-tile.neg { border-color: rgba(252,165,165,0.20); }
+.pf-sb-label {
+  font: 600 9px 'Inter'; color: var(--text-dim);
+  letter-spacing: 0.16em; text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.pf-sb-value {
+  font: 700 22px 'Inter'; font-variant-numeric: tabular-nums;
+  color: var(--text-hi); letter-spacing: -0.01em; line-height: 1.05;
+}
+.pf-sb-tile.pos .pf-sb-value { color: var(--pos); }
+.pf-sb-tile.neg .pf-sb-value { color: var(--neg); }
+.pf-sb-sub {
+  font: 500 11px 'Inter'; color: var(--text-dim);
+  margin-top: 4px;
+  font-variant-numeric: tabular-nums;
+}
+.pf-sb-mix {
+  display: flex; flex-wrap: wrap; gap: 6px 10px;
+  margin-top: 6px;
+}
+.pf-sb-mix-cell {
+  display: inline-flex; align-items: center; gap: 6px;
+  font: 600 11.5px 'Inter'; color: var(--text-mid);
+  font-variant-numeric: tabular-nums;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(11,16,6,0.4);
+  border: 1px solid rgba(155,161,185,0.10);
+}
+.pf-sb-mix-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto;
+}
+.pf-sb-mix-label {
+  font: 700 9.5px 'Inter'; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--text-dim);
+}
+.pf-sb-mix-val { color: var(--text-hi); font-weight: 700; }
+.pf-sb-mix-empty {
+  font: 500 11.5px 'Inter'; color: var(--text-dim);
+  padding: 3px 0;
+}
+
+/* On mobile, scoreboard tiles fit in a single column to keep numbers
+   readable at thumb size. */
+@media (max-width: 480px) {
+  .pf-sb-grid { grid-template-columns: 1fr; }
+  .pf-sb-tile:nth-child(4),
+  .pf-sb-tile:nth-child(5) { grid-column: 1; }
+  .pf-sb-value { font-size: 20px; }
+}
+
+/* ── Donut responsive scaling ──────────────────────────────────────
+   The donut-wrap was historically a 2-column grid (donut svg + sleeve
+   legend) sized for 1024+ desktop. Inside the hero grid on narrower
+   widths and on mobile, stack vertically and shrink the donut so it
+   doesn't push horizontal scroll. */
+@media (max-width: 900px) {
+  .pf-pos-donut-wrap {
+    grid-template-columns: 1fr;
+    gap: 22px;
+    padding: 28px 22px;
+    justify-items: stretch;
+  }
+  .pf-pos-donut.alloc-donut {
+    width: min(320px, 80vw); height: min(320px, 80vw);
+    margin: 0 auto;
+  }
+}
+@media (max-width: 480px) {
+  .pf-pos-donut-wrap { padding: 22px 14px; }
+  .pf-pos-donut.alloc-donut {
+    width: min(280px, 78vw); height: min(280px, 78vw);
+  }
 }
 
 /* Pending-order strip — surfaces in-flight bracket buys submitted by the
@@ -1653,6 +1842,6 @@ footer a { color: var(--text-mid); }
      1h Cache-Control on /shared/* skips download + parse on every
      repeat visit. defer means it executes after HTML parse but
      before DOMContentLoaded, same effective ordering as inline. -->
-<script defer src="/shared/picks-app.js?v=20260504c"></script>
+<script defer src="/shared/picks-app.js?v=20260504d"></script>
 </body>
 </html>

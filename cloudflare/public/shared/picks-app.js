@@ -719,6 +719,7 @@ function pfLiveActivityStrip(data) {
       kind: 'sell',
       symbol: c.symbol,
       sleeve: c.sleeve || 'unattributed',
+      tier: c.source_tier || c.tier || null,
       time: c.closed_at,
       pnl,
       pct,
@@ -742,6 +743,7 @@ function pfLiveActivityStrip(data) {
       kind: 'buy',
       symbol: p.symbol,
       sleeve: p.sleeve || 'unattributed',
+      tier: p.source_tier || p.tier || null,
       time: ts,
       pnl: upl,
       pct: uplPct,
@@ -813,11 +815,21 @@ function pfLiveActivityStrip(data) {
     const usdStr = hasPnl ? fmtUsd(ev.pnl) : '—';
     const qtyStr = `${Math.round(ev.qty)}`;
 
+    // Risk tier — derived per-event from the open-positions or closed-trades
+    // payload. Sells inherit the matching position's tier. We attempt
+    // several known field names because the tier metadata has migrated
+    // across the trader's state file revisions.
+    const tier = (ev.tier || ev.source_tier || '').toString().toLowerCase();
+    const tierAbbr = { conservative: 'CONS', moderate: 'MOD', aggressive: 'AGG', asymmetric: 'ASYM' };
+    const tierLbl = tierAbbr[tier] || '—';
+    const tierCls = tier && tierAbbr[tier] ? tier : 'none';
+
     return `<div class="pf-tk-row ${ev.kind} ${plCls} ${fresh ? 'fresh' : ''}" data-id="${ev.id}">
       <span class="pf-tk-time">${time}</span>
       <span class="pf-tk-action ${ev.kind}">${sideLbl}</span>
       <span class="pf-tk-sym">${ev.symbol}</span>
       <span class="pf-tk-sleeve ${ev.sleeve}">${sleeveLbl}</span>
+      <span class="pf-tk-tier ${tierCls}">${tierLbl}</span>
       <span class="pf-tk-qty">${qtyStr}</span>
       <span class="pf-tk-price">${priceStr}</span>
       <span class="pf-tk-pct ${plCls}">${pctStr}</span>
@@ -848,6 +860,7 @@ function pfLiveActivityStrip(data) {
       <span class="pf-tk-action">Side</span>
       <span class="pf-tk-sym">Symbol</span>
       <span class="pf-tk-sleeve">Sleeve</span>
+      <span class="pf-tk-tier">Tier</span>
       <span class="pf-tk-qty">Qty</span>
       <span class="pf-tk-price">Price</span>
       <span class="pf-tk-pct">Return</span>
@@ -1432,6 +1445,101 @@ function pfNextEntryWindow() {
   const inStr = h >= 1 ? `${h}h ${m}m` : `${m}m`;
   return { iso: nextOpen.toISOString(), local, inStr };
 }
+// "What is the model doing today?" — a compact scoreboard that sits
+// immediately above the donut hero. Five tiles: open positions, closed
+// trades today, strategy mix, risk-tier mix, realized P&L. The point is
+// a 5-second snapshot for landing visitors before they read anything.
+// Returns '' on no data so the layout collapses cleanly outside hours.
+function pfTodayScoreboard(data) {
+  if (!data || data.error) return '';
+  const positions = data.positions || [];
+  const closed = data.closed_today || [];
+  const sleeves = data.sleeves || {};
+  const realizedToday = data.realized_today || 0;
+
+  const openCount = positions.length;
+  const closedCount = closed.length;
+  const tradesToday = closedCount + openCount;
+
+  // Strategy mix — count open positions by sleeve, hide zero buckets.
+  const sleeveOrder = ['momentum', 'swing', 'daytrade', 'scalper'];
+  const sleeveCounts = {};
+  for (const p of positions) {
+    const s = p.sleeve || 'unattributed';
+    sleeveCounts[s] = (sleeveCounts[s] || 0) + 1;
+  }
+  const sleeveLabels = { momentum: 'Mom', swing: 'Swg', daytrade: 'DT', scalper: 'Scp' };
+  const sleeveMixCells = sleeveOrder
+    .filter(s => (sleeveCounts[s] || 0) > 0)
+    .map(s => `<span class="pf-sb-mix-cell" data-sleeve="${s}">
+      <span class="pf-sb-mix-dot" style="background:${PF_SLEEVE_COLOR[s]};"></span>
+      <span class="pf-sb-mix-label">${sleeveLabels[s]}</span>
+      <span class="pf-sb-mix-val">${sleeveCounts[s]}</span>
+    </span>`).join('');
+
+  // Tier mix — same idea, by source_tier.
+  const tierOrder = ['conservative', 'moderate', 'aggressive', 'asymmetric'];
+  const tierCounts = {};
+  for (const p of positions) {
+    const t = p.source_tier || 'unattributed';
+    if (!tierCounts[t]) tierCounts[t] = 0;
+    tierCounts[t] += 1;
+  }
+  const tierLabels = { conservative: 'Cons', moderate: 'Mod', aggressive: 'Agg', asymmetric: 'Asym' };
+  const tierMixCells = tierOrder
+    .filter(t => (tierCounts[t] || 0) > 0)
+    .map(t => `<span class="pf-sb-mix-cell" data-tier="${t}">
+      <span class="pf-sb-mix-dot" style="background:var(--tier-${t});"></span>
+      <span class="pf-sb-mix-label">${tierLabels[t]}</span>
+      <span class="pf-sb-mix-val">${tierCounts[t]}</span>
+    </span>`).join('');
+
+  // Win-rate today — only if we have closed trades to score against.
+  const wins = closed.filter(c => (c.pnl != null) && parseFloat(c.pnl) > 0).length;
+  const losses = closed.filter(c => (c.pnl != null) && parseFloat(c.pnl) < 0).length;
+  const decided = wins + losses;
+  const winRate = decided > 0 ? `${Math.round((wins / decided) * 100)}%` : '—';
+  const winSub = decided > 0 ? `${wins}W · ${losses}L` : 'no closes yet';
+
+  const realCls = realizedToday > 0.5 ? 'pos' : realizedToday < -0.5 ? 'neg' : 'flat';
+  const realSign = realizedToday > 0 ? '+' : realizedToday < 0 ? '−' : '';
+  const realStr = realizedToday === 0
+    ? '$0'
+    : `${realSign}$${Math.abs(Math.round(realizedToday)).toLocaleString('en-US')}`;
+
+  return `<aside class="pf-scoreboard" aria-label="What the model is doing today">
+    <div class="pf-sb-eyebrow">
+      <span class="pf-sb-dot"></span>
+      <span>Today's snapshot</span>
+    </div>
+    <div class="pf-sb-grid">
+      <div class="pf-sb-tile">
+        <div class="pf-sb-label">Trades today</div>
+        <div class="pf-sb-value">${tradesToday}</div>
+        <div class="pf-sb-sub">${closedCount} closed · ${openCount} open</div>
+      </div>
+      <div class="pf-sb-tile ${realCls}">
+        <div class="pf-sb-label">Realized today</div>
+        <div class="pf-sb-value">${realStr}</div>
+        <div class="pf-sb-sub">${closedCount} round-trips</div>
+      </div>
+      <div class="pf-sb-tile">
+        <div class="pf-sb-label">Win rate today</div>
+        <div class="pf-sb-value">${winRate}</div>
+        <div class="pf-sb-sub">${winSub}</div>
+      </div>
+      <div class="pf-sb-tile">
+        <div class="pf-sb-label">Strategies</div>
+        <div class="pf-sb-mix">${sleeveMixCells || '<span class="pf-sb-mix-empty">none active</span>'}</div>
+      </div>
+      <div class="pf-sb-tile">
+        <div class="pf-sb-label">Risk profiles</div>
+        <div class="pf-sb-mix">${tierMixCells || '<span class="pf-sb-mix-empty">none active</span>'}</div>
+      </div>
+    </div>
+  </aside>`;
+}
+
 function renderPortfolio(data) {
   if (!data || data.error) return '';  // 503/502 → render nothing, just keep the rest of the page
   const acct = data.account || {};
@@ -1548,6 +1656,22 @@ function renderPortfolio(data) {
   const utilization = totalCapacity > 0 ? Math.min(1, totalMv / totalCapacity) : 0;
   const utilStr = `${(utilization * 100).toFixed(0)}%`;
 
+  // 2026-05-04 (Linear S-105) — picks-as-hero redesign Phase 2:
+  // The donut + scoreboard ARE the hero now. They sit at the top of the
+  // panel, with the equity chart and live trade ticker reorganized below
+  // so a landing visitor reads what the model is doing in 5 seconds.
+  // Render order:
+  //   1. eyebrow + paper tag                (panel header)
+  //   2. equity hero ($ + day pill)          (the headline number)
+  //   3. pf-hero-grid:                       (NEW)
+  //        left: positionsBlock (donut+legend, was lower in the page)
+  //        right: pfTodayScoreboard          (NEW — trades, win rate,
+  //               realized $, strategy mix, risk-profile mix)
+  //   4. equity chart (1D/1W/1M)            (moved BELOW the hero grid)
+  //   5. pfLiveActivityStrip (expanded)     (broker-feed look)
+  //   6. pending orders                      (existing)
+  //   7. sleeve cards                        (existing — bottom summary)
+  //   8. closed trades panel                 (existing — pick grid follows)
   return `<section class="pf-panel" id="pf-panel">
     <div class="pf-head">
       <div class="pf-eyebrow"><span class="pf-live-dot"></span> Live paper portfolio</div>
@@ -1569,22 +1693,27 @@ function renderPortfolio(data) {
         </div>
       </div>
     </div>
+    <div class="pf-hero-grid">
+      <div class="pf-hero-donut-col">
+        <div class="pf-positions-head pf-positions-head--hero">
+          <span class="pf-positions-title">Open positions · expand a sleeve to see the names</span>
+          <span class="pf-positions-count">
+            ${(() => {
+              if (totalPositions === 0) return '0';
+              const wins = positions.filter(p => (p.unrealized_pl || 0) > 0).length;
+              const losses = positions.filter(p => (p.unrealized_pl || 0) < 0).length;
+              const flat = positions.length - wins - losses;
+              return `<span class="pf-tally-w">${wins}</span> in green · <span class="pf-tally-l">${losses}</span> in red${flat ? ` · ${flat} flat` : ''}`;
+            })()}
+          </span>
+        </div>
+        ${positionsBlock}
+      </div>
+      ${pfTodayScoreboard(data)}
+    </div>
     ${equityChart}
     ${pfLiveActivityStrip(data)}
     ${pfPendingOrdersStrip(data.open_orders)}
-    <div class="pf-positions-head">
-      <span class="pf-positions-title">Open positions · expand a sleeve to see the names</span>
-      <span class="pf-positions-count">
-        ${(() => {
-          if (totalPositions === 0) return '0';
-          const wins = positions.filter(p => (p.unrealized_pl || 0) > 0).length;
-          const losses = positions.filter(p => (p.unrealized_pl || 0) < 0).length;
-          const flat = positions.length - wins - losses;
-          return `<span class="pf-tally-w">${wins}</span> in green · <span class="pf-tally-l">${losses}</span> in red${flat ? ` · ${flat} flat` : ''}`;
-        })()}
-      </span>
-    </div>
-    ${positionsBlock}
     ${pfClosedTradesPanel(closedToday, realizedToday)}
     ${sleeveBlock}
   </section>`;
