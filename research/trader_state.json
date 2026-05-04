@@ -136,14 +136,14 @@
   "breaker_fired_date": "2026-04-28",
   "scalper": {
     "positions": {
-      "TNA": {
-        "symbol": "TNA",
-        "qty": 8,
-        "entry_price": 61.29,
-        "opened_at": "2026-05-04T15:46:12.063369+00:00",
-        "signal": "relvol",
-        "stop": 60.86,
-        "target": 61.9
+      "TZA": {
+        "symbol": "TZA",
+        "qty": 100,
+        "entry_price": 4.975,
+        "opened_at": "2026-05-04T15:51:34.045748+00:00",
+        "signal": "orb",
+        "stop": 4.94,
+        "target": 5.02
       }
     },
     "fired_today": [
@@ -166,6 +166,11 @@
         "symbol": "TNA",
         "signal": "relvol",
         "ts": "2026-05-04T15:46:12.063382+00:00"
+      },
+      {
+        "symbol": "TZA",
+        "signal": "orb",
+        "ts": "2026-05-04T15:51:34.045765+00:00"
       }
     ],
     "last_scan": null,
