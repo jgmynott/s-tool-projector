@@ -107,60 +107,6 @@
       "opened_at": "2026-05-04T14:31:40.470843+00:00",
       "ref_price": 1867.02,
       "qty": 2
-    },
-    "COIN": {
-      "sleeve": "daytrade",
-      "opened_at": "2026-05-04T15:01:49.663377+00:00",
-      "ref_price": 191.25,
-      "qty": 17
-    },
-    "BKNG": {
-      "sleeve": "daytrade",
-      "opened_at": "2026-05-04T15:01:50.297669+00:00",
-      "ref_price": 169.63,
-      "qty": 20
-    },
-    "CSTM": {
-      "sleeve": "daytrade",
-      "opened_at": "2026-05-04T15:01:52.352025+00:00",
-      "ref_price": 29.66,
-      "qty": 115
-    },
-    "DD": {
-      "sleeve": "daytrade",
-      "opened_at": "2026-05-04T15:01:52.880287+00:00",
-      "ref_price": 46.24,
-      "qty": 74
-    },
-    "MCO": {
-      "sleeve": "daytrade",
-      "opened_at": "2026-05-04T15:01:55.672372+00:00",
-      "ref_price": 455.77,
-      "qty": 7
-    },
-    "CSX": {
-      "sleeve": "daytrade",
-      "opened_at": "2026-05-04T15:01:56.332453+00:00",
-      "ref_price": 45.09,
-      "qty": 76
-    },
-    "LH": {
-      "sleeve": "daytrade",
-      "opened_at": "2026-05-04T15:01:57.414465+00:00",
-      "ref_price": 255.84,
-      "qty": 13
-    },
-    "CTRA": {
-      "sleeve": "daytrade",
-      "opened_at": "2026-05-04T15:01:58.759469+00:00",
-      "ref_price": 35.38,
-      "qty": 97
-    },
-    "BG": {
-      "sleeve": "daytrade",
-      "opened_at": "2026-05-04T15:01:59.257913+00:00",
-      "ref_price": 124.61,
-      "qty": 27
     }
   },
   "traded_today": {
@@ -217,7 +163,7 @@
     },
     {
       "date": "2026-05-04",
-      "equity": 103156.28
+      "equity": 102246.21
     }
   ]
 }
