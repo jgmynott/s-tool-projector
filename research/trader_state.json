@@ -136,14 +136,23 @@
   "breaker_fired_date": "2026-04-28",
   "scalper": {
     "positions": {
-      "TZA": {
-        "symbol": "TZA",
-        "qty": 100,
-        "entry_price": 4.975,
-        "opened_at": "2026-05-04T15:51:34.045748+00:00",
-        "signal": "orb",
-        "stop": 4.94,
-        "target": 5.02
+      "SQQQ": {
+        "symbol": "SQQQ",
+        "qty": 9,
+        "entry_price": 51.21,
+        "opened_at": "2026-05-04T16:09:40.682063+00:00",
+        "signal": "relvol",
+        "stop": 50.85,
+        "target": 51.72
+      },
+      "SOXS": {
+        "symbol": "SOXS",
+        "qty": 37,
+        "entry_price": 13.47,
+        "opened_at": "2026-05-04T16:09:40.741506+00:00",
+        "signal": "relvol",
+        "stop": 13.38,
+        "target": 13.6
       }
     },
     "fired_today": [
@@ -171,6 +180,16 @@
         "symbol": "TZA",
         "signal": "orb",
         "ts": "2026-05-04T15:51:34.045765+00:00"
+      },
+      {
+        "symbol": "SQQQ",
+        "signal": "relvol",
+        "ts": "2026-05-04T16:09:40.682075+00:00"
+      },
+      {
+        "symbol": "SOXS",
+        "signal": "relvol",
+        "ts": "2026-05-04T16:09:40.741514+00:00"
       }
     ],
     "last_scan": null,

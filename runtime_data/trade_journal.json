@@ -1,6 +1,6 @@
 {
-  "as_of": "2026-05-04T15:51:34.046328+00:00",
-  "n_rows": 676,
+  "as_of": "2026-05-04T16:09:40.742078+00:00",
+  "n_rows": 678,
   "rows": [
     {
       "ts": "2026-04-27T13:47:29.206731Z",
@@ -8910,6 +8910,34 @@
       "target": 5.02,
       "tier": "orb",
       "rationale": "{\"range_high\": 4.96, \"range_low\": 4.86, \"avg_open_vol\": 77421.66666666667, \"cur_vol\": 549718}",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-05-04T16:09:40.682077+00:00",
+      "event": "buy",
+      "sleeve": "scalper",
+      "symbol": "SQQQ",
+      "qty": 9,
+      "ref_price": 51.21,
+      "live_price": 51.21,
+      "stop": 50.85,
+      "target": 51.72,
+      "tier": "relvol",
+      "rationale": "{\"vol_multiple\": 2.6196985985197974, \"range_pos\": 0.6599999999999966, \"cur_vol\": 37138}",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-05-04T16:09:40.741517+00:00",
+      "event": "buy",
+      "sleeve": "scalper",
+      "symbol": "SOXS",
+      "qty": 37,
+      "ref_price": 13.47,
+      "live_price": 13.47,
+      "stop": 13.38,
+      "target": 13.6,
+      "tier": "relvol",
+      "rationale": "{\"vol_multiple\": 2.1094569814400645, \"range_pos\": 0.6842105263157954, \"cur_vol\": 111447}",
       "result": "submitted"
     }
   ]
