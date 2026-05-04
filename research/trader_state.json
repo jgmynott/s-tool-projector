@@ -135,7 +135,26 @@
   },
   "breaker_fired_date": "2026-04-28",
   "scalper": {
-    "positions": {},
+    "positions": {
+      "AAPL": {
+        "symbol": "AAPL",
+        "qty": 1,
+        "entry_price": 277.05,
+        "opened_at": "2026-05-04T19:56:16.430028+00:00",
+        "signal": "relvol",
+        "stop": 275.11,
+        "target": 279.82
+      },
+      "BAC": {
+        "symbol": "BAC",
+        "qty": 9,
+        "entry_price": 52.245,
+        "opened_at": "2026-05-04T19:56:16.482466+00:00",
+        "signal": "relvol",
+        "stop": 51.88,
+        "target": 52.77
+      }
+    },
     "fired_today": [
       {
         "symbol": "MS",
@@ -181,6 +200,16 @@
         "symbol": "BLK",
         "signal": "relvol",
         "ts": "2026-05-04T17:16:20.074243+00:00"
+      },
+      {
+        "symbol": "AAPL",
+        "signal": "relvol",
+        "ts": "2026-05-04T19:56:16.430043+00:00"
+      },
+      {
+        "symbol": "BAC",
+        "signal": "relvol",
+        "ts": "2026-05-04T19:56:16.482478+00:00"
       }
     ],
     "last_scan": null,

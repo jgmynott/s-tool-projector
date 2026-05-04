@@ -1,6 +1,6 @@
 {
-  "as_of": "2026-05-04T17:46:20.797289+00:00",
-  "n_rows": 682,
+  "as_of": "2026-05-04T19:56:16.483077+00:00",
+  "n_rows": 684,
   "rows": [
     {
       "ts": "2026-04-27T13:47:29.206731Z",
@@ -8989,6 +8989,34 @@
       "sell_price": null,
       "pnl": null,
       "exit_reason": "max_hold"
+    },
+    {
+      "ts": "2026-05-04T19:56:16.430046+00:00",
+      "event": "buy",
+      "sleeve": "scalper",
+      "symbol": "AAPL",
+      "qty": 1,
+      "ref_price": 277.05,
+      "live_price": 277.05,
+      "stop": 275.11,
+      "target": 279.82,
+      "tier": "relvol",
+      "rationale": "{\"vol_multiple\": 2.1347437161659055, \"range_pos\": 0.6969696969697857, \"cur_vol\": 29881}",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-05-04T19:56:16.482481+00:00",
+      "event": "buy",
+      "sleeve": "scalper",
+      "symbol": "BAC",
+      "qty": 9,
+      "ref_price": 52.245,
+      "live_price": 52.245,
+      "stop": 51.88,
+      "target": 52.77,
+      "tier": "relvol",
+      "rationale": "{\"vol_multiple\": 2.10767627953352, \"range_pos\": 0.6923076923076334, \"cur_vol\": 33822}",
+      "result": "submitted"
     }
   ]
 }
