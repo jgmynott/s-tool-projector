@@ -125,12 +125,27 @@
   },
   "breaker_fired_date": "2026-04-28",
   "scalper": {
-    "positions": {},
+    "positions": {
+      "TSLA": {
+        "symbol": "TSLA",
+        "qty": 1,
+        "entry_price": 392.265,
+        "opened_at": "2026-05-04T14:51:19.534850+00:00",
+        "signal": "relvol",
+        "stop": 389.52,
+        "target": 396.19
+      }
+    },
     "fired_today": [
       {
         "symbol": "MS",
         "signal": "relvol",
         "ts": "2026-05-04T14:16:17.766154+00:00"
+      },
+      {
+        "symbol": "TSLA",
+        "signal": "relvol",
+        "ts": "2026-05-04T14:51:19.534868+00:00"
       }
     ],
     "last_scan": null,

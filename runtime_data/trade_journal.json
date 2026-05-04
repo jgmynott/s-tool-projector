@@ -1,6 +1,6 @@
 {
-  "as_of": "2026-05-04T14:46:16.197509+00:00",
-  "n_rows": 625,
+  "as_of": "2026-05-04T14:51:19.535441+00:00",
+  "n_rows": 626,
   "rows": [
     {
       "ts": "2026-04-27T13:47:29.206731Z",
@@ -8227,6 +8227,20 @@
       "sell_price": null,
       "pnl": null,
       "exit_reason": "max_hold"
+    },
+    {
+      "ts": "2026-05-04T14:51:19.534872+00:00",
+      "event": "buy",
+      "sleeve": "scalper",
+      "symbol": "TSLA",
+      "qty": 1,
+      "ref_price": 392.265,
+      "live_price": 392.265,
+      "stop": 389.52,
+      "target": 396.19,
+      "tier": "relvol",
+      "rationale": "{\"vol_multiple\": 2.2368195578911294, \"range_pos\": 0.8037383177569846, \"cur_vol\": 15664}",
+      "result": "submitted"
     }
   ]
 }
