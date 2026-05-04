@@ -161,36 +161,10 @@
   },
   "breaker_fired_date": "2026-04-28",
   "scalper": {
-    "positions": {
-      "MRVL": {
-        "symbol": "MRVL",
-        "qty": 3,
-        "entry_price": 164.705,
-        "opened_at": "2026-05-01T19:53:29.635245+00:00",
-        "signal": "relvol",
-        "stop": 163.55,
-        "target": 166.35
-      }
-    },
-    "fired_today": [
-      {
-        "symbol": "DE",
-        "signal": "relvol",
-        "ts": "2026-05-01T15:10:26.419295+00:00"
-      },
-      {
-        "symbol": "ASML",
-        "signal": "relvol",
-        "ts": "2026-05-01T18:36:56.248053+00:00"
-      },
-      {
-        "symbol": "MRVL",
-        "signal": "relvol",
-        "ts": "2026-05-01T19:53:29.635257+00:00"
-      }
-    ],
+    "positions": {},
+    "fired_today": [],
     "last_scan": null,
-    "last_scan_date": "2026-05-01"
+    "last_scan_date": "2026-05-04"
   },
   "equity_log": [
     {
