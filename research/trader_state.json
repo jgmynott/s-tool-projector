@@ -135,17 +135,7 @@
   },
   "breaker_fired_date": "2026-04-28",
   "scalper": {
-    "positions": {
-      "BLK": {
-        "symbol": "BLK",
-        "qty": 1,
-        "entry_price": 1052.645,
-        "opened_at": "2026-05-04T17:16:20.074232+00:00",
-        "signal": "relvol",
-        "stop": 1045.28,
-        "target": 1063.17
-      }
-    },
+    "positions": {},
     "fired_today": [
       {
         "symbol": "MS",
