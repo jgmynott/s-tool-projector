@@ -1,6 +1,6 @@
 {
-  "as_of": "2026-05-04T14:16:17.766779+00:00",
-  "n_rows": 610,
+  "as_of": "2026-05-04T14:26:35.530767+00:00",
+  "n_rows": 617,
   "rows": [
     {
       "ts": "2026-04-27T13:47:29.206731Z",
@@ -8069,6 +8069,90 @@
       "target": 191.23,
       "tier": "relvol",
       "rationale": "{\"vol_multiple\": 2.4141084258654475, \"range_pos\": 1.0, \"cur_vol\": 1848}",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-05-04T14:26:28.511168+00:00",
+      "event": "sell",
+      "sleeve": "daytrade",
+      "symbol": "APH",
+      "qty": "24",
+      "ref_price": 142.3,
+      "live_price": null,
+      "realized_pl": null,
+      "reason": "preopen_holdover_sweep",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-05-04T14:26:29.941588+00:00",
+      "event": "sell",
+      "sleeve": "daytrade",
+      "symbol": "DGX",
+      "qty": "17",
+      "ref_price": 192.67,
+      "live_price": null,
+      "realized_pl": null,
+      "reason": "preopen_holdover_sweep",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-05-04T14:26:31.116927+00:00",
+      "event": "sell",
+      "sleeve": "daytrade",
+      "symbol": "GLW",
+      "qty": "21",
+      "ref_price": 158.26,
+      "live_price": null,
+      "realized_pl": null,
+      "reason": "preopen_holdover_sweep",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-05-04T14:26:32.207042+00:00",
+      "event": "sell",
+      "sleeve": "daytrade",
+      "symbol": "L",
+      "qty": "30",
+      "ref_price": 111.7,
+      "live_price": null,
+      "realized_pl": null,
+      "reason": "preopen_holdover_sweep",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-05-04T14:26:33.319566+00:00",
+      "event": "sell",
+      "sleeve": "daytrade",
+      "symbol": "PH",
+      "qty": "3",
+      "ref_price": 882.23,
+      "live_price": null,
+      "realized_pl": null,
+      "reason": "preopen_holdover_sweep",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-05-04T14:26:34.423625+00:00",
+      "event": "sell",
+      "sleeve": "daytrade",
+      "symbol": "TT",
+      "qty": "7",
+      "ref_price": 486.48,
+      "live_price": null,
+      "realized_pl": null,
+      "reason": "preopen_holdover_sweep",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-05-04T14:26:35.530179+00:00",
+      "event": "sell",
+      "sleeve": "daytrade",
+      "symbol": "WMB",
+      "qty": "45",
+      "ref_price": 75.54,
+      "live_price": null,
+      "realized_pl": null,
+      "reason": "preopen_holdover_sweep",
       "result": "submitted"
     }
   ]
