@@ -1,6 +1,6 @@
 {
-  "as_of": "2026-05-04T14:26:35.530767+00:00",
-  "n_rows": 617,
+  "as_of": "2026-05-04T14:31:47.803299+00:00",
+  "n_rows": 624,
   "rows": [
     {
       "ts": "2026-04-27T13:47:29.206731Z",
@@ -8154,6 +8154,68 @@
       "realized_pl": null,
       "reason": "preopen_holdover_sweep",
       "result": "submitted"
+    },
+    {
+      "ts": "2026-05-04T14:31:40.470824+00:00",
+      "event": "buy",
+      "sleeve": "swing",
+      "symbol": "FIX",
+      "qty": 2,
+      "ref_price": 1867.02,
+      "live_price": 1882.44,
+      "stop": 1750.67,
+      "target": 2164.81,
+      "tier": "aggressive",
+      "rationale": "Top-line is accelerating at 33% year-on-year, and the gross-margin line (24%) is holding through the",
+      "result": "submitted"
+    },
+    {
+      "ts": "2026-05-04T14:31:42.850739+00:00",
+      "event": "buy_failed",
+      "sleeve": "swing",
+      "symbol": "TSM",
+      "qty": 13,
+      "error": "Alpaca POST orders \u2192 HTTP 422: {\"code\":40010001,\"message\":\"client_order_id must be unique\"}"
+    },
+    {
+      "ts": "2026-05-04T14:31:43.970910+00:00",
+      "event": "buy_failed",
+      "sleeve": "daytrade",
+      "symbol": "GLW",
+      "qty": 21,
+      "error": "Alpaca POST orders \u2192 HTTP 422: {\"code\":40010001,\"message\":\"client_order_id must be unique\"}"
+    },
+    {
+      "ts": "2026-05-04T14:31:44.266654+00:00",
+      "event": "buy_failed",
+      "sleeve": "daytrade",
+      "symbol": "CAT",
+      "qty": 3,
+      "error": "Alpaca POST orders \u2192 HTTP 422: {\"code\":40010001,\"message\":\"client_order_id must be unique\"}"
+    },
+    {
+      "ts": "2026-05-04T14:31:44.393154+00:00",
+      "event": "buy_failed",
+      "sleeve": "daytrade",
+      "symbol": "GE",
+      "qty": 12,
+      "error": "Alpaca POST orders \u2192 HTTP 422: {\"code\":40010001,\"message\":\"client_order_id must be unique\"}"
+    },
+    {
+      "ts": "2026-05-04T14:31:47.464141+00:00",
+      "event": "buy_failed",
+      "sleeve": "daytrade",
+      "symbol": "APH",
+      "qty": 24,
+      "error": "Alpaca POST orders \u2192 HTTP 422: {\"code\":40010001,\"message\":\"client_order_id must be unique\"}"
+    },
+    {
+      "ts": "2026-05-04T14:31:47.802463+00:00",
+      "event": "buy_failed",
+      "sleeve": "daytrade",
+      "symbol": "GS",
+      "qty": 3,
+      "error": "Alpaca POST orders \u2192 HTTP 422: {\"code\":40010001,\"message\":\"client_order_id must be unique\"}"
     }
   ]
 }
