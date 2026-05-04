@@ -126,15 +126,6 @@
   "breaker_fired_date": "2026-04-28",
   "scalper": {
     "positions": {
-      "TSLA": {
-        "symbol": "TSLA",
-        "qty": 1,
-        "entry_price": 392.265,
-        "opened_at": "2026-05-04T14:51:19.534850+00:00",
-        "signal": "relvol",
-        "stop": 389.52,
-        "target": 396.19
-      },
       "DE": {
         "symbol": "DE",
         "qty": 1,
