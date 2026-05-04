@@ -1,6 +1,6 @@
 {
-  "as_of": "2026-05-04T15:01:59.258584+00:00",
-  "n_rows": 657,
+  "as_of": "2026-05-04T15:06:18.780516+00:00",
+  "n_rows": 658,
   "rows": [
     {
       "ts": "2026-04-27T13:47:29.206731Z",
@@ -8705,6 +8705,17 @@
       "rationale": "",
       "result": "submitted",
       "tranche": 2
+    },
+    {
+      "ts": "2026-05-04T15:06:18.779893+00:00",
+      "event": "sell",
+      "sleeve": "scalper",
+      "symbol": "TSM",
+      "qty": 1.0,
+      "buy_price": null,
+      "sell_price": null,
+      "pnl": null,
+      "exit_reason": "max_hold"
     }
   ]
 }
